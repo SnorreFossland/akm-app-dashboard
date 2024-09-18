@@ -3,39 +3,41 @@
 import { useState } from "react";
 import { experimental_useObject as useObject } from "ai/react";
 import { Input } from "@/components/ui/input";
-import { RecipeCard } from "@/components/recipe-card";
+import { ObjectCard } from "@/components/object-card";
 
-import { RecipeSchema } from "@/recipeSchema";
+import { ObjectSchema } from "@/objectSchema";
 import { Loading } from "@/components/loading";
 
 export default function VercelAiPage() {
-  const [prompt, setPrompt] = useState("Spaghetti Carbonara");
+  const [prompt, setPrompt] = useState("Bike production");
   const { object, submit, isLoading } = useObject({
-    schema: RecipeSchema,
+    schema: ObjectSchema,
     api: "/vercel-ai/api",
     initialValue: {
       name: "",
-      ingredients: [],
-      steps: [],
+      objects: [],
+      relationships: [],
     },
   });
 
+
   return (
     <div className="flex flex-col gap-4">
+      <h1 className="text-2xl font-bold">AKM Concept definer</h1>
       <Input
         value={prompt}
         disabled={isLoading}
         onChange={(e) => setPrompt(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === "Enter") {
-            submit({ prompt });
+            submit( prompt );
             setPrompt("");
           }
         }}
-        placeholder="What recipe do you want?"
+        placeholder="What Domain do you want?"
       />
       {isLoading && <Loading />}
-      <RecipeCard recipe={object as any} />
+      {object && prompt && <ObjectCard domain={object as any} />}
     </div>
   );
 }

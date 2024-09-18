@@ -3,25 +3,25 @@ import { useState } from "react";
 import { z } from "zod";
 
 import { Input } from "@/components/ui/input";
-import { ObjTypeCard } from "@/components/recipe-card";
 import { Loading } from "@/components/loading";
-import { ObjTypeSchema } from "@/objTypeSchema";
+import { ObjectCard } from "@/components/object-card";
+import { ObjectSchema } from "@/objectSchema";
 
 export default function SyncPage() {
-  const [prompt, setPrompt] = useState("chocolate brownies");
+  const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [objType, setObjType] = useState<z.infer<typeof ObjTypeSchema>>();
+  const [object, setObjType] = useState<z.infer<typeof ObjectSchema>>();
 
   async function handleSubmit() {
     setPrompt("");
     setIsLoading(true);
     setObjType(undefined);
   
-    console.log("Submitting prompt: Type Definition");
+    // console.log("20 Submitting prompt:", prompt);
   
     const res = await fetch("/streaming/api", {
       method: "POST",
-      body: JSON.stringify({ prompt: "Type Definition" }),
+      body: JSON.stringify({ prompt: prompt }),
     });
   
     if (!res.ok) {
@@ -43,18 +43,22 @@ export default function SyncPage() {
       const { done, value } = await reader.read();
       if (done) break;
       data += decoder.decode(value, { stream: true });
-      console.log("Received chunk:", data);
+      // console.log("Received chunk:", data);
     }
   
     try {
-      console.log("Complete data received:", data); // Log the complete data
+      // console.log("Complete data received:", data); // Log the complete data
       const parsed = JSON.parse(data); // Use JSON.parse to parse the complete JSON
-      console.log("Parsed data:", parsed); // Log the parsed data
-      const validatedData = ObjTypeSchema.parse(parsed);
+      // console.log("Parsed data:", parsed); // Log the parsed data
+      const validatedData = ObjectSchema.parse(parsed);
       setObjType(validatedData);
-      console.log("Validation successful:", validatedData);
+      // console.log("55 Validation successful:", validatedData);
     } catch (e) {
-      console.error("Validation failed:", e.errors);
+      if (e instanceof Error) {
+        console.error("Validation failed:", e.message);
+      } else {
+        console.error("Validation failed:", e);
+      }
     }
   
     setIsLoading(false);
@@ -62,7 +66,7 @@ export default function SyncPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div>object type</div>  
+      <div>Define object type:</div>  
       <Input
         value={prompt}
         disabled={isLoading}
@@ -72,10 +76,10 @@ export default function SyncPage() {
             handleSubmit();
           }
         }}
-        placeholder="What type do you want defined?"
+        placeholder="What domain do you want explored?"
       />
       {isLoading && <Loading />}
-      <ObjTypeCard objType={objType} />
+      <ObjectCard domain={object} />
     </div>
   );
 }

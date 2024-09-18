@@ -41,6 +41,7 @@ export default function SyncPage() {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="text-lg font-bold">Recipe Search</div>
       <Input
         value={prompt}
         disabled={isLoading}
