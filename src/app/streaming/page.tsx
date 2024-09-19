@@ -16,43 +16,37 @@ export default function SyncPage() {
     setPrompt("");
     setIsLoading(true);
     setObjType(undefined);
-  
-    // console.log("20 Submitting prompt:", prompt);
-  
+
     const res = await fetch("/streaming/api", {
       method: "POST",
       body: JSON.stringify({ prompt: prompt }),
     });
-  
+
     if (!res.ok) {
       console.error("Failed to fetch:", res.statusText);
       setIsLoading(false);
       return;
     }
-  
+
     const reader = res.body?.getReader();
     if (!reader) {
       console.error("No reader available");
       setIsLoading(false);
       return;
     }
-  
+
     const decoder = new TextDecoder();
     let data = "";
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
       data += decoder.decode(value, { stream: true });
-      // console.log("Received chunk:", data);
     }
-  
+
     try {
-      // console.log("Complete data received:", data); // Log the complete data
-      const parsed = JSON.parse(data); // Use JSON.parse to parse the complete JSON
-      // console.log("Parsed data:", parsed); // Log the parsed data
+      const parsed = JSON.parse(data);
       const validatedData = ObjectSchema.parse(parsed);
       setObjType(validatedData);
-      // console.log("55 Validation successful:", validatedData);
     } catch (e) {
       if (e instanceof Error) {
         console.error("Validation failed:", e.message);
@@ -60,24 +54,45 @@ export default function SyncPage() {
         console.error("Validation failed:", e);
       }
     }
-  
+
     setIsLoading(false);
   }
 
+  const handleCopy = () => {
+    if (object) {
+      const jsonOutput = JSON.stringify(object, null, 2);
+      navigator.clipboard.writeText(jsonOutput).then(() => {
+        console.log('JSON copied to clipboard');
+      }).catch(err => {
+        console.error('Failed to copy JSON:', err);
+      });
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4">
-      <div>Define object type:</div>  
-      <Input
-        value={prompt}
-        disabled={isLoading}
-        onChange={(e) => setPrompt(e.target.value)}
-        onKeyDown={async (e) => {
-          if (e.key === "Enter") {
-            handleSubmit();
-          }
-        }}
-        placeholder="What domain do you want explored?"
-      />
+    <div className="flex flex-col gap-4 bg-gray-800">
+      <div className="mx-auto">Explore a Domain:</div>
+
+      <div className="flex items-center mx-2 bg-gray-700">
+        <Input
+          className="flex-grow bg-gray-700 mx-auto mx-2"
+          value={prompt}
+          disabled={isLoading}
+          onChange={(e) => setPrompt(e.target.value)}
+          onKeyDown={async (e) => {
+            if (e.key === "Enter") {
+              handleSubmit();
+            }
+          }}
+          placeholder="What domain do you want explored?"
+        />
+        {object && (
+          <button onClick={handleCopy} className="m-auto bg-blue-500 text-white px-4 py-2 rounded">
+            Copy JSON
+          </button>
+        )}
+      </div>
+
       {isLoading && <Loading />}
       <ObjectCard domain={object} />
     </div>
