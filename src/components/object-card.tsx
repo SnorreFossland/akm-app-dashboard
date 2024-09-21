@@ -1,11 +1,25 @@
-import { ObjectSchema } from '@/objectSchema';
+import React, { useEffect, useRef} from 'react';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
 import { v4 as uuid4 } from 'uuid';
 
+import { ObjectSchema } from '@/objectSchema';
+
 export function ObjectCard({ domain }: { domain?: z.infer<typeof ObjectSchema> }) {
+const jsonStringRef = useRef<string | null>(null);
+const phDataRef = useRef<any | null>(null);
+
+useEffect(() => {
+    jsonStringRef.current = sessionStorage.getItem('memoryState');
+    if (jsonStringRef.current) {
+        phDataRef.current = JSON.parse(jsonStringRef.current);
+    }
+}, []);
+
     if (!domain || !domain.objects || !domain.relationships) return null;
+
+console.log('22', domain, phDataRef);
 
     const jsonOutput = {
         name: domain.name,
@@ -45,8 +59,8 @@ ${JSON.stringify(jsonOutput, null, 2)}
                     <div className="max-h-96 overflow-auto">
                         <ul className="list-disc list-inside space-y-1">
                             {domain.objects.map((object) => (
-                                <li key={object.name}>
-                                   id: {object.id}, name: '{object.name}'
+                                <li key={object.id}>
+                                    id: {object.id}, name: &quot;{object.name}&quot;
                                 </li>
                             ))}
                         </ul>
@@ -61,7 +75,7 @@ ${JSON.stringify(jsonOutput, null, 2)}
                     <div className="max-h-96 overflow-auto">
                         <ul className="list-inside space-y-2">
                             {domain.relationships.map((relationship) => (
-                                <li key={relationship.name}>
+                                <li key={relationship.id}>
                                     {relationship.nameFrom} | {relationship.name} | {relationship.nameTo}
                                 </li>
                             ))}

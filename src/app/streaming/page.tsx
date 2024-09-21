@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { z } from "zod";
 
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,20 @@ export default function SyncPage() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [object, setObjType] = useState<z.infer<typeof ObjectSchema>>();
+
+  useEffect(() => {
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data.type === 'SESSION_STORAGE_DATA') {
+        sessionStorage.setItem('memorystate', event.data.data);
+      }
+    };
+
+    window.addEventListener('message', handleMessage);
+
+    return () => {
+      window.removeEventListener('message', handleMessage);
+    };
+  }, []);
 
   async function handleSubmit() {
     setPrompt("");

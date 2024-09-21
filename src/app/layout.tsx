@@ -3,7 +3,7 @@ import { Inter } from "next/font/google";
 
 // import { AppTopMenu } from "@/components/app-topmenu";
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarLayout, SidebarTrigger, SidebarHeader } from "@/components/ui/sidebar";
+import { SidebarLayout, SidebarTrigger } from "@/components/ui/sidebar";
 
 import "./globals.css";
 
@@ -27,10 +27,10 @@ export default async function RootLayout({
         <SidebarLayout
           defaultOpen={cookies().get("sidebar:state")?.value === "true"}
         >
-          <SidebarTrigger className="fixed top-0 left-50 z-50" />
+          <SidebarTrigger className="fixed top-0 left-50 z-1 text-red-500" />
           <AppSidebar />
-          <main className="flex flex-1 flex-col p-2 transition-all duration-300 ease-in-out">
-            <div className="h-full rounded-md border-2 border-dashed p-2">
+          <main className="flex flex-1 flex-col p-0 transition-all duration-300 ease-in-out">
+            <div className="h-full rounded-md border-2 border-dashed p-0">
               {children}
             </div>
           </main>

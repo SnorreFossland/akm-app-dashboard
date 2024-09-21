@@ -64,6 +64,19 @@ const data = {
   },
   navMain: [
     {
+      title: "Modelling",
+      url: "#",
+      icon: Bot,
+      items: [
+        {
+          title: "Modelling",
+          url: "/modelling",
+          icon: Rabbit,
+          description: "AKM Modeller.",
+        },
+      ],
+    },
+    {
       title: "Playground",
       url: "#",
       icon: SquareTerminal,
@@ -206,7 +219,6 @@ const data = {
       ],
     },
   ],
-
   navSecondary: [
     {
       title: "Support",
@@ -280,6 +292,11 @@ export function AppSidebar() {
         <div style={{ marginLeft: '20px' }}>
           <Link href="/"> 
             Home
+          </Link> 
+        </div>
+        <div style={{ marginLeft: '20px' }}>
+          <Link href="/modelling"> 
+            AKM Modeller
           </Link> 
         </div>
         <SidebarItem>
