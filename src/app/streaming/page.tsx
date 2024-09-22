@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { z } from "zod";
 
 import { Input } from "@/components/ui/input";
@@ -11,6 +11,9 @@ export default function SyncPage() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [object, setObjType] = useState<z.infer<typeof ObjectSchema>>();
+  const [existingContext, setExistingContext] = useState("");
+  const [isContextVisible, setIsContextVisible] = useState(false);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
     const handleMessage = (event: MessageEvent) => {
@@ -26,6 +29,19 @@ export default function SyncPage() {
     };
   }, []);
 
+  const handlePasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      setExistingContext(text);
+    } catch (error) {
+      console.error('Failed to read clipboard contents: ', error);
+    }
+  };
+
+  const toggleContextVisibility = () => {
+    setIsContextVisible(!isContextVisible);
+  };
+
   async function handleSubmit() {
     setPrompt("");
     setIsLoading(true);
@@ -33,7 +49,7 @@ export default function SyncPage() {
 
     const res = await fetch("/streaming/api", {
       method: "POST",
-      body: JSON.stringify({ prompt: prompt }),
+      body: JSON.stringify({ prompt: prompt, existingContext: existingContext }),
     });
 
     if (!res.ok) {
@@ -86,6 +102,22 @@ export default function SyncPage() {
   return (
     <div className="flex flex-col gap-4 bg-gray-800">
       <div className="mx-auto">Explore a Domain:</div>
+
+      <div className="flex items-center mx-2 bg-gray-700">
+        <button onClick={handlePasteFromClipboard} className="m-auto bg-blue-500 text-white px-4 py-2 rounded">
+          Paste Existing Context
+        </button>
+        <button onClick={toggleContextVisibility} className="m-auto bg-blue-500 text-white px-4 py-2 rounded">
+          {isContextVisible ? "Hide Existing Context" : "Show Existing Context"}
+        </button>
+      </div>
+
+      {isContextVisible && (
+        <div className="mx-2 bg-gray-700 p-4 rounded">
+          <h3 className="text-white font-bold">Existing Context:</h3>
+          <pre className="text-white whitespace-pre-wrap">{existingContext}</pre>
+        </div>
+      )}
 
       <div className="flex items-center mx-2 bg-gray-700">
         <Input

@@ -2,7 +2,7 @@ import React, { useEffect, useRef} from 'react';
 import { z } from 'zod';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
-import { v4 as uuid4 } from 'uuid';
+
 
 import { ObjectSchema } from '@/objectSchema';
 
@@ -24,7 +24,7 @@ console.log('22', domain, phDataRef);
     const jsonOutput = {
         name: domain.name,
         objects: domain.objects.map((object) => ({
-            id: uuid4(),
+            id: object.id,
             name: object.name,
             description: object.description,
             proposedType: object.proposedType,
@@ -34,7 +34,7 @@ console.log('22', domain, phDataRef);
         relationships: domain.relationships.map((relationship) => ({
             fromobjectRef: relationship.fromobjectRef,
             nameFrom: relationship.nameFrom,
-            id: uuid4(),
+            id: relationship.id,
             name: relationship.name,
             toobjectRef: relationship.toobjectRef,
             nameTo: relationship.nameTo,
@@ -51,7 +51,7 @@ ${JSON.stringify(jsonOutput, null, 2)}
         <>
             <CardTitle className="text-2xl font-bold ms-4">Prompt : {domain.name}</CardTitle>
             <div className="flex space-x-4 mx-2">
-            <Card className="w-full mx-2">
+            <Card className="mx-2">
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold">Objects</CardTitle>
                 </CardHeader>
@@ -60,14 +60,14 @@ ${JSON.stringify(jsonOutput, null, 2)}
                         <ul className="list-disc list-inside space-y-1">
                             {domain.objects.map((object) => (
                                 <li key={object.id}>
-                                    id: {object.id}, name: &quot;{object.name}&quot;
+                                    id: &quot;{object.id}&quot;, name: &quot;{object.name}&quot;, typeName: &quot;{object.typeName}&quot;
                                 </li>
                             ))}
                         </ul>
                     </div>
                 </CardContent>
             </Card>
-            <Card className="w-full mx-2">
+            <Card className="flex-5">
                 <CardHeader>
                     <CardTitle className="text-2xl font-bold">Relationships</CardTitle>
                 </CardHeader>
@@ -85,9 +85,9 @@ ${JSON.stringify(jsonOutput, null, 2)}
             </Card>
                     </div>
             <Card className="w-full mx-2">
-                <CardHeader>
+                {/* <CardHeader>
                     <CardTitle className="text-2xl font-bold">{domain.name}</CardTitle>
-                </CardHeader>
+                </CardHeader> */}
                 <CardContent className="grid gap-6 ">
                     <div className="max-h-96 overflow-auto">
                         <h3 className="text-lg font-semibold mb-2">JSON Output:</h3>
