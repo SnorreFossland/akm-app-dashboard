@@ -3,6 +3,8 @@ import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
 import { ObjectSchema } from "@/objectSchema";
 
+import { metamodel } from '@/metamodel/metamodel';
+
 const modelName = "gpt-4o-2024-08-06";
 
 export async function POST(req: Request) {
@@ -13,75 +15,117 @@ export async function POST(req: Request) {
   const client = new OpenAI();
 
   const context = `
-Context:
-- The domain is related to ${prompt}.
-- Detail the domain information concepts as Information objects with related Roles, Tasks, Views about the domain specified by the user.
-Refer to the objecttypes and relshiptypes given below:
+**Context:**
 
-Objecttypes:
-id: '05ea3e5c-e9a1-43f5-31a4-042acc4dbdbb', name: 'Information'
-id: '0006897b-07c2-4824-683f-2c10146e1a4a', name: 'Role'
-id: 'a7661dac-4deb-4668-81f3-0248d46f1c7e', name: 'Task'
-id: '3808df57-878a-4738-dc95-644370cd1b08', name: 'View'
-id: '7e9386c9-75bc-4239-c040-d328f1c91e1b', name: 'Property',
+- Explore the domain information concepts as Information objects kwith related Roles, Tasks, Views about the domain specified by the user.
 
-Relshiptypes:
-id: 'f46856b9-3041-41bd-239b-3db729390a73', name: 'performs' from Role to Task
-id: '0f3b6357-d2ea-4ef3-927e-4f00f0f12b93', name: 'hasInput' from View to Information
-id: 'ef25d26e-2324-4633-2d9a-1e9f2ca82ea4', name: 'hasOutput' from View to Information
-id: '2fb581fc-6c9c-47d6-e479-9502ffa6c3e5', name: 'fills' Person to Role
-id: '820eb7dd-5b4a-4506-3ee1-6d33e04dd89f', name: 'worksOn' Task to Information
-id: '7b3c0877-0e98-4fc6-2715-5f31e4f30219', name: 'includes' Container to Information
-id: 'f3b3b3b3-3b3b-3b3b-3b3b-3b3b3b3b3b3b', name: 'has' from Information to Information
+    New objects:
+    Suggest at least 10 new objects and their relationships.
+    New objects may have relationship to or from existing objects.
+    Make sure all objects have at least one relationship.
+    - First evaluate the domain and create the information concepts and terms used within the domain.
+    - Then create Information objects that represent the concepts/terms.
+    - Then create Tasks that works on the Information objects is named as verb..
+    - Then create Roles that performs the Tasks.
+    - Then create Views that have Inputs and Outputs to the Information objects, the relationship has direction from View to Information.
+    - hasInput and hasOutput relationships are from View to Information.
+    - Concepts are created as Information objects (typeName: Information) and have the proposedType filled in as a representing the Information name in one word noun.
+    - Roles process Role objects (typeName: Role).
+    - Tasks should be Task objects (typeName: Task).
+    - Views should be View objects (typeName: View) and must have a applies relationship from a Task.
 
-The object name is the descriptive name as text of the object and can be more than one word. Do not include the typeName in the name.
-proposedType should be added to Information objects as the short version or well-known terminology of the concept in one word but concatenated as camelcase but first char uppercase.
 
-relationships are between objects. Check the generated objects uuid as fromobjectRef and toobjectRef.
-Roles perform Tasks.
-Views have Inputs and Outputs.
-Persons fill Roles.
-Tasks work on Information.
-Containers include Information.
-Information has Properties.
+Create a description of the domain that gives an summary of the content, exclude the word "domain" in the description.
+  `;
+
+  const promptWithContext = `
+
+    ${context}
+
+    Existing objects:
+
+    ${existingContext}
+
+    Don't create existing objects, but relationships can be created to or from existing objects and new objects.
+    If existing objects description field is empty, add your best suggestion of a description.
+    Use existing id for existing objects and generate new id for new objects.
+    Create missing relationships also between existing objects.
+    Make sure Views are related to Information and from Tasks.
+    Make sure Tasks have a relationship from Roles and to Views.
+    Make sure all objects have relationships.
 `;
 
-  const newPrompt = `
-Existing objects:
+  const systemPrompt = `
+You are a concept modeling expert helping to explore the domain of "${prompt}".
 
-${existingContext}
+**Your Role:**
+- Analyze the domain and identify key concepts.
+- Create new objects and relationships based on the metamodel.
+- Use existing objects and relationships as context.
 
-Don't create existing objects, but relationships can be created to or from existing objects and new objects.:
+**Metamodel:**
+The metamodel consists objecttypes and relationshiptypes
 
-New objects:
-Suggest at least 6 new objects and their relationships.
-New objects may have relationship to or from existing objects.
-If existing objects description field is empty, add your best suggestion of a description.
-Use existing id for existing objects and generate new id for new objects.
-Concepts should be created as Information objects with related Roles, Tasks, Views.
-Information should be a one word noun.
-Task is named as verb.
-Concepts should be Information objects (typeName: Information).
-Roles should be process Role objects (typeName: Role).
-Tasks should be Task objects (typeName: Task).
-Views should be Information View objects (typeName: View).
+- **Object Types:**
+${metamodel.objecttypes.map((obj) => `- id: ${obj.id} name: ${obj.name}`).join('\n')}
+  
+- **Relationship Types:**
+${metamodel.relshiptypes.map((rel) => `- ${rel.id}: from ${rel.nameFrom} to ${rel.nameTo}`).join('\n')}
+
+**Instructions:**
+objects:
+- Generate new UUIDs for new objects.
+- Create Information objects that represent the concepts/terms.
+- Then create Tasks named as verb, that reference the Information.
+- Then create Roles as process roles that performs the Tasks.
+- Then create Views  that have Inputs and Outputs to the Information properties.
+- Information objects (typeName: Information) and have the proposedType filled in as a representing the proposed type. If several word use camelcase.
+- Roles process Role objects (typeName: Role).
+- Tasks should be Task objects (typeName: Task).
+- Views should be View objects (typeName: View) and must have a applies relationship from a Task.
+- Do not recreate existing objects
+
+relationships:
+- Relationships are between objects using the of the objects id as fromobjtypeRef and toobjtypeRef.
+- Create relatinships between new objects and existing objects.
+- Ensure all objects have relationships.
+- Information objects should have relationships includes to Properties.
+- Tasks should have relationship applies from Roles and to Views
+- Views should have relationships refersTo from Tasks to Information.
+- Views should have relationships hasInput and hasOutput to Properties.
+
+- Provide descriptions for objects missing one.
+- Format your response as JSON with "objects" and "relships" arrays.
+
+**Examples:**
+
+- **Object:**
+objects: [
+  {
+    "id": "9d0de1ea-2aa4-4ec7-8915-5e20eef95c3d",
+    "name": "Bike Customer",
+    "proposedType": "Customer",
+    "typeRef": "058cbb1b-018e-4959-2a33-a27889543209",
+    "typeName": "Information",
+  }
+]
+- **Relationship:**
+relships: [
+  {
+    "fromobjectRef": "40686084-128e-44ac-a88f-185a0c9163cd",
+    "name": "performs",
+    "toobjectRef": "f2616435-c36b-4e33-3da6-fd4bfcc5033b",
+    "typeRef": "5607bf3b-23d3-4141-f95b-06ff806f86f2",
+  },
+    ]
 `;
 
-  const systemPrompt: OpenAI.ChatCompletionMessageParam = {
-    role: "system",
-    content: `You are a helpful assistant and a concept modelling expert that can explore the domain concepts
-    You are answer as an topic expert at the domain given by the user.
-${context}`
-  };
 
   const response = await client.chat.completions.create({
     model: modelName,
     messages: [
-      systemPrompt,
-      {
-        role: "user",
-        content: `${newPrompt}`,
-      },
+      { role: 'system', content: systemPrompt },
+      { role: 'user', content: promptWithContext },
     ],
     response_format: zodResponseFormat(ObjectSchema, "objectSchema"),
     stream: true,

@@ -100,14 +100,15 @@ export default function SyncPage() {
   };
 
   return (
-    <div className="flex flex-col gap-4 bg-gray-800">
+    <div className="flex flex-col gap-4 mx-2 bg-gray-800">
       <div className="mx-auto">Explore a Domain:</div>
 
       <div className="flex items-center mx-2 bg-gray-700">
-        <button onClick={handlePasteFromClipboard} className="m-auto bg-blue-500 text-white px-4 py-2 rounded">
+        <button onClick={handlePasteFromClipboard} className="bg-blue-500 text-white px-4 py-2 rounded">
           Paste Existing Context
         </button>
-        <button onClick={toggleContextVisibility} className="m-auto bg-blue-500 text-white px-4 py-2 rounded">
+        <div className="flex-grow"></div>
+        <button onClick={toggleContextVisibility} className="bg-blue-500 text-white px-4 py-2 rounded">
           {isContextVisible ? "Hide Existing Context" : "Show Existing Context"}
         </button>
       </div>
@@ -119,28 +120,33 @@ export default function SyncPage() {
         </div>
       )}
 
-      <div className="flex items-center mx-2 bg-gray-700">
+      <div className="flex items-center mx-2">
         <Input
-          className="flex-grow bg-gray-700 mx-auto mx-2"
+          className="flex-grow bg-gray-200 text-gray-900 mx-auto mx-2"
           value={prompt}
           disabled={isLoading}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={async (e) => {
-            if (e.key === "Enter") {
-              handleSubmit();
-            }
+        if (e.key === "Enter") {
+          handleSubmit();
+        }
           }}
           placeholder="What domain do you want explored?"
         />
-        {object && (
-          <button onClick={handleCopy} className="m-auto bg-blue-500 text-white px-4 py-2 rounded">
-            Copy JSON
-          </button>
-        )}
+        <button onClick={handleSubmit} className="m-auto bg-green-500 text-white px-4 py-2 rounded">
+          Send
+        </button>
       </div>
 
       {isLoading && <Loading />}
-      <ObjectCard domain={object} />
+      <div className="mx-2 bg-gray-700 p-4 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+        <ObjectCard domain={object} />
+      </div>
+      {object && (
+        <button onClick={handleCopy} className="mx-2 bg-blue-500 text-white rounded">
+          Copy JSON
+        </button>
+      )}
     </div>
   );
 }

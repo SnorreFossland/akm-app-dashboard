@@ -2,6 +2,7 @@ import { z } from "zod";
 
 export const ObjectSchema = z.object({
     name: z.string().describe("Name of the Domain"),
+    description: z.string().describe("Description of the Domain"),
     objects: z
         .array(
             z.object({
@@ -23,6 +24,8 @@ export const ObjectSchema = z.object({
                 nameTo: z.string().describe("Name of the second object"),
                 id: z.string().describe("Unique identifier of the relationship"),
                 name: z.string().describe("relationship name"),
+                typeRef: z.string().describe("Unique identifier of the Meta type"),
+                typeName: z.string().describe("Name of the Meta type"),
             }).describe("relationship between objects")
         ).describe("list of relationships"),
 });

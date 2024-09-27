@@ -27,7 +27,8 @@ const ParentPage: React.FC = () => {
         <div className="w-full h-screen m-0 p-0">
             <iframe 
                 ref={iframeRef}
-                src="https://akmmclient-alfa.vercel.app/modelling" 
+                // src="https://akmmclient-alfa.vercel.app/modelling" 
+                src="http://localhost:3001/modelling"
                 className="w-full h-full border-none"
                 title="Embedded Page"
                 allow="clipboard-read; clipboard-write"

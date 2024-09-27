@@ -19,10 +19,11 @@ useEffect(() => {
 
     if (!domain || !domain.objects || !domain.relationships) return null;
 
-console.log('22', domain, phDataRef);
+// console.log('22', domain, phDataRef);
 
     const jsonOutput = {
         name: domain.name,
+        description: domain.description,
         objects: domain.objects.map((object) => ({
             id: object.id,
             name: object.name,
@@ -38,6 +39,8 @@ console.log('22', domain, phDataRef);
             name: relationship.name,
             toobjectRef: relationship.toobjectRef,
             nameTo: relationship.nameTo,
+            typeRef: relationship.typeRef,
+            typeName: relationship.typeName,        
         })),
     };
 
@@ -50,12 +53,12 @@ ${JSON.stringify(jsonOutput, null, 2)}
     return (
         <>
             <CardTitle className="text-2xl font-bold ms-4">Prompt : {domain.name}</CardTitle>
-            <div className="flex space-x-4 mx-2">
-            <Card className="mx-2">
+            <div className="flex space-x-4 ">
+            <Card className="">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Objects</CardTitle>
+                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objects</CardTitle>
                 </CardHeader>
-                <CardContent className="grid gap-6 ">
+                <CardContent className="grid gap-6k">
                     <div className="max-h-96 overflow-auto">
                         <ul className="list-disc list-inside space-y-1">
                             {domain.objects.map((object) => (
@@ -69,7 +72,7 @@ ${JSON.stringify(jsonOutput, null, 2)}
             </Card>
             <Card className="flex-5">
                 <CardHeader>
-                    <CardTitle className="text-2xl font-bold">Relationships</CardTitle>
+                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>
                 </CardHeader>
                 <CardContent className="grid gap-6 ">
                     <div className="max-h-96 overflow-auto">
@@ -84,15 +87,15 @@ ${JSON.stringify(jsonOutput, null, 2)}
                 </CardContent>
             </Card>
                     </div>
-            <Card className="w-full mx-2">
+            <Card className="w-full">
                 {/* <CardHeader>
                     <CardTitle className="text-2xl font-bold">{domain.name}</CardTitle>
                 </CardHeader> */}
-                <CardContent className="grid gap-6 ">
+                <CardContent className="grid gap-5 ">
                     <div className="max-h-96 overflow-auto">
-                        <h3 className="text-lg font-semibold mb-2">JSON Output:</h3>
-                        <hr className="my-4 bg-gray-800 h-1" />
-                            <div className="max-h-96 overflow-auto bg-black p-4 rounded-lg">
+                        <h3 className="text-lg font-semibold my-2">JSON Output:</h3>
+                        <hr className="mb-4 bg-gray-800 h-1" />
+                        <div className="max-h-96 overflow-auto bg-black px-4 rounded-lg">
                             <ReactMarkdown>{markdownOutput}</ReactMarkdown>
                         </div>
                     </div>
