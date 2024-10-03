@@ -30,7 +30,7 @@ useEffect(() => {
             description: object.description,
             proposedType: object.proposedType,
             typeRef: object.typeRef,
-            typeName: object.typeName,
+            typeName: object.typeName
         })),
         relationships: domain.relationships.map((relationship) => ({
             fromobjectRef: relationship.fromobjectRef,
@@ -39,8 +39,7 @@ useEffect(() => {
             name: relationship.name,
             toobjectRef: relationship.toobjectRef,
             nameTo: relationship.nameTo,
-            typeRef: relationship.typeRef,
-            typeName: relationship.typeName,        
+            typeRef: relationship.typeRef,   
         })),
     };
 
@@ -53,41 +52,65 @@ ${JSON.stringify(jsonOutput, null, 2)}
     return (
         <>
             <CardTitle className="text-2xl font-bold ms-4">Prompt : {domain.name}</CardTitle>
-            <div className="flex space-x-4 ">
-            <Card className="">
-                <CardHeader>
-                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objects</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-6k">
-                    <div className="max-h-96 overflow-auto">
-                        <ul className="list-disc list-inside space-y-1">
-                            {domain.objects.map((object) => (
-                                <li key={object.id}>
-                                    id: &quot;{object.id}&quot;, name: &quot;{object.name}&quot;, typeName: &quot;{object.typeName}&quot;
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </CardContent>
-            </Card>
-            <Card className="flex-5">
-                <CardHeader>
-                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>
-                </CardHeader>
-                <CardContent className="grid gap-6 ">
-                    <div className="max-h-96 overflow-auto">
-                        <ul className="list-inside space-y-2">
-                            {domain.relationships.map((relationship) => (
-                                <li key={relationship.id}>
-                                    {relationship.nameFrom} | {relationship.name} | {relationship.nameTo}
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </CardContent>
-            </Card>
-                    </div>
-            <Card className="w-full">
+            <div className="flex space-x-4">
+                <Card className="w-full">
+                    <CardHeader>
+                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objects</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-6k">
+                        <div className="max-h-96 overflow-auto">
+                            <div className="overflow-auto max-h-96">
+                                <table className="min-w-full divide-y divide-gray-700 text-sm">
+                                    <thead className="bg-gray-800 sticky top-0">
+                                        <tr>
+                                            <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Name</th>
+                                            <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Type Name</th>
+                                            <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Proposed Type</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="bg-gray-900 divide-y divide-gray-700">
+                                        {domain.objects.map((object) => (
+                                            <tr key={object.id}>
+                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.name}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.typeName}</td>
+                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.proposedType}</td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
+                <Card className=" w-full max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                    <CardHeader>
+                            <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>
+                    </CardHeader>
+                    <CardContent className="grid gap-6 ">
+                        <div className="max-h-96 overflow-auto">
+                            <table className="min-w-full divide-y divide-gray-700 text-sm">
+                                <thead className="bg-gray-800 sticky top-0">
+                                    <tr>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">From</th>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Relationship</th>
+                                        <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">To</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-gray-900 divide-y divide-gray-700">
+                                    {domain.relationships.map((relationship) => (
+                                        <tr key={relationship.id}>
+                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relationship.nameFrom}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relationship.name}</td>
+                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relationship.nameTo}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+            <Card className="w-full my-1">
                 {/* <CardHeader>
                     <CardTitle className="text-2xl font-bold">{domain.name}</CardTitle>
                 </CardHeader> */}
@@ -95,7 +118,7 @@ ${JSON.stringify(jsonOutput, null, 2)}
                     <div className="max-h-96 overflow-auto">
                         <h3 className="text-lg font-semibold my-2">JSON Output:</h3>
                         <hr className="mb-4 bg-gray-800 h-1" />
-                        <div className="max-h-96 overflow-auto bg-black px-4 rounded-lg">
+                        <div className="max-h-96 overflow-auto bg-black px-4 rounded-lg text-xs">
                             <ReactMarkdown>{markdownOutput}</ReactMarkdown>
                         </div>
                     </div>

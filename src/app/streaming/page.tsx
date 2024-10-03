@@ -1,18 +1,22 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
-import { z } from "zod";
+import { set, z } from "zod";
 
 import { Input } from "@/components/ui/input";
 import { Loading } from "@/components/loading";
 import { ObjectCard } from "@/components/object-card";
 import { ObjectSchema } from "@/objectSchema";
+import { Button } from "@/components/ui/button"; // Assuming you have a custom Button component
 
 export default function SyncPage() {
   const [prompt, setPrompt] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [object, setObjType] = useState<z.infer<typeof ObjectSchema>>();
   const [existingContext, setExistingContext] = useState("");
+  const [ontologyUrl, setOntologyUrl] = useState("");
+  const [ontology, setOntology] = useState<any[]>([]);
   const [isContextVisible, setIsContextVisible] = useState(false);
+  const [isOntologyVisible, setIsOntologyVisible] = useState(false);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -32,14 +36,50 @@ export default function SyncPage() {
   const handlePasteFromClipboard = async () => {
     try {
       const text = await navigator.clipboard.readText();
+      console.log('37 Pasted text:', text);
       setExistingContext(text);
     } catch (error) {
       console.error('Failed to read clipboard contents: ', error);
     }
   };
 
+  const handleFetchOntology = async () => {
+    let filteredOntology: any[] = [];
+    try {
+      const response = await fetch(`/proxy?url=${encodeURIComponent('https://community.opengroup.org/osdu/data/data-definitions/-/raw/master/E-R/DependenciesAndRelationships.json')}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch ontology from URL: ${response.statusText}`);
+      }
+      const data = await response.json();
+      console.log('53 Fetched ontology data:', data);
+      // setOntology(data);
+      // Check if data is an array before filtering
+      if (Array.isArray(data)) {
+        filteredOntology = data.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-components');
+        console.log('Filtered ontology data:', filteredOntology);
+        setOntology(filteredOntology);
+      } else if (typeof data === 'object' && data !== null) {
+        // Handle the case where data is an object
+        filteredOntology = Object.values(data).filter((item: any) => item.group === 'master-data' || item.group === 'work-product-components');
+        console.log('Filtered ontology data:', filteredOntology.slice(0, 5));
+        setOntology(filteredOntology);
+      } else {
+        console.error('Fetched data is neither an array nor an object:', data);
+      }
+      console.log('68 Filtered ontology data:', filteredOntology, data);
+
+    } catch (error) {
+      console.error('Failed to fetch ontology data: ', error);
+    }
+  };
+
+
   const toggleContextVisibility = () => {
     setIsContextVisible(!isContextVisible);
+  };
+
+  const toggleOntologyVisibility = () => {
+    setIsOntologyVisible(!isOntologyVisible);
   };
 
   async function handleSubmit() {
@@ -47,9 +87,18 @@ export default function SyncPage() {
     setIsLoading(true);
     setObjType(undefined);
 
+    if (!prompt && !existingContext) {
+      alert("Please provide a prompt or paste existing context.");
+      setIsLoading(false);
+      return;
+    }
+
     const res = await fetch("/streaming/api", {
       method: "POST",
-      body: JSON.stringify({ prompt: prompt, existingContext: existingContext }),
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ prompt: prompt, existingContext: existingContext, ontology: ontology }),
     });
 
     if (!res.ok) {
@@ -75,6 +124,7 @@ export default function SyncPage() {
 
     try {
       const parsed = JSON.parse(data);
+      console.log("127 Parsed data:", parsed);
       const validatedData = ObjectSchema.parse(parsed);
       setObjType(validatedData);
     } catch (e) {
@@ -104,13 +154,25 @@ export default function SyncPage() {
       <div className="mx-auto">Explore a Domain:</div>
 
       <div className="flex items-center mx-2 bg-gray-700">
-        <button onClick={handlePasteFromClipboard} className="bg-blue-500 text-white px-4 py-2 rounded">
+        <Button onClick={handlePasteFromClipboard} className="bg-green-500 text-white px-4 py-2 rounded">
           Paste Existing Context
-        </button>
-        <div className="flex-grow"></div>
-        <button onClick={toggleContextVisibility} className="bg-blue-500 text-white px-4 py-2 rounded">
+        </Button>
+        <Button onClick={toggleContextVisibility} className="bg-blue-500 text-white px-4 py-2 rounded ms-2">
           {isContextVisible ? "Hide Existing Context" : "Show Existing Context"}
-        </button>
+        </Button>
+        <div className="flex-grow"></div>
+        <Input
+          className="flex-grow bg-gray-100 text-black mx-auto mx-2"
+          value={ontologyUrl}
+          onChange={(e) => setOntologyUrl(e.target.value)}
+          placeholder="Enter ontology URL"
+        />
+        <Button onClick={handleFetchOntology} className="bg-green-500 text-white px-4 py-2 rounded ml-2">
+          Fetch Ontology
+        </Button>
+        <Button onClick={toggleOntologyVisibility} className="bg-blue-500 text-white px-4 py-2 rounded ml-2">
+          {isOntologyVisible ? "Hide Ontology" : "Show Ontology"}
+        </Button>
       </div>
 
       {isContextVisible && (
@@ -120,22 +182,33 @@ export default function SyncPage() {
         </div>
       )}
 
+      {isOntologyVisible && (
+        <div className="mx-2 bg-gray-700 p-4 rounded">
+          <h3 className="text-white font-bold">Ontology:</h3>
+          {ontology.map((item, index) => (
+            <pre key={index} className="text-white whitespace-pre-wrap">
+              {JSON.stringify(item, null, 2)}
+            </pre>
+          ))}
+        </div>
+      )}
+
       <div className="flex items-center mx-2">
         <Input
-          className="flex-grow bg-gray-200 text-gray-900 mx-auto mx-2"
+          className="flex-grow bg-gray-100 text-black mx-auto mx-2"
           value={prompt}
           disabled={isLoading}
           onChange={(e) => setPrompt(e.target.value)}
           onKeyDown={async (e) => {
-        if (e.key === "Enter") {
-          handleSubmit();
-        }
+            if (e.key === "Enter") {
+              handleSubmit();
+            }
           }}
-          placeholder="What domain do you want explored?"
+          placeholder="Describe the domain you want explored?"
         />
-        <button onClick={handleSubmit} className="m-auto bg-green-500 text-white px-4 py-2 rounded">
+        <Button onClick={handleSubmit} className="m-auto bg-green-500 text-white px-4 py-2 rounded">
           Send
-        </button>
+        </Button>
       </div>
 
       {isLoading && <Loading />}
@@ -143,9 +216,9 @@ export default function SyncPage() {
         <ObjectCard domain={object} />
       </div>
       {object && (
-        <button onClick={handleCopy} className="mx-2 bg-blue-500 text-white rounded">
+        <Button onClick={handleCopy} className="mx-2 bg-blue-500 text-white rounded">
           Copy JSON
-        </button>
+        </Button>
       )}
     </div>
   );
