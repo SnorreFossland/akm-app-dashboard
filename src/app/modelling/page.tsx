@@ -20,7 +20,6 @@ const ParentPage: React.FC = () => {
     //         };
     //     }
     // }, []);
-
     // console.log('24Parent Page Rendered', iframeRef.current, iframeRef.current?.contentWindow, iframeRef.current?.contentWindow?.sessionStorage, iframeRef);
 
     return (
