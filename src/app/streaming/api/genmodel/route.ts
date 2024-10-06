@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
-import { ObjectSchema, OntologySchema } from "@/objectSchema";
+import { ObjectSchema } from "@/objectSchema";
+import { OntologySchema } from "@/ontologySchema";
 
 const modelName = "gpt-4o-2024-08-06";
 
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
         { role: 'system', content: systemPrompt },
         { role: 'user', content: `${prompt}\n\n${contextPrompt}\n\n${ontologyPrompt}` },
       ],
-      response_format: zodResponseFormat(OntologySchema, "objectSchema"),
+      response_format: zodResponseFormat(OntologySchema, "ontologySchema"),
       stream: true,
       temperature: 0.1, // Set the temperature here
     });
@@ -37,7 +38,7 @@ export async function POST(req: Request) {
       model: modelName,
       messages: [
         { role: 'system', content: systemPrompt },
-        { role: 'user', content: `${ontologyPrompt}\n\n${metamodelPrompt}` },
+        { role: 'user', content: `${prompt}\n\n${ontologyPrompt}\n\n${metamodelPrompt}` },
       ],
       response_format: zodResponseFormat(ObjectSchema, "objectSchema"),
       stream: true,
