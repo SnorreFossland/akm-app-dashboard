@@ -9,6 +9,8 @@ export const constraints = `
 - **Attributes and Types:**
   - Do **not** add the 'proposedType' attribute to Views, Tasks, or Roles.
   - Ensure the 'proposedType' for Information objects is accurately derived from ontology terms.
+  - Use ontology terms for 'name' and 'proposedType' of Information objects if appropriate.
+  - Ensure the 'proposedType' Camelcase one word.
 
 - **Object and Relationship Creation:**
   - Do **not** create duplicate objects.
