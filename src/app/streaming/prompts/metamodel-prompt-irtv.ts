@@ -1,6 +1,7 @@
-import { metamodel } from '@/metamodel/metamodel';;
+import { metamodel } from '@/metamodel/metamodel';
 
-export const metamodelPrompt = `
+// IRTV Metamodel Prompt
+export const MetamodelPrompt = `
   # **Metamodel:**
   - Object Types:
   ${metamodel.objecttypes.map((obj) => `- id: ${obj.id}, name: ${obj.name}`).join('\n')}
@@ -20,16 +21,17 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
 
 - First **Create Information Objects:**
   - Create based on ontology terms.
-  - Include an attribute 'proposedType' derived from the ontology.
-  - Provide detailed descriptions without repeating the object's name.
+  - Include an attribute 'proposedType' derived from the ontology, use Camelcase.
+  - Provide detailed descriptions without repeating the object's name, use Camelcase.
   - Use ontology terms for 'name' and 'proposedType'.
   - Then Establish 'refersTo' relationships among Information objects.
 
 - Next add **Tasks, Views, and Roles objects** based on the metamodel:
-  - Create based on the actions, processes, and responsibilities identified during domain analysis of the Prompt: ${prompt}.
+  - Create based on the actions, processes, and responsibilities identified during domain analysis of the  user prompt.
   - Do **not** add the 'proposedType' attribute.
   - Ensure names are appropriate (e.g., Views should not include the word "view" in the name).
   - Establish relationships between Tasks, Views, and Roles with Information objects.
+
   1. **Define Tasks:**
     - Identify actions or processes interacting with Information objects.
     - Create Tasks with descriptive names including a verb.
@@ -55,4 +57,76 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
     - Makd sure that Tasks are connected to at least one Role and one View.
     - Confirm that View are connected to Information objects.
     - Verify that all specified relationships are established according to the metamodel.
-  `;
+  
+  
+### **Constraints**
+
+  - **Language Usage:**
+    - Do **not** use the word "domain" in descriptions.
+    - Avoid using the type name ('typeName') in descriptions.
+    - Do **not** repeat the object's name in its description.
+
+  - **Attributes and Types:**
+    - Do **not** add the 'proposedType' attribute to Views, Tasks, or Roles.
+    - Ensure the 'proposedType' for Information objects is accurately derived from ontology terms.
+    - Use ontology terms for 'name' and 'proposedType' of Information objects if appropriate.
+    - Ensure the 'proposedType' Camelcase one word.
+
+  - **Object and Relationship Creation:**
+    - Do **not** create duplicate objects.
+    - Avoid creating relationships that already exist.
+    - Establish relationships supported by the metamodel.
+  
+### **Additional Guidelines**
+
+- Use domain analysis to in the creation of Tasks, Views, and Roles for the created Information objects.
+- Generate relationships flowing from Roles ➔ Tasks ➔ Views ➔ Information objects.
+- Maintain formal, precise language throughout.
+- Ensure all objects have at least one relationship.
+- Make sure to also create Roles, Tasks and Views that are connected to Information objects.
+
+### **Examples**
+
+{
+  "objects": [
+    {
+      "id": "UUIDv4",
+      "name": "Approve Request",
+      "description": "Reviews and approves incoming requests based on predefined criteria.",
+      "typeRef": "Task Type id",
+      "typeName": "Task"
+    },
+    {
+      "id": "UUIDv4",
+      "name": "Manager",
+      "description": "Oversees task execution and ensures objectives are met.",
+      "typeRef": "Role Type id",
+      "typeName": "Role"
+    },
+    {
+      "id": "UUIDv4",
+      "name": "Request",
+      "description": "Incoming request for approval.",
+      "typeRef": "View Type id",
+      "typeName": "View"
+    },
+    {
+      "id": "UUIDv4",
+      "name": "Equipment Record",
+      "description": "Record of equipments.",
+      "typeRef": "Information Type id",
+      "typeName": "Information",
+      "proposedType": "Equipment"
+    }
+  ],
+  "relationships": [
+    {
+      "id": "UUIDv4",
+      "name": "approves",
+      "typeRef": "Relationship Type id",
+      "fromobjectRef": "Approve Request id",
+      "nameFrom": "Approve Request",
+      "toobjectRef": "Manager id",
+      "nameTo": "Manager"
+    }
+    `;

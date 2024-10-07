@@ -7,9 +7,9 @@ import { OntologySchema } from "@/ontologySchema";
 const modelName = "gpt-4o-2024-08-06";
 
 export async function POST(req: Request) {
-  const { step, prompt, contextPrompt, ontologyPrompt, metamodelPrompt, systemPrompt } = await req.json();
+  const { step, prompt, systemPrompt, contextPrompt, ontologyPrompt, metamodelPrompt } = await req.json();
   const client = new OpenAI();
-
+  console.log('12 route', step, prompt, systemPrompt, contextPrompt, ontologyPrompt, metamodelPrompt);
   if (step === 1) {
     const response = await client.chat.completions.create({
       model: modelName,
@@ -34,6 +34,7 @@ export async function POST(req: Request) {
 
     return new NextResponse(stream);
   } else if (step === 2) {
+    console.log('37 route', step, prompt, systemPrompt, ontologyPrompt, metamodelPrompt);
     const response = await client.chat.completions.create({
       model: modelName,
       messages: [
