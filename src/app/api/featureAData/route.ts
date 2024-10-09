@@ -9,8 +9,8 @@ export async function GET() {
     const path = process.env.GITHUB_PATH;
     const baseBranch = process.env.GITHUB_BASE_BRANCH;
 
-    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${baseBranch}/${path}`;
-
+    const cacheBuster = new Date().getTime();
+    const url = `https://raw.githubusercontent.com/${owner}/${repo}/${baseBranch}/${path}?cb=${cacheBuster}`;
     console.log('21 url', url);
 
     if (!GITHUB_TOKEN || !owner || !repo || !path || !baseBranch) {
@@ -35,10 +35,10 @@ export async function GET() {
             return NextResponse.json({ error: 'Failed to fetch file from GitHub' }, { status: response.status });
         }
 
-        const fileContent = await response.text();
-        console.log('36 fileContent', fileContent);
+        const fileContentJson = await response.json();
+        console.log('36 fileContenJson', fileContentJson);
 
-        return NextResponse.json({ content: fileContent });
+        return NextResponse.json({ content: fileContentJson });
     } catch (error) {
         console.error('40 Fetch error', error);
         return NextResponse.json({ error: 'Failed to fetch file from GitHub' }, { status: 500 });

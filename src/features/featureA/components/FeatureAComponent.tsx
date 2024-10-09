@@ -14,7 +14,7 @@ export default function FeatureAComponent() {
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'failed'>('idle');
   const [pullRequestUrl, setPullRequestUrl] = useState<string | null>(null);
-  const [fileContent, setFileContent] = useState<string | null>(null);
+  const [fileContent, setFileContent] = useState<any | null>(null);
   const [fileStatus, setFileStatus] = useState<'idle' | 'loading' | 'failed'>('idle');
 
   // useEffect(() => {
@@ -23,22 +23,9 @@ export default function FeatureAComponent() {
   //   }
   // }, [status, dispatch]);
 
-  const handleSave = async () => {
-    setSaveStatus('saving');
-    try {
-      const prUrl = await dispatch(saveFeatureAData(data.items)).unwrap();
-      setSaveStatus('idle');
-      setPullRequestUrl(prUrl);
-      alert('Pull request created successfully!');
-    } catch (error) {
-      setSaveStatus('failed');
-      console.error(error);
-      alert('Failed to create pull request.');
-    }
-  };
-
   const handleGetFile = async () => {
     setFileStatus('loading');
+    console.log('42 handleGetFile');
     try {
       await dispatch(getFeatureAData()).unwrap();
       setFileStatus('idle');
@@ -49,13 +36,29 @@ export default function FeatureAComponent() {
     }
   };
 
+  const handleSave = async () => {
+    setSaveStatus('saving');
+    try {
+      const prUrl = await dispatch(saveFeatureAData(data)).unwrap();
+      setSaveStatus('idle');
+      setPullRequestUrl(prUrl);
+      alert('Pull request created successfully!');
+    } catch (error) {
+      setSaveStatus('failed');
+      console.error(error);
+      alert('Failed to create pull request.');
+    }
+  };
+
+
+
   if (status === 'loading') return <p>Loading...</p>;
   if (status === 'failed') return <p>Error: {error}</p>;
 
   return (
     <div>
-      <h1>Feature A Data</h1>
-      <p>{data ? data?.name : 'No data available'}</p>
+      <h1>Feature A Model Data</h1>
+      <p>{data ? data.phData.metis?.name : 'No data available'}</p>
       <pre>{JSON.stringify(data, null, 2)}</pre>
 
       <button onClick={handleSave} disabled={saveStatus === 'saving'}>
@@ -70,9 +73,9 @@ export default function FeatureAComponent() {
       <button onClick={handleGetFile} disabled={fileStatus === 'loading'}>
         {fileStatus === 'loading' ? 'Loading...' : 'Get GitHub File'}
       </button>
-      {fileContent && (
-        <pre>{fileContent}</pre>
-      )}
+      {/* {fileContent && (
+        <p>{fileContent.phData.metis.name}</p>
+      )} */}
     </div>
   );
 }

@@ -2,27 +2,35 @@
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
 import { fetchFeatureADataFromGitHub, saveFeatureADataToGitHub } from './featureAAPI';
 import type { RootState } from '@/store/store';
+import { metamodel } from '@/metamodel/metamodel';
 
 // Define or import DataType
 interface DataType {
-    id: number;
-    name: string;
+     phData: { metis: any } 
 }
 
 interface FeatureAState {
-    data: { name: string; 
-        items: DataType[] 
-    };
+    // data: { name: string; 
+    //     items: DataType[] 
+    // };
+    data: DataType;
     status: 'idle' | 'loading' | 'succeeded' | 'failed';
     error: string | null;
 }
 
 const initialState: FeatureAState = {
-    data: { name: 'Test Data', 
-        items: [
-            { id: 1, name: 'Item 1' },
-            { id: 2, name: 'Item 2' }
-        ] 
+    // data: { name: 'Test Data', 
+    //     items: [
+    //         { id: 1, name: 'Item 1' },
+    //         { id: 2, name: 'Item 2' }
+    //     ] 
+    // },
+    data: { phData: 
+        { metis: {
+            name: 'Test Model',
+            models: [],
+            metamodels: [] 
+        }}
     },
     status: 'idle',
     error: null,

@@ -1,12 +1,9 @@
 // src/features/featureA/featureAAPI.ts
 
-// Define or import the DataType interface or type
 interface DataType {
-    // Define the properties of DataType here
-    id: number;
-    name: string;
-    // Add other properties as needed
+    phData: { metis: any }
 }
+
 
 export async function fetchFeatureADataFromGitHub(): Promise<DataType[]> {
     const response = await fetch('/api/featureAData');
@@ -19,7 +16,7 @@ export async function fetchFeatureADataFromGitHub(): Promise<DataType[]> {
     return model
 }
 
-export async function saveFeatureADataToGitHub(data: DataType[]): Promise<string> {
+export async function saveFeatureADataToGitHub(data): Promise<string> {
     const response = await fetch('/api/saveFeatureAData', {
         method: 'POST',
         headers: {
