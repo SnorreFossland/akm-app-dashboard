@@ -1,8 +1,8 @@
 'use client';
 import { useState, useEffect } from "react";
-import { set, z } from "zod";
+// import { set, z } from "zod";
 import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea"; // Import the Textarea component
+import { Textarea } from "@/components/ui/textarea"; 
 import { Loading } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { ObjectCard } from "@/components/object-card";
@@ -21,7 +21,7 @@ const SyncPage = () => {
   const [ontologyUrl, setOntologyUrl] = useState("");
   const [ontology, setOntology] = useState<{ id: string; name: string; description?: string }[]>([]);
   const [terms, setTerms] = useState("");
-  const [selectedTerms, setSelectedTerms] = useState<{ objects: Term[]; relationships: [] }>({ objects: [], relationships: [] });
+  const [selectedTerms, setSelectedTerms] = useState<{ objects: []; relationships: [] }>({ objects: [], relationships: [] });
   const [ontologyString, setOntologyString] = useState(""); 
   const [isContextVisible, setIsContextVisible] = useState(false);
   const [isOntologyVisible, setIsOntologyVisible] = useState(false);
@@ -79,7 +79,7 @@ const SyncPage = () => {
         const filteredWP = Object.values(data).filter((item: any) => item.group === 'work-product-component');
         const termNamesMaster = Array.from(new Set(filteredMaster.map((item: any) => item.entity_name + ' ')));
         const termNamesWP = Array.from(new Set(filteredWP.map((item: any) => item.entity_name + ' ')));
-        setOntologyString(`master-data:\n ${termNamesMaster}`);
+        setOntologyString(`master-data:\n ${termNamesMaster}, work-product-component:\n ${termNamesWP}`); 
         console.log(`81 master-data:\n ${termNamesMaster},\n\n ontologyString: ${ontologyString}`);
       } else {
         console.error('Fetched data is neither an array nor an object:', data);
@@ -101,6 +101,13 @@ const SyncPage = () => {
   
   **User-Suggested Concepts/Terms:**
   ${suggestedConcepts}`;
+
+    setOntologyPrompt(`
+## **Ontology**
+
+  **List of Terms:**
+  ${ontologyString}
+  `);
   
     if (!prompt && !existingContext) {
       alert("Please provide a prompt or paste existing context.");
@@ -108,7 +115,7 @@ const SyncPage = () => {
       return;
     }
   
-    console.log('110 prompt', prompt, 'systemConceptPrompt', systemConceptPrompt, 'contextPrompt', contextPrompt, 'ontologyPrompt', ontologyString);
+    console.log('110 prompt', prompt, 'systemConceptPrompt', systemConceptPrompt, 'contextPrompt', contextPrompt, 'ontologyPrompt', ontologyPrompt);
   
     try {
       const res = await fetch("/streaming/api/genmodel", {

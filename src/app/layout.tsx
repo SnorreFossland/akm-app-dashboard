@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { ReduxProvider } from './providers/ReduxProvider';
 
 // import { AppTopMenu } from "@/components/app-topmenu";
 import { AppSidebar } from "@/components/app-sidebar";
@@ -23,18 +24,20 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.className} dark`}>
-        {/* <AppTopMenu /> */}
-        <SidebarLayout
-          defaultOpen={cookies().get("sidebar:state")?.value === "true"}
-        >
-          <SidebarTrigger className="fixed top-0 left-50 z-1 text-red-500" />
-          <AppSidebar />
-          <main className="flex flex-1 flex-col p-0 transition-all duration-300 ease-in-out">
-            <div className="h-full rounded-md border-2 border-dashed p-0">
-              {children}
-            </div>
-          </main>
-        </SidebarLayout>
+        <ReduxProvider>
+          {/* <AppTopMenu /> */}
+          <SidebarLayout
+            defaultOpen={cookies().get("sidebar:state")?.value === "true"}
+          >
+            <SidebarTrigger className="fixed top-0 left-50 z-1 text-red-500" />
+            <AppSidebar />
+            <main className="flex flex-1 flex-col p-0 transition-all duration-300 ease-in-out">
+              <div className="h-full rounded-md border-2 border-dashed p-0">
+                {children}
+              </div>
+            </main>
+          </SidebarLayout>
+        </ReduxProvider>
       </body>
     </html>
   );
