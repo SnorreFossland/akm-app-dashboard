@@ -5,6 +5,13 @@ import React, { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getFeatureAData, saveFeatureAData } from '../featureASlice';
 import type { RootState, AppDispatch } from '@/store/store';
+import { Button } from '@/components/ui/button';
+
+interface DataType {
+  content: {
+    phData: { metis: any }
+  }
+}
 
 export default function FeatureAComponent() {
   const dispatch = useDispatch<AppDispatch>();
@@ -17,18 +24,13 @@ export default function FeatureAComponent() {
   const [fileContent, setFileContent] = useState<any | null>(null);
   const [fileStatus, setFileStatus] = useState<'idle' | 'loading' | 'failed'>('idle');
 
-  // useEffect(() => {
-  //   if (status === 'idle') {
-  //     dispatch(getFeatureAData());
-  //   }
-  // }, [status, dispatch]);
-
   const handleGetFile = async () => {
     setFileStatus('loading');
     console.log('42 handleGetFile');
     try {
       await dispatch(getFeatureAData()).unwrap();
       setFileStatus('idle');
+      setFileContent(data.content);
     } catch (error) {
       setFileStatus('failed');
       console.error(error);
@@ -50,32 +52,54 @@ export default function FeatureAComponent() {
     }
   };
 
-
-
   if (status === 'loading') return <p>Loading...</p>;
   if (status === 'failed') return <p>Error: {error}</p>;
 
   return (
-    <div>
+    <div className='feature-a-component bg-gray-600 p-4 w-full'>
       <h1>Feature A Model Data</h1>
-      <p>{data ? data.phData.metis?.name : 'No data available'}</p>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
+      {data 
+        ? (
+          <div className='feature-a-data text-left p-4 bg-gray-700'>
+            <div className='mt-4 mb-4 text-left text-gray p-4 bg-gray-800'>
+            {data.content?.phData?.metis?.name} <br />
+            <h5>Models: </h5>
+            {data.content?.phData?.metis?.models.map(
+              (model: any) => (
+                <React.Fragment key={model.name}>
+                 - {model.name} <br />
+                </React.Fragment>
+              )
+            )}
+            </div>
+            <div className='mt-4 mb-4 text-left text-gray p-4 bg-gray-600'>
+              <h6>Metamodels: </h6>
+              {data.content?.phData?.metis?.metamodels.map(
+                (metamodel: any) => (
+                  <React.Fragment key={metamodel.name}>
+                  - {metamodel.name} <br />
+                  </React.Fragment>
+                )
+              )}
+            </div>
+          </div>
+        ) 
+        : 'No data available'}
+      <hr />
+      <div className='feature-a-data text-left p-4 bg-gray-800'>
+        {pullRequestUrl && (
+          <p>
+            <a href={pullRequestUrl} target="_blank" rel="noopener noreferrer">{pullRequestUrl}</a>
+          </p>
+        )}
+        <Button onClick={handleGetFile} disabled={fileStatus === 'loading'}>
+          {fileStatus === 'loading' ? 'Loading...' : 'Get GitHub File'}
+        </Button>
+        <Button onClick={handleSave} disabled={saveStatus === 'saving'}>
+          {saveStatus === 'saving' ? 'Saving...' : 'Save Data to GitHub'}
+        </Button>
 
-      <button onClick={handleSave} disabled={saveStatus === 'saving'}>
-        {saveStatus === 'saving' ? 'Saving...' : 'Save Data to GitHub'}
-      </button>
-      {pullRequestUrl && (
-        <p>
-          <a href={pullRequestUrl} target="_blank" rel="noopener noreferrer">{pullRequestUrl}</a>
-        </p>
-      )}
-
-      <button onClick={handleGetFile} disabled={fileStatus === 'loading'}>
-        {fileStatus === 'loading' ? 'Loading...' : 'Get GitHub File'}
-      </button>
-      {/* {fileContent && (
-        <p>{fileContent.phData.metis.name}</p>
-      )} */}
+      </div>
     </div>
   );
 }

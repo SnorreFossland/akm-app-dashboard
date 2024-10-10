@@ -6,7 +6,9 @@ import { metamodel } from '@/metamodel/metamodel';
 
 // Define or import DataType
 interface DataType {
+    content: {
      phData: { metis: any } 
+    }
 }
 
 interface FeatureAState {
@@ -48,7 +50,7 @@ export const getFeatureAData = createAsyncThunk(
 // Thunk to save data to GitHub
 export const saveFeatureAData = createAsyncThunk(
   'featureA/saveFeatureAData',
-    async (data: DataType[]) => {
+    async (data: DataType) => {
     const response = await saveFeatureADataToGitHub(data);
     return response;
   }
@@ -65,7 +67,7 @@ const featureASlice = createSlice({
       })
       .addCase(getFeatureAData.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.data.items = action.payload;
+        state.data= action.payload;
       })
       .addCase(getFeatureAData.rejected, (state, action) => {
         state.status = 'failed';
