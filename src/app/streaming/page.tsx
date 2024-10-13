@@ -45,6 +45,9 @@ const SyncPage = () => {
   const [systemIrtvPrompt, setSystemIrtvPrompt] = useState(SystemIrtvPrompt);
   const [existingTerms, setExistingTerms] = useState([]);
   const [isExistingContext, setIsExistingContext] = useState(false);
+  const [showUserInput, setshowUserInput] = useState(true);
+  const [showTerms, setShowTerms] = useState(true);
+  const [showIrtv, setShowIrtv] = useState(true);
   // const [ontologyPrompt, setOntologyPrompt] = useState(OntologyPrompt);
   // const [contextPrompt, setContextPrompt] = useState(ContextPrompt);
 
@@ -198,14 +201,14 @@ const SyncPage = () => {
       }
 
       const parsed = JSON.parse(data);
-      console.log('201 parsed', parsed);
+      // console.log('201 parsed', parsed);
       if (parsed.objects && Array.isArray(parsed.objects)) {
         const selectedTermsString = parsed.objects.map((item: { name: string }) => `- ${item.name}`).join('\n');
         const selectedRelationsString = parsed.relationships.map((rel: { name: string, nameFrom: string, nameTo: string }) => `- ${rel.name} (from: ${rel.nameFrom}, to: ${rel.nameTo})`).join('\n');
 
         setTerms(`**Information types***\n\n ${selectedTermsString}\n\n **Relations:**\n\n${selectedRelationsString}\n\n`);
         setSelectedTerms({ objects: parsed.objects, relationships: parsed.relationships });
-        console.log('208 terms', terms, 'selectedTermsString', selectedTermsString, 'selectedRelationsString', selectedRelationsString);
+        // console.log('208 terms', terms, 'selectedTermsString', selectedTermsString, 'selectedRelationsString', selectedRelationsString);
         setStep(2);
       } else {
         console.error("Parsed data does not contain object or objects is not an array");
@@ -351,96 +354,126 @@ const SyncPage = () => {
       )}
 
       <div className=" py-2 mx-2">
-        {/* <div className="flex justify-between items-center"> */}
-        <h5 className="text-white">First: User Input: </h5>
-        <div className="flex items-start bg-gray-500 py-2 mx-2">
-          <div className="flex flex-col mx-2 flex-grow">
-            <label htmlFor="domainDescription" className="text-white">Domain Description</label>
-            <Textarea
-              id="domainDescription"
-              className="flex-grow bg-gray-100 text-black p-2 rounded"
-              value={domainDescription}
-              disabled={isLoading}
-              onChange={(e) => setDomainDescription(e.target.value)}
-              placeholder="Enter domain description"
-              rows={5} // Adjust the number of rows as needed
-            />
-            <label htmlFor="suggestedConcepts" className="text-white">Concepts/Terms you want to include</label>
-            <Input
-              id="suggestedConcepts"
-              className="flex-grow bg-gray-100 text-black p-2 rounded"
-              value={suggestedConcepts}
-              disabled={isLoading}
-              onChange={(e) => setSuggestedConcepts(e.target.value)}
-              placeholder="Enter your concepts/terms to include, separated by commas. Example: concept1, concept2"
-            />
+        <div>
+          <div className="flex justify-between items-center pb-2">
+            <h5 className="text-white">First: User Input: </h5>
+            <button
+              onClick={() => setshowUserInput(!showUserInput)}
+              className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
+            >
+              {showUserInput ? '-' : '+'}
+            </button>
           </div>
-          <div className="flex flex-col mx-2 flex-grow">
-            <label htmlFor="roles" className="text-white mt-1">Roles you want to include</label>
-            <Input
-              id="roles"
-              className="flex-grow bg-gray-100 text-black p-2 rounded"
-              value={suggestedRoles}
-              disabled={isLoading}
-              onChange={(e) => setSuggestedRoles(e.target.value)}
-              placeholder="Enter roles to include, separated by commas. Example: role1, role2"
-            />
-            <label htmlFor="tasks" className="text-white mt-1">Tasks you want to include</label>
-            <Input
-              id="tasks"
-              className="flex-grow bg-gray-100 text-black p-2 rounded"
-              value={suggestedTasks}
-              disabled={isLoading}
-              onChange={(e) => setSuggestedTasks(e.target.value)}
-              placeholder="Enter tasks to include"
-            />
-            <label htmlFor="views" className="text-white mt-1">Views you want to include</label>
-            <Input
-              id="views"
-              className="flex-grow bg-gray-100 text-black p-2 rounded"
-              value={suggestedViews}
-              disabled={isLoading}
-              onChange={(e) => setSuggestedViews(e.target.value)}
-              placeholder="Enter Views to include"
-            />
-          </div>
-        </div>
-        {/* </div> */}
-        <div className="flex justify-between items-center">
-          <h5 className="text-white">Next: Let GPT evaluate the Domain and find Concepts and Terms to be used in AKM</h5>
-          <Button onClick={handleFirstStep} className="bg-green-500 text-white px-4 py-2 rounded m-2">
-            Ask Chat GPT to suggest Concepts and Terms
-          </Button>
-        </div>
-        <div className="bg-gray-500 py-2 mx-2">
-          <h5 className="text-white">Concept and Terms:</h5>
-          {step === 1 && selectedTerms.objects.length > 0 && (
-            <>
-              <div className="mx-1 bg-gray-600 p-2 rounded">
-                <OntologyCard terms={selectedTerms} />
+          {showUserInput && (
+            <div className="flex items-start bg-gray-500 py-2 mx-2">
+              <div className="flex flex-col mx-2 flex-grow">
+                <label htmlFor="domainDescription" className="text-white">Domain Description</label>
+                <Textarea
+                  id="domainDescription"
+                  className="flex-grow bg-gray-100 text-black p-2 rounded"
+                  value={domainDescription}
+                  disabled={isLoading}
+                  onChange={(e) => setDomainDescription(e.target.value)}
+                  placeholder="Enter domain description"
+                  rows={5} // Adjust the number of rows as needed
+                />
+                <label htmlFor="suggestedConcepts" className="text-white">Concepts/Terms you want to include</label>
+                <Input
+                  id="suggestedConcepts"
+                  className="flex-grow bg-gray-100 text-black p-2 rounded"
+                  value={suggestedConcepts}
+                  disabled={isLoading}
+                  onChange={(e) => setSuggestedConcepts(e.target.value)}
+                  placeholder="Enter your concepts/terms to include, separated by commas. Example: concept1, concept2"
+                />
               </div>
-              {/* <Button onClick={handleSecondStep} className="m-auto bg-green-500 text-white px-4 py-2 rounded">
-                Click to generate IRTV objects and relationships based on these terms?
-              </Button> */}
-            </>
+              <div className="flex flex-col mx-2 flex-grow">
+                <label htmlFor="roles" className="text-white mt-1">Roles you want to include</label>
+                <Input
+                  id="roles"
+                  className="flex-grow bg-gray-100 text-black p-2 rounded"
+                  value={suggestedRoles}
+                  disabled={isLoading}
+                  onChange={(e) => setSuggestedRoles(e.target.value)}
+                  placeholder="Enter roles to include, separated by commas. Example: role1, role2"
+                />
+                <label htmlFor="tasks" className="text-white mt-1">Tasks you want to include</label>
+                <Input
+                  id="tasks"
+                  className="flex-grow bg-gray-100 text-black p-2 rounded"
+                  value={suggestedTasks}
+                  disabled={isLoading}
+                  onChange={(e) => setSuggestedTasks(e.target.value)}
+                  placeholder="Enter tasks to include"
+                />
+                <label htmlFor="views" className="text-white mt-1">Views you want to include</label>
+                <Input
+                  id="views"
+                  className="flex-grow bg-gray-100 text-black p-2 rounded"
+                  value={suggestedViews}
+                  disabled={isLoading}
+                  onChange={(e) => setSuggestedViews(e.target.value)}
+                  placeholder="Enter Views to include"
+                />
+              </div>
+            </div>
           )}
         </div>
-        <div className="flex justify-between items-center">
-          <h5 className="text-white">Finaly: Let GPT evaluate the Concepts and Terms and find IRTV objects and relationships</h5>
-            <Button onClick={handleSecondStep} className="bg-green-500 text-white px-4 py-2 rounded m-2 w-[400px]">
-            Ask Chat GPT to generate IRTV
-            </Button>
+        <div>
+            <div className="flex justify-between items-center">
+              <h5 className="text-white">Next: Let GPT evaluate the Domain and find Concepts and Terms to be used in AKM</h5>
+              <div className="flex items-center">
+                <Button onClick={handleFirstStep} className="bg-green-500 text-white px-4 py-2 rounded m-2">
+                  Ask Chat GPT to suggest Concepts and Terms
+                </Button>
+                <button
+                  onClick={() => setShowTerms(!showTerms)}
+                  className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
+                >
+                  {showTerms ? '-' : '+'}
+                </button>
+              </div>
+            </div>
+          {showTerms && (
+            <div className="bg-gray-500 py-2 mx-2">
+              <h5 className="text-white">Concept and Terms:</h5>
+              {step === 1 && selectedTerms.objects.length > 0 && (
+                <>
+                  <div className="mx-1 bg-gray-600 p-2 rounded">
+                    <OntologyCard terms={selectedTerms} />
+                  </div>
+                  {/* <Button onClick={handleSecondStep} className="m-auto bg-green-500 text-white px-4 py-2 rounded">
+                    Click to generate IRTV objects and relationships based on these terms?
+                  </Button> */}
+                </>
+              )}
+            </div>
+          )}
+        </div>
+        <div>
+          <div className="flex justify-between items-center">
+            <h5 className="text-white">Finaly: Let GPT evaluate the Concepts and Terms and find IRTV objects and relationships</h5>
+            <div className="flex items-center">
+              <Button onClick={handleSecondStep} className="bg-green-500 text-white px-4 py-2 rounded m-2">
+                Ask Chat GPT to generate IRTV
+              </Button>
+              <button
+                onClick={() => setShowIrtv(!showIrtv)}
+                className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
+              >
+                {showIrtv ? '-' : '+'}
+              </button>
+            </div>
+          </div>
+          {showIrtv && (
+            <div className="  mx-2">
+              <div className="mx-2 bg-gray-700 p-4 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                <ObjectCard domain={domain} />
+              </div>
+            </div>
+          )}
         </div>
       </div>
-
-
-      {step === 3 && (
-        <div className="flex items-start mx-2">
-          <div className="mx-2 bg-gray-700 p-4 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            <ObjectCard domain={domain} />
-          </div>
-        </div>
-      )}
       {isLoading && (
         <div className="flex justify-center items-center h-full p-4">
           <Loading />

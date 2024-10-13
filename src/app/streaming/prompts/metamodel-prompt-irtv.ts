@@ -61,7 +61,6 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
     - Confirm that View are connected to Information objects.
     - Verify that all specified relationships are established according to the metamodel.
   
-  
 ### **Constraints**
 
   - **Language Usage:**
