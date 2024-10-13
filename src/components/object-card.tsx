@@ -1,5 +1,6 @@
-import React, { useEffect, useRef} from 'react';
+import React, { useEffect, useRef, useState} from 'react';
 import { z } from 'zod';
+import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
 
@@ -20,6 +21,54 @@ useEffect(() => {
     if (!domain || !domain.objects || !domain.relationships) return null;
 
 // console.log('22', domain, phDataRef);
+
+    const [mermaidDiagram, setMermaidDiagram] = useState('');
+
+    const generateMermaidDiagram = () => {
+        let diagram = 'graph TD;\n';
+
+        // Add objects
+        domain.objects.forEach((object) => {
+            diagram += `${object.id}["${object.name}"];\n`;
+        });
+
+        // Add relationships
+        domain.relationships.forEach((relationship) => {
+            diagram += `${relationship.fromobjectRef} -->|${relationship.name}| ${relationship.toobjectRef};\n`;
+        });
+
+        setMermaidDiagram(diagram);
+    };
+
+    useEffect(() => {
+        if (mermaidDiagram) {
+            mermaid.initialize({
+                startOnLoad: true,
+                theme: 'base',
+                themeVariables: {
+                    primaryColor: '#ffffff',
+                    edgeLabelBackground: '#dddddd',
+                    secondaryColor: '#ffffff',
+                    tertiaryColor: '#ffffff',
+                    primaryTextColor: '#aaaaaa',
+                    secondaryTextColor: '#00ff00',
+                    tertiaryTextColor: '#0000ff',
+                    lineColor: '#ffffff',
+                },
+            });
+            mermaid.contentLoaded();
+        }
+    }, [mermaidDiagram]);
+
+    const renderMermaidDiagram = () => {
+        if (mermaidDiagram) {
+            mermaid.initialize({ startOnLoad: true });
+            mermaid.contentLoaded();
+            return <div className="mermaid">{mermaidDiagram}</div>;
+        }
+        return null;
+    };
+
 
     const jsonOutput = {
         name: domain.name,
@@ -117,13 +166,33 @@ ${JSON.stringify(jsonOutput, null, 2)}
                 <CardContent className="grid gap-5 ">
                     <div className="max-h-96 overflow-auto">
                         <h3 className="text-lg font-semibold my-2">JSON Output:</h3>
+                        <button
+                            className="absolute top-0 right-0 mt-2 mr-2 text-gray-300 hover:text-white"
+                            onClick={() => {
+                                const content = document.getElementById('json-content');
+                                if (content) {
+                                    content.classList.toggle('hidden');
+                                }
+                            }}
+                        >
+                            +
+                        </button>
                         <hr className="mb-4 bg-gray-800 h-1" />
-                        <div className="max-h-96 overflow-auto bg-black px-4 rounded-lg text-xs">
-                            <ReactMarkdown>{markdownOutput}</ReactMarkdown>
+                        <div className="relative">
+                            <div id="json-content" className="hidden">
+                                <ReactMarkdown>{markdownOutput}</ReactMarkdown>
+                            </div>
                         </div>
                     </div>
                 </CardContent>
             </Card>
+            <button
+                onClick={generateMermaidDiagram}
+                className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+            >
+                Generate Mermaid Diagram
+            </button>
+            {renderMermaidDiagram()}
         </>
     );
 }

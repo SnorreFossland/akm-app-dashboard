@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 interface Term {
     name: string;
     description: string;
+    proposedType: string;
 }
 interface Relationship {
     name: string;
@@ -24,7 +25,7 @@ export const OntologyCard = ({ terms }: OntologyCardProps ) => {
                 <Card className="w-2/3">
                     <CardHeader>
                         <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">
-                            Suggested Concepts/Terms based on the ontology
+                            Suggested Concepts/Terms
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="grid gap-2">
@@ -33,6 +34,7 @@ export const OntologyCard = ({ terms }: OntologyCardProps ) => {
                                 <div className="bg-gray-700 p-1 rounded-md">
                                     <span className="text-lg font-bold">{term.name} </span>
                                     <span className="text-sm ps-4"> {term.description}</span>
+                                    <span className="text-sm">{term.proposedType}  </span>
                                 </div>
                             </div>
                         ))}

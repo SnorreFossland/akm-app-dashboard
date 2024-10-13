@@ -38,7 +38,7 @@ export async function GET() {
         const fileContentJson = await response.json();
         console.log('36 fileContenJson', fileContentJson);
 
-        return NextResponse.json({ content: fileContentJson });
+        return NextResponse.json({ project: fileContentJson });
     } catch (error) {
         console.error('40 Fetch error', error);
         return NextResponse.json({ error: 'Failed to fetch file from GitHub' }, { status: 500 });

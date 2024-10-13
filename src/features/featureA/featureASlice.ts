@@ -1,41 +1,27 @@
 // src/features/featureA/featureASlice.ts
-import { createAsyncThunk, createSlice } from '@reduxjs/toolkit';
+import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { fetchFeatureADataFromGitHub, saveFeatureADataToGitHub } from './featureAAPI';
 import type { RootState } from '@/store/store';
-import { metamodel } from '@/metamodel/metamodel';
 
-// Define or import DataType
 interface DataType {
-    content: {
-     phData: { metis: any } 
-    }
+  project: {
+    phData: { metis: any };
+    phFocus: any;
+    phUser: any;
+    phSource: any;
+  };
 }
 
 interface FeatureAState {
-    // data: { name: string; 
-    //     items: DataType[] 
-    // };
-    data: DataType;
-    status: 'idle' | 'loading' | 'succeeded' | 'failed';
-    error: string | null;
+  data: DataType | null;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error: string | null;
 }
 
 const initialState: FeatureAState = {
-    // data: { name: 'Test Data', 
-    //     items: [
-    //         { id: 1, name: 'Item 1' },
-    //         { id: 2, name: 'Item 2' }
-    //     ] 
-    // },
-    data: { phData: 
-        { metis: {
-            name: 'Test Model',
-            models: [],
-            metamodels: [] 
-        }}
-    },
-    status: 'idle',
-    error: null,
+  data: null,
+  status: 'idle',
+  error: null,
 };
 
 // Thunk to fetch data from GitHub
@@ -43,6 +29,7 @@ export const getFeatureAData = createAsyncThunk(
   'featureA/getFeatureAData',
   async () => {
     const response = await fetchFeatureADataFromGitHub();
+    console.log('32 fetchFeatureADataFromGitHub response', response);
     return response;
   }
 );
@@ -50,7 +37,7 @@ export const getFeatureAData = createAsyncThunk(
 // Thunk to save data to GitHub
 export const saveFeatureAData = createAsyncThunk(
   'featureA/saveFeatureAData',
-    async (data: DataType) => {
+  async (data: DataType) => {
     const response = await saveFeatureADataToGitHub(data);
     return response;
   }
@@ -59,7 +46,11 @@ export const saveFeatureAData = createAsyncThunk(
 const featureASlice = createSlice({
   name: 'featureA',
   initialState,
-  reducers: {},
+  reducers: {
+    setFileData(state, action: PayloadAction<DataType>) {
+      state.data = action.payload;
+    },
+  },
   extraReducers: (builder) => {
     builder
       .addCase(getFeatureAData.pending, (state) => {
@@ -67,11 +58,11 @@ const featureASlice = createSlice({
       })
       .addCase(getFeatureAData.fulfilled, (state, action) => {
         state.status = 'succeeded';
-        state.data= action.payload;
+        state.data = action.payload;
       })
       .addCase(getFeatureAData.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Failed to fetch data';
+        state.error = action.error.message || null;
       })
       .addCase(saveFeatureAData.pending, (state) => {
         state.status = 'loading';
@@ -81,9 +72,10 @@ const featureASlice = createSlice({
       })
       .addCase(saveFeatureAData.rejected, (state, action) => {
         state.status = 'failed';
-        state.error = action.error.message || 'Failed to save data';
+        state.error = action.error.message || null;
       });
   },
 });
 
+export const { setFileData } = featureASlice.actions;
 export default featureASlice.reducer;

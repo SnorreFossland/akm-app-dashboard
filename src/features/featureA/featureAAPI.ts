@@ -1,11 +1,13 @@
 // src/features/featureA/featureAAPI.ts
 
 interface DataType {
-    content: {
+    project: {
         phData: { metis: any }
+        phFocus: any
+        phUser: any
+        phSource: any
     }
 }
-
 
 export async function fetchFeatureADataFromGitHub(): Promise<DataType> {
     const response = await fetch('/api/featureAData');
@@ -13,9 +15,9 @@ export async function fetchFeatureADataFromGitHub(): Promise<DataType> {
     if (!response.ok) {
         throw new Error('Failed to fetch data from GitHub');
     }
-    const model = await response.json();
-    console.log('18 fetchFeatureADataFromGitHub model', model);
-    return model
+    const data = await response.json();
+    console.log('18 fetchFeatureADataFromGitHub model', data);
+    return data
 }
 
 export async function saveFeatureADataToGitHub(data: any): Promise<DataType> {

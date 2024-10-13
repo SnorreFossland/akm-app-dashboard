@@ -11,7 +11,7 @@ export const MetamodelPrompt = `
 
 ## **Instructions**
 
-You are tasked with first creating **Information objects** from the list of Ontology Terms and establishing relationships among them, adhering to the provided metamodel and ontology.
+You are tasked with first creating **Information objects** from the list of Ontology Terms given by the  **Information** and establishing relationships among them, adhering to the provided metamodel and ontology.
 
 After creating Information objects with relationships, **create the related Tasks, Views, and Roles** based on domain analysis and logical associations with the Information objects and their relationships.
 
@@ -20,11 +20,13 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
 ### **Object Creation**
 
 - First **Create Information Objects:**
-  - Create based on ontology terms.
-  - Include an attribute 'proposedType' derived from the ontology, use Camelcase.
-  - Provide detailed descriptions without repeating the object's name, use Camelcase.
-  - Use ontology terms for 'name' and 'proposedType'.
+  - Create object based on ontology terms.
+  - Provide detailed descriptions without repeating the object's name.
+  - Include an attribute 'proposedType' derived from the ontology terms.
+  - Terms for Roles, Tasks, and Views should not be used for Information objects, but a data-record of them can be Information, and named to reflect that it is data-record 
+  - Use ontology terms for 'name' and 'proposedType', use Camelcase.
   - Then Establish 'refersTo' relationships among Information objects.
+  - Do **not** include the word "object" in the name.
 
 - Next add **Tasks, Views, and Roles objects** based on the metamodel:
   - Create based on the actions, processes, and responsibilities identified during domain analysis of the  user prompt.
@@ -34,7 +36,7 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
 
   1. **Define Tasks:**
     - Identify actions or processes interacting with Information objects.
-    - Create Tasks with descriptive names including a verb.
+    - Create Tasks with descriptive names including a verb but not including ther word 'Task'.
     - Provide detailed descriptions without using the word "task."
     - Establish 'worksOn' relationships between Tasks and Information objects.
     - Sequence tasks using 'triggers' relationships.
@@ -49,12 +51,13 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
 
   3. **Assign Roles:**
     - Define Roles that perform or manage Tasks.
+    - Names should not include the word "role."
     - Provide detailed descriptions without repeating the role's name.
     - Establish 'performs' or 'manages' relationships from Roles to Tasks.
 
   4. **Finalization:**
     - Ensure all objects are interconnected, forming a cohesive knowledge structure.
-    - Makd sure that Tasks are connected to at least one Role and one View.
+    - Make sure that Tasks are connected to at least one Role and one View.
     - Confirm that View are connected to Information objects.
     - Verify that all specified relationships are established according to the metamodel.
   
@@ -105,6 +108,13 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
     },
     {
       "id": "UUIDv4",
+      "name": "User
+      "description": "The user performing a Task.",
+      "typeRef": "Role Type id",
+      "typeName": "Role"
+    },
+    {
+      "id": "UUIDv4",
       "name": "Request",
       "description": "Incoming request for approval.",
       "typeRef": "View Type id",
@@ -114,6 +124,14 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
       "id": "UUIDv4",
       "name": "Equipment Record",
       "description": "Record of equipments.",
+      "typeRef": "Information Type id",
+      "typeName": "Information",
+      "proposedType": "Equipment"
+    },
+    {
+      "id": "UUIDv4",
+      "name": "User Record",
+      "description": "Record of users.",
       "typeRef": "Information Type id",
       "typeName": "Information",
       "proposedType": "Equipment"

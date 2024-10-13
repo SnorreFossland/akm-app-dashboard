@@ -8,6 +8,7 @@ export const OntologySchema = z.object({
             z.object({
                 name: z.string().describe("Name of the object"),
                 description: z.string().describe("Description of the object"),
+                proposedType: z.string().describe("Proposed type of the object"),
             })
         )
         .describe("List of terms"),

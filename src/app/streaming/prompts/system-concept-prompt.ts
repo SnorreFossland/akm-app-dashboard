@@ -15,11 +15,12 @@ If an ontology list is provided, you will try to adjust the concept/terms names 
 
 Your next objective is to create a list of Concept/Terms that are aligned with the 'ontology'.
 
-You will be guided by the user's input, the system prompt, and the metamodelPrompt to generate the response.
+You will be guided by the user's input, the 'User Suggested Terms' to generate the response.
 
 ### Your Role:
 
 1. **Analyze the Concepts/Terms:**
+   - Analyze the concepts and terms in the domain description provided by user's input.
    - Analyze the terms extracted from the ontology and presented in the Ontology List of Terms.
    - Analyze the relations between the terms and create relationships between the terms.
 

@@ -15,12 +15,14 @@ export const metadata: Metadata = {
   description: "AI assisted Active Knowledge Modelling app",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { cookies } = await import("next/headers");
+  // Move the cookies fetching logic outside of the component
+  const cookies = require('next/headers').cookies;
+
   return (
     <html lang="en">
       <body className={`${inter.className} dark`}>
