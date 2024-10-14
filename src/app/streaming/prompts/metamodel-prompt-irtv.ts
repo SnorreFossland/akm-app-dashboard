@@ -36,7 +36,7 @@ Your goal is to expand the knowledge base with at least **10 new Information obj
 
   1. **Define Tasks:**
     - Identify actions or processes interacting with Information objects.
-    - Create Tasks with descriptive names including a verb but not including ther word 'Task'.
+    - Create Tasks with descriptive names including a verb but not including the word 'Task'.
     - Provide detailed descriptions without using the word "task."
     - Establish 'worksOn' relationships between Tasks and Information objects.
     - Sequence tasks using 'triggers' relationships.

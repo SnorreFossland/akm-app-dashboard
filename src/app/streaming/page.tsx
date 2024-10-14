@@ -145,25 +145,25 @@ const SyncPage = () => {
     setTerms("");
 
     const prompt = `
-**Domain Description:**
-  ${domainDescription}
-  
-**User Suggested Terms:**
-  ${suggestedConcepts}
-  `;
+      **Domain Description:**
+        ${domainDescription}
+        
+      **User Suggested Terms:**
+        ${suggestedConcepts}
+    `;
 
     const contextPrompt = `
-## **Context:**
-    - Do not create any terms that already is in Existing Context.
-    ${existingTerms}
-  `;
+      ## **Context:**
+          - Do not create any terms that already is in Existing Context.
+          ${existingTerms}
+    `;
 
     const ontologyPrompt = `
-## **Ontology**
+      ## **Ontology**
 
-  **List of Terms:**
-  ${ontologyString}
-  `;
+        **List of Terms:**
+        ${ontologyString}
+    `;
 
     if (!prompt && !existingContext) {
       alert("Please provide a prompt or paste existing context.");
@@ -171,7 +171,7 @@ const SyncPage = () => {
       return;
     }
 
-    // console.log('110 prompt', prompt, 'systemConceptPrompt', systemConceptPrompt, 'contextPrompt', contextPrompt, 'ontologyPrompt', ontologyPrompt);
+    console.log('110 step', step, 'prompt', prompt, 'systemConceptPrompt', systemConceptPrompt, 'contextPrompt', contextPrompt, 'ontologyPrompt', ontologyPrompt);
 
     try {
       const res = await fetch("/streaming/api/genmodel", {
@@ -310,11 +310,11 @@ const SyncPage = () => {
   return (
     <div className="flex flex-col gap-4 m-2 bg-gray-800">
       <header className="mx-auto">
-        <h1 className="text-2xl font-bold text-white">AI-Powered Active Knowledge Modeling Dashboard</h1>
+        <h1 className="text-2xl font-bold text-white">AI-Powered AKM Dashboard</h1>
       </header>
       <div className="flex items-center mx-2 bg-gray-700">
         <Button onClick={handlePasteFromClipboard} className="bg-green-500 text-white px-4 py-2 rounded">
-          Paste Existing Context
+          Paste Clip-board Context
         </Button>
         <Button onClick={toggleContextVisibility} className="bg-blue-500 text-white px-4 py-2 rounded ms-2">
           {isContextVisible ? "Hide Existing Context" : "Show Existing Context"}
@@ -359,13 +359,13 @@ const SyncPage = () => {
             <h5 className="text-white">First: User Input: </h5>
             <button
               onClick={() => setshowUserInput(!showUserInput)}
-              className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
+              className="relative top-0 right-0 p-2 rounded bg-gray-500 text-white hover:text-white"
             >
               {showUserInput ? '-' : '+'}
             </button>
           </div>
           {showUserInput && (
-            <div className="flex items-start bg-gray-500 py-2 mx-2">
+            <div className="flex items-start bg-gray-500 py-2 mx-1">
               <div className="flex flex-col mx-2 flex-grow">
                 <label htmlFor="domainDescription" className="text-white">Domain Description</label>
                 <Textarea
@@ -428,16 +428,15 @@ const SyncPage = () => {
                 </Button>
                 <button
                   onClick={() => setShowTerms(!showTerms)}
-                  className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
+                  className="relative top-0 right-0 p-2 rounded bg-gray-500 text-white hover:text-white"
                 >
                   {showTerms ? '-' : '+'}
                 </button>
               </div>
             </div>
-          {showTerms && (
-            <div className="bg-gray-500 py-2 mx-2">
-              <h5 className="text-white">Concept and Terms:</h5>
-              {step === 1 && selectedTerms.objects.length > 0 && (
+          {showTerms && selectedTerms && (
+            <div className="bg-gray-500 py-2 mx-1">
+              <h5 className="text-white mx-2">Concepts and Terms:</h5>
                 <>
                   <div className="mx-1 bg-gray-600 p-2 rounded">
                     <OntologyCard terms={selectedTerms} />
@@ -446,7 +445,6 @@ const SyncPage = () => {
                     Click to generate IRTV objects and relationships based on these terms?
                   </Button> */}
                 </>
-              )}
             </div>
           )}
         </div>
@@ -454,20 +452,20 @@ const SyncPage = () => {
           <div className="flex justify-between items-center">
             <h5 className="text-white">Finaly: Let GPT evaluate the Concepts and Terms and find IRTV objects and relationships</h5>
             <div className="flex items-center">
-              <Button onClick={handleSecondStep} className="bg-green-500 text-white px-4 py-2 rounded m-2">
+              <Button onClick={handleSecondStep} className="bg-green-500 text-white px-4 py-2 rounded m-2 w-[340px]">
                 Ask Chat GPT to generate IRTV
               </Button>
               <button
                 onClick={() => setShowIrtv(!showIrtv)}
-                className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
+                className="relative top-0 right-0 p-2 rounded bg-gray-500 text-white hover:text-white"
               >
                 {showIrtv ? '-' : '+'}
               </button>
             </div>
           </div>
-          {showIrtv && (
-            <div className="  mx-2">
-              <div className="mx-2 bg-gray-700 p-4 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+          {showIrtv && domain && (
+            <div>
+              <div className="mx-1 bg-gray-700 p-2 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                 <ObjectCard domain={domain} />
               </div>
             </div>

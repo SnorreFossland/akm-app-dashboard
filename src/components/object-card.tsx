@@ -9,24 +9,27 @@ interface Domain {
 }
 
 export const ObjectCard = ({ domain }: { domain: Domain }) => {
-  const [mermaidDiagram, setMermaidDiagram] = useState('');
-  const [showObjectsCard, setShowObjectsCard] = useState(true);
+    const [mermaidDiagram, setMermaidDiagram] = useState('');
+    const [showObjectsCard, setShowObjectsCard] = useState(true);
+    const [showDiagram, setShowDiagram] = useState(false);
 
-  const generateMermaidDiagram = () => {
-    let diagram = 'graph TD;\n';
+    const generateMermaidDiagram = () => {
+        let diagram = 'graph TD;\n';
 
-    // Add objects
-    domain?.objects.forEach((object) => {
-      diagram += `${object.id}["${object.name}"];\n`;
-    });
+        // Add objects
+        domain.objects.forEach((object) => {
+            diagram += `${object.id}["${object.name} \n (${object.typeName})"];\n`;
+        });
 
-    // Add relationships
-    domain.relationships.forEach((relationship) => {
-      diagram += `${relationship.fromobjectRef} -->|${relationship.name}| ${relationship.toobjectRef};\n`;
-    });
+        // Add relationships
+        domain.relationships.forEach((relationship) => {
+            diagram += `${relationship.fromobjectRef} -->|${relationship.name}| ${relationship.toobjectRef};\n`;
+        });
 
-    setMermaidDiagram(diagram);
-  };
+        setMermaidDiagram(diagram);
+    };
+
+  
 
     useEffect(() => {
         if (mermaidDiagram) {
@@ -34,14 +37,14 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                 startOnLoad: true,
                 theme: 'base',
                 themeVariables: {
-                    primaryColor: '#888888',
-                    edgeLabelBackground: '#dddddd',
-                    secondaryColor: '#ffffdd',
-                    tertiaryColor: '#ddffff',
-                    primaryTextColor: '#ffffff',
+                    primaryColor: '#667777', // box fill color
+                    edgeLabelBackground: 'transparent', //
+                    secondaryColor: '#8888ff',
+                    tertiaryColor: '#ddddff',
+                    primaryTextColor: '#ffdddd',
                     secondaryTextColor: '#00ff00',
                     tertiaryTextColor: '#0000ff',
-                    lineColor: '#eeeeee',
+                    lineColor: '#dddddd',
                 },
             });
             mermaid.contentLoaded();
@@ -78,7 +81,7 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                     <CardHeader>
                         <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objects</CardTitle>
                     </CardHeader>
-                    {showObjectsCard && (
+
                         <CardContent className="grid gap-6k">
                         <div className="max-h-96 overflow-auto">
                             <div className="overflow-auto max-h-96">
@@ -103,7 +106,7 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                             </div>
                         </div>
                         </CardContent>
-                    )}
+                    
                     </Card>
                     <Card className="w-full max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                     <CardHeader>
@@ -138,33 +141,32 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
             )}
             <div>
                 <Card className="w-full my-1">
-                    <button
-                        onClick={() => {
-                            generateMermaidDiagram();
-                            const diagram = document.getElementById('mermaid-diagram');
-                            const code = document.getElementById('mermaid-code');
-                            if (diagram && code) {
-                                if (diagram.classList.contains('hidden')) {
-                                    diagram.classList.remove('hidden');
-                                    code.classList.add('hidden');
-                                } else {
-                                    diagram.classList.add('hidden');
-                                    code.classList.remove('hidden');
-                                }
-                            }
-                        }}
-                        className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-2"
-                    >
-                        Toggle Preview Diagram
-                    </button>
-                    <div id="mermaid-diagram" className="hidden">
-                        {renderMermaidDiagram()}
-                    </div>
-                    <div id="mermaid-code">
-                        <pre className="bg-gray-800 text-white p-4 rounded">
-                            {` ${mermaidDiagram} `}
-                        </pre>
-                    </div>
+                      <button
+                          onClick={generateMermaidDiagram}
+                          className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+                      >
+                          Generate Mermaid Diagram
+                      </button>
+                      <button
+                          onClick={() => setShowDiagram(!showDiagram)}
+                          className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-2"
+                      >
+                          Toggle Preview Diagram
+                      </button>
+                      {mermaidDiagram && (
+                        <>
+                            { (
+                                <div>
+                                    {renderMermaidDiagram()}
+                                </div>
+                            )} 
+                            <div id="mermaid-code">
+                                <pre className="bg-gray-800 text-white p-4 rounded">
+                                    {mermaidDiagram}
+                                </pre>
+                            </div>
+                        </>
+                      )} 
                 </Card>
             </div>
         </div>  
