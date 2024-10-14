@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ReduxProvider } from './providers/ReduxProvider';
-
-// import { AppTopMenu } from "@/components/app-topmenu";
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarLayout, SidebarTrigger } from "@/components/ui/sidebar";
+import { cookies } from 'next/headers';
 
 import "./globals.css";
 
@@ -20,14 +19,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // Move the cookies fetching logic outside of the component
-  const cookies = require('next/headers').cookies;
-
   return (
     <html lang="en">
-      <body className={`${inter.className} dark`}>
+      <body className="dark">
         <ReduxProvider>
-          {/* <AppTopMenu /> */}
           <SidebarLayout
             defaultOpen={cookies().get("sidebar:state")?.value === "true"}
           >

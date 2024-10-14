@@ -31,7 +31,7 @@ export const OntologyCard = ({ terms }: OntologyCardProps ) => {
                     <CardContent className="grid gap-2">
                         {terms.objects?.map((term, index) => (
                             <div key={term.name+index} className="grid gap-2">
-                                <div className="bg-gray-700 p-1 rounded-md">
+                                <div className="bg-gray-400 p-1 rounded-md">
                                     <span className="text-lg font-bold">{term.name} </span>
                                     <span className="text-sm ps-4"> {term.description}</span>
                                     <span className="text-sm">{term.proposedType}  </span>
@@ -50,7 +50,7 @@ export const OntologyCard = ({ terms }: OntologyCardProps ) => {
                     <CardContent className="grid gap-2">
                         {terms.relationships?.map((rel, index) => (
                             <div key={rel.name+index} className="grid gap-2">
-                                <div className="bg-gray-700 p-1 rounded-md">
+                                <div className="bg-gray-400 p-1 rounded-md">
                                     <p className="text-sm">{rel.nameFrom} -> {rel.name}  -> {rel.nameTo}</p>
                                 </div>
                             </div>
