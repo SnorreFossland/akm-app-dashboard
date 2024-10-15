@@ -19,6 +19,7 @@ import { MetamodelPrompt } from './prompts/metamodel-prompt-irtv';
 import { OntologyPrompt } from './prompts/ontology-prompt';
 import { ContextPrompt } from './prompts/context-prompt';
 import { Caesar_Dressing } from "next/font/google";
+import { set } from "zod";
 
 const SyncPage = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -42,6 +43,9 @@ const SyncPage = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [domain, setDomain] = useState<any>(undefined);
+
+  const [metis, setMetis] = useState<any>(null);
+  const [currentModel, setCurrentModel] = useState<any>(null);
 
   const [metamodelPrompt, setMetamodelPrompt] = useState(MetamodelPrompt);
   const [systemConceptPrompt, setSystemConceptPrompt] = useState(SystemConceptPrompt);
@@ -83,20 +87,24 @@ const SyncPage = () => {
   // console.log('72 data', data);
 
   useEffect(() => {
-    if (data) {
-      console.log('74 data', data);
-      const metis = data.project?.phData?.metis;
+    if (data?.project) {
+      console.log('89 data', data);
+      const metis1 = data.project?.phData?.metis;
       const focus = data.project?.phFocus;
       const user = data.project?.phUser;
-      if (!metis) { console.error('Data does not contain metis:', data); return };
-      const currentModel = metis.models.find((model: any) => model.id === focus.focusModel.id);
-      const existingObjects = currentModel.objects.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description }));
-      const existingRelationships = currentModel.relships.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo }));
-      setExistingTerms(existingObjects.map((obj: any) => obj.name).join('\n'));
-      console.log('90 context', existingTerms);
-      setExistingContext(existingObjects.map((obj: any) => `- ${obj.id} ${obj.name} ${obj.description}`));
-      console.log('92 existingContext', existingContext);
-      console.log('79 currentModel', currentModel.name, data, metis, focus, user);
+      if (!metis1) { console.error('Data does not contain metis:', data); return };
+      setMetis(metis1);
+      const models = metis1.models;
+      const curmod = models?.find((model: any) => model.id === focus?.focusModel?.id);
+      (curmod) ? setCurrentModel(curmod) : setCurrentModel(metis?.models[0]);
+      console.log('95 currentModel', curmod, currentModel, metis?.models);
+      const existingObjects = currentModel?.objects?.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description }));
+      const existingRelationships = currentModel?.relships?.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo }));
+      setExistingTerms(existingObjects?.map((obj: any) => obj.name).join('\n'));
+      console.log('99 context', existingTerms);
+      setExistingContext(existingObjects?.map((obj: any) => `- ${obj.id} ${obj.name} ${obj.description}`));
+      console.log('101 existingContext', existingContext);
+      console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
 
       const ontologyPrompt = `
 ## **Ontology**
@@ -315,13 +323,18 @@ const SyncPage = () => {
       <header className="mx-auto">
         <h1 className="text-2xl font-bold text-white">AI-Powered AKM Dashboard</h1>
       </header>
+      <div className="mx-2 bg-gray-700 px-4 text-white rounded">
+        <h3 className="font-bold text-gray-400 inline-block"> Current Project: </h3>  <span className="inline-block"> {metis?.name}</span> | 
+        <h3 className="font-bold text-gray-400 inline-block"> Current Model: </h3>  <span className="inline-block"> {currentModel?.name}</span>
+      </div>
+
       <div className="flex items-center mx-2 bg-gray-700">
-        <Button onClick={handlePasteFromClipboard} className="bg-green-500 text-white px-4 py-2 rounded">
+        {/* <Button onClick={handlePasteFromClipboard} className="bg-green-500 text-white px-4 py-2 rounded">
           Paste Clip-board Context
         </Button>
         <Button onClick={toggleContextVisibility} className="bg-blue-500 text-white px-4 py-2 rounded ms-2">
           {isContextVisible ? "Hide Existing Context" : "Show Existing Context"}
-        </Button>
+        </Button> */}
         <div className="flex-grow"></div>
         <Input
           id="ontologyUrl"
