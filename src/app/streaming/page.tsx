@@ -359,7 +359,7 @@ const SyncPage = () => {
       <div className="m-2">
         <Card>
           <CardHeader>
-            <CardTitle className="flex justify-between items-center flex-grow border text-white ps-1">First: User Input:
+            <CardTitle className="flex justify-between items-center flex-grow border text-white ps-1">First: User Input
               <button
                 onClick={() => setShowUserInput(!showUserInput)}
                 className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
@@ -473,7 +473,9 @@ const SyncPage = () => {
       </div>
       {isLoading && (
         <div className="flex justify-center items-center h-full p-4">
-          <Loading />
+          <div className="w-16 h-16">
+            <Loading />
+          </div>
         </div>
       )}
       {domain && (
