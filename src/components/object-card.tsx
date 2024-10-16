@@ -3,9 +3,9 @@ import mermaid from 'mermaid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
 interface Domain {
-  name: string;
-  objects: { id: string; name: string; typeName: string; proposedType: string }[];
-  relationships: { fromobjectRef: string; nameFrom: string; id: string; name: string; toobjectRef: string; nameTo: string; typeRef: string }[];
+    name: string;
+    objects: { id: string; name: string; typeName: string; proposedType: string }[];
+    relationships: { fromobjectRef: string; nameFrom: string; id: string; name: string; toobjectRef: string; nameTo: string; typeRef: string }[];
 }
 
 export const ObjectCard = ({ domain }: { domain: Domain }) => {
@@ -13,6 +13,8 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
     const [showObjectsCard, setShowObjectsCard] = useState(true);
     const [showDiagram, setShowDiagram] = useState(false);
     const diagramRef = useRef<HTMLDivElement>(null);
+
+    console.log('17 domain:', domain);
 
     const generateMermaidDiagram = () => {
         let diagram = 'graph TD;\n';
@@ -61,7 +63,7 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
         <div className="w-100 m-auto">
             <div className="w-100 m-auto">
                 <div className="flex justify-between items-center">
-                    <h6 className="text-white">Irtv Objects and Relationships</h6>
+                    {/* <h6 className="text-white">AKM - IRTV Objects and Relationships</h6> */}
                     <button
                         onClick={() => setShowObjectsCard(!showObjectsCard)}
                         className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
@@ -69,9 +71,9 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                         {showObjectsCard ? '-' : '+'}
                     </button>
                 </div>
-                {showObjectsCard && (
+                {showObjectsCard && !showDiagram && (
                     <div>
-                        <h4 className="text-2xl font-bold ms-4">Prompt : {domain?.name}</h4>
+                        {/* <h4 className="text-2xl font-bold ms-4">Prompt : {domain?.name}</h4> */}
                         <div className="flex space-x-4">
                             <Card className="w-full">
                                 <CardHeader>
@@ -135,31 +137,31 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                     </div>
                 )}
                 <div>
-                    <Card className="w-full my-1">
+                    <Card className="w-full h-full my-1">
                         <button
                             onClick={generateMermaidDiagram}
                             className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
                         >
                             Generate Mermaid Diagram
                         </button>
-                        <button
+                        {/* <button
                             onClick={() => setShowDiagram(!showDiagram)}
                             className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-2"
                         >
                             Toggle Diagram View
-                        </button>
-                        {mermaidDiagram && showDiagram && (
-                            <div>
+                        </button> */}
+                        {mermaidDiagram && !showDiagram && (
+                            <div className='overflow-auto min-h-[48rem] h-full'>
                                 {renderMermaidDiagram()}
                             </div>
                         )}
-                        {!showDiagram && (
+                        {/* {showDiagram && (
                             <div id="mermaid-code">
                                 <pre className="bg-gray-800 text-white p-4 rounded">
                                     {mermaidDiagram}
                                 </pre>
                             </div>
-                        )}
+                        )} */}
                     </Card>
                 </div>
             </div>

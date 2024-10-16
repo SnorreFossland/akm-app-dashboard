@@ -6,7 +6,7 @@ import { RootState, AppDispatch } from '@/store/store';
 import { getFeatureAData } from '@/features/featureA/featureASlice';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loading } from "@/components/loading";
+import { Loading, LoadingBars, LoadingPulse, LoadingCircularProgress, LoadingDots } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 
@@ -319,13 +319,13 @@ const SyncPage = () => {
   const toggleOntologyVisibility = () => setIsOntologyVisible(!isOntologyVisible);
 
   return (
-    <div className="flex flex-col gap-4 m-2 bg-gray-800">
+    <div className="flex flex-col gap-4 mx-1 bg-gray-800">
       <header className="mx-auto">
         <h1 className="text-2xl font-bold text-white">AI-Powered AKM Dashboard</h1>
       </header>
-      <div className="mx-2 bg-gray-700 px-4 text-white rounded">
-        <h3 className="font-bold text-gray-400 inline-block"> Current Project: </h3>  <span className="inline-block"> {metis?.name}</span> | 
-        <h3 className="font-bold text-gray-400 inline-block"> Current Model: </h3>  <span className="inline-block"> {currentModel?.name}</span>
+      <div className="bg-gray-600 mx-2 px-2 text-white rounded">
+        <h3 className="font-bold text-gray-400 inline-block"> Current Project: </h3>  <span className="inline-block"> {metis?.name}</span> |
+        <h3 className="ms-2 font-bold text-gray-400 inline-block"> Current Model: </h3>  <span className="inline-block"> {currentModel?.name}</span>
       </div>
 
       <div className="flex items-center mx-2 bg-gray-700">
@@ -335,7 +335,7 @@ const SyncPage = () => {
         <Button onClick={toggleContextVisibility} className="bg-blue-500 text-white px-4 py-2 rounded ms-2">
           {isContextVisible ? "Hide Existing Context" : "Show Existing Context"}
         </Button> */}
-        <div className="flex-grow"></div>
+        <div className="flex-grow">URL: </div>
         <Input
           id="ontologyUrl"
           className="ontology-input flex-grow bg-gray-600 text-white mx-auto mx-2"
@@ -368,24 +368,25 @@ const SyncPage = () => {
           ))}
         </div>
       )}
-
-      <div className="m-2">
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex justify-between items-center flex-grow border text-white ps-1">First: User Input
-              <button
-                onClick={() => setShowUserInput(!showUserInput)}
-                className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
-              >
-                {showUserInput ? '-' : '+'}
-              </button>
-            </CardTitle>
-          </CardHeader>
-          {showUserInput && (
-            <CardContent className="flex items-start">
-              <div className="flex flex-col flex-grow">
-                <label htmlFor="domainDescription" className="text-white">Domain Description</label>
-                <Textarea
+      {/* Steps from User input to generate IRTV objects and relationships */}
+      <div className="flex m-2"> 
+        <div className="p-0.5 rounded bg-green-700 w-1/3">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center flex-grow border text-white ps-1">1. First: User Input
+                <button
+                  onClick={() => setShowUserInput(!showUserInput)}
+                  className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
+                >
+                  {showUserInput ? '-' : '+'}
+                </button>
+              </CardTitle>
+            </CardHeader>
+            {showUserInput && (
+                <CardContent className="flex flex-wrap items-start">
+                <div className="flex flex-col flex-grow max-w-[300px]">
+                  <label htmlFor="domainDescription" className="text-white">Domain Description</label>
+                  <Textarea
                   id="domainDescription"
                   className="flex-grow p-1 rounded bg-gray-800"
                   value={domainDescription}
@@ -393,104 +394,170 @@ const SyncPage = () => {
                   onChange={(e) => setDomainDescription(e.target.value)}
                   placeholder="Enter domain description"
                   rows={5} // Adjust the number of rows as needed
-                />
-                <label htmlFor="suggestedConcepts" className="text-white">Concepts/Terms you want to include</label>
-                <Input
+                  />
+                  <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts/Terms you want to include</label>
+                  <Input
                   id="suggestedConcepts"
                   className="flex-grow p-1 rounded bg-gray-800"
                   value={suggestedConcepts}
                   disabled={isLoading}
                   onChange={(e) => setSuggestedConcepts(e.target.value)}
-                  placeholder="Enter your concepts/terms to include, separated by commas. Example: concept1, concept2"
-                />
-              </div>
-              <div className="flex flex-col mx-2 flex-grow">
-                <label htmlFor="roles" className="text-white mt-1">Roles you want to include</label>
-                <Input
+                  placeholder="Enter your concepts/terms"
+                  />
+                </div>
+                <div className="flex flex-col flex-grow max-w-[260px] mx-2">
+                  <label htmlFor="roles" className="text-white mt-1">Roles you want to include</label>
+                  <Input
                   id="roles"
                   className="flex-grow p-1 rounded bg-gray-800"
                   value={suggestedRoles}
                   disabled={isLoading}
                   onChange={(e) => setSuggestedRoles(e.target.value)}
-                  placeholder="Enter roles to include, separated by commas. Example: role1, role2"
-                />
-                <label htmlFor="tasks" className="text-white mt-1">Tasks you want to include</label>
-                <Input
+                  placeholder="Enter roles"
+                  />
+                  <label htmlFor="tasks" className="text-white mt-2">Tasks you want to include</label>
+                  <Input
                   id="tasks"
                   className="flex-grow p-1 rounded bg-gray-800"
                   value={suggestedTasks}
                   disabled={isLoading}
                   onChange={(e) => setSuggestedTasks(e.target.value)}
-                  placeholder="Enter tasks to include"
-                />
-                <label htmlFor="views" className="text-white mt-1">Views you want to include</label>
-                <Input
+                  placeholder="Enter tasks"
+                  />
+                  <label htmlFor="views" className="text-white mt-2">Views you want to include</label>
+                  <Input
                   id="views"
                   className="flex-grow p-1 rounded bg-gray-800"
                   value={suggestedViews}
                   disabled={isLoading}
                   onChange={(e) => setSuggestedViews(e.target.value)}
-                  placeholder="Enter Views to include"
-                />
-              </div>
+                  placeholder="Enter views"
+                  />
+                </div>
+                </CardContent>
+            )}
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">2. Next: Suggest Concepts & Terms
+                <div className="flex items-center ml-auto">
+                  <Button onClick={handleFirstStep} className="bg-green-700 text-white py-2 rounded">
+                    Ask Chat GPT
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            {/* <CardContent>
+              <h5 className="text-white mx-2"> Evaluate the Domain and find Concepts and Terms to be used in AKM:</h5>
+            </CardContent> */}
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">3. Finaly: Generate IRTV objects and relationships
+                <div className="flex items-center ml-auto">
+                  <Button onClick={handleSecondStep} className="bg-green-700 text-white py-2 rounded">
+                    Ask Chat GPT
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardHeader>
+            {/* <CardContent>
+              <h5 className="text-white mx-2"> Evaluate the Domain and find Concepts and Terms to be used in AKM:</h5>
+            </CardContent> */}
+          </Card>
+          <Card style={{ height: 'calc(100vh - 38rem)' }}>
+            <CardHeader>
+              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">
+                <div className="flex items-center ml-auto">
+                  {/* <Button onClick={handleThirdStep} className="bg-green-700 text-white py-2 rounded">
+                    Ask Chat GPT
+                  </Button> */}
+                </div>
+              </CardTitle>
+              </CardHeader>
+            <CardContent className="flex flex-col items-center h-full">
+              
             </CardContent>
-          )}
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">Next: Let GPT evaluate the Domain and find Concepts and Terms to be used in AKM
-              <div className="flex items-center ml-auto">
-              <Button onClick={handleFirstStep} className="bg-green-700 text-white py-2 rounded">
-                Ask Chat GPT to suggest Concepts and Terms
-              </Button>
+          </Card>
+        </div>
+        <div className="flex-grow bg-yellow-500 p-0.5 rounded w-10" style={{ height: 'calc(100vh - 10rem)' }}>
+          <Card className="h-full">
+            {isLoading ? (
+              <div className="flex flex-col items-center h-full">
+          <div className="ms-2 text-white">-&gt;</div><br />
+          <div className="ms-2 ps-1 w-12 h-16">
+            <Loading />
+            <LoadingPulse />
+            <LoadingBars />
+            <LoadingDots />
+            <LoadingCircularProgress />
+          </div>
+              </div>
+            ) : ( 
+              <div className="flex flex-col items-center h-full">
+          <div className="text-white justify-center">-&gt;</div><br />
+          <div className="text-white transform rotate-90 mt-5">{(selectedTerms?.objects.length > 0) ? 'Generated!' : ''}</div>
+              </div>
+            )}
+          </Card>
+        </div>
+
+        <div className="bg-blue-700 p-0.5 rounded w-3/4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">Proposed Concepts and Terms
+                  <button
+                    onClick={() => setShowTerms(!showTerms)}
+                    className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
+                  >
+                    {showTerms ? '-' : '+'}
+                  </button>
+ 
+              </CardTitle>
+            </CardHeader>
+            {showTerms && (
+              <CardContent>
+                <OntologyCard terms={selectedTerms} />
+              </CardContent>
+            )}
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">Generated IRTV Objects and Relationships
               <button
-                onClick={() => setShowTerms(!showTerms)}
+                onClick={() => setShowIrtv(!showIrtv)}
                 className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
               >
-                {showTerms ? '-' : '+'}
+                {showIrtv ? '-' : '+'}
               </button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          {showTerms && (
-            <CardContent>
-              <h5 className="text-white mx-2">Concepts and Terms:</h5>
-              <OntologyCard terms={selectedTerms} />
-            </CardContent>
+              </CardTitle>
+            </CardHeader>
+            {showIrtv && domain && (
+              <CardContent>
+                <div className="mx-1 bg-gray-700 p-2 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                  <ObjectCard domain={domain} />
+                </div>
+              </CardContent>
+            )}
+          </Card>
+          {(!domain) && (
+            <Card style={{ height: 'calc(100vh - 28rem)' }}>
+              <CardHeader>
+                <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">
+                  <div className="flex items-center ml-auto">
+                    {/* <Button onClick={handleFirstStep} className="bg-green-700 text-white py-2 rounded">
+                      Ask Chat GPT
+                    </Button> */}
+                  </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="flex flex-col items-center h-full">
+              </CardContent>
+            </Card>
           )}
-        </Card>
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">Finaly: Let GPT evaluate the Concepts and Terms and find IRTV objects and relationships
-              <div className="flex items-center ml-auto">
-                <Button onClick={handleSecondStep} className="bg-green-700 text-white py-2 rounded">
-                  Ask Chat GPT to generate IRTV
-                </Button>
-                <button
-                  onClick={() => setShowIrtv(!showIrtv)}
-                  className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
-                >
-                  {showIrtv ? '-' : '+'}
-                </button>
-              </div>
-            </CardTitle>
-          </CardHeader>
-          {showIrtv && domain && (
-            <CardContent>
-              <div className="mx-1 bg-gray-700 p-2 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                <ObjectCard domain={domain} />
-              </div>
-            </CardContent>
-          )}
-        </Card>
-      </div>
-      {isLoading && (
-        <div className="flex justify-center items-center h-full p-4">
-          <div className="w-16 h-16">
-            <Loading />
-          </div>
         </div>
-      )}
+      </div>
+
       {domain && (
         <Button onClick={handleCopy} className="mx-2 bg-blue-500 text-white rounded">
           Copy JSON

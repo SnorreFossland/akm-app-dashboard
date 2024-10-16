@@ -21,13 +21,9 @@ interface OntologyCardProps {
 export const OntologyCard = ({ terms }: OntologyCardProps ) => {
     return (
         <>
-            <div className="flex">
-                <Card className="w-2/3">
-                    <CardHeader>
-                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">
-                            Suggested Concepts/Terms
-                        </CardTitle>
-                    </CardHeader>
+            <div className="flex flex-wrap flex-grow max-w-5xl m-auto">
+                <Card className="flex-col w-2/3">
+                    <div className="text-white">Terms</div>
                     <CardContent className="grid gap-2">
                         {terms.objects?.map((term, index) => (
                             <div key={term.name+index} className="grid gap-2">
@@ -40,13 +36,8 @@ export const OntologyCard = ({ terms }: OntologyCardProps ) => {
                         ))}
                     </CardContent>
                 </Card>
-
-                <Card className="w-1/3">
-                    <CardHeader>
-                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">
-                            Suggested relationships between the concepts
-                        </CardTitle>
-                    </CardHeader>
+                <Card className="flex-col w-1/3 h-full" style={{ height: 'calc(100vh - 48rem)' }}>
+                    <div className="text-white">Relations</div>
                     <CardContent className="grid gap-2">
                         {terms.relationships?.map((rel, index) => (
                             <div key={rel.name+index} className="grid gap-2">
