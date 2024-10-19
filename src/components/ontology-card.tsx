@@ -19,9 +19,10 @@ interface OntologyCardProps {
 }
 
 export const OntologyCard = ({ terms }: OntologyCardProps ) => {
+    console.log('22 terms:', terms);
     return (
         <>
-            <div className="flex flex-wrap flex-grow max-w-5xl m-auto">
+            <div className="flex flex-wrap flex-grow p-2 m-auto">
                 <Card className="flex-col w-2/3">
                     <div className="text-white">Terms</div>
                     <CardContent className="grid gap-2">

@@ -1,14 +1,55 @@
 // src/features/featureA/featureASlice.ts
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { fetchFeatureADataFromGitHub, saveFeatureADataToGitHub } from './featureAAPI';
-import type { RootState } from '@/store/store';
+// import type { RootState } from '@/store/store';
+
+
 
 interface DataType {
   project: {
-    phData: { metis: any };
-    phFocus: any;
-    phUser: any;
-    phSource: any;
+    phData: {
+      metis: {
+        models: {
+          id: string,
+          name: string,
+          description: string,
+          objects: {
+            id: string,
+            name: string,
+            description: string,
+            proposedType: string,
+            typeRef: string,
+            typeName: string,
+            category: string,
+          }[],
+          relships: {
+            id: string,
+            name: string,
+            typeRef: string,
+            fromobjectRef: string,
+            nameFrom: string,
+            toobjectRef: string,
+            nameTo: string,
+          }[]
+        }[]
+      }
+    };
+    phFocus: {
+      focusModel: {
+        id: string;
+        name: string;
+      };
+      focusObject?: {
+        id: string;
+        name: string;
+      };
+    };
+    phUser: {
+      id: string;
+      name: string;
+      email: string;
+    };
+    phSource: string;
   };
 }
 
@@ -50,6 +91,41 @@ const featureASlice = createSlice({
     setFileData(state, action: PayloadAction<DataType>) {
       state.data = action.payload;
     },
+    setObjects(state, action: PayloadAction<DataType['project']['phData']['metis']['models'][number]['objects'][number][]>) {
+      let currentModel = state.data?.project.phData.metis.models.find(model => model.id === state.data?.project.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.data?.project.phData.metis.models[0];
+      console.log('84 currentModel', currentModel, state.data?.project.phFocus);
+      if (currentModel && currentModel.objects) {
+        action.payload.map(object => {
+          const objectIndex = currentModel?.objects?.findIndex(object => object.id === state.data?.project?.phFocus?.focusObject?.id);
+          if (objectIndex === undefined || objectIndex === -1) {
+            currentModel.objects.push(object);
+          } else {
+            currentModel.objects[objectIndex] = object;
+          }
+        });
+      }
+    },
+    // ToDo: rename setRelationships to setRelships
+    setRelationships(state, action: PayloadAction<DataType['project']['phData']['metis']['models'][number]['relships'][number][]>) {
+      let currentModel = state.data?.project.phData.metis.models.find(model => model.id === state.data?.project.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.data?.project.phData.metis.models[0];
+      console.log('93 action.payload', action.payload, 'currentModel', currentModel,);
+      if (currentModel && currentModel.relships) {
+        action.payload.map((relationship, index) => {
+          const relationshipIndex = currentModel?.relships?.findIndex(r => r.id === relationship?.id);
+          if (index === 1) console.log('114 relationship', relationship,'index',  relationshipIndex);
+          if (relationshipIndex === undefined || relationshipIndex === -1) {
+            currentModel.relships.push(relationship);
+          } else {
+            currentModel.relships[relationshipIndex] = relationship;
+          }
+        });
+      }
+    },
+    clearStore() {
+      return initialState;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -77,5 +153,5 @@ const featureASlice = createSlice({
   },
 });
 
-export const { setFileData } = featureASlice.actions;
+export const { setFileData, setObjects, setRelationships, clearStore } = featureASlice.actions;
 export default featureASlice.reducer;

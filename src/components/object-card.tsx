@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface Domain {
     name: string;
@@ -9,28 +10,30 @@ interface Domain {
 }
 
 export const ObjectCard = ({ domain }: { domain: Domain }) => {
+    const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
+    const [mermaidCode, setMermaidCode] = useState('');
     const [showObjectsCard, setShowObjectsCard] = useState(true);
     const [showDiagram, setShowDiagram] = useState(false);
-    const diagramRef = useRef<HTMLDivElement>(null);
+    const [activeTab, setActiveTab] = useState('objects');
+    const [regen, setRegen] = useState(false);
 
     console.log('17 domain:', domain);
 
-    const generateMermaidDiagram = () => {
-        let diagram = 'graph TD;\n';
-
+    const generateMermaidDiagram = (regen: boolean) => {
+        let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
         // Add objects
         domain.objects.forEach((object) => {
             diagram += `${object.id}["${object.name} \n (${object.typeName})"];\n`;
         });
-
         // Add relationships
         domain.relationships.forEach((relationship) => {
             diagram += `${relationship.fromobjectRef} -->|${relationship.name}| ${relationship.toobjectRef};\n`;
         });
-
         setMermaidDiagram(diagram);
+        // diagramRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
+
 
     useEffect(() => {
         if (mermaidDiagram && diagramRef.current) {
@@ -39,13 +42,15 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                 theme: 'base',
                 themeVariables: {
                     primaryColor: '#667777', // box fill color
-                    edgeLabelBackground: 'transparent', //
+                    edgeLabelBackground: 'transparent',
                     secondaryColor: '#8888ff',
                     tertiaryColor: '#ddddff',
                     primaryTextColor: '#ffdddd',
                     secondaryTextColor: '#00ff00',
                     tertiaryTextColor: '#0000ff',
                     lineColor: '#dddddd',
+                    background: '#ffffff', // light background
+                    nodeBorderRadius: '15px', // rounded objects
                 },
             });
             mermaid.contentLoaded();
@@ -62,16 +67,20 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
     return (
         <div className="w-100 m-auto">
             <div className="w-100 m-auto">
-                <div className="flex justify-between items-center">
-                    {/* <h6 className="text-white">AKM - IRTV Objects and Relationships</h6> */}
-                    <button
-                        onClick={() => setShowObjectsCard(!showObjectsCard)}
-                        className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white"
-                    >
-                        {showObjectsCard ? '-' : '+'}
-                    </button>
-                </div>
-                {showObjectsCard && !showDiagram && (
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <TabsList>
+                        <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
+                        <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger></TabsList>
+                <TabsContent value="objects">
+                    <div className="flex justify-between items-center">
+                        {/* <h6 className="text-white">AKM - IRTV Objects and Relationships</h6> */}
+                        {/* <button
+                            onClick={() => setShowObjectsCard(!showObjectsCard)}
+                            className="relative top-0 right-0 px-2 rounded bg-gray-500 text-white hover:text-white ml-auto"
+                        >
+                            {showObjectsCard ? '-' : '+'}
+                        </button> */}
+                    </div>
                     <div>
                         {/* <h4 className="text-2xl font-bold ms-4">Prompt : {domain?.name}</h4> */}
                         <div className="flex space-x-4">
@@ -135,35 +144,33 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                             </Card>
                         </div>
                     </div>
-                )}
-                <div>
-                    <Card className="w-full h-full my-1">
+                </TabsContent>
+                <TabsContent value="diagram">
+                    <div>
                         <button
-                            onClick={generateMermaidDiagram}
-                            className="bg-blue-500 text-white px-4 py-2 rounded mt-4"
+                            onClick={() => {
+                                generateMermaidDiagram(!regen);
+                                setRegen(!regen);
+                            }}
+                            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-700"
                         >
-                            Generate Mermaid Diagram
+                            Regenerate Diagram
                         </button>
-                        {/* <button
-                            onClick={() => setShowDiagram(!showDiagram)}
-                            className="bg-blue-500 text-white px-4 py-2 rounded mt-4 ml-2"
-                        >
-                            Toggle Diagram View
-                        </button> */}
-                        {mermaidDiagram && !showDiagram && (
+                        <Card className="w-full h-full my-1">
                             <div className='overflow-auto min-h-[48rem] h-full'>
                                 {renderMermaidDiagram()}
                             </div>
-                        )}
-                        {/* {showDiagram && (
-                            <div id="mermaid-code">
-                                <pre className="bg-gray-800 text-white p-4 rounded">
-                                    {mermaidDiagram}
-                                </pre>
-                            </div>
-                        )} */}
-                    </Card>
-                </div>
+                            {/* {mermaidDiagram && (
+                                <div id="mermaid-code">
+                                    <pre className="bg-gray-800 text-white p-4 rounded">
+                                        {mermaidDiagram}
+                                    </pre>
+                                </div>
+                            )} */}
+                        </Card>
+                    </div>
+                </TabsContent>
+            </Tabs>
             </div>
         </div>
     );

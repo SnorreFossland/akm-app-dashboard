@@ -5,7 +5,9 @@ import React, { useRef, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { getFeatureAData, saveFeatureAData, setFileData } from '../featureASlice';
 import type { RootState, AppDispatch } from '@/store/store';
+import { clearStore } from '../featureASlice';
 import { Button } from '@/components/ui/button';
+import FileSaver from 'file-saver';
 
 export default function FeatureAComponent() {
   const dispatch = useDispatch<AppDispatch>();
@@ -47,7 +49,7 @@ export default function FeatureAComponent() {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data: any = { project: JSON.parse(e.target?.result as string) };
+          const data: any = { project: JSON.parse(e.target?.result as string) }; // adding project key to make it compatible with the new format
           console.log('48 e:', data);
           dispatch(setFileData(data)); // Dispatch the action with the data
         } catch (error) {
@@ -77,6 +79,23 @@ export default function FeatureAComponent() {
     }
   };
 
+  const handleSaveToLocalFile = () => {
+    console.log('82 handleSaveToLocalFile data:', data);
+    if (data) {
+      const dataWithoutProject = { ...data.project }; // Remove the project key to make it compatible with the old format
+      console.log('85 dataWithoutProject:', dataWithoutProject, data);  
+      const blob = new Blob([JSON.stringify(dataWithoutProject, null, 2)], { type: 'application/json' });
+      FileSaver.saveAs(blob, 'featureAData.json');
+    } else {
+      alert('No data available to save.');
+    }
+  };
+
+  const handleClearStore = () => {
+    dispatch(clearStore());
+  };
+
+
   // if (!data) {
   //   return <div>Loading...</div>
   // }
@@ -88,7 +107,7 @@ export default function FeatureAComponent() {
 
   return (
     <div className='feature-a-component bg-gray-600 p-4 w-full'>
-      <h1>Feature A Model Data</h1>
+      <h1>AKMM Model Data</h1>
 
       <div className='feature-a-data text-left p-4 bg-gray-600'>
         {pullRequestUrl && (
@@ -96,12 +115,15 @@ export default function FeatureAComponent() {
           <a href={pullRequestUrl} target="_blank" rel="noopener noreferrer">{pullRequestUrl}</a>
           </p>
         )}
-        <div className='flex mt-0 mb-0'>
+        <div className='flex mt-0 mb-0 mx-1'>
           <Button onClick={handleGetFile} disabled={fileStatus === 'loading'}>
           {fileStatus === 'loading' ? 'Loading...' : 'Get GitHub File'}
           </Button>
           <Button onClick={handleGetLocalFileClick}>
           Get Local File
+          </Button>
+          <Button onClick={handleClearStore}>
+            Clear Store
           </Button>
         </div>
         <input
@@ -113,7 +135,6 @@ export default function FeatureAComponent() {
         />
       </div>
       <hr />
-
       {data // show what in redux store
       ? <div className='feature-a-data text-left mx-2 p-4 bg-gray-700'>
           <div className='grid grid-cols-2 gap-4'>
@@ -147,6 +168,9 @@ export default function FeatureAComponent() {
       <div className='feature-a-data text-left p-4 bg-gray-800'>
       <Button onClick={handleSave} disabled={saveStatus === 'saving'}>
         {saveStatus === 'saving' ? 'Saving...' : 'Save Data to GitHub'}
+      </Button>
+      <Button onClick={handleSaveToLocalFile}>
+        Save Data to Local File
       </Button>
       </div>
       {/* <div>

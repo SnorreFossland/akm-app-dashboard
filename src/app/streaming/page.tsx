@@ -3,26 +3,34 @@
 import { useState, useEffect } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
+import { set } from "zod";
+
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRobot, faSave } from '@fortawesome/free-solid-svg-icons';
+
 import { getFeatureAData } from '@/features/featureA/featureASlice';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading, LoadingBars, LoadingPulse, LoadingCircularProgress, LoadingDots } from "@/components/loading";
 import { Button } from "@/components/ui/button";
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
+import { setObjects, setRelationships } from "@/features/featureA/featureASlice";
 
 import { ObjectCard } from "@/components/object-card";
 import { OntologyCard } from "@/components/ontology-card";
 import { ObjectSchema } from "@/objectSchema";
 import { SystemConceptPrompt } from './prompts/system-concept-prompt';
 import { SystemIrtvPrompt } from './prompts/system-irtv-prompt';
-import { MetamodelPrompt } from './prompts/metamodel-prompt-irtv';
+import { MetamodelPrompt } from './prompts/metamodel-prompt-irtv'; // default metamodel prompt for IRTV
 import { OntologyPrompt } from './prompts/ontology-prompt';
 import { ContextPrompt } from './prompts/context-prompt';
 import { Caesar_Dressing } from "next/font/google";
-import { set } from "zod";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+
 
 const SyncPage = () => {
   const dispatch = useDispatch<AppDispatch>();
+
   const data = useSelector((state: RootState) => state.featureA.data);
   const status = useSelector((state: RootState) => state.featureA.status);
   const error = useSelector((state: RootState) => state.featureA.error);
@@ -43,9 +51,11 @@ const SyncPage = () => {
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [domain, setDomain] = useState<any>(undefined);
+  const [dispatchDone, setDispatchDone] = useState(false);
 
   const [metis, setMetis] = useState<any>(null);
   const [currentModel, setCurrentModel] = useState<any>(null);
+
 
   const [metamodelPrompt, setMetamodelPrompt] = useState(MetamodelPrompt);
   const [systemConceptPrompt, setSystemConceptPrompt] = useState(SystemConceptPrompt);
@@ -53,40 +63,27 @@ const SyncPage = () => {
   const [existingTerms, setExistingTerms] = useState([]);
   const [isExistingContext, setIsExistingContext] = useState(false);
   const [showUserInput, setShowUserInput] = useState(true);
+  const [activeTab, setActiveTab] = useState('terms');
   const [showTerms, setShowTerms] = useState(true);
   const [showIrtv, setShowIrtv] = useState(true);
-  // const [ontologyPrompt, setOntologyPrompt] = useState(OntologyPrompt);
-  // const [contextPrompt, setContextPrompt] = useState(ContextPrompt);
 
   useEffect(() => {
-    // setSystemConceptPrompt(`${SystemConceptPrompt}`);
-    // setOntologyPrompt(`${OntologyPrompt} \n ${terms}`);
-    // setMetamodelPrompt(`${MetamodelPrompt}`);
     setStep(1);
-
     // const handleMessage = (event: MessageEvent) => {
     //   if (event.data.type === 'SESSION_STORAGE_DATA') {
     //     sessionStorage.setItem('memorystate', event.data.data);
     //   }
     // };
-
     // window.addEventListener('message', handleMessage);
-
     // return () => {
     //   window.removeEventListener('message', handleMessage);
     // };
-
   }, [existingContext, terms]);
 
-  // useEffect(() => {
-  //   if (status === 'idle') {
-  //     dispatch(getFeatureAData());
-  //   }
-  // }, [status, dispatch]);
-
-  // console.log('72 data', data);
-
   useEffect(() => {
+    type ExistingObject = { id: string; name: string; description: string; typeName: string };
+    type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
+
     if (data?.project) {
       console.log('89 data', data);
       const metis1 = data.project?.phData?.metis;
@@ -94,34 +91,63 @@ const SyncPage = () => {
       const user = data.project?.phUser;
       if (!metis1) { console.error('Data does not contain metis:', data); return };
       setMetis(metis1);
+
+      if (metis?.metamodels) {
+        const metamodel = metis.metamodels.find((mmodel: { name: string }) => mmodel.name.includes('IRTV'));
+        const mmObjecttypeStrings = metamodel?.objecttypes.map((ot: any) =>
+          `${ot.id} ${ot.name}`).join(', ');
+        const mmRelationtypeStrings = metamodel?.relshiptypes.map((rt: any) =>
+          `${rt.id} ${rt.name}`).join(', ');
+
+        const metamodelPrompt = `
+        **Metamodel:**
+        - **Object Types:** \n ${mmObjecttypeStrings} 
+        - **Relation Types:** \n ${mmRelationtypeStrings}
+      `;
+
+        setMetamodelPrompt(metamodelPrompt);
+      }
+      setMetamodelPrompt(`${MetamodelPrompt}`);
+
       const models = metis1.models;
       const curmod = models?.find((model: any) => model.id === focus?.focusModel?.id);
       (curmod) ? setCurrentModel(curmod) : setCurrentModel(metis?.models[0]);
       console.log('95 currentModel', curmod, currentModel, metis?.models);
-      const existingObjects = currentModel?.objects?.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description }));
-      const existingRelationships = currentModel?.relships?.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo }));
-      setExistingTerms(existingObjects?.map((obj: any) => obj.name).join('\n'));
+
+
+      const existingObjects = currentModel?.objects?.map((obj: ExistingObject) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName }));
+      const existingRelationships = currentModel?.relships?.map((rel: ExistingRelationship) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo }));
+
+      setExistingTerms(existingObjects?.filter((obj: ExistingObject) => (obj.typeName === 'Information') && obj.name).map((obj: ExistingObject) => obj.name).join('\n'));
+
       console.log('99 context', existingTerms);
-      setExistingContext(existingObjects?.map((obj: any) => `- ${obj.id} ${obj.name} ${obj.description}`));
+
+      setExistingContext('**Objects** \n ' + existingObjects?.map((obj: ExistingObject) => `- ${obj.id} ${obj.name} ${obj.description}` + '\n') + '\n **Relationships** \n ' +
+        existingRelationships?.map((rel: ExistingRelationship) => `- ${rel.id} ${rel.name} ${rel.nameFrom} ${rel.nameTo}`));
+
       console.log('101 existingContext', existingContext);
       console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
-
-      const ontologyPrompt = `
-## **Ontology**
-
-  **List of Terms:**
-  ${ontologyString}
-      `;
     }
   }, [data]);
 
-  const handlePasteFromClipboard = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      setExistingContext(text);
-    } catch (error) {
-      console.error('Failed to read clipboard contents: ', error);
+  // const handlePasteFromClipboard = async () => {
+  //   try {
+  //     const text = await navigator.clipboard.readText();
+  //     setExistingContext(text);
+  //   } catch (error) {
+  //     console.error('Failed to read clipboard contents: ', error);
+  //   }
+  // };
+
+  const handleDispatchIrtvData = () => {
+    if (!domain) {
+      alert('No IRTV data to dispatch');
+      return;
     }
+    console.log('133 dispatching IRTV data:', domain);
+    dispatch(setObjects(domain.objects));
+    dispatch(setRelationships(domain.relationships));
+    setDispatchDone(true);
   };
 
   const handleFetchOntology = async () => {
@@ -155,12 +181,29 @@ const SyncPage = () => {
     setDomain(undefined);
     setTerms("");
 
+    if (!domainDescription || domainDescription === '') {
+      alert(`Please provide a domain description.\nExamples:
+        - E-Scooter Rental Services\n
+        - Car sale administration\n
+        - Energy generation\n
+        - Data management\n
+        - Financial services for Car rental in Scandinavia\n
+  `);
+
+      setIsLoading(false);
+      return;
+    }
+
     const prompt = `
-      **Domain Description:**
+      Identify and explain the key concepts and terms related to 
         ${domainDescription}
-        
+      Provide a brief definition for each term, highlighting their importance and interrelations within the domain.
+      You must include the following Concepts/Terms:
+
       **User Suggested Terms:**
         ${suggestedConcepts}
+
+      Make sure you create at least 8 additional terms.
     `;
 
     const contextPrompt = `
@@ -171,12 +214,12 @@ const SyncPage = () => {
 
     const ontologyPrompt = `
       ## **Ontology**
-
+        If possible, use the following terms from the ontology:
         **List of Terms:**
         ${ontologyString}
     `;
 
-    if (!prompt && !existingContext) {
+    if (!prompt || prompt === '') {
       alert("Please provide a prompt or paste existing context.");
       setIsLoading(false);
       return;
@@ -219,7 +262,7 @@ const SyncPage = () => {
 
         setTerms(`**Information types***\n\n ${selectedTermsString}\n\n **Relations:**\n\n${selectedRelationsString}\n\n`);
         setSelectedTerms({ objects: parsed.objects, relationships: parsed.relationships });
-        // console.log('208 terms', terms, 'selectedTermsString', selectedTermsString, 'selectedRelationsString', selectedRelationsString);
+        console.log('254 terms', terms) //, 'selectedTermsString', selectedTermsString, 'selectedRelationsString', selectedRelationsString);
         setStep(2);
       } else {
         console.error("Parsed data does not contain object or objects is not an array");
@@ -255,7 +298,11 @@ const SyncPage = () => {
 
     **Views**
     ${suggestedViews}
-  `;
+  Create Views to access the Information objects.
+  Create Tasks to manipulate the Information objects via the Views.
+  Create Roles to perform or manage the Tasks.
+  Make sure all objects have relationships.
+    `;
 
     const contextPrompt = `
 ## **Context:**
@@ -369,24 +416,39 @@ const SyncPage = () => {
         </div>
       )}
       {/* Steps from User input to generate IRTV objects and relationships */}
-      <div className="flex m-2"> 
-        <div className="p-0.5 rounded bg-green-700 w-1/3">
+      <div className="flex m-2">
+        <div className="border-solid rounded border-4 border-green-700 w-1/3">
           <Card>
+            <div className="mx-2">
+                <details>
+                <summary>Build an Active Knowledge Model assisted by AI:</summary>
+                  <div className="bg-gray-600">
+                    <p>The process involves the following steps:</p>
+                    <ul>
+                      <li><strong>• Establish a Conceptual Apparatus for a Domain:</strong></li>
+                      <p style={{ marginLeft: '20px' }}>It refers to the set of concepts, theories, models, and frameworks that collectively provide the foundational understanding of a particular field or discipline. It encompasses the terminology, principles, and relationships that are essential for practitioners within the field to communicate effectively and advance knowledge.</p>
+                      <li><strong>• Generate IRTV objects and relationships:</strong></li>
+                      <p style={{ marginLeft: '20px' }}>Generate Information objects of the concepts and terms identified in the first step. Add Roles, Tasks, and Views working on the Information objects.</p>
+                      <li><strong>• Dispatch the result to the current Model-project:</strong></li>
+                      <p style={{ marginLeft: '20px' }}>The final step is to dispatch the generated IRTV objects and relationships to the current Model-project.</p>
+                    </ul>
+                  </div>
+                </details>
+            </div>
             <CardHeader>
-              <CardTitle className="flex justify-between items-center flex-grow border text-white ps-1">1. First: User Input
-                <button
+              <CardTitle className="flex justify-between items-center flex-grow border text-white ps-1">First: Establish a Conceptual Apparatus for a Domain:
+                {/* <button
                   onClick={() => setShowUserInput(!showUserInput)}
                   className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
                 >
                   {showUserInput ? '-' : '+'}
-                </button>
+                </button> */}
               </CardTitle>
             </CardHeader>
             {showUserInput && (
-                <CardContent className="flex flex-wrap items-start">
-                <div className="flex flex-col flex-grow max-w-[300px]">
-                  <label htmlFor="domainDescription" className="text-white">Domain Description</label>
-                  <Textarea
+              <CardContent className="flex flex-wrap items-start">
+                <label htmlFor="domainDescription" className="text-white">Domain Description</label>
+                <Textarea
                   id="domainDescription"
                   className="flex-grow p-1 rounded bg-gray-800"
                   value={domainDescription}
@@ -394,55 +456,81 @@ const SyncPage = () => {
                   onChange={(e) => setDomainDescription(e.target.value)}
                   placeholder="Enter domain description"
                   rows={5} // Adjust the number of rows as needed
-                  />
-                  <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts/Terms you want to include</label>
-                  <Input
-                  id="suggestedConcepts"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={suggestedConcepts}
-                  disabled={isLoading}
-                  onChange={(e) => setSuggestedConcepts(e.target.value)}
-                  placeholder="Enter your concepts/terms"
-                  />
-                </div>
-                <div className="flex flex-col flex-grow max-w-[260px] mx-2">
-                  <label htmlFor="roles" className="text-white mt-1">Roles you want to include</label>
-                  <Input
-                  id="roles"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={suggestedRoles}
-                  disabled={isLoading}
-                  onChange={(e) => setSuggestedRoles(e.target.value)}
-                  placeholder="Enter roles"
-                  />
-                  <label htmlFor="tasks" className="text-white mt-2">Tasks you want to include</label>
-                  <Input
-                  id="tasks"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={suggestedTasks}
-                  disabled={isLoading}
-                  onChange={(e) => setSuggestedTasks(e.target.value)}
-                  placeholder="Enter tasks"
-                  />
-                  <label htmlFor="views" className="text-white mt-2">Views you want to include</label>
-                  <Input
-                  id="views"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={suggestedViews}
-                  disabled={isLoading}
-                  onChange={(e) => setSuggestedViews(e.target.value)}
-                  placeholder="Enter views"
-                  />
-                </div>
-                </CardContent>
+                />
+                <details className="flex-grow">
+                  <summary className="text-white cursor-pointer">Specify more to be included: Terms, Roles, Tasks, Views</summary>
+                  <div className="flex flex-col flex-grow mt-2">
+                    <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts/Terms you want to include</label>
+                    <Input
+                      id="suggestedConcepts"
+                      className="flex-grow p-1 rounded bg-gray-800"
+                      value={suggestedConcepts}
+                      disabled={isLoading}
+                      onChange={(e) => setSuggestedConcepts(e.target.value)}
+                      placeholder="Enter your concepts/terms"
+                    />
+                    <label htmlFor="roles" className="text-white mt-1">Roles you want to include</label>
+                    <Input
+                      id="roles"
+                      className="flex-grow p-1 rounded bg-gray-800"
+                      value={suggestedRoles}
+                      disabled={isLoading}
+                      onChange={(e) => setSuggestedRoles(e.target.value)}
+                      placeholder="Enter roles"
+                    />
+                    <label htmlFor="tasks" className="text-white mt-2">Tasks you want to include</label>
+                    <Input
+                      id="tasks"
+                      className="flex-grow p-1 rounded bg-gray-800"
+                      value={suggestedTasks}
+                      disabled={isLoading}
+                      onChange={(e) => setSuggestedTasks(e.target.value)}
+                      placeholder="Enter tasks"
+                    />
+                    <label htmlFor="views" className="text-white mt-2">Views you want to include</label>
+                    <Input
+                      id="views"
+                      className="flex-grow p-1 rounded bg-gray-800"
+                      value={suggestedViews}
+                      disabled={isLoading}
+                      onChange={(e) => setSuggestedViews(e.target.value)}
+                      placeholder="Enter views"
+                    />
+                  </div>
+                </details>
+              </CardContent>
             )}
+            <CardFooter>
+              <CardTitle
+                className={`flex justify-between items-center flex-grow ps-1 ${(terms.length > 0) ? 'text-green-600' : 'text-green-200'}`}
+              >
+                Ask GPT to suggest appropriate Concepts & Terms
+                {/* <CardTitle className="text-white flex justify-between items-center flex-grow text-green-500 ps-1">Ask GPT to suggest appropriate Concepts & Terms */}
+                <div className="flex items-center ml-auto">
+                  <Button onClick={() => {
+                    handleFirstStep();
+                    setActiveTab('terms');
+                  }}
+                    className={`rounded text-xl p-4 ${(terms.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}>
+                    <FontAwesomeIcon icon={faRobot} size="1x" />
+                  </Button>
+                </div>
+              </CardTitle>
+            </CardFooter>
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">2. Next: Suggest Concepts & Terms
+              <CardTitle 
+                className={`flex justify-between items-center flex-grow ps-1 ${(terms.length > 0) ? 'text-green-600' : 'text-green-200'}`}
+              >
+                Next: Generate IRTV objects and relationships
                 <div className="flex items-center ml-auto">
-                  <Button onClick={handleFirstStep} className="bg-green-700 text-white py-2 rounded">
-                    Ask Chat GPT
+                  <Button onClick={async () => {
+                    await handleSecondStep();
+                    setActiveTab('irtv');
+                  }}
+                    className={`rounded text-xl p-4 ${(domain?.objects?.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}>
+                    <FontAwesomeIcon icon={faRobot} size="1x" />
                   </Button>
                 </div>
               </CardTitle>
@@ -453,108 +541,113 @@ const SyncPage = () => {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">3. Finaly: Generate IRTV objects and relationships
+                <CardTitle 
+                className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
+                >
+                  Finaly: Dispatch the result to the current Model-project 
                 <div className="flex items-center ml-auto">
-                  <Button onClick={handleSecondStep} className="bg-green-700 text-white py-2 rounded">
-                    Ask Chat GPT
-                  </Button>
+                    <Button
+                      onClick={handleDispatchIrtvData}
+                      className={`rounded text-xl ${dispatchDone ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}>
+                      <FontAwesomeIcon icon={faSave} width="26px" size="1x" />
+                    </Button>
                 </div>
-              </CardTitle>
+                </CardTitle>
             </CardHeader>
-            {/* <CardContent>
-              <h5 className="text-white mx-2"> Evaluate the Domain and find Concepts and Terms to be used in AKM:</h5>
-            </CardContent> */}
-          </Card>
-          <Card style={{ height: 'calc(100vh - 38rem)' }}>
-            <CardHeader>
-              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">
-                <div className="flex items-center ml-auto">
-                  {/* <Button onClick={handleThirdStep} className="bg-green-700 text-white py-2 rounded">
-                    Ask Chat GPT
-                  </Button> */}
-                </div>
-              </CardTitle>
-              </CardHeader>
             <CardContent className="flex flex-col items-center h-full">
-              
+
             </CardContent>
           </Card>
         </div>
-        <div className="flex-grow bg-yellow-500 p-0.5 rounded w-10" style={{ height: 'calc(100vh - 10rem)' }}>
+        <div className="flex-grow border-solid rounded border-4 bg-yellow-200 border-yellow-200 w-10" style={{ height: 'calc(100vh - 10rem)' }}>
           <Card className="h-full">
             {isLoading ? (
               <div className="flex flex-col items-center h-full">
-          <div className="ms-2 text-white">-&gt;</div><br />
-          <div className="ms-2 ps-1 w-12 h-16">
-            <Loading />
-            <LoadingPulse />
-            <LoadingBars />
-            <LoadingDots />
-            <LoadingCircularProgress />
-          </div>
+                <div className="text-yellow-500">-&gt;</div><br />
+                <div className="flex flex-col justify-between items-center bg-green-500 h-full">
+                  <LoadingDots orientation="vertical" />
+                  <LoadingCircularProgress />
+                  <Loading />
+                  <LoadingDots orientation="vertical" />
+                  <LoadingDots orientation="vertical" />
+                  <LoadingDots orientation="vertical" />
+                  <LoadingDots orientation="vertical" />
+                  <LoadingDots orientation="vertical" />
+                  <LoadingDots orientation="vertical" />
+                  <LoadingDots orientation="vertical" />
+                  {/* <LoadingPulse /> */}
+                  {/* <LoadingBars /> */}
+                </div>
               </div>
-            ) : ( 
-              <div className="flex flex-col items-center h-full">
-          <div className="text-white justify-center">-&gt;</div><br />
-          <div className="text-white transform rotate-90 mt-5">{(selectedTerms?.objects.length > 0) ? 'Generated!' : ''}</div>
-              </div>
+            ) : (
+                <div className="flex flex-col justify-between items-center h-1/2">
+                <div className="text-yellow-700 justify-center">-&gt;</div>
+                <div className="text-yellow-700 mt-3 transform rotate-90 whitespace-nowrap">{(selectedTerms?.objects.length > 0) ? 'Terms Generated!' : 'No Terms generated yet'}</div>
+                <div className="text-yellow-700 justify-center">-</div>
+                <div className="text-yellow-700 mt-3 transform rotate-90 whitespace-nowrap">{(domain?.objects.length > 0) ? 'Irtv Generated!' : 'No IRTV generated yet'}</div>
+                </div>
             )}
           </Card>
         </div>
 
-        <div className="bg-blue-700 p-0.5 rounded w-3/4">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">Proposed Concepts and Terms
-                  <button
-                    onClick={() => setShowTerms(!showTerms)}
-                    className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
-                  >
-                    {showTerms ? '-' : '+'}
-                  </button>
- 
-              </CardTitle>
-            </CardHeader>
-            {showTerms && (
-              <CardContent>
-                <OntologyCard terms={selectedTerms} />
-              </CardContent>
-            )}
-          </Card>
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">Generated IRTV Objects and Relationships
-              <button
-                onClick={() => setShowIrtv(!showIrtv)}
-                className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
-              >
-                {showIrtv ? '-' : '+'}
-              </button>
-              </CardTitle>
-            </CardHeader>
-            {showIrtv && domain && (
-              <CardContent>
-                <div className="mx-1 bg-gray-700 p-2 rounded max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+        <div className="border-solid rounded border-4 border-blue-700 w-3/4">
+          <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList>
+              <TabsTrigger value="terms">Terms</TabsTrigger>
+              <TabsTrigger value="irtv">IRTV Objects</TabsTrigger>
+              {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
+              <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger></TabsList> */}
+            </TabsList>
+            <TabsContent value="terms">
+              {/* <Card> */}
+              {/* <CardHeader>
+                  <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">
+                    Proposed Concepts and Terms
+                    <button
+                      onClick={() => {
+                        setShowTerms(!showTerms)
+                        setActiveTab('terms');
+                      }}
+                      className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
+                    >
+                      {showTerms ? '-' : '+'}
+                    </button>
+                  </CardTitle>
+                </CardHeader> */}
+              {showTerms && (
+                // <CardContent>
+                <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                  <OntologyCard terms={selectedTerms} />
+                </div>
+                // </CardContent>
+              )}
+              {/* </Card> */}
+            </TabsContent>
+            <TabsContent value="irtv">
+              {/* <Card> */}
+              {/* <CardHeader>
+                  <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">
+                    Generated IRTV Objects and Relationships
+                    <button
+                      onClick={() => {
+                      setShowIrtv(!showIrtv);
+                      }}
+                      className="rounded bg-gray-500 text-white hover:text-white p-2 ml-2"
+                    >
+                      {showIrtv ? '-' : '+'}
+                    </button>
+                  </CardTitle>
+                </CardHeader> */}
+              {showIrtv && domain && (
+                // <CardContent>
+                <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                   <ObjectCard domain={domain} />
                 </div>
-              </CardContent>
-            )}
-          </Card>
-          {(!domain) && (
-            <Card style={{ height: 'calc(100vh - 28rem)' }}>
-              <CardHeader>
-                <CardTitle className="text-white flex justify-between items-center flex-grow border ps-1">
-                  <div className="flex items-center ml-auto">
-                    {/* <Button onClick={handleFirstStep} className="bg-green-700 text-white py-2 rounded">
-                      Ask Chat GPT
-                    </Button> */}
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center h-full">
-              </CardContent>
-            </Card>
-          )}
+                // </CardContent> 
+              )}
+              {/* </Card> */}
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
 

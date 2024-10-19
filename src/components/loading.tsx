@@ -26,9 +26,12 @@ export function Loading() {
   );
 }
 
-export function LoadingDots() {
+interface LoadingDotsProps {
+  orientation?: 'horizontal' | 'vertical';
+}
+export function LoadingDots({ orientation = 'horizontal' }: LoadingDotsProps) {
   return (
-    <div className="flex space-x-2">
+    <div className={`flex ${orientation === 'horizontal' ? 'space-x-2' : 'flex-col space-y-2'}`}>
       <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce"></div>
       <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-200"></div>
       <div className="w-2 h-2 bg-gray-500 rounded-full animate-bounce delay-400"></div>

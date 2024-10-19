@@ -14,8 +14,8 @@ export const MetamodelPrompt = `
 You are tasked with first creating **Information objects** from the list of Ontology Terms given by the  **Information** and establishing relationships among them, adhering to the provided metamodel and ontology.
 
 After creating Information objects with relationships, **create the related Tasks, Views, and Roles** based on domain analysis and logical associations with the Information objects and their relationships.
-
-Your goal is to expand the knowledge base with at least **10 new Information objects and some Views, Tasks and Roles** with corresponding set of relationships, ensuring all objects are interconnected.
+  
+Ensure that all objects are interconnected, forming a cohesive knowledge structure.
 
 ### **Object Creation**
 
