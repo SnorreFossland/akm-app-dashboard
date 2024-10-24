@@ -9,6 +9,9 @@ export const MetamodelPrompt = `
   - Relationship Types:
   ${metamodel.relshiptypes.map((rel) => `- id: ${rel.id}, name: ${rel.name}, from ${rel.fromobjtypeRef}, to ${rel.toobjtypeRef}`).join('\n')}
 
+  - Object Typeviews:
+  ${metamodel.objecttypeviews.map((view) => `- id: ${view.id}, name: ${view.name}`).join('\n')}
+
 ## **Instructions**
 
 You are tasked with first creating **Information objects** from the list of Ontology Terms given by the  **Information** and establishing relationships among them, adhering to the provided metamodel and ontology.

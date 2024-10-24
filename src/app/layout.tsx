@@ -28,7 +28,7 @@ export default function RootLayout({
           >
             <SidebarTrigger className="fixed top-0 left-50 z-1 text-red-500" />
             <AppSidebar />
-            <main className="flex flex-1 flex-col p-0 transition-all duration-300 ease-in-out">
+            <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
               <div className="h-full rounded-md border-2 border-dashed p-0">
                 {children}
               </div>

@@ -23,4 +23,10 @@ export const metamodel = {
         { id: '147250de-d71b-484b-57c7-7331c77f88f8', name: 'triggers', fromobjtypeRef: '29d76eb4-29b7-4cf7-ed16-a1d172738bad', toobjtypeRef: '29d76eb4-29b7-4cf7-ed16-a1d172738bad' }, 
         // ...other relationship types
     ],
+    objecttypeviews: [
+       {id: "69905cda-8f34-4124-e2f4-0cc0af193334", name: "Role", typeRef: "bbb60f1c-b5a3-41dc-dff6-2b594f54a2dd"},
+        { id: "8012d5e4-d41d-4a15-d294-c9bd48a0046a", name: "Task", typeRef: "29d76eb4-29b7-4cf7-ed16-a1d172738bad"},
+
+    ],
+
 };

@@ -12,23 +12,23 @@ interface Domain {
 export const ObjectCard = ({ domain }: { domain: Domain }) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
-    const [mermaidCode, setMermaidCode] = useState('');
-    const [showObjectsCard, setShowObjectsCard] = useState(true);
-    const [showDiagram, setShowDiagram] = useState(false);
+    // const [mermaidCode, setMermaidCode] = useState('');
+    // const [showObjectsCard, setShowObjectsCard] = useState(true);
+    // const [showDiagram, setShowDiagram] = useState(false);
     const [activeTab, setActiveTab] = useState('objects');
     const [regen, setRegen] = useState(false);
 
-    console.log('17 domain:', domain);
+    console.log('21 object-card domain:', domain);
 
     const generateMermaidDiagram = (regen: boolean) => {
         let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
         // Add objects
         domain.objects.forEach((object) => {
-            diagram += `${object.id}["${object.name} \n (${object.typeName})"];\n`;
+            diagram += `${object.id}["${object.name} \n (${object.typeName})"];\n\n`;
         });
         // Add relationships
         domain.relationships.forEach((relationship) => {
-            diagram += `${relationship.fromobjectRef} -->|${relationship.name}| ${relationship.toobjectRef};\n`;
+            diagram += `${relationship.fromobjectRef} -->|${relationship.name}| ${relationship.toobjectRef};\n\n`;
         });
         setMermaidDiagram(diagram);
         // diagramRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -42,15 +42,17 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                 theme: 'base',
                 themeVariables: {
                     primaryColor: '#667777', // box fill color
-                    edgeLabelBackground: 'transparent',
+                    edgeLabelBackground: '#33557700', //'rgba(0, 0, 0, 0)',
                     secondaryColor: '#8888ff',
-                    tertiaryColor: '#ddddff',
+                    tertiaryColor: '#dddddd',
                     primaryTextColor: '#ffdddd',
                     secondaryTextColor: '#00ff00',
                     tertiaryTextColor: '#0000ff',
-                    lineColor: '#dddddd',
-                    background: '#ffffff', // light background
-                    nodeBorderRadius: '15px', // rounded objects
+                    lineColor: '#dddddd', // line relationship color
+                    background: 'red', // light background
+                    nodeBorderRadius: '5px', // rounded objects
+                    // background: '#ffffff', // light background
+                    // nodeBorderRadius: '15px', // rounded objects
                 },
             });
             mermaid.contentLoaded();
@@ -65,12 +67,14 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
     };
 
     return (
-        <div className="w-100 m-auto">
+        <div className="w-100 max-h-[calc(100vh-18rem)] overflow-hidden">
             <div className="w-100 m-auto">
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
-                        <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
-                        <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger></TabsList>
+                        <TabsTrigger value="objects">Objects & Relationships</TabsTrigger>
+                        <TabsTrigger value="diagram">Preview Diagram</TabsTrigger></TabsList>
+                        {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
+                        <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger></TabsList> */}
                 <TabsContent value="objects">
                     <div className="flex justify-between items-center">
                         {/* <h6 className="text-white">AKM - IRTV Objects and Relationships</h6> */}
@@ -86,11 +90,9 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                         <div className="flex space-x-4">
                             <Card className="w-full">
                                 <CardHeader>
-                                    <CardTitle className="bg-gray-700 px-2 m-0 text-1xl font-bold">Objects</CardTitle>
+                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objects</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-6k">
-                                    <div className="max-h-96 overflow-auto">
-                                        <div className="overflow-auto max-h-96">
                                             <table className="min-w-full divide-y divide-gray-700 text-sm">
                                                 <thead className="bg-gray-800 sticky top-0">
                                                     <tr>
@@ -99,27 +101,34 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                                                         <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Proposed Type</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="bg-gray-900 divide-y divide-gray-700">
-                                                    {domain?.objects.map((object) => (
-                                                        <tr key={object.id}>
-                                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.name}</td>
-                                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.typeName}</td>
-                                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.proposedType}</td>
-                                                        </tr>
-                                                    ))}
+                                                <tbody>
+                                                    <tr>
+                                                        <td colSpan={3}>
+                                                            <div className="bg-gray-800 divide-y divide-gray-700 w-full max-h-[calc(82vh-18rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                                                <tbody className="max-h-[88rem] bg-gray-900 divide-y divide-gray-700">
+                                                                    {domain?.objects.map((object) => (
+                                                                        <tr key={object.id}>
+                                                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.name}</td>
+                                                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.typeName}</td>
+                                                                            <td className="px-4 py-2 whitespace-nowrap text-gray-300">{object.proposedType}</td>
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
                                                 </tbody>
                                             </table>
-                                        </div>
-                                    </div>
+    
                                 </CardContent>
                             </Card>
-                            <Card className="w-full max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                            <Card className="w-full">
                                 <CardHeader>
-                                    <CardTitle className="bg-gray-700 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>
+                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-6k">
                                     <div className="max-h-96 overflow-auto">
-                                        <div className="overflow-auto max-h-96">
+                                        <div className="overflow-auto h-90vh">
                                             <table className="min-w-full divide-y divide-gray-700 text-sm">
                                                 <thead className="bg-gray-800 sticky top-0">
                                                     <tr>
@@ -128,7 +137,7 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                                                         <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">To</th>
                                                     </tr>
                                                 </thead>
-                                                <tbody className="bg-gray-900 divide-y divide-gray-700">
+                                                <tbody className="bg-gray-800 divide-y divide-gray-700 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                                     {domain?.relationships.map((relationship) => (
                                                         <tr key={relationship.id}>
                                                             <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relationship.nameFrom}</td>
@@ -157,7 +166,7 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                             Regenerate Diagram
                         </button>
                         <Card className="w-full h-full my-1">
-                            <div className='overflow-auto min-h-[48rem] h-full'>
+                            <div className='overflow-auto min-h-[48rem]'>
                                 {renderMermaidDiagram()}
                             </div>
                             {/* {mermaidDiagram && (
@@ -165,7 +174,8 @@ export const ObjectCard = ({ domain }: { domain: Domain }) => {
                                     <pre className="bg-gray-800 text-white p-4 rounded">
                                         {mermaidDiagram}
                                     </pre>
-                                </div>
+                   
+                                    </div>
                             )} */}
                         </Card>
                     </div>

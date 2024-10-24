@@ -9,6 +9,8 @@ interface DataType {
   project: {
     phData: {
       metis: {
+        name: string,
+        description: string,
         models: {
           id: string,
           name: string,
@@ -30,10 +32,49 @@ interface DataType {
             nameFrom: string,
             toobjectRef: string,
             nameTo: string,
-          }[]
-        }[]
-      }
-    };
+          }[],
+          modelviews: {
+            id: string,
+            name: string,
+            description: string,
+            modelRef: string,
+            modified: boolean,
+            markedAsDeleted: boolean,
+            objectviews: {
+              id: string,
+              name: string,
+              type: string,
+              loc: string,
+              size: string,
+              memberscale: number,
+              objectRef: string,
+              modified: boolean,
+              markedAsDeleted: boolean,
+              isSelect: boolean,
+              isGroup: boolean,
+              isExpanded: boolean,
+              image: string,
+              icon: string,
+              fillColor: string,
+              strokeColor: string,
+              strokeWidth: string,
+              strokeColor2: string,
+              textColor: string,
+              textColor2: string,
+              viewkind: string,
+              },
+            relshipviews: {
+              id: string,
+              name: string,
+              relshipRef: string,
+              fromobjviewRef: string,
+              toobjviewRef: string,
+              points: number[],
+            }[],
+          }[],
+          }[],
+        },
+      },
     phFocus: {
       focusModel: {
         id: string;
@@ -43,7 +84,7 @@ interface DataType {
         id: string;
         name: string;
       };
-    };
+    },
     phUser: {
       id: string;
       name: string;
@@ -51,7 +92,7 @@ interface DataType {
     };
     phSource: string;
   };
-}
+} 
 
 interface FeatureAState {
   data: DataType | null;
@@ -94,32 +135,49 @@ const featureASlice = createSlice({
     setObjects(state, action: PayloadAction<DataType['project']['phData']['metis']['models'][number]['objects'][number][]>) {
       let currentModel = state.data?.project.phData.metis.models.find(model => model.id === state.data?.project.phFocus.focusModel.id);
       if (!currentModel) currentModel = state.data?.project.phData.metis.models[0];
-      console.log('84 currentModel', currentModel, state.data?.project.phFocus);
+      console.log('129 currentModel', currentModel, state.data?.project.phFocus);
       if (currentModel && currentModel.objects) {
         action.payload.map(object => {
           const objectIndex = currentModel?.objects?.findIndex(object => object.id === state.data?.project?.phFocus?.focusObject?.id);
+          console.log('132 object', object, 'objectIndex', objectIndex);  
           if (objectIndex === undefined || objectIndex === -1) {
             currentModel.objects.push(object);
           } else {
             currentModel.objects[objectIndex] = object;
           }
-        });
-      }
+          });
+        }
     },
     // ToDo: rename setRelationships to setRelships
     setRelationships(state, action: PayloadAction<DataType['project']['phData']['metis']['models'][number]['relships'][number][]>) {
       let currentModel = state.data?.project.phData.metis.models.find(model => model.id === state.data?.project.phFocus.focusModel.id);
       if (!currentModel) currentModel = state.data?.project.phData.metis.models[0];
-      console.log('93 action.payload', action.payload, 'currentModel', currentModel,);
+      console.log('145 action.payload', action.payload, 'currentModel', currentModel,);
       if (currentModel && currentModel.relships) {
         action.payload.map((relationship, index) => {
           const relationshipIndex = currentModel?.relships?.findIndex(r => r.id === relationship?.id);
-          if (index === 1) console.log('114 relationship', relationship,'index',  relationshipIndex);
+          if (index === 1) console.log('149 relationship', relationship,'index',  relationshipIndex);
           if (relationshipIndex === undefined || relationshipIndex === -1) {
             currentModel.relships.push(relationship);
           } else {
             currentModel.relships[relationshipIndex] = relationship;
           }
+        });
+      }
+    },
+    setModelview(state, action: PayloadAction<DataType['project']['phData']['metis']['models'][number]['modelviews'][number][]>) { 
+      let currentModel = state.data?.project.phData.metis.models.find(model => model.id === state.data?.project.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.data?.project.phData.metis.models[0];
+      console.log('161 action.payload', action.payload, 'currentModel', currentModel,);
+      if (currentModel && currentModel.modelviews) {
+        action.payload.forEach(modelview => {
+          console.log('164 modelview', modelview);
+            const modelviewIndex = currentModel.modelviews.findIndex(mv => mv.id === modelview.id);
+            if (modelviewIndex === -1) {
+            currentModel.modelviews.push(modelview);
+            } else {
+            currentModel.modelviews[modelviewIndex] = modelview;
+            }
         });
       }
     },
@@ -132,7 +190,7 @@ const featureASlice = createSlice({
       .addCase(getFeatureAData.pending, (state) => {
         state.status = 'loading';
       })
-      .addCase(getFeatureAData.fulfilled, (state, action) => {
+      .addCase(getFeatureAData.fulfilled, (state, action: PayloadAction<DataType>) => {
         state.status = 'succeeded';
         state.data = action.payload;
       })
@@ -153,5 +211,5 @@ const featureASlice = createSlice({
   },
 });
 
-export const { setFileData, setObjects, setRelationships, clearStore } = featureASlice.actions;
+export const { setFileData, setObjects, setRelationships, setModelview, clearStore } = featureASlice.actions;
 export default featureASlice.reducer;

@@ -77,47 +77,59 @@ const data = {
       ],
     },
     {
-      title: "Playground",
+      title: "AKM AI Playground",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
+        // {
+        //   title: "Vercel-AI",
+        //   url: "/vercel-ai",
+        //   icon: Star,
+        //   description: "Vercel-AI",
+        // },
+        // {
+        //   title: "Synchronous Test",
+        //   url: "/synchronous",
+        //   icon: Star,
+        //   description: "Synchronous Test",
+        // },
         {
-          title: "Vercel-AI",
-          url: "/vercel-ai",
+          title: "Enterpr. Modeling(POPS)",
+          url: "/streaming",
           icon: Star,
-          description: "Vercel-AI",
+          description: "Product, Organisation, Process, System (POPS) Modelling",
         },
         {
-          title: "Synchronous Test",
-          url: "/synchronous",
-          icon: Star,
-          description: "Synchronous Test",
-        },
-        {
-          title: "Streaming",
+          title: "Concept Modelling-IRTV",
           url: "/streaming",
           icon: Star,
           description: "Streaming",
         },
         {
-          title: "History",
-          url: "#",
-          icon: History,
-          description: "View your recent prompts",
-        },
-        {
-          title: "Starred",
-          url: "#",
+          title: "Meta Modelling-TD",
+          url: "/streaming",
           icon: Star,
-          description: "Browse your starred prompts",
+          description: "Streaming",
         },
-        {
-          title: "Settings",
-          url: "#",
-          icon: Settings2,
-          description: "Configure your playground",
-        },
+        // {
+        //   title: "History",
+        //   url: "#",
+        //   icon: History,
+        //   description: "View your recent prompts",
+        // },
+        // {
+        //   title: "Starred",
+        //   url: "#",
+        //   icon: Star,
+        //   description: "Browse your starred prompts",
+        // },
+        // {
+        //   title: "Settings",
+        //   url: "#",
+        //   icon: Settings2,
+        //   description: "Configure your playground",
+        // },
       ],
     },
     {
@@ -173,26 +185,26 @@ const data = {
       url: "#",
       icon: Code2,
       items: [
-        {
-          title: "Chat",
-          url: "#",
-        },
-        {
-          title: "Completion",
-          url: "#",
-        },
-        {
-          title: "Images",
-          url: "#",
-        },
-        {
-          title: "Video",
-          url: "#",
-        },
-        {
-          title: "Speech",
-          url: "#",
-        },
+        // {
+        //   title: "Chat",
+        //   url: "#",
+        // },
+        // {
+        //   title: "Completion",
+        //   url: "#",
+        // },
+        // {
+        //   title: "Images",
+        //   url: "#",
+        // },
+        // {
+        //   title: "Video",
+        //   url: "#",
+        // },
+        // {
+        //   title: "Speech",
+        //   url: "#",
+        // },
       ],
     },
     {
@@ -232,21 +244,21 @@ const data = {
     },
   ],
   projects: [
-    {
-      name: "Design Engineering",
-      url: "#",
-      icon: Frame,
-    },
-    {
-      name: "Sales & Marketing",
-      url: "#",
-      icon: PieChart,
-    },
-    {
-      name: "Travel",
-      url: "#",
-      icon: Map,
-    },
+    // {
+    //   name: "Design Engineering",
+    //   url: "#",
+    //   icon: Frame,
+    // },
+    // {
+    //   name: "Sales & Marketing",
+    //   url: "#",
+    //   icon: PieChart,
+    // },
+    // {
+    //   name: "Travel",
+    //   url: "#",
+    //   icon: Map,
+    // },
   ],
   searchResults: [
     {
