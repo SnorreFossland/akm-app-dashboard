@@ -108,8 +108,15 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                     </TabsList>
                     <TabsContent value="object-views" className='p-1 my-0 py-0 rounded'>
                         <div className='my-0 py-0' style={{ backgroundColor: 'hsl(200, 50%, 16%)' }}>
-                            <div className="mx-1 pt-2 w-full"> Modelview: {modelviews?.modelview[0]?.name} Descr: {modelviews?.modelview[0]?.description} </div>
-                            <div className="flex space-x-4">
+                            <div className="mx-1 pt-2 w-full">
+                                {modelviews?.modelview?.length > 0 ? (
+                                    <>
+                                        Modelview: {modelviews.modelview[0].name} Descr: {modelviews.modelview[0].description}
+                                    </>
+                                ) : (
+                                    "No modelview available"
+                                )}
+                            </div>                           <div className="flex space-x-4">
                                 <Card className="w-full">
                                     <CardHeader>
                                         <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objects</CardTitle>

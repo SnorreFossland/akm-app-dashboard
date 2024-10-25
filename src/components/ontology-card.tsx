@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-//make a card for presenting ontology data (concepts/terms and relationships) in the system
+
 interface Term {
     name: string;
     description: string;
@@ -23,29 +23,19 @@ export const OntologyCard = ({ terms }: OntologyCardProps) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
 
-    console.log('32 terms:', terms);
     const [activeTab, setActiveTab] = useState('terms');
     const [regen, setRegen] = useState(false);
 
-    useEffect(() => {
-        generateMermaidDiagram(regen);
-    }, [terms, regen]);
-
-    const generateMermaidDiagram = (regen: boolean) => {
+    const generateMermaidDiagram = useCallback((regen: boolean) => {
         let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
-        // Add objects
         terms?.objects.forEach((object) => {
             diagram += `${object.name.replace(/\s+/g, '_')}["${object.name}"];\n`;
-            // diagram += `${object.name.replace(/\s+/g, '_')}["${object.name} \n (${object.description})"];\n`;
         });
-        // Add relationships
         terms?.relationships.forEach((r) => {
             diagram += `${r.nameFrom.replace(/\s+/g, '_')} -->|${r.name.replace(/\s+/g, '_')}| ${r.nameTo.replace(/\s+/g, '_')};\n`;
         });
         setMermaidDiagram(diagram);
-        // diagramRef.current?.scrollIntoView({ behavior: 'smooth' });
-    };
-
+    }, [terms]);
 
     useEffect(() => {
         if (mermaidDiagram && diagramRef.current) {
@@ -53,16 +43,16 @@ export const OntologyCard = ({ terms }: OntologyCardProps) => {
                 startOnLoad: true,
                 theme: 'base',
                 themeVariables: {
-                    primaryColor: '#667777', // box fill color
-                    edgeLabelBackground: '#22557715', // edge (relship) label background color
+                    primaryColor: '#667777',
+                    edgeLabelBackground: '#22557715',
                     secondaryColor: '#8888ff',
                     tertiaryColor: '#ddddff',
                     primaryTextColor: '#ffdddd',
                     secondaryTextColor: '#00ff00',
                     tertiaryTextColor: '#0000ff',
                     lineColor: '#dddddd',
-                    background: '#ffffff', // light background
-                    nodeBorderRadius: '25px', // rounded objects
+                    background: '#ffffff',
+                    nodeBorderRadius: '25px',
                 },
             });
             mermaid.contentLoaded();
@@ -84,8 +74,6 @@ export const OntologyCard = ({ terms }: OntologyCardProps) => {
                         <TabsList>
                             <TabsTrigger value="terms">Terms & Relations</TabsTrigger>
                             <TabsTrigger value="diagram">Diagram</TabsTrigger>
-                            {/* <TabsTrigger value="terms" className={activeTab === 'terms' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Terms & Relations</TabsTrigger>
-                            <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Prompt</TabsTrigger> */}
                         </TabsList>
                         <TabsContent value="terms" className="flex flex-row space-x-1 max-h-[calc(100vh-16rem)]">
                             <Card className="w-full">
@@ -93,7 +81,7 @@ export const OntologyCard = ({ terms }: OntologyCardProps) => {
                                     <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Terms</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-6k">
-                                    <table className=" divide-y divide-gray-700 text-sm w-full">
+                                    <table className="divide-y divide-gray-700 text-sm w-full">
                                         <thead className="w-full bg-gray-800 sticky top-0">
                                             <tr className="w-full">
                                                 <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Name</th>
@@ -135,8 +123,8 @@ export const OntologyCard = ({ terms }: OntologyCardProps) => {
                                                     <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">To</th>
                                                 </tr>
                                             </thead>
-
-                                                <tbody className="bg-gray-800 divide-y divide-gray-700 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">                                            {terms?.relationships?.map((rel, index) => (
+                                            <tbody className="bg-gray-800 divide-y divide-gray-700 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                                {terms?.relationships?.map((rel, index) => (
                                                     <tr key={rel.name + index}>
                                                         <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.nameFrom}</td>
                                                         <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.name}</td>
@@ -172,5 +160,4 @@ export const OntologyCard = ({ terms }: OntologyCardProps) => {
             </div>
         </>
     );
-
 };

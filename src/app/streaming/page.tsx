@@ -98,8 +98,8 @@ const SyncPage = () => {
   // }, [existingContext, terms]);
 
   useEffect(() => {
-    type ExistingObject = { id: string; name: string; description: string; typeName: string };
-    type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
+    // type ExistingObject = { id: string; name: string; description: string; typeName: string };
+    // type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
 
     if (data?.project) {
       console.log('89 data', data);
@@ -119,11 +119,10 @@ const SyncPage = () => {
         const metamodelPrompt = `
         **Metamodel:**
         - **Object Types:** \n ${mmObjecttypeStrings} 
-        - **Relation Types:** \n ${mmRelationtypeStrings}
-        - **Object Typeviews:** \n ${metamodel?.objecttypeviews.map((otv: any) => `${otv.id} ${otv.name}`).join(', ')}
-
-        The objecttypeviews id is referenced in from the objectview as typeviewRef.
-      `;
+        - **Relation Types:** \n ${mmRelationtypeStrings}`;
+        // - **Object Typeviews:** \n ${metamodel?.objecttypeviews.map((otv: any) => `${otv.id} ${otv.name}`).join(', ')}
+        // The objecttypeviews id is referenced in from the objectview as typeviewRef.
+        // `;
 
         setMetamodelPrompt(metamodelPrompt);
       }
@@ -143,11 +142,11 @@ const SyncPage = () => {
 
       console.log('130 filteredRelationships', filteredRelationships);
 
-      const existingObjects = curmod?.objects?.map((obj: ExistingObject) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName }));
-      const existingRelationships = filteredRelationships?.map((rel: ExistingRelationship) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo }));
+      const existingObjects = curmod?.objects?.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName }));
+      const existingRelationships = filteredRelationships?.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo }));
 
       setExistingInfoObjects({
-        objects: existingObjects?.filter((obj: ExistingObject) => obj && obj.typeName === 'Information') || [],
+        objects: existingObjects?.filter((obj: any) => obj && obj.typeName === 'Information') || [],
         relationships: existingRelationships
       });
       console.log('129 existingInfoObjects', existingInfoObjects, existingObjects, existingRelationships, filteredRelationships);
@@ -155,8 +154,8 @@ const SyncPage = () => {
 
       // console.log('99 context', existingTerms);
 
-      setExistingContext('**Objects** \n ' + existingObjects?.map((obj: ExistingObject) => `- ${obj.id} ${obj.name} ${obj.description}` + '\n') + '\n **Relationships** \n ' +
-        existingRelationships?.map((rel: ExistingRelationship) => `- ${rel.id} ${rel.name} ${rel.nameFrom} ${rel.nameTo}`));
+      setExistingContext('**Objects** \n ' + existingObjects?.map((obj: any) => `- ${obj.id} ${obj.name} ${obj.description}` + '\n') + '\n **Relationships** \n ' +
+        existingRelationships?.map((rel: any) => `- ${rel.id} ${rel.name} ${rel.nameFrom} ${rel.nameTo}`));
 
       // console.log('101 existingContext', existingContext);
       // console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
@@ -215,7 +214,7 @@ const SyncPage = () => {
         const filteredWP = Object.values(data).filter((item: any) => item.group === 'work-product-component');
         const termNamesMaster = Array.from(new Set(filteredMaster.map((item: any) => item.entity_name + ' ')));
         const termNamesWP = Array.from(new Set(filteredWP.map((item: any) => item.entity_name + ' ')));
-        setOntologyString(`master-data:\n ${filteredMaster}, work-product-component:\n ${termNamesWP}`);
+        setOntologyString(`master-data:\n ${termNamesMaster}, work-product-component:\n ${termNamesWP}`);
         setOntology(dataOntology);
         console.log('81 Fetched ontology data:', data, dataArr, dataOntology);
       } else {
@@ -244,26 +243,46 @@ const SyncPage = () => {
       setIsLoading(false);
       return;
     }
+    console.log('246 domainDescription', domainDescription, 'suggestedConcepts', suggestedConcepts, 'existingTerms', existingTerms, 'ontologyString', ontologyString);
+    const prompt =  (domainDescription && domainDescription !== '') 
+      ? (domainDescription.split(' ').length === 1) 
+        ? `
+        Identify and explain the key concepts and terms related to the domain supplied in the user input:
 
-    let prompt =  (domainDescription && domainDescription !== '') ? `
-    Identify and explain the key concepts and terms related to the domain including the following user input: 
-    ## Extract domain description or terms from this user input: ${domainDescription}
+        ## User Input : **${domainDescription} Domain**
+        Elaborate around the term ${domainDescription} and add related terms.
 
-    For each term:
+        For each term:
 
-      •	Provide a brief, clear definition highlighting its significance.
-      •	Explain how it interrelates with other terms within the domain.
-      •	Include any terms in ${domainDescription}.
-    ` : "";
-    
-    let contextPrompt = (suggestedConcepts && suggestedConcepts !== '') ? `
-      You must include the following terms in the Conceptual Apparatus:
-      **User Suggested Terms:**
-        ${suggestedConcepts}
+          •	Provide a brief, clear definition highlighting its significance.
+          •	Explain how it interrelates with other terms within the domain.
+        `
+        : `
+          Identify and explain the key concepts and terms related to the domain supplied in the user input: 
+          ## User Input : ${domainDescription}
 
-      Make sure you create at least 20 additional terms.
-    `
-    : "";
+          You can then infer the domain from the term(s) and provide a brief description of the domain.
+          Do not use the generic term like "Entity" "Attribute" etc. as your suggested terms.
+
+          For each term:
+
+            •	Provide a brief, clear definition highlighting its significance.
+            •	Explain how it interrelates with other terms within the domain.
+          ` 
+      : "";
+
+    console.log('274 prompt', prompt);
+          
+    let contextPrompt = (suggestedConcepts && suggestedConcepts !== '') 
+      ? `
+            You must include the following terms in the Conceptual Apparatus:
+            **User Suggested Terms:**
+              ${suggestedConcepts}
+
+            Make sure you create at least 20 additional terms.
+        `
+      : "";
+
 
     contextPrompt += (existingTerms && existingTerms !== '') ? `
       You must include the following existing terms in the Conceptual Apparatus:
@@ -317,13 +336,13 @@ const SyncPage = () => {
       }
 
       const parsed = JSON.parse(data);
-      // console.log('201 parsed', parsed);
+      console.log('323 parsed', parsed);
       if (parsed.objects && Array.isArray(parsed.objects)) {
         const selectedTermsString = parsed.objects.map((item: { name: string }) => `- ${item.name}`).join('\n');
         const selectedRelationsString = parsed.relationships.map((rel: { name: string, nameFrom: string, nameTo: string }) => `- ${rel.name} (from: ${rel.nameFrom}, to: ${rel.nameTo})`).join('\n');
         setTerms(`**Information types***\n\n ${selectedTermsString}\n\n **Relations:**\n\n${selectedRelationsString}\n\n`);
         setSelectedTerms({ objects: parsed.objects, relationships: parsed.relationships });
-        console.log('254 terms', terms) //, 'selectedTermsString', selectedTermsString, 'selectedRelationsString', selectedRelationsString);
+        console.log('339 terms', terms, 'selectedTermsString', selectedTermsString, 'selectedRelationsString', selectedRelationsString);
         setStep(2);
       } else {
         console.error("Parsed data does not contain object or objects is not an array");
@@ -342,15 +361,14 @@ const SyncPage = () => {
     setDomain(undefined);
     setStep(2);
 
-    let prompt = ` You are a highly knowledgeable assistant and expert in Active knowledge modeling and Information modelling.
-      You are tasked with exploring and enriching the knowledge concepts and terms within the context terms.
-      Your first and primary objective is to ensure a comprehensive and cohesive knowledge structure based on the terms in the context and aligned with the ontology and according to the 'metamodel'.
+    const prompt = ` 
+      Your first and primary objective is to ensure a comprehensive and cohesive knowledge structure based on the terms in the context and generated according to the metamodel.
     `;
 
     let contextPrompt = (terms && terms !== '') ? `
     Create Information objects and Relationships based on the following terms:
-    ## List of proposed Information types and relations:
-        **Information**
+    ## List of terms:
+        **Terms**
         ${terms}
       ` : '';
 
@@ -387,7 +405,8 @@ const SyncPage = () => {
     // console.log('174 IRTV step :', step,   'prompt:', prompt, 'systemIrtvPrompt:', systemIrtvPrompt, 'contextPrompt:', contextPrompt, 'ontologyPrompt:', ontologyPrompt, 'metamodelPrompt:', metamodelPrompt);
 
     setSystemPrompt(systemIrtvPrompt)
-    setUserPrompt(prompt + metamodelPrompt);
+    setUserPrompt(prompt + contextPrompt + metamodelPrompt);
+
 
     try {
       const res = await fetch("/streaming/api/genmodel", {
@@ -700,6 +719,7 @@ const SyncPage = () => {
                     </div>
                   )}
                   <Button onClick={() => {
+                    setStep(1);
                     handleFirstStep();
                     setActiveTab('terms');
                   }}

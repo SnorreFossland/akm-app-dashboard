@@ -3,37 +3,38 @@ import { metamodel } from '@/metamodel/metamodel';
 // IRTV Metamodel Prompt
 export const MetamodelPrompt = `
   # **Metamodel:**
+
   - Object Types:
   ${metamodel.objecttypes.map((obj) => `- id: ${obj.id}, name: ${obj.name}`).join('\n')}
   
   - Relationship Types:
   ${metamodel.relshiptypes.map((rel) => `- id: ${rel.id}, name: ${rel.name}, from ${rel.fromobjtypeRef}, to ${rel.toobjtypeRef}`).join('\n')}
 
-  - Object Typeviews:
-  ${metamodel.objecttypeviews.map((view) => `- id: ${view.id}, name: ${view.name}`).join('\n')}
-
 ## **Instructions**
 
-You are tasked with first creating **Information objects** from the list of Ontology Terms given by the  **Information** and establishing relationships among them, adhering to the provided metamodel and ontology.
+You are tasked with first creating **Information** objects from the list of Terms given by the  **Terms** and establishing relationships among them, 
+adhering to the provided metamodel and terms.
 
-After creating Information objects with relationships, **create the related Tasks, Views, and Roles** based on domain analysis and logical associations with the Information objects and their relationships.
+After creating Information objects with relationships, create the related Tasks, Views, and Roles** based on domain analysis 
+and logical associations with the Information objects and their relationships.
   
 Ensure that all objects are interconnected, forming a cohesive knowledge structure.
 
 ### **Object Creation**
 
 - First **Create Information Objects:**
-  - Create object based on ontology terms.
+  - Create object based on the terms.
   - Provide detailed descriptions without repeating the object's name.
-  - Include an attribute 'proposedType' derived from the ontology terms.
   - Terms for Roles, Tasks, and Views should not be used for Information objects, but a data-record of them can be Information, and named to reflect that it is data-record 
-  - Use ontology terms for 'name' and 'proposedType', use Camelcase.
+  - Use the terms name as name for the Information object.
+  - Add 'proposedType' for Information object, that may be the same as the name.
+  - Ensure the 'proposedType' Camelcase in one word.
   - Then Establish 'refersTo' relationships among Information objects.
+  - The typeName of the Information object should be 'Information'.
   - Do **not** include the word "object" in the name.
 
 - Next add **Tasks, Views, and Roles objects** based on the metamodel:
   - Create based on the actions, processes, and responsibilities identified during domain analysis of the  user prompt.
-  - Do **not** add the 'proposedType' attribute.
   - Ensure names are appropriate (e.g., Views should not include the word "view" in the name).
   - Establish relationships between Tasks, Views, and Roles with Information objects.
 
@@ -73,9 +74,6 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
 
   - **Attributes and Types:**
     - Do **not** add the 'proposedType' attribute to Views, Tasks, or Roles.
-    - Ensure the 'proposedType' for Information objects is accurately derived from ontology terms.
-    - Use ontology terms for 'name' and 'proposedType' of Information objects if appropriate.
-    - Ensure the 'proposedType' Camelcase one word.
 
   - **Object and Relationship Creation:**
     - Do **not** create duplicate objects.
@@ -136,7 +134,7 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
       "description": "Record of users.",
       "typeRef": "Information Type id",
       "typeName": "Information",
-      "proposedType": "Equipment"
+      "proposedType": "User"
     }
   ],
   "relationships": [
