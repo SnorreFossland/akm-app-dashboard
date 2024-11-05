@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from 'react-markdown';
 import 'tailwindcss/tailwind.css'; // Ensure Tailwind CSS is imported
-
+import '@fortawesome/fontawesome-free/css/all.min.css';
 
 interface OntologyCardProps {
     ontologyData: {
@@ -40,7 +40,10 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
         try {
             let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
             ontologyData?.concepts.forEach((object) => {
-                diagram += `${object.name.replace(/\s+/g, '_')}["${object.name}"];\n`;
+                const nodeId = object.name.replace(/\s+/g, '_');
+                diagram += `${nodeId}["${object.name}"];\n`;
+                // diagram += `${nodeId}["<i class='fab fa-youtube'></i> ${object.name}"];\n`;
+                // diagram += `style ${nodeId} fill:#f9f,stroke:#333,stroke-width:2px;\n`; // Set custom color for the object
             });
             ontologyData?.relationships.forEach((r) => {
                 diagram += `${r.nameFrom.replace(/\s+/g, '_')} -->|${r.name.replace(/\s+/g, '_')}| ${r.nameTo.replace(/\s+/g, '_')};\n`;
@@ -52,8 +55,8 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     }, [ontologyData]);
 
     useEffect(() => {
-        generateMermaidDiagram;
-    }, [ontologyData, generateMermaidDiagram]);
+        generateMermaidDiagram(regen);
+    }, [ontologyData, generateMermaidDiagram, regen]);
 
     useEffect(() => {
         if (mermaidDiagram && diagramRef.current) {
@@ -62,7 +65,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                     startOnLoad: true,
                     theme: 'base',
                     themeVariables: {
-                        primaryColor: '#667777',
+                        primaryColor: '#224444',
                         edgeLabelBackground: '#22557715',
                         secondaryColor: '#8888ff',
                         tertiaryColor: '#ddddff',
@@ -74,6 +77,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         nodeBorderRadius: '25px',
                         rough: true, // Enable rough visualization
                     },
+                    securityLevel: 'loose', // Allow raw HTML if needed
                 });
                 mermaid.contentLoaded();
             } catch (error) {
@@ -104,7 +108,6 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                 <CardHeader>
                                     <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">{ontologyData?.name} </CardTitle>
                                     <div className="mx-2">{ontologyData?.description}</div>
-                                    {/* <div>Topic: <span className="m-2 text-xl font-bold text-gray-300">{ontologyData?.name}</span>Description: {ontologyData?.description}</div> */}
                                 </CardHeader>
                                 <CardContent>
                                     <div className="bg-gray-800 p-2 divide-y divide-gray-600 max-h-[calc(100vh-21rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
@@ -181,7 +184,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         </TabsContent>
                         <TabsContent value="diagram" className="m-0 px-1 rounded bg-background min-h-[57rem]">
                             <>
-                                <div className="flex justify-end mx-2">
+                                <div className="flex justify-start mx-2">
                                     <button
                                         onClick={() => {
                                             generateMermaidDiagram(!regen);
@@ -193,7 +196,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                     </button>
                                 </div>
                                 <Card className="w-full h-full my-1">
-                                    <div className='overflow-auto  h-full'>
+                                    <div className='overflow-auto h-full bg-gray-600 rounded border'>
                                         {renderMermaidDiagram()}
                                     </div>
                                 </Card>
