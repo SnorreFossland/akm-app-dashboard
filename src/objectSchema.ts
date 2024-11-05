@@ -1,8 +1,8 @@
 import { z } from "zod";
 
 export const ObjectSchema = z.object({
-    name: z.string().describe("Name of the Domain"),
-    description: z.string().describe("Description of the Domain"),
+    name: z.string().describe("Name of the Model"),
+    description: z.string().describe("Description of the Model"),
     objects: z
         .array(
             z.object({

@@ -64,11 +64,14 @@ const SidebarLayout = React.forwardRef<
 })
 SidebarLayout.displayName = "SidebarLayout"
 
+const generateControlId = () => "sidebar-trigger"; // Replace with your logic
+
 const SidebarTrigger = React.forwardRef<
   HTMLButtonElement,
   React.ComponentProps<"button">
 >(({ className, ...props }, ref) => {
   const { open, onOpenChange } = useSidebar()
+  const controlId = generateControlId();
 
   return (
     <Button
@@ -77,6 +80,7 @@ const SidebarTrigger = React.forwardRef<
       size="icon"
       className={cn("h-8 w-8", className)}
       onClick={() => onOpenChange(!open)}
+      control-id={controlId} // Ensure this attribute is consistently applied
       {...props}
     >
       <PanelLeft className="h-4 w-4" />

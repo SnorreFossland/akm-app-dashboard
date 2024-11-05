@@ -10,7 +10,7 @@ import { handleGetFile } from './HandleGetFile';
 import { handleGetLocalFile } from './HandleGetLocalFile';
 import { handleGetLocalFileClick } from './HandleGetLocalFileClick';
 import { handleSaveToGithub } from './HandleSaveToGithub';
-import { clearStore } from '../featureASlice';
+import { clearStore, clearModel} from '../featureASlice';
 // import { handleClearStore } from './HandleClearStore';
 
 function FeatureAComponent() {
@@ -45,6 +45,9 @@ function FeatureAComponent() {
           </Button>
           <Button onClick={() => handleGetLocalFileClick(fileInputRef)}>
             Get Local File
+          </Button>
+          <Button onClick={() => dispatch(clearModel ())}>
+            Clear Model
           </Button>
           <Button onClick={() => dispatch(clearStore ())}>
             Clear Store

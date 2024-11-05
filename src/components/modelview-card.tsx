@@ -3,9 +3,7 @@ import mermaid from 'mermaid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface Modelviews {
-    modelview: Modelview[];
-}
+type Modelviews = Modelview[];
 
 interface Modelview {
     name: string;
@@ -43,16 +41,16 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
     //     return null;
     // }   
 
-    console.log('35 modelview:', modelviews);
+    console.log('46 modelviews:', modelviews);
 
     const generateMermaidDiagram = (regen: boolean) => {
         let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
         // Add objects
-        modelviews.modelview[0].objectviews.forEach((ov: Objectviews) => {
+        modelviews[0].objectviews.forEach((ov: Objectviews) => {
             diagram += `${ov.id}["${ov.name} \n (${ov.typeName})"];\n`;
         });
         // Add relationships
-        modelviews.modelview[0].relshipviews.forEach((rv: Relshipviews) => {
+        modelviews[0].relshipviews.forEach((rv: Relshipviews) => {
             diagram += `${rv.fromobjviewRef} -->|${rv.name}| ${rv.toobjviewRef};\n`;
         });
         setMermaidDiagram(diagram);
@@ -89,44 +87,35 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
     };
 
     return (
-        <div className="w-100 max-h-[calc(100vh-16rem)] overflow-hidden">
+        <div className="w-100 max-h-[calc(100vh-7.5rem)] overflow-hidden">
             <div className="w-100 m-auto">
-                <Tabs className="bg-gray-600 mb-0 pb-1" value={activeTab} onValueChange={setActiveTab}>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-gray-700 mb-0 pb-1">
                     <TabsList className="m-1 mb-0 bg-transparent">
-                        <TabsTrigger 
-                            value="object-views" 
-                            className='pb-2 mt-2'
-                        >
-                            Objectviews & Relshipviews
-                        </TabsTrigger>
-                        <TabsTrigger 
-                            value="diagram" 
-                            className='pb-2 mt-2'
-                        >
-                            Preview Diagram
-                        </TabsTrigger>
+                        <TabsTrigger  value="object-views" className='pb-2 mt-2'>Objectviews & Relshipviews</TabsTrigger>
+                        <TabsTrigger value="diagram" className='pb-2 mt-2'>Preview Modelview </TabsTrigger>
                     </TabsList>
                     <TabsContent value="object-views" className='p-1 my-0 py-0 rounded'>
                         <div className='my-0 py-0' style={{ backgroundColor: 'hsl(200, 50%, 16%)' }}>
                             <div className="mx-1 pt-2 w-full">
-                                {modelviews?.modelview?.length > 0 ? (
+                                {modelviews && modelviews[0] ? (
                                     <>
-                                        Modelview: {modelviews.modelview[0].name} Descr: {modelviews.modelview[0].description}
+                                        Modelview: {modelviews[0].name} Descr: {modelviews[0].description}
                                     </>
                                 ) : (
                                     "No modelview available"
                                 )}
-                            </div>                           <div className="flex space-x-4">
+                            </div>                           
+                            <div className="flex space-x-4">
                                 <Card className="w-full">
                                     <CardHeader>
-                                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objects</CardTitle>
+                                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Objectviews</CardTitle>
                                     </CardHeader>
                                     <CardContent className="grid gap-6k">
                                         <table className=" divide-y divide-gray-700 text-sm w-full">
                                             <thead className="bg-gray-800 sticky top-0">
                                                 <tr>
-                                                    <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Name</th>
-                                                    <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Type Name</th>
+                                                    <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider w-full">Name</th>
+                                                    <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">TypeName</th>
                                                     <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Loc</th>
                                                 </tr>
                                             </thead>
@@ -134,11 +123,11 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                                                 <tr>
                                                     <td colSpan={3}>
                                                         <tbody className="bg-gray-900 divide-y divide-gray-700">
-                                                            {modelviews?.modelview[0]?.objectviews?.map((ov) => (
+                                                            {modelviews && modelviews[0]?.objectviews?.map((ov) => (
                                                                 <tr key={ov.id}>
-                                                                    <td className="px-4 py-2 whitespace-nowrap text-gray-300">{ov.name}</td>
-                                                                    <td className="px-4 py-2 whitespace-nowrap text-gray-300">{ov.typeName}</td>
-                                                                    <td className="px-4 py-2 whitespace-nowrap text-gray-300">{ov.loc}</td>
+                                                                    <td className="px-4 py-2 whitespace-nowrap text-gray-300 w-full">{ov.name}</td>
+                                                                    <td className="px-4 py-2 whitespace-nowrap text-gray-300 ">{ov.typeName}</td>
+                                                                    <td className="px-4 py-2 whitespace-nowrap text-gray-300 ">{ov.loc}</td>
                                                                 </tr>
                                                             ))}
                                                         </tbody>
@@ -150,7 +139,7 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                                 </Card>
                                 <Card className="w-full max-h-[48rem] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                     <CardHeader>
-                                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>
+                                        <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationshipviews</CardTitle>
                                     </CardHeader>
                                     <CardContent className="grid gap-6k">
                                         <div className="max-h-96 overflow-auto">
@@ -158,17 +147,17 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                                                 <table className="min-w-full divide-y divide-gray-700 text-sm">
                                                     <thead className="bg-gray-800 sticky top-0">
                                                         <tr>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">From</th>
+                                                            {/* <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">From</th> */}
                                                             <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Relationship</th>
-                                                            <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">To</th>
+                                                            {/* <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">To</th> */}
                                                         </tr>
                                                     </thead>
                                                     <tbody className="bg-gray-900 divide-y divide-gray-700">
-                                                        {modelviews?.modelview[0]?.relshipviews?.map((rv) => (
-                                                            <tr key={rv.id}>
-                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.nameFrom}</td>
+                                                        {(modelviews[0]) &&  modelviews[0]?.relshipviews?.map((rv: any) => (
+                                                             <tr key={rv.id}>
+                                                                {/* <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.fromobjviewRef}</td> */}
                                                                 <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.name}</td>
-                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.nameTo}</td>
+                                                                {/* <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.toobjviewRef}</td> */}
                                                                 {/* <td className="px-4 py-2 whitespace-nowrap text-gray-300">{modelviews[0].objectviews.find(ov => ov.id === rv.fromobjviewRef) && ov?.name}</td>
                                                                 <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.name}</td>
                                                                 <td className="px-4 py-2 whitespace-nowrap text-gray-300">{modelviews[0].objectviews.find(ov => ov.id === rv.toobjviewRef) && ov?.name}</td> */}
@@ -185,15 +174,17 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                     </TabsContent>
                     <TabsContent value="diagram" className='p-1 my-0 py-0 rounded'>
                         <div className='my-0 py-0' style={{ backgroundColor: 'hsl(200, 50%, 16%)' }}>
-                            <button
-                                onClick={() => {
-                                    generateMermaidDiagram(!regen);
-                                    setRegen(!regen);
-                                }}
-                                className="m-2 p-2 bg-blue-500 text-white rounded hover:bg-blue-700"
-                            >
-                                Regenerate Diagram
-                            </button>
+                            <div className="flex justify-end pb-1 py-0 mx-2">
+                                <button
+                                    onClick={() => {
+                                        generateMermaidDiagram(!regen);
+                                        setRegen(!regen);
+                                    }}
+                                    className="mt-1 px-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-700"
+                                >
+                                    Regenerate Diagram
+                                </button>
+                            </div>
                             <Card className="w-full h-full my-1">
                                 <div className='overflow-auto min-h-[48rem] h-full'>
                                     {renderMermaidDiagram()}

@@ -13,7 +13,7 @@ export function ObjTypeCard({ objType }: { objType?: z.infer<typeof ObjTypeSchem
         {objType.description && (
           <div>
             <h3 className="text-lg font-semibold mb-2">Description</h3>
-            <p>{objType.description}</p>
+            <>{objType.description}</>
           </div>
         )}
         {objType.attributes && objType.attributes.length > 0 && (

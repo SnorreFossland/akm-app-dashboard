@@ -56,9 +56,27 @@ const config: Config = {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',
   			sm: 'calc(var(--radius) - 4px)'
-  		}
+  		},
+		  typography: (theme: any) => ({
+			  DEFAULT: {
+				  css: {
+					  // Set base text color
+					  color: theme('colors.gray.300'),
+					  // Override heading colors
+					  h1: { color: theme('colors.gray.300') },
+					  h2: { color: theme('colors.gray.300') },
+					  h3: { color: theme('colors.gray.300') },
+					  h4: { color: theme('colors.gray.300') },
+					  h5: { color: theme('colors.gray.300') },
+					  h6: { color: theme('colors.gray.300') },
+					  li: { color: theme('colors.gray.300') },
+					  a: { color: theme('colors.gray.300') },
+					  strong: { color: theme('colors.gray.300') },
+				  },
+			  },
+		  })
   	}
   },
-  plugins: [require("tailwindcss-animate")],
+	plugins: [require("tailwindcss-animate"), require("@tailwindcss/typography")],
 };
 export default config;

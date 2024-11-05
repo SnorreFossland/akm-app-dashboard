@@ -27,13 +27,13 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
   - Provide detailed descriptions without repeating the object's name.
   - Terms for Roles, Tasks, and Views should not be used for Information objects, but a data-record of them can be Information, and named to reflect that it is data-record 
   - Use the terms name as name for the Information object.
-  - Add 'proposedType' for Information object, that may be the same as the name.
   - Ensure the 'proposedType' Camelcase in one word.
+  - Add 'proposedType' for Information object, that may be the same as the name.
   - Then Establish 'refersTo' relationships among Information objects.
   - The typeName of the Information object should be 'Information'.
   - Do **not** include the word "object" in the name.
 
-- Next add **Tasks, Views, and Roles objects** based on the metamodel:
+- Next add **Tasks**, **Views**, and **Roles** objects interacting with the Information based on the metamodel:
   - Create based on the actions, processes, and responsibilities identified during domain analysis of the  user prompt.
   - Ensure names are appropriate (e.g., Views should not include the word "view" in the name).
   - Establish relationships between Tasks, Views, and Roles with Information objects.
@@ -59,6 +59,10 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
     - Provide detailed descriptions without repeating the role's name.
     - Establish 'performs' or 'manages' relationships from Roles to Tasks.
 
+  4. **Description Enhancement:**
+    - Provide clear, precise, and informative descriptions for any existing objects lacking one.
+    - Ensure descriptions capture the essence of the object without repeating the name.
+
   4. **Finalization:**
     - Ensure all objects are interconnected, forming a cohesive knowledge structure.
     - Make sure that Tasks are connected to at least one Role and one View.
@@ -68,7 +72,7 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
 ### **Constraints**
 
   - **Language Usage:**
-    - Do **not** use the word "domain" in descriptions.
+    - Do **not** use the word "domain" in objects descriptions.
     - Avoid using the type name ('typeName') in descriptions.
     - Do **not** repeat the object's name in its description.
 
@@ -82,11 +86,12 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
   
 ### **Additional Guidelines**
 
-- Use domain analysis to in the creation of Tasks, Views, and Roles for the created Information objects.
+- Use domain analysis in the creation of Tasks, Views, and Roles for the created Information objects.
 - Generate relationships flowing from Roles ➔ Tasks ➔ Views ➔ Information objects.
 - Maintain formal, precise language throughout.
 - Ensure all objects have at least one relationship.
-- Make sure to also create Roles, Tasks and Views that are connected to Information objects.
+- Make sure to also create 'Roles', 'Tasks' and 'Views' that are connected to Information objects.
+- Make sure you use uuid for the for all objects in the model.
 
 ### **Examples**
 
@@ -134,17 +139,18 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
       "description": "Record of users.",
       "typeRef": "Information Type id",
       "typeName": "Information",
-      "proposedType": "User"
+      "proposedType": "UserRecord"
     }
   ],
   "relationships": [
     {
       "id": "UUIDv4",
       "name": "approves",
-      "typeRef": "Relationship Type id",
-      "fromobjectRef": "Approve Request id",
-      "nameFrom": "Approve Request",
-      "toobjectRef": "Manager id",
-      "nameTo": "Manager"
+      "typeRef": "Relationship Type uuid",
+      "fromobjectRef": "Role uuid",
+      "nameFrom": "Manager",
+      "toobjectRef": "Task uuid",
+      "nameTo": "Task"
     }
+  ]    
     `;

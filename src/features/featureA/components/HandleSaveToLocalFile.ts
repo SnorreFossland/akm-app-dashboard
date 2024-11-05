@@ -6,8 +6,9 @@ export const handleSaveToLocalFile = (data: any) => {
   if (data) {
     const dataWithoutProject = { ...data.project }; // Remove the project key to make it compatible with the old format
     console.log('dataWithoutProject:', dataWithoutProject, data);
+    const fileName = dataWithoutProject.name ? dataWithoutProject.name : 'newModelfile';
     const blob = new Blob([JSON.stringify(dataWithoutProject, null, 2)], { type: 'application/json' });
-    FileSaver.saveAs(blob, 'featureAData.json');
+    FileSaver.saveAs(blob, fileName + '.json');
   } else {
     alert('No data available to save.');
   }

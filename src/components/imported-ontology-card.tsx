@@ -27,11 +27,11 @@ interface Relationship {
 
 const debug = false;
 
-export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
+export const ImportedOntologyCard = ({ ontologyData }: OntologyCardProps) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
 
-    const [activeTab, setActiveTab] = useState('concepts'); // concepts, diagram
+    const [activeTab, setActiveTab] = useState('concepts');
     const [regen, setRegen] = useState(true);
 
     if (!debug) console.log('35 ontology-card', ontologyData);
@@ -72,7 +72,6 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         lineColor: '#dddddd',
                         background: '#ffffff',
                         nodeBorderRadius: '25px',
-                        rough: true, // Enable rough visualization
                     },
                 });
                 mermaid.contentLoaded();
@@ -91,38 +90,20 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
     return (
         <>
-            <div className="p-1 w-100 rounded max-h-[calc(100vh-7.5rem)] overflow-hidden">
-                <div className="">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-gray-700 m-1">
+            <div className="w-100">
+                <div className="m-0">
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-gray-700 mx-1 p-1">
                         <TabsList className="mx-1 mb-0 bg-gray-700">
-                            <TabsTrigger value="summary" className='pb-2 mt-3'>Concept Summary</TabsTrigger>
+                            {/* <TabsTrigger value="summary" className='pb-2 mt-3'>Summary</TabsTrigger> */}
                             <TabsTrigger value="concepts" className='pb-2 mt-3'>Concept List</TabsTrigger>
-                            <TabsTrigger value="diagram" className='pb-2 mt-3'>Concept Map</TabsTrigger>
+                            {/* <TabsTrigger value="diagram" className='pb-2 mt-3'>Diagram</TabsTrigger> */}
                         </TabsList>
-                        <TabsContent value="summary" className="flex m-0 px-1 rounded bg-background  ">
-                            <Card className="w-full border-gray-700 m- h-[calc(100vh-12rem)]">
-                                <CardHeader>
-                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">{ontologyData?.name} </CardTitle>
-                                    <div className="mx-2">{ontologyData?.description}</div>
-                                    {/* <div>Topic: <span className="m-2 text-xl font-bold text-gray-300">{ontologyData?.name}</span>Description: {ontologyData?.description}</div> */}
-                                </CardHeader>
-                                <CardContent>
-                                    <div className="bg-gray-800 p-2 divide-y divide-gray-600 max-h-[calc(100vh-21rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                        <div className="prose prose-sm m-2 text-gray-300">
-                                            <ReactMarkdown>
-                                                {ontologyData?.presentation}
-                                            </ReactMarkdown>
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </TabsContent>
                         <TabsContent value="concepts" className="flex m-0 px-1 py-2 rounded bg-background">
-                            <Card className="w-full">
+                            <Card className="w-full ">
                                 <CardHeader>
-                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Domain / Topic Summary</CardTitle>
+                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Concepts </CardTitle>
                                 </CardHeader>
-                                <CardContent className="grid gap-6k">
+                                <CardContent className="grid gap-6k ">
                                     <table className="divide-y divide-gray-700 text-sm w-full">
                                         <thead className="w-full bg-gray-800 sticky top-0">
                                             <tr className="w-full">
@@ -133,7 +114,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                         <tbody>
                                             <tr>
                                                 <td colSpan={3}>
-                                                    <div className="bg-gray-800 divide-y divide-gray-700 w-full max-h-[calc(82vh-18rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                                    <div className="bg-gray-800 divide-y divide-gray-700 w-full max-h-[calc(100vh-20rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                                         <table className="min-w-full divide-y divide-gray-700 text-sm w-full">
                                                             <tbody className="bg-gray-900 divide-y divide-gray-700 min-w-full w-full">
                                                                 {ontologyData?.concepts?.map((c, index) => (
@@ -151,7 +132,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                     </table>
                                 </CardContent>
                             </Card>
-                            <Card className="w-full">
+                            {/* <Card className="w-full">
                                 <CardHeader>
                                     <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relations</CardTitle>
                                 </CardHeader>
@@ -177,27 +158,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                         </table>
                                     </div>
                                 </CardContent>
-                            </Card>
-                        </TabsContent>
-                        <TabsContent value="diagram" className="m-0 px-1 rounded bg-background min-h-[57rem]">
-                            <>
-                                <div className="flex justify-end mx-2">
-                                    <button
-                                        onClick={() => {
-                                            generateMermaidDiagram(!regen);
-                                            setRegen(!regen);
-                                        }}
-                                        className="px-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-700"
-                                    >
-                                        Regenerate Diagram
-                                    </button>
-                                </div>
-                                <Card className="w-full h-full my-1">
-                                    <div className='overflow-auto  h-full'>
-                                        {renderMermaidDiagram()}
-                                    </div>
-                                </Card>
-                            </>
+                            </Card> */}
                         </TabsContent>
                     </Tabs>
                 </div>

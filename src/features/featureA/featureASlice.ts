@@ -181,8 +181,18 @@ const featureASlice = createSlice({
         });
       }
     },
+    clearModel(state, action) {
+      // let currentModel = state.data?.project.phData.metis.models.find(model => model.id === state.data?.project.phFocus.focusModel.id);
+      // if (!currentModel) currentModel = state.data?.project.phData.metis.models[0];
+      if (action.payload) {
+        action.payload.objects = [];
+        action.payload.relships = [];
+        action.payload.modelviews = [];
+      }
+      return state;
+    },
     clearStore() {
-      return initialState;
+      return initialState;  //ToDo: should be only objects and relationships and modelviews so that the user dont have to reload the data from file
     },
   },
   extraReducers: (builder) => {
@@ -211,5 +221,5 @@ const featureASlice = createSlice({
   },
 });
 
-export const { setFileData, setObjects, setRelationships, setModelview, clearStore } = featureASlice.actions;
+export const { setFileData, setObjects, setRelationships, setModelview, clearModel, clearStore } = featureASlice.actions;
 export default featureASlice.reducer;

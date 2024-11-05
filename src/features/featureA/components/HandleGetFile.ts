@@ -2,7 +2,8 @@
 import { getFeatureAData } from '../featureASlice';
 import { AppDispatch } from '@/store/store';
 
-export const handleGetFile = async (dispatch: AppDispatch, setFileStatus: (status: string) => void, setFileContent: (content: any) => void) => {
+
+export const handleGetFile = async (dispatch: AppDispatch, setFileStatus: React.Dispatch<React.SetStateAction<'idle' | 'loading' | 'failed'>>, setFileContent: (content: any) => void) => {
   setFileStatus('loading');
   try {
     const result = await dispatch(getFeatureAData()).unwrap();
