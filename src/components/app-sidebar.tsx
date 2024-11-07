@@ -95,6 +95,18 @@ const data = {
         //   description: "Synchronous Test",
         // },
         {
+          title: "Concept Builder",
+          url: "/concept-builder",
+          icon: Star,
+          description: "Concept Knowledge Modelling",
+        },
+        {
+          title: "Enterpr. Modeling(POPS)",
+          url: "/streaming",
+          icon: Star,
+          description: "Product, Organisation, Process, System (POPS) Modelling",
+        },
+        {
           title: "Enterpr. Modeling(POPS)",
           url: "/streaming",
           icon: Star,

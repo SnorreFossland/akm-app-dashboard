@@ -32,8 +32,9 @@ import { MetamodelPrompt } from './prompts/metamodel-irtv-prompt'; // default me
 
 import { handleSaveToLocalFile } from '@/features/featureA/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/featureA/components/HandleGetLocalFile';
-import { handleGetLocalFileClick } from '@/features/featureA/components/HandleGetLocalFileClick';
-import { relative } from "path";
+import ConceptBuilder from '@/components/aiBuilders/ConceptBuilder';
+
+
 
 const debug = false;
 
@@ -42,8 +43,8 @@ const SyncPage = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const data = useSelector((state: RootState) => state.featureA.data);
-  const error = useSelector((state: RootState) => state.featureA.error);
   const status = useSelector((state: RootState) => state.featureA.status);
+  const error = useSelector((state: RootState) => state.featureA.error);
 
   const [topicDescr, settopicDescr] = useState("");
   const [domainDesc, setDomainDesc] = useState("");
@@ -261,6 +262,24 @@ const SyncPage = () => {
       console.error('Failed to fetch ontology data: ', error);
     }
   };
+
+  // test step Concept builder
+
+  
+    
+
+
+
+
+
+
+
+
+
+
+
+
+
 
   // ------------------------- First Step is the concept step with concepts ---------------------------------------------------------------------------------------
   const handleFirstStep = async () => {
@@ -761,8 +780,121 @@ Make horizontal and vertical space between the objects to make the modelview loo
           </div>
         </div>
         <div className="flex mx-2">
-          {/* Steps from User input to generate IRTV objects and relationships  ----------------------------------------------------*/}
+          {/* Steps from User input to generate Concepts  ----------------------------------------------------*/}
           <div className="border-solid rounded border-4 border-green-700 w-1/4">
+            <Card className="mb-0.5">  {/* 1st Step: Establish a Conceptual Apparatus for a Domain */}
+              <CardHeader>
+                <CardTitle
+                  className="flex justify-between items-center flex-grow ps-1"
+                // className={`flex justify-between items-center flex-grow ps-1 ${topicDescr !== '' ? 'text-green-600' : 'text-green-200'}`}
+                >
+                  Concept Builder:
+                </CardTitle>
+                <div className="mx-2">
+                  <details>
+                    <summary>Concept Ontology</summary>
+                    <div className="bg-gray-600">
+                      <p>Build an AKM Concept Model assisted by AI</p>
+                      <p>This involves the following steps:</p>
+                      <ul>
+                        <li><strong>• Establish the Concept Ontology (Conceptual Apparatus) for the Domain:</strong></li>
+                        <p style={{ marginLeft: '20px' }}>It refers to the set of concepts, theories, models, and frameworks that collectively provide the foundational understanding of a particular field or discipline.
+                          It encompasses the concepts, principles, and relationships that are essential for practitioners within the field to communicate effectively and advance knowledge.</p>
+                        <li><strong>• Create the Workspaces :</strong></li>
+                        <p style={{ marginLeft: '20px' }}>Create IRTV objects and relationships. Create Information objects of the concepts identified in the first step (The What). Add Roles (Who), Tasks (How), and Views (What to see) working on the Information objects.</p>
+                        <li><strong>• Dispatch the result to the current Model-project store:</strong></li>
+                        <p style={{ marginLeft: '20px' }}>The final step is to dispatch the generated IRTV objects and relationships to the current Model-project.</p>
+                      </ul>
+                    </div>
+                  </details>
+                </div>
+              </CardHeader>
+              <CardContent className="flex flex-wrap items-start">
+                <label htmlFor="topicDescr" className="text-white">Topic</label>
+                <Textarea
+                  id="topicDescr"
+                  className="flex-grow p-1 rounded bg-gray-800"
+                  value={topicDescr}
+                  disabled={isLoading}
+                  onChange={(e) => settopicDescr(e.target.value)}
+                  placeholder="Enter domain description"
+                  rows={3} // Adjust the number of rows as needed
+                />
+                <details className="flex-grow">
+                  <summary className="text-white cursor-pointer">Add Domain name and Concepts you want to be included</summary>
+                  <div className="flex flex-col flex-grow mt-2">
+                    <label htmlFor="suggestedConcepts" className="text-white mt-2">Domain name </label>
+                    <Input
+                      id="suggestedConcepts"
+                      className="flex-grow p-1 rounded bg-gray-800"
+                      value={domainDesc}
+                      disabled={isLoading}
+                      onChange={(e) => setDomainDesc(e.target.value)}
+                      placeholder="Enter your domain name i.e.: E-Scooter Rental Services"
+                    />
+                    <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts you want to include separated by comma</label>
+                    <Input
+                      id="suggestedConcepts"
+                      className="flex-grow p-1 rounded bg-gray-800"
+                      value={suggestedConcepts}
+                      disabled={isLoading}
+                      onChange={(e) => setSuggestedConcepts(e.target.value)}
+                      placeholder="Enter your concepts i.e.: Scooter, User, booking"
+                    />
+                  </div>
+                </details>
+                <details className="flex-grow">
+                  <summary className="cursor-pointer">Add Ontology (paste the URL in here)</summary>
+                  <div className="flex-grow bg-gray-700 text-gray-500">
+                    <Textarea
+                      id="ontologyUrl"
+                      className="ontology-input flex-grow bg-gray-600 text-white"
+                      value={ontologyUrl}
+                      onChange={(e) => setOntologyUrl(e.target.value)}
+                      placeholder="Paste ontology URL here"
+                    />
+                    <div className="flex justify-between">
+                      <Button
+                        onClick={() => {
+                          handleFetchOntology();
+                          setActiveTab('imported-ontology');
+                        }}
+                        className="bg-green-800 text-white rounded m-1"
+                      >
+                        Load Ontology
+                      </Button>
+                    </div>
+                  </div>
+                </details>
+              </CardContent>
+              <CardFooter>
+                <CardTitle
+                  className={`flex justify-between items-center flex-grow ps-1 ${(concepts.length > 0) ? 'text-green-600' : 'text-green-200'}`}
+                >
+                  Ask GPT to suggest Concepts
+                  <div className="flex items-center ml-auto">
+                    {(isLoading && step === 1) ? (
+                      <div style={{ marginLeft: 8, marginRight: 8 }}>
+                        <LoadingCircularProgress />
+                      </div>
+                    ) : (
+                      <div style={{ marginLeft: 8, marginRight: 8, color: concepts.length > 0 ? 'green' : 'gray' }}>
+                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
+                      </div>
+                    )}
+                    <Button onClick={() => {
+                      setStep(1);
+                      ConceptBuilder();
+                      setActiveTab('suggested-concepts');
+                    }}
+                      className={`rounded text-xl p-4 ${(concepts.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
+                    >
+                      <FontAwesomeIcon icon={faRobot} size="1x" />
+                    </Button>
+                  </div>
+                </CardTitle>
+              </CardFooter>
+            </Card>
             <Card className="mb-0.5">  {/* 1st Step: Establish a Conceptual Apparatus for a Domain */}
               <CardHeader>
                 <CardTitle
