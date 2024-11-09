@@ -9,7 +9,6 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faSave, faCheckCircle, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 
-import { getFeatureAData } from '@/features/featureA/featureASlice';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading, LoadingBars, LoadingPulse, LoadingCircularProgress, LoadingDots } from "@/components/loading";
@@ -17,7 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 
-import { setObjects, setRelationships, setModelview, clearStore, clearModel } from "@/features/featureA/featureASlice";
+import { setOntologyData, clearStore } from "@/features/ontology/ontologySlice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 import { OntologyCard } from "@/components/ontology-card";
@@ -29,12 +28,7 @@ import { ModelviewCard } from "@/components/modelview-card";
 import { SystemConceptPrompt } from './prompts/concept-system-prompt';
 import { SystemIrtvPrompt } from './prompts/system-irtv-prompt';
 import { MetamodelPrompt } from './prompts/metamodel-irtv-prompt'; // default metamodel prompt for IRTV
-
-import { handleSaveToLocalFile } from '@/features/featureA/components/HandleSaveToLocalFile';
-import { handleGetLocalFile } from '@/features/featureA/components/HandleGetLocalFile';
 import ConceptBuilder from '@/components/aiBuilders/ConceptBuilder';
-
-
 
 const debug = false;
 
@@ -42,11 +36,12 @@ const SyncPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch<AppDispatch>();
 
-  const data = useSelector((state: RootState) => state.featureA.data);
-  const status = useSelector((state: RootState) => state.featureA.status);
-  const error = useSelector((state: RootState) => state.featureA.error);
+  const data = useSelector((state: RootState) => state.ontology.data);
+  const status = useSelector((state: RootState) => state.ontology.status);
+  const error = useSelector((state: RootState) => state.ontology.error);
+  console.log('42 data', data, 'status', status, 'error', error);
 
-  const [topicDescr, settopicDescr] = useState("");
+  const [topicDescr, setTopicDescr] = useState("");
   const [domainDesc, setDomainDesc] = useState("");
   const [domain, setDomain] = useState({ concepts: [], relationships: [] });
   const [model, setModel] = useState<any>(null);
@@ -56,7 +51,7 @@ const SyncPage = () => {
   const [suggestedViews, setSuggestedViews] = useState("");
   const [existingContext, setExistingContext] = useState("");
   const [ontologyUrl, setOntologyUrl] = useState("https://community.opengroup.org/osdu/data/data-definitions/-/raw/master/E-R/DependenciesAndRelationships.json");
-  const [ontology, setOntology] = useState([]);
+  const [impOntology, setImpOntology] = useState([]);
   const [ontologyData, setOntologyData] = useState<any>(null);
   const [ontologyString, setOntologyString] = useState("");
   const [concepts, setConcepts] = useState("");
@@ -128,97 +123,21 @@ const SyncPage = () => {
   //   // };
   // }, [existingContext, concepts]);
 
-  useEffect(() => {
-    // type ExistingObject = { id: string; name: string; description: string; typeName: string };
-    // type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
+  // useEffect(() => {
+  //   // type ExistingObject = { id: string; name: string; description: string; typeName: string };
+  //   // type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
 
-    if (data?.project) {
-      if (!debug) console.log('89 data', data);
-      const metis1 = data.project?.phData?.metis;
-      const focus = data.project?.phFocus;
-      const user = data.project?.phUser;
-      if (!metis1) { console.error('Data does not contain metis:', data); return };
-      setMetis(metis1);
+  //   if (data?.project) {
 
-      if (metis?.metamodels) {
-        const metamodel = metis.metamodels.find((mmodel: { name: string }) => mmodel.name.includes('IRTV'));
-        const mmObjecttypeStrings = metamodel?.objecttypes.map((ot: any) =>
-          `${ot.id} ${ot.name}`).join(', ');
-        const mmRelationtypeStrings = metamodel?.relshiptypes.map((rt: any) =>
-          `${rt.id} ${rt.name}`).join(', ');
-        const mmObjecttypeviewStrings = metamodel?.objecttypeviews.map((otv: any) =>
-          `${otv.id} ${otv.name}`).join(', ');
-
-//         const metamodelPrompt = `
-// **Metamodel:**
-//   - **Object Types:** \n ${mmObjecttypeStrings} 
-//   - **Relation Types:** \n ${mmRelationtypeStrings}
-//   - **Object Typeviews:** \n ${mmObjecttypeviewStrings}
-// `;
-
-//         setModelContextMetamodel(metamodelPrompt);
-        setModelviewContextMetamodel("");
-
-      }
-      // setMetamodelPrompt(`${MetamodelPrompt}`);
-
-      const models = metis1.models;
-      const curmod = models?.find((model: any) => model.id === focus?.focusModel?.id) || models[0];
-      // if (!debug) console.log('95 currentModel', curmod, currentModel, metis?.models);
-      setCurrentModel(curmod);
-
-      const filteredRelationships = curmod?.relships?.filter((rel: any) => {
-        const fromObject = curmod?.objects?.find((obj: any) => obj.id === rel.fromobjectRef);
-        const toObject = curmod?.objects?.find((obj: any) => obj.id === rel.toobjectRef);
-        // if (!debug) console.log('127 fromObject', fromObject, 'toObject', toObject, 'rel', rel);
-        return fromObject?.typeName === 'Information' && toObject?.typeName === 'Information' && rel;
-      }) || [];
-
-      if (!debug) console.log('130 filteredRelationships', filteredRelationships);
-
-      const existingObjects = curmod?.objects?.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName })) || [];
-      const existingRelationships = filteredRelationships?.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo })) || [];
-
-      setExistingInfoObjects({
-        objects: existingObjects?.filter((obj: any) => obj && obj.typeName === 'Information') || [],
-        relationships: existingRelationships
-      });
-
-      const existInfoConcepts = ({
-        concepts: existingInfoObjects.objects.map((obj: any) => ({ name: obj.name, description: obj.description })),
-        relationships: existingInfoObjects.relationships.map((rel: any) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
-      });
-
-      let conceptString = '';
-      if (existInfoConcepts.concepts.length > 0) {
-        conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-        conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
-      }
-      setExistingConcepts(conceptString);      // if (!debug) console.log('101 existingContext', existingContext);
-      // if (!debug) console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
-    }
-  }, [data]);
-
-  // const handlePasteFromClipboard = async () => {
-  //   try {
-  //     const text = await navigator.clipboard.readText();
-  //     setExistingContext(text);
-  //   } catch (error) {
-  //     console.error('Failed to read clipboard contents: ', error);
+  //     let conceptString = '';
+  //     if (existInfoConcepts.concepts.length > 0) {
+  //       conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
+  //       conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
+  //     }
+  //     setExistingConcepts(conceptString);      // if (!debug) console.log('101 existingContext', existingContext);
+  //     // if (!debug) console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
   //   }
-  // };
-
-  const handleDispatchIrtvData = () => {
-    if (!model) {
-      alert('No IRTV data to dispatch');
-      return;
-    }
-    if (!debug) console.log('156 dispatching IRTV data:', model, newModelview);
-    dispatch(setObjects(model.objects));
-    dispatch(setRelationships(model.relationships));
-    dispatch(setModelview([newModelview]));
-    setDispatchDone(true);
-  };
+  // }, [data]);
 
   const handleFetchOntology = async () => {
     try {
@@ -231,7 +150,7 @@ const SyncPage = () => {
       if (!debug) console.log('180 Fetched ontology data:', data);
       if (Array.isArray(data)) {
         const filteredOntology = data.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
-        setOntology(filteredOntology);
+        setImpOntology(filteredOntology);
       } else if (typeof data === 'object' && data !== null) {
         const dataArr = Object.values(data);
         if (!debug) console.log('186 dataArr', dataArr);
@@ -264,22 +183,6 @@ const SyncPage = () => {
   };
 
   // test step Concept builder
-
-  
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
 
   // ------------------------- First Step is the concept step with concepts ---------------------------------------------------------------------------------------
   const handleFirstStep = async () => {
@@ -423,7 +326,7 @@ Please develop a detailed and engaging presentation on **[${topicDescr}]** that 
     setConceptContextMetamodel(contextMetamodel);
     // setUserPrompt(prompt+contextPrompt+ontologyPrompt);
 
-    if (!debug) console.log('363 Concept step one :',
+    if (!debug) console.log('363 Concept step :',
       'conceptSystemPrompt:', conceptSystemPrompt,
       'userPrompt:', userPrompt,
       'userInput:', userInput,
@@ -701,19 +604,9 @@ Make horizontal and vertical space between the objects to make the modelview loo
     setIsLoading(false);
   }
 
-  // const handleCopy = () => {
-  //   if (model) {
-  //     const jsonOutput = JSON.stringify(model, null, 2);
-  //     navigator.clipboard.writeText(jsonOutput).then(() => {
-  //       if (!debug) console.log('JSON copied to clipboard');
-  //     }).catch(err => {
-  //       console.error('Failed to copy JSON:', err);
-  //     });
-  //   }
-  // };
 
   return (
-    <div className="akm-canvas flex flex-col gap-1 m-1 h-screen ">
+    <div className="akm-canvas flex flex-col gap-1 m-1">
       <header className="ms-2 me-auto w-full bg-green-500/50 text-gradient-to-r from-green-700 to-blue-700 text-transparent bg-clip-text shadow-md shadow-green-500/50">
         <div className="flex justify-between items-center font-bold text-white className= text-green-500 mx-5">
           <div className="me-5 text-muted-foreground">AKM file :
@@ -730,7 +623,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
       </header>
       {/* Innput fields  --------------------------------------------------------------------------------------*/}
       <div>
-        <div className="flex justify-between mx-2 px-4 text-white rounded">
+        <div className="flex justify-between mx-2 px-4 text-white rounded ">
           <div className="flex justify-between align-center bg-gray-800">
             {/* <h3 className="mx-2 font-bold text-gray-400 inline-block"> Current Project: </h3> <div className="inline-block"> {metis?.name}</div> */}
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> Current Model: </h3> <span className="inline-block"> {currentModel?.name}</span>
@@ -780,13 +673,16 @@ Make horizontal and vertical space between the objects to make the modelview loo
           </div>
         </div>
         <div className="flex mx-2">
+
           {/* Steps from User input to generate Concepts  ----------------------------------------------------*/}
-          <div className="border-solid rounded border-4 border-green-700 w-1/4">
-            <Card className="mb-0.5">  {/* 1st Step: Establish a Conceptual Apparatus for a Domain */}
+          {/* <div className="border-solid rounded border-4 border-green-700 "> */}
+          {/* 1st Step: Establish a Conceptual Apparatus for a Domain */}
+          <ConceptBuilder />
+          {/* 1st Step: Establish a Conceptual Apparatus for a Domain */}
+          {/* <Card className="mb-0.5"> 
               <CardHeader>
                 <CardTitle
                   className="flex justify-between items-center flex-grow ps-1"
-                // className={`flex justify-between items-center flex-grow ps-1 ${topicDescr !== '' ? 'text-green-600' : 'text-green-200'}`}
                 >
                   Concept Builder:
                 </CardTitle>
@@ -816,120 +712,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                   className="flex-grow p-1 rounded bg-gray-800"
                   value={topicDescr}
                   disabled={isLoading}
-                  onChange={(e) => settopicDescr(e.target.value)}
-                  placeholder="Enter domain description"
-                  rows={3} // Adjust the number of rows as needed
-                />
-                <details className="flex-grow">
-                  <summary className="text-white cursor-pointer">Add Domain name and Concepts you want to be included</summary>
-                  <div className="flex flex-col flex-grow mt-2">
-                    <label htmlFor="suggestedConcepts" className="text-white mt-2">Domain name </label>
-                    <Input
-                      id="suggestedConcepts"
-                      className="flex-grow p-1 rounded bg-gray-800"
-                      value={domainDesc}
-                      disabled={isLoading}
-                      onChange={(e) => setDomainDesc(e.target.value)}
-                      placeholder="Enter your domain name i.e.: E-Scooter Rental Services"
-                    />
-                    <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts you want to include separated by comma</label>
-                    <Input
-                      id="suggestedConcepts"
-                      className="flex-grow p-1 rounded bg-gray-800"
-                      value={suggestedConcepts}
-                      disabled={isLoading}
-                      onChange={(e) => setSuggestedConcepts(e.target.value)}
-                      placeholder="Enter your concepts i.e.: Scooter, User, booking"
-                    />
-                  </div>
-                </details>
-                <details className="flex-grow">
-                  <summary className="cursor-pointer">Add Ontology (paste the URL in here)</summary>
-                  <div className="flex-grow bg-gray-700 text-gray-500">
-                    <Textarea
-                      id="ontologyUrl"
-                      className="ontology-input flex-grow bg-gray-600 text-white"
-                      value={ontologyUrl}
-                      onChange={(e) => setOntologyUrl(e.target.value)}
-                      placeholder="Paste ontology URL here"
-                    />
-                    <div className="flex justify-between">
-                      <Button
-                        onClick={() => {
-                          handleFetchOntology();
-                          setActiveTab('imported-ontology');
-                        }}
-                        className="bg-green-800 text-white rounded m-1"
-                      >
-                        Load Ontology
-                      </Button>
-                    </div>
-                  </div>
-                </details>
-              </CardContent>
-              <CardFooter>
-                <CardTitle
-                  className={`flex justify-between items-center flex-grow ps-1 ${(concepts.length > 0) ? 'text-green-600' : 'text-green-200'}`}
-                >
-                  Ask GPT to suggest Concepts
-                  <div className="flex items-center ml-auto">
-                    {(isLoading && step === 1) ? (
-                      <div style={{ marginLeft: 8, marginRight: 8 }}>
-                        <LoadingCircularProgress />
-                      </div>
-                    ) : (
-                      <div style={{ marginLeft: 8, marginRight: 8, color: concepts.length > 0 ? 'green' : 'gray' }}>
-                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                      </div>
-                    )}
-                    <Button onClick={() => {
-                      setStep(1);
-                      ConceptBuilder();
-                      setActiveTab('suggested-concepts');
-                    }}
-                      className={`rounded text-xl p-4 ${(concepts.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
-                    >
-                      <FontAwesomeIcon icon={faRobot} size="1x" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardFooter>
-            </Card>
-            <Card className="mb-0.5">  {/* 1st Step: Establish a Conceptual Apparatus for a Domain */}
-              <CardHeader>
-                <CardTitle
-                  className="flex justify-between items-center flex-grow ps-1"
-                // className={`flex justify-between items-center flex-grow ps-1 ${topicDescr !== '' ? 'text-green-600' : 'text-green-200'}`}
-                >
-                  Concept Builder:
-                </CardTitle>
-                <div className="mx-2">
-                  <details>
-                    <summary>Concept Ontology</summary>
-                    <div className="bg-gray-600">
-                      <p>Build an AKM Concept Model assisted by AI</p>
-                      <p>This involves the following steps:</p>
-                      <ul>
-                        <li><strong>• Establish the Concept Ontology (Conceptual Apparatus) for the Domain:</strong></li>
-                        <p style={{ marginLeft: '20px' }}>It refers to the set of concepts, theories, models, and frameworks that collectively provide the foundational understanding of a particular field or discipline.
-                          It encompasses the concepts, principles, and relationships that are essential for practitioners within the field to communicate effectively and advance knowledge.</p>
-                        <li><strong>• Create the Workspaces :</strong></li>
-                        <p style={{ marginLeft: '20px' }}>Create IRTV objects and relationships. Create Information objects of the concepts identified in the first step (The What). Add Roles (Who), Tasks (How), and Views (What to see) working on the Information objects.</p>
-                        <li><strong>• Dispatch the result to the current Model-project store:</strong></li>
-                        <p style={{ marginLeft: '20px' }}>The final step is to dispatch the generated IRTV objects and relationships to the current Model-project.</p>
-                      </ul>
-                    </div>
-                  </details>
-                </div>
-              </CardHeader>
-              <CardContent className="flex flex-wrap items-start">
-                <label htmlFor="topicDescr" className="text-white">Topic</label>
-                <Textarea
-                  id="topicDescr"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={topicDescr}
-                  disabled={isLoading}
-                  onChange={(e) => settopicDescr(e.target.value)}
+                  onChange={(e) => setTopicDescr(e.target.value)}
                   placeholder="Enter domain description"
                   rows={3} // Adjust the number of rows as needed
                 />
@@ -1007,410 +790,15 @@ Make horizontal and vertical space between the objects to make the modelview loo
                   </div>
                 </CardTitle>
               </CardFooter>
-            </Card>
+            </Card> */}
 
-            <Card className="mb-0.5">   {/* 2nd Step: Generate IRTV objects and relationshipsGenerate IRTV objects and relationships */}
-              <CardHeader>
-                <CardTitle
-                  className={`flex justify-between items-center flex-grow ps-1 ${(model?.objects?.length > 0) ? 'text-green-600' : 'text-green-200'}`}
-                >
-                  Model Builder (Create IRTV-Model):
-                  <div className="flex items-center ml-auto">
-                    {(isLoading && step === 2) ? (
-                      <div style={{ marginLeft: 8, marginRight: 8 }}>
-                        <LoadingCircularProgress />
-                      </div>
-                    ) : (
-                      <div style={{ marginLeft: 8, marginRight: 8, color: model?.objects?.length > 0 ? 'green' : 'gray' }}>
-                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                      </div>
-                    )}
-                    <Button onClick={async () => {
-                      await handleSecondStep();
-                      setActiveTab('model');
-                    }}
-                      className={`rounded text-xl p-4 ${(model?.objects?.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
-                    >
-                      <FontAwesomeIcon icon={faRobot} size="1x" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              <details className="flex-grow mx-5">
-                <summary className="text-white cursor-pointer">Specify Roles, Tasks, Views you want to include</summary>
-                <label htmlFor="roles" className="text-white mt-1">Roles</label>
-                <Input
-                  id="roles"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={suggestedRoles}
-                  disabled={isLoading}
-                  onChange={(e) => setSuggestedRoles(e.target.value)}
-                  placeholder="Enter roles"
-                />
-                <label htmlFor="tasks" className="text-white mt-2">Tasks</label>
-                <Input
-                  id="tasks"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={suggestedTasks}
-                  disabled={isLoading}
-                  onChange={(e) => setSuggestedTasks(e.target.value)}
-                  placeholder="Enter tasks"
-                />
-                <label htmlFor="views" className="text-white mt-2">Views</label>
-                <Input
-                  id="views"
-                  className="flex-grow p-1 rounded bg-gray-800"
-                  value={suggestedViews}
-                  disabled={isLoading}
-                  onChange={(e) => setSuggestedViews(e.target.value)}
-                  placeholder="Enter views"
-                />
-              </details>
-            </Card>
 
-            <Card className="mb-0.5">  { /* 3rd Step: Generate a Modelview with Objectviews and Relshipviews */}
-              <CardHeader>
-                <CardTitle
-                  className={`flex justify-between items-center flex-grow ps-1 ${(newModelview?.objectviews.length > 0) ? 'text-green-600' : 'text-green-200'}`}
-                >
-                  Workspace Builder (Create IRTV-Modelview):
-                  <div className="flex items-center ml-auto">
-                    {(isLoading && step === 3) ? (
-                      <div style={{ marginLeft: 8, marginRight: 8 }}>
-                        <LoadingCircularProgress />
-                      </div>
-                    ) : (
-                      <div style={{ marginLeft: 8, marginRight: 8, color: newModelview?.objectviews.length > 0 ? 'green' : 'gray' }}>
-                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                      </div>
-                    )}
-                    <Button onClick={async () => {
-                      await handleThirdStep();
-                      setActiveTab('modelview');
-                    }}
-                      className={`rounded text-xl p-4 ${(newModelview?.objectviews.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
-                    >
-                      <FontAwesomeIcon icon={faRobot} size="1x" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              {/* <CardContent>
-                  <h5 className="text-white mx-2"> Evaluate the Domain and find Concepts and concepts to be used in AKM:</h5>
-                </CardContent> */}
-            </Card>
-
-            <Card className="mb-0.5">  { /* 4th Step: Generate a Modelview with Objectviews and Relshipviews */}
-              <CardHeader>
-                <CardTitle
-                  className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
-                >
-                  Save to current Model
-                  <div className="flex items-center ml-auto">
-                    {!dispatchDone && step === 4 ? (
-                      <div style={{ marginLeft: 8, marginRight: 8 }}>
-                        <LoadingCircularProgress />
-                      </div>
-                    ) : (
-                      <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone ? 'green' : 'gray' }}>
-                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                      </div>
-                    )}
-                    <Button
-                      onClick={handleDispatchIrtvData}
-                      className={`rounded text-xl ${dispatchDone && step === 4 || step === 5 ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}>
-                      <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              {/* <CardContent className="flex flex-col items-center h-full">
-                </CardContent> */}
-            </Card>
-
-            <Card className="mb-0.5">   { /* 5th Step: Save the current-knowledge to a project file */}
-              <CardHeader>
-                <CardTitle
-                  className={`flex justify-between items-center flex-grow ${step === 5 && dispatchDone ? 'text-green-600' : 'text-green-200'}`}
-                >
-                  Save the Model to project file
-                  <div className="flex items-center ml-auto">
-                    {(step === 5 && dispatchDone) ? (
-                      <div style={{ marginLeft: 8, marginRight: 8 }}>
-                        <LoadingCircularProgress />
-                      </div>
-                    ) : (
-                      <div style={{ marginLeft: 8, marginRight: 8, color: (step === 5 && dispatchDone) ? 'green' : 'gray' }}>
-                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                      </div>
-                    )}
-                    <Button
-                      onClick={() => { setStep(0); handleSaveToLocalFile(data); }}
-                      className={`rounded text-xl ${step === 5 && dispatchDone ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}>
-                      <FontAwesomeIcon icon={faSave} width="26px" size="1x" />
-                    </Button>
-                  </div>
-                </CardTitle>
-              </CardHeader>
-              {/* <CardContent className="flex flex-col items-center h-full">
-                </CardContent> */}
-            </Card>
-          </div>
+          {/* </div> */}
 
           {/* Model Canvas -----------------------------------------------------------------------------------------------------------------------------------------*/}
 
-          {/* Model Canvas -----------------------------------------------------------------------------------------------------------------------------------------*/}
-
-          {/* Model Canvas -----------------------------------------------------------------------------------------------------------------------------------------*/}
-          <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-screen">
-            <Card className="h-full p-1"> {/* Model Canvas */}
-              <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (IRTV)</CardTitle>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="m-1 mb-0 bg-transparent">
-                  <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Current Knowledge</TabsTrigger>
-                  <TabsTrigger value="imported-ontology" className='pb-2 mt-3'>Imported Ontology</TabsTrigger>
-                  <TabsTrigger value="suggested-concepts" className='pb-2 mt-3'>GPT Suggested Concepts</TabsTrigger>
-                  <TabsTrigger value="model" className='pb-2 mt-3'>GPT Suggested Model</TabsTrigger>
-                  <TabsTrigger value="modelview" className='pb-2 mt-3'>GPT Suggested Modelview</TabsTrigger>
-                  {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
-                  <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger> */}
-                </TabsList>
-                <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background">
-                  <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="bg-gray-700 mx-1 px-1 mt-0">
-                    <TabsList className=" mb-0 bg-gray-700 mt-0">
-                      <TabsTrigger value="model-summary" className='pb-2 mt-3'>Current Model Summary</TabsTrigger>
-                      <TabsTrigger value="model-objects" className='pb-2 mt-3'>Currrent Model</TabsTrigger>
-                      <TabsTrigger value="model-modelviews" className='pb-2 mt-3'>Current Modelview</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="model-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200">
-                      <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <div className="">
-                          {data && data.project && data.project.phData && data.project.phData.metis && data.project.phData.metis.models && (
-                            <>
-                              <div className="flex justify-left items-center py-2 text-left">
-                                <h4 className="px-2 text-gray-400 font-bold">AKM File</h4>
-                                <h4 className="px-2 mb-1 font-bold whitespace-nowrap bg-gray-700">{data.project.phSource}.json</h4>
-                              </div>
-                              <div className="flex flex-wrap">
-                                <div className="px-2 col text-left mb-4 w-1/3">
-                                  <h4 className="text-gray-400 font-bold">Model Suite:</h4>
-                                  <div className="border border-gray-600 p-2">
-                                    <h5 className="text-gray-400 font-bold">Name</h5>
-                                    <h4 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phData.metis.name}</h4>
-                                    <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                    <h4 className=" bg-gray-800 p-1">{data.project.phData.metis.description}</h4>
-                                  </div>
-                                  <div className="col text-left">
-                                    <h4 className="text-gray-400 font-bold">Project:</h4>
-                                    <div className="border border-gray-600 p-2">
-                                      <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.id}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.projectNumber}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.name}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.org}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.repo}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.path}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.file}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.branch}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.username}</h5>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="px-4 col text-left w-2/3">
-                                  <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
-                                  <div className="border border-gray-600 p-2">
-                                    {data.project.phData.metis.models.map((model: any, index) => (
-                                      <div key={model.id} className="flex flex-col">
-                                        <h5 className="text-gray-400 font-bold">Name</h5>
-                                        <h4 className="bg-gray-800 p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
-                                        <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                        <h4 className="bg-gray-800 p-2">{model.description}</h4>
-                                        <hr className="my-1" />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-                    </TabsContent>
-                    <TabsContent value="model-objects" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                      <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                      </div>
-                      {data && data.project && data.project.phData && data.project.phData.metis && data.project.phData.metis.models && (
-                        <ObjectCard model={{ name: data.project.phData.metis.models[0].name, objects: data.project.phData.metis.models[0].objects, relationships: data.project.phData.metis.models[0].relships }} />
-                      )}
-                    </TabsContent>
-                    <TabsContent value="model-modelviews" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                      <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <ModelviewCard modelviews={data?.project.phData.metis.models[0].modelviews} />
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </TabsContent>
-                <TabsContent value="imported-ontology" className="bg-background m-0 py-2 rounded ">
-                  {(ontologyData?.concepts.length > 0) &&
-                    <div className="flex justify-center items-center">
-                      <div className="text-gray-400 mx-5">The Ontology concepts is fetched from URL:</div>
-                      <div className="text-gray-400">
-                        <a href={ontologyUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
-                          {ontologyUrl}
-                        </a>
-                      </div>
-                    </div>
-                  }
-                  <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                    <ImportedOntologyCard ontologyData={ontologyData} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                  <>
-                    <div className="flex justify-end pb-1 pt-0 mx-2">
-                      <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                        Show Prompt
-                      </button>
-                    </div>
-                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                      <DialogContent className="max-w-5xl"> {/* Added max-w-4xl for wider dialog */}
-                        <DialogHeader>
-                          <DialogDescription>
-                            <div>
-                              <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                <DialogTitle>---- System Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptSystemPrompt}</ReactMarkdown>
-                                <DialogTitle>---- System behavior Guidelines Prompt</DialogTitle>
-                                <ReactMarkdown>{systemBehaviorGuidelines}</ReactMarkdown>
-                                <DialogTitle>---- User Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptUserPrompt}</ReactMarkdown>
-                                <DialogTitle>---- User Input</DialogTitle>
-                                <ReactMarkdown>{conceptUserInput}</ReactMarkdown>
-                                <DialogTitle>---- Context Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptContextItems}</ReactMarkdown>
-                                <DialogTitle>---- Ontology Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptContextOntology}</ReactMarkdown>
-                                <DialogTitle>---- Metamodel Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptContextMetamodel}</ReactMarkdown>
-                              </div>
-                            </div>
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                            Close
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    <div className="mx-1 bg-gray-700 ">
-                      <OntologyCard ontologyData={suggestedConceptData} />
-                    </div>
-                  </>
-                </TabsContent>
-                <TabsContent value="model" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                  {showModel && (
-                    <>
-                      <div className="flex justify-end pb-1 pt-0 mx-2">
-                        <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                          Show Prompt
-                        </button>
-                      </div>
-                      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                        <DialogContent className="max-w-5xl"> {/* Added max-w-4xl for wider dialog */}
-                          <DialogHeader>
-                            <DialogDescription>
-                              <div>
-                                <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                  <DialogTitle>modelIrtvSystemPrompt : </DialogTitle>
-                                  <ReactMarkdown>{modelIrtvSystemPrompt}</ReactMarkdown>
-                                  <DialogTitle>User Prompt</DialogTitle>
-                                  <ReactMarkdown>{modelUserPrompt}</ReactMarkdown>
-                                  <DialogTitle>User Input Prompt</DialogTitle>
-                                  <ReactMarkdown>{modelUserInput}</ReactMarkdown>
-                                  <DialogTitle>Context items</DialogTitle>
-                                  <ReactMarkdown>{modelContextItems}</ReactMarkdown>
-                                  <DialogTitle>Context ontology</DialogTitle>
-                                  <ReactMarkdown>{modelContextOntology}</ReactMarkdown>
-                                  <DialogTitle>Metamodel Irtv Prompt</DialogTitle>
-                                  <ReactMarkdown>{modelContextMetamodel}</ReactMarkdown>
-                                </div>
-                              </div>
-                            </DialogDescription>
-                          </DialogHeader>
-                          <DialogFooter>
-                            <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                              Close
-                            </Button>
-                          </DialogFooter>
-                        </DialogContent>
-                      </Dialog>
-                      <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <ObjectCard model={model} />
-                      </div>
-                    </>
-                  )}
-                </TabsContent>
-                <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                  <>
-                    <div className="flex justify-end pb-1 pt-0 mx-2">
-                      <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                        Show Prompt
-                      </button>
-                    </div>
-                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                      <DialogContent className="max-w-5xl"> {/* Added max-w-4xl for wider dialog */}
-                        <DialogHeader>
-                          <DialogDescription>
-                            <div>
-                              <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                <DialogTitle>System Prompt</DialogTitle>
-                                <ReactMarkdown>{modelviewSystemPrompt}</ReactMarkdown>
-                                <DialogTitle>User Prompt</DialogTitle>
-                                <ReactMarkdown>{modelviewUserPrompt}</ReactMarkdown>
-                                <DialogTitle>User Input</DialogTitle>
-                                <ReactMarkdown>{modelviewUserInput}</ReactMarkdown>
-                                <DialogTitle>Context items</DialogTitle>
-                                <ReactMarkdown>{modelviewContextItems}</ReactMarkdown>
-                                <DialogTitle>Context ontology</DialogTitle>
-                                <ReactMarkdown>{modelviewContextOntology}</ReactMarkdown>
-                                <DialogTitle>Context Metamodel</DialogTitle>
-                                <ReactMarkdown>{modelviewContextMetamodel}</ReactMarkdown>
-                              </div>
-                            </div>
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                            Close
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    <div className="mx-1 ">
-                      <ModelviewCard modelviews={[newModelview]} />
-                    </div>
-                  </>
-                </TabsContent>
-              </Tabs>
-            </Card>
-          </div>
         </div>
       </div>
-
-      {/* {model && (
-            <Button onClick={handleCopy} className="mx-2 bg-blue-500 text-white rounded">
-              Copy JSON
-            </Button>
-          )} */}
     </div>
   );
 };

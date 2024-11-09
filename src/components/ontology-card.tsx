@@ -10,10 +10,10 @@ interface OntologyCardProps {
     ontologyData: {
         name: string;
         description: string;
-        presentation: string;
         concepts: Concept[];
         relationships: Relationship[];
-    };
+        presentation: string;
+    } | null;
 }
 interface Concept {
     name: string;
@@ -38,15 +38,15 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
     const generateMermaidDiagram = useCallback((regen: boolean) => {
         try {
-            let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
-            ontologyData?.concepts.forEach((object) => {
-                const nodeId = object.name.replace(/\s+/g, '_');
+            let diagram = (regen) ? 'graph LR;\n' : 'graph LR;\n\n';
+            ontologyData?.concepts?.forEach((object) => {
+                const nodeId = object.name.replace(/[\s()]+/g, '_');
                 diagram += `${nodeId}["${object.name}"];\n`;
                 // diagram += `${nodeId}["<i class='fab fa-youtube'></i> ${object.name}"];\n`;
                 // diagram += `style ${nodeId} fill:#f9f,stroke:#333,stroke-width:2px;\n`; // Set custom color for the object
             });
-            ontologyData?.relationships.forEach((r) => {
-                diagram += `${r.nameFrom.replace(/\s+/g, '_')} -->|${r.name.replace(/\s+/g, '_')}| ${r.nameTo.replace(/\s+/g, '_')};\n`;
+            ontologyData?.relationships?.forEach((r) => {
+                diagram += `${r.nameFrom.replace(/[\s()]+/g, '_')} -->|${r.name.replace(/[\s()]+/g, '_')}| ${r.nameTo.replace(/[\s()]+/g, '_')};\n`;
             });
             setMermaidDiagram(diagram);
         } catch (error) {
@@ -63,7 +63,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
             try {
                 mermaid.initialize({
                     startOnLoad: true,
-                    theme: 'base',
+                    theme: 'dark',
                     themeVariables: {
                         primaryColor: '#224444',
                         edgeLabelBackground: '#22557715',
@@ -141,8 +141,8 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                                             <tbody className="bg-gray-900 divide-y divide-gray-700 min-w-full w-full">
                                                                 {ontologyData?.concepts?.map((c, index) => (
                                                                     <tr key={c.name + index} className="w-full">
-                                                                        <td className="px-4 py-2 text-left whitespace-nowrap text-gray-300">{c.name}</td>
-                                                                        <td className="px-4 py-2 text-left text-gray-300 min-w-full">{c.description}</td>
+                                                                        <td className="px-4 py-2 text-left whitespace-nowrap text-gray-300" style={{ color: c.color }}>{c.name}</td>
+                                                                        <td className="px-4 py-2 text-left text-gray-300 min-w-full" style={{ color: c.color }}>{c.description}</td>
                                                                     </tr>
                                                                 ))}
                                                             </tbody>
@@ -172,7 +172,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                                 {ontologyData?.relationships?.map((rel, index) => (
                                                     <tr key={rel.name + index}>
                                                         <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.nameFrom}</td>
-                                                        <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.name}</td>
+                                                        <td className="px-4 py-2 whitespace-nowrap text-gray-300" style={{ color: rel.color }}>{rel.name}</td>
                                                         <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.nameTo}</td>
                                                     </tr>
                                                 ))}
@@ -182,7 +182,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                        <TabsContent value="diagram" className="m-0 px-1 rounded bg-background min-h-[57rem]">
+                        <TabsContent value="diagram" className="m-0 px-1 rounded bg-background min-h-[57rem] scroll-auto">
                             <>
                                 <div className="flex justify-start mx-2">
                                     <button
@@ -196,8 +196,10 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                     </button>
                                 </div>
                                 <Card className="w-full h-full my-1">
-                                    <div className='overflow-auto h-full bg-gray-600 rounded border'>
-                                        {renderMermaidDiagram()}
+                                    <div className='overflow-auto max-h-screen bg-gray-600 rounded border max-width-[calc(100vw-222rem)]'>
+                                        <div className="overflow-auto max-h-full">
+                                            {renderMermaidDiagram()}
+                                        </div>
                                     </div>
                                 </Card>
                             </>

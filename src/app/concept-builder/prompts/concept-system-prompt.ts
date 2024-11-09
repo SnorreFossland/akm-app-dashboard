@@ -41,7 +41,7 @@ If input is only one word or words separated by commas, handle as concept name o
     - Establish connections between new and existing concepts.
     - Avoid duplicating existing concepts or relationships.
     - Identify and address any missing relationships.
-    - Do not create new concepts if they already exist; instead, establish new relations involving them.
+    - Do not create new concepts or relationships if they already exist.
 
 
 ## Styling Guidelines

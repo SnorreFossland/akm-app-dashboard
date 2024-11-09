@@ -107,12 +107,6 @@ const data = {
           description: "Product, Organisation, Process, System (POPS) Modelling",
         },
         {
-          title: "Enterpr. Modeling(POPS)",
-          url: "/streaming",
-          icon: Star,
-          description: "Product, Organisation, Process, System (POPS) Modelling",
-        },
-        {
           title: "Concept Modelling-IRTV",
           url: "/streaming",
           icon: Star,

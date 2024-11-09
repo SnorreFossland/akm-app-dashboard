@@ -184,6 +184,7 @@ const featureASlice = createSlice({
     clearModel(state, action) {
       // let currentModel = state.data?.project.phData.metis.models.find(model => model.id === state.data?.project.phFocus.focusModel.id);
       // if (!currentModel) currentModel = state.data?.project.phData.metis.models[0];
+      console.log('187 action.payload', action.payload, state);
       if (action.payload) {
         action.payload.objects = [];
         action.payload.relships = [];

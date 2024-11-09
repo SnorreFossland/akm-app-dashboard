@@ -147,17 +147,14 @@ const SyncPage = () => {
           `${rt.id} ${rt.name}`).join(', ');
         const mmObjecttypeviewStrings = metamodel?.objecttypeviews.map((otv: any) =>
           `${otv.id} ${otv.name}`).join(', ');
-
-//         const metamodelPrompt = `
-// **Metamodel:**
-//   - **Object Types:** \n ${mmObjecttypeStrings} 
-//   - **Relation Types:** \n ${mmRelationtypeStrings}
-//   - **Object Typeviews:** \n ${mmObjecttypeviewStrings}
-// `;
-
-//         setModelContextMetamodel(metamodelPrompt);
+        //         const metamodelPrompt = `
+        // **Metamodel:**
+        //   - **Object Types:** \n ${mmObjecttypeStrings} 
+        //   - **Relation Types:** \n ${mmRelationtypeStrings}
+        //   - **Object Typeviews:** \n ${mmObjecttypeviewStrings}
+        // `;
+        //         setModelContextMetamodel(metamodelPrompt);
         setModelviewContextMetamodel("");
-
       }
       // setMetamodelPrompt(`${MetamodelPrompt}`);
 
@@ -1222,7 +1219,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                         </DialogContent>
                       </Dialog>
                       <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <ObjectCard model={model} />
+                        <ObjectCard model={{ ...model, description: model.description || '' }} />
                       </div>
                     </>
                   )}
