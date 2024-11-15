@@ -609,7 +609,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
     <div className="akm-canvas flex flex-col gap-1 m-1">
       <header className="ms-2 me-auto w-full bg-green-500/50 text-gradient-to-r from-green-700 to-blue-700 text-transparent bg-clip-text shadow-md shadow-green-500/50">
         <div className="flex justify-between items-center font-bold text-white className= text-green-500 mx-5">
-          <div className="me-5 text-muted-foreground">AKM file :
+          <div className="me-5 mb-0 mt-4 text-muted-foreground">AKM file :
             <span className="px-2 text-gray-300">{metis?.name}.json</span>
           </div>
           <div className="me-5 text-3xl rounded bg-green-500/50 text-gradient-to-r from-green-700 to-blue-700 text-transparent bg-clip-text shadow-md shadow-green-500/50">
