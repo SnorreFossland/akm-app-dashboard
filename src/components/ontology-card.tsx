@@ -19,13 +19,15 @@ interface OntologyCardProps {
     } | null;
 }
 interface Concept {
+    id: string;
     name: string;
     description: string;
 }
 interface Relationship {
+    id: string;
     name: string;
-    nameFrom: string;
-    nameTo: string;
+    idForm: string;
+    idTo: string;
 }
 
 const debug = false;
@@ -104,6 +106,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         <TabsList className="mx-1 mb-0 bg-gray-700">
                             <TabsTrigger value="summary" className='pb-2 mt-3'>Concepts Summary</TabsTrigger>
                             <TabsTrigger value="concepts" className='pb-2 mt-3'>Concept List</TabsTrigger>
+                            <TabsTrigger value="relationships" className='pb-2 mt-3'>Relationship List</TabsTrigger>
                             <TabsTrigger value="diagram" className='pb-2 mt-3'>Concept Map</TabsTrigger>
                         </TabsList>
                         <TabsContent value="summary" className="flex p-1 m-0 rounded bg-background  ">
@@ -134,6 +137,8 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                     {ontologyData && <ConceptTable columns={columns} data={ontologyData.concepts} />}
                                 </div>
                             </Card>
+                        </TabsContent>
+                        <TabsContent value="relationships" className=" m-0 px-1 py-1 rounded bg-background">
                             <Card className="mt-1">
                                 <CardHeader className="px-3 pt-3 pb-0">
                                     <CardTitle className="bg-gray-800 px-2 text-1xl rounded">Relations</CardTitle>
@@ -142,68 +147,6 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                     {ontologyData && <RelshipTable columns={columns} data={ontologyData.relationships} />}
                                 </div>
                             </Card>
-                            {/* <Card className="w-full">
-                                <CardHeader>
-                                    <CardTitle className="bg-gray-800 px-2 text-1xl font-bold">Concepts</CardTitle>
-                                </CardHeader>
-                                <CardContent className="grid gap-6k">
-
-
-                                    <table className="divide-y divide-gray-700 text-sm w-full">
-                                        <thead className="w-full bg-gray-800 sticky top-0">
-                                            <tr className="w-full">
-                                                <th className="px-4 py-2 text-left font-small text-gray-300 uppercase tracking-wider">Name</th>
-                                                <th className="px-4 py-2 text-center font-small text-gray-300 uppercase tracking-wider">Description</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            <tr>
-                                                <td colSpan={3}>
-                                                    <div className="bg-gray-800 divide-y divide-gray-700 w-full max-h-[calc(82vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                        <table className="min-w-full divide-y divide-gray-700 text-sm w-full">
-                                                            <tbody className="bg-gray-900 divide-y divide-gray-700 min-w-full w-full">
-                                                                {ontologyData?.concepts?.map((c, index) => (
-                                                                    <tr key={c.name + index} className="w-full">
-                                                                        <td className="px-4 py-2 text-left whitespace-nowrap text-gray-300" style={{ color: c.color }}>{c.name}</td>
-                                                                        <td className="px-4 py-2 text-left text-gray-300 min-w-full" style={{ color: c.color }}>{c.description}</td>
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        </tbody>
-                                    </table>
-                                </CardContent>
-                            </Card>
-                            <Card className="w-full">
-                                <CardHeader>
-                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>
-                                </CardHeader>
-                                <CardContent className="grid gap-2">
-                                    <div className="bg-gray-800 divide-y divide-gray-700 w-full max-h-[calc(82vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                        <table className="min-w-full divide-y divide-gray-700 text-sm">
-                                            <thead className="bg-gray-900 sticky top-0">
-                                                <tr>
-                                                    <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">From</th>
-                                                    <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Relationship</th>
-                                                    <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">To</th>
-                                                </tr>
-                                            </thead>
-                                            <tbody className="bg-gray-800 divide-y divide-gray-700 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                {ontologyData?.relationships?.map((rel, index) => (
-                                                    <tr key={rel.name + index}>
-                                                        <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.nameFrom}</td>
-                                                        <td className="px-4 py-2 whitespace-nowrap text-gray-300" style={{ color: rel.color }}>{rel.name}</td>
-                                                        <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.nameTo}</td>
-                                                    </tr>
-                                                ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </CardContent>
-                            </Card> */}
                         </TabsContent>
                         <TabsContent value="diagram" className="m-0 px-1 rounded bg-background min-h-[57rem] scroll-auto">
                             <>

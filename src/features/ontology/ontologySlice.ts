@@ -93,6 +93,24 @@ const ontologySlice = createSlice({
                 };
             }
         },
+        editConcept: (state, action: PayloadAction<Concept>) => {
+            const index = state.data.concepts.findIndex(concept => concept.id === action.payload.id);
+            if (index !== -1) {
+                state.data.concepts[index] = action.payload;
+            }
+        },
+        deleteConcept: (state, action: PayloadAction<string>) => {
+            state.data.concepts = state.data.concepts.filter(concept => concept.id !== action.payload);
+        },
+        editRelationship: (state, action: PayloadAction<string>) => {
+            const index = state.relationships.findIndex(r => r.id === action.payload.id);
+            if (index !== -1) {
+                state.relationships[index] = action.payload;
+            }
+        },
+        deleteRelationship: (state, action: PayloadAction<string>) => {
+            state.relationships = state.relationships.filter(r => r.id !== action.payload);
+        },
         clearStore() {
             return initialState;  //ToDo: should be only concepts and relationships
         },
@@ -136,5 +154,5 @@ const ontologySlice = createSlice({
     },
 });
 
-export const { setOntologyData, clearStore } = ontologySlice.actions;
+export const { setOntologyData, editConcept, editRelationship, deleteConcept, deleteRelationship, clearStore } = ontologySlice.actions;
 export default ontologySlice.reducer;

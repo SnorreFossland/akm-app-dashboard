@@ -1,5 +1,5 @@
-
-import React from 'react';
+import React, { useState } from 'react';
+import { ColumnDef, TableMeta } from '@tanstack/react-table';
 import {
     useReactTable,
     getCoreRowModel,
@@ -32,21 +32,56 @@ interface ConceptTableProps {
     data: Concept[];
 }
 
+export interface ConceptTableMeta extends TableMeta<Concept> { // Exported Interface
+    onEdit?: (id: string) => void;
+    onDelete?: (id: string) => void;
+}
+
+const rowNumberColumn: ColumnDef<Concept> = {
+    id: 'rowNumber',
+    header: '#',
+    cell: (info) => info.row.index + 1,
+};
+
+const columnsWithRowNumber = [rowNumberColumn, ...columns];
+
 export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
     // Manage sorting state
     const [sorting, setSorting] = React.useState<SortingState>([]);
+    const [pageSize, setPageSize] = React.useState(20); // Default page size
+    const [pageIndex, setPageIndex] = React.useState(0); // Default page index
+
+    const onEdit = (id: string) => {
+        console.log(`Edit concept with id: ${id}`);
+        // Implement global edit logic if needed
+    };
+
+    const onDelete = (id: string) => {
+        console.log(`Delete concept with id: ${id}`);
+        // Your delete logic here, e.g., dispatch(deleteConcept(id))
+    };
 
     const table = useReactTable<Concept>({
         data,
-        columns,
+        columns: columnsWithRowNumber,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
         getSortedRowModel: getSortedRowModel(),
         state: {
-            sorting, // Connect sorting state
+            sorting,
+            pagination: { pageIndex, pageSize },
         },
-        onSortingChange: setSorting, // Handle sorting changes
+        meta: {
+            onEdit,
+            onDelete,
+        } as ConceptTableMeta,
+        onSortingChange: setSorting,
+        onPaginationChange: (updater) => {
+            const newState = typeof updater === 'function' ? updater({ pageIndex, pageSize }) : updater;
+            setPageIndex(newState.pageIndex);
+            setPageSize(newState.pageSize);
+        },
     });
 
     return (
@@ -146,6 +181,20 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
                     Page {table.getState().pagination.pageIndex + 1} of{' '}
                     {table.getPageCount()}
                 </span>
+                <select
+                    className='bg-transparent'
+                    value={pageSize}
+                    onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        table.setPageSize(Number(e.target.value));
+                    }}
+                >
+                    {[10, 20, 30, 40, 50].map((size) => (
+                        <option key={size} value={size}>
+                            Show {size} rows
+                        </option>
+                    ))}
+                </select>
                 <Button
                     onClick={() => table.nextPage()}
                     disabled={!table.getCanNextPage()}

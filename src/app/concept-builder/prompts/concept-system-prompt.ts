@@ -24,9 +24,10 @@ If input is only one word or words separated by commas, handle as concept name o
     - Use the ontology to enhance the domain model by incorporating its concepts and relationships.
     - Ensure the ontology concepts are integrated into the domain model.
     - Make sure to use the ontology concept names exactly as they are mostly one word or Camelcase.
-3. **Presentation**
-    - Provide a presentation of the ontology and its concepts according to the Presentation prompt .
-    - The presentation should be informative and easy to understand and put in the presentation field in the structured output.
+3. **Description**
+    - Provide a description of domain concepts according to the Presentation prompt .
+    - The description should be informative and easy to understand.
+    - When nyw topic are added, make sure to add to the description for each new concept.
 
 ## Your Role
 

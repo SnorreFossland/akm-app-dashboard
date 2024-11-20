@@ -8,6 +8,7 @@ export const OntologySchema = z.object({
         concepts: z
             .array(
                 z.object({
+                    id: z.string().describe("Id of the object"),
                     name: z.string().describe("Name of the object"),
                     description: z.string().describe("Description of the object"),
                 })
@@ -16,6 +17,7 @@ export const OntologySchema = z.object({
         relationships: z
             .array(
                 z.object({
+                    id: z.string().describe("Id of the relationship"),
                     name: z.string().describe("relationship name"),
                     nameFrom: z.string().describe("Name of the first object"),
                     nameTo: z.string().describe("Name of the second object"),
