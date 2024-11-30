@@ -153,7 +153,7 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="bg-gray-900 divide-y divide-gray-700">
-                                                        {(modelviews[0]) &&  modelviews[0]?.relshipviews?.map((rv: any) => (
+                                                        {modelviews && modelviews[0] &&  modelviews[0]?.relshipviews?.map((rv: any) => (
                                                              <tr key={rv.id}>
                                                                 {/* <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.fromobjviewRef}</td> */}
                                                                 <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.name}</td>

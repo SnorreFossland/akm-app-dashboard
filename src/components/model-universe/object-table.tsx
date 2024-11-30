@@ -18,7 +18,7 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import { columns } from './concept-columns'; // Ensure this is correctly typed
+import { columns } from './object-columns'; // Ensure this is correctly typed
 
 // Define the Concept type
 interface Concept {

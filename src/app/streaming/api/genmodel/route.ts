@@ -5,13 +5,13 @@ import { ObjectSchema } from "@/objectSchema";
 import { OntologySchema } from "@/ontologySchema";
 import { ModelviewSchema } from "@/modelviewSchema";
 
-const aiModelName = "gpt-4o-2024-08-06";
+// const aiModelName = "gpt-4o-2024-08-06";
 
 const debug = false;
 
 export async function POST(req: Request) {
   console.log('13 route POST');
-  const { schemaName, systemPrompt, systemBehaviorGuidelines, userPrompt, userInput, contextItems, contextOntology, contextMetamodel } = await req.json();
+  const { aiModelName, schemaName, systemPrompt, systemBehaviorGuidelines, userPrompt, userInput, contextItems, contextOntology, contextMetamodel } = await req.json();
   // if (!debug) console.log('15 route userPrompt', userPrompt);
   if (!debug) console.log('15 route \nschemaName', schemaName, '\nsystemPrompt', systemPrompt, '\nsystemBehaviorGuidelines', systemBehaviorGuidelines, '\nuserPrompt', userPrompt, '\nuserInput', userInput, '\ncontextItems', contextItems, '\ncontextOntology', contextOntology, '\ncontextMetamodel', contextMetamodel);
   const client = new OpenAI();
@@ -29,18 +29,21 @@ export async function POST(req: Request) {
 
   console.log('27 route schema', schemaName);
   
+  const messages = [
+    systemPrompt ? { role: 'system', content: systemPrompt } : null,
+    systemBehaviorGuidelines ? { role: 'system', content: systemBehaviorGuidelines } : null,
+    userPrompt ? { role: 'user', content: userPrompt } : null,
+    userInput ? { role: 'user', content: userInput } : null,
+    contextItems ? { role: 'assistant', content: contextItems } : null,
+    contextOntology ? { role: 'assistant', content: contextOntology } : null,
+    contextMetamodel ? { role: 'assistant', content: contextMetamodel } : null,
+  ].filter(Boolean);
+
+  console.log('42 route messages', messages);
 
   const response = await client.chat.completions.create({
     model: aiModelName,
-    messages: [
-      { role: 'system', content: systemPrompt },
-      { role: 'system', content: systemBehaviorGuidelines },
-      { role: 'user', content: userPrompt },
-      { role: 'user', content: userInput },
-      { role: 'assistant', content: contextItems },
-      { role: 'assistant', content: contextOntology },
-      { role: 'assistant', content: contextMetamodel },
-    ],
+    messages: messages,
     response_format: zodResponseFormat(schema, `${schema.constructor.name.toLowerCase()}Schema`),
     stream: true,
     temperature: 0.1, // Set the temperature here

@@ -110,7 +110,8 @@ export const ObjectCard = ({ model }: { model: Model }) => {
             <div className="w-100 m-auto">
                 <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-gray-700 mb-0 pb-1">
                     <TabsList className="m-1 mb-0 bg-transparent">
-                        <TabsTrigger value="objects" className='pb-2 mt-2'>Objects & Relationships</TabsTrigger>
+                        <TabsTrigger value="objects" className='pb-2 mt-2'>Object List</TabsTrigger>
+                        <TabsTrigger value="relationships" className='pb-2 mt-2'>Relationship List</TabsTrigger>
                         <TabsTrigger value="diagram" className='pb-2 mt-2'>Preview Diagram</TabsTrigger></TabsList>
                     {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
                         <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger></TabsList> */}
@@ -144,6 +145,12 @@ export const ObjectCard = ({ model }: { model: Model }) => {
 
                                     </CardContent>
                                 </Card>
+                            </div>
+                        </div>
+                    </TabsContent>
+                    <TabsContent value="relationships" className="m-0 px-1 py-2 rounded bg-background">
+                        <div>
+                            <div className="flex space-x-4">
                                 <Card className="w-full">
                                     <CardHeader>
                                         <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relationships</CardTitle>

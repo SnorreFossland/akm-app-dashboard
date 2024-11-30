@@ -75,7 +75,7 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
         <div className="m-1">
             <div className="flex items-center p-2">
                 <Input
-                    placeholder="Filter relationships..."
+                    placeholder="Filter..."
                     value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
                     onChange={(event) =>
                         table.getColumn('name')?.setFilterValue(event.target.value)

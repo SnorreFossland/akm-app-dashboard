@@ -1,5 +1,5 @@
 // src/features/featureA/components/HandleGetLocalFile.ts
-import { setFileData } from '../featureASlice';
+import { setFileData } from '../modelSlice';
 import { AppDispatch } from '@/store/store';
 
 export const handleGetLocalFile = (event: React.ChangeEvent<HTMLInputElement>, dispatch: AppDispatch) => {
@@ -9,7 +9,7 @@ export const handleGetLocalFile = (event: React.ChangeEvent<HTMLInputElement>, d
     const reader = new FileReader();
     reader.onload = (e) => {
       try {
-        const data: any = JSON.parse(e.target?.result as string) ; // Parse the JSON string
+        const data: any = JSON.parse(e.target?.result as string); // Parse the JSON string
         console.log('data:', data);
         dispatch(setFileData(data)); // Dispatch the action with the data
       } catch (error) {

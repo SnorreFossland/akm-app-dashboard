@@ -102,6 +102,12 @@ const data = {
           description: "Concept Knowledge Modelling",
         },
         {
+          title: "AKM Model Universe",
+          url: "/model-universe",
+          icon: Star,
+          description: "Active Knowledge Modelling Universe",
+        },
+        {
           title: "Enterpr. Modeling(POPS)",
           url: "/streaming",
           icon: Star,

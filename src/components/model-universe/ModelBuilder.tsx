@@ -10,14 +10,16 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { LoadingCircularProgress } from '@/components/loading';
 import { TabsContent } from '@/components/ui/tabs';
-import { OntologyCard } from '@/components/ontology-card';
+import { ObjectSchema } from "@/objectSchema";
+import { ObjectCard } from '@/components/object-card';
 import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { SystemConceptPrompt } from '@/app/concept-builder/prompts/concept-system-prompt';
 
-import { set } from 'zod';
+
+import { SystemIrtvPrompt } from '@/app/concept-builder/prompts/system-irtv-prompt';
+import { MetamodelPrompt } from '@/app/model-universe/prompts/metamodel-irtv-prompt';
 
 const debug = false;
 
@@ -25,7 +27,7 @@ const ConceptBuilder = () => {
     const data = useSelector((state: RootState) => state.modelUniverse.data);
     const error = useSelector((state: RootState) => state.modelUniverse.error);
     const status = useSelector((state: RootState) => state.modelUniverse.status);
-    const ontologyReduxData = data.ontology;
+    const reduxData = data;
 
     if (!debug) console.log('22 ConceptBuilder data:', data);
     const dispatch = useDispatch<AppDispatch>();
@@ -33,38 +35,36 @@ const ConceptBuilder = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [topicDescr, setTopicDescr] = useState("");
     const [domainDesc, setDomainDesc] = useState("");
-    const [suggestedConcepts, setSuggestedConcepts] = useState<{ concepts: any[], relationships: any[] } | null>(null);
     const [ontologyUrl, setOntologyUrl] = useState("");
-    const [conceptSystemPrompt, setConceptSystemPrompt] = useState(SystemConceptPrompt);
+    const [systemPrompt, setSystemPrompt] = useState(SystemIrtvPrompt);
     const [systemBehaviorGuidelines, setSystemBehaviorGuidelines] = useState("");
-    const [conceptUserPrompt, setConceptUserPrompt] = useState("");
-    const [conceptUserInput, setConceptUserInput] = useState("");
-    const [conceptContextItems, setConceptContextItems] = useState("");
-    const [conceptContextOntology, setConceptContextOntology] = useState("");
-    const [conceptContextMetamodel, setConceptContextMetamodel] = useState("");
+    const [userPrompt, setUserPrompt] = useState("");
+    const [userInput, setUserInput] = useState("");
+    const [contextItems, setContextItems] = useState("");
+    const [contextOntology, setContextOntology] = useState("");
+    const [contextMetamodel, setContextMetamodel] = useState(MetamodelPrompt);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [suggestedConceptData, setSuggestedConceptData] = useState(null);
-    interface Ontology {
-            name: string;
-            description: string;
-            concepts: [];
-            relationships: [];
-            presentation: string;
-    }
-    
+    const [suggestedConceptsData, setSuggestedConseptsData] = useState(null);
+    const [suggestedModelData, setSuggestedModelData] = useState(null);
+    const [suggestedRoles, setSuggestedRoles] = useState("");
+    const [suggestedTasks, setSuggestedTasks] = useState("");
+    const [suggestedViews, setSuggestedViews] = useState("");
     const [allOntology, setAllOntology] = useState<Ontology | null>(null);
     const [descrString, setDescrString] = useState("");
-    const [existingConcepts, setExistingConcepts] = useState("");
+    const [existingContext, setExistingContext] = useState("");
     const [ontologyString, setOntologyString] = useState("");
     const [concepts, setConcepts] = useState("");
     const [conceptData, setConceptData] = useState(null)
     const [step, setStep] = useState(0);
     const [activeTab, setActiveTab] = useState('suggested-concepts');
 
+    const [model, setModel] = useState(null);
+    const [metis, setMetis] = useState(null);
+    const [currentModel, setCurrentModel] = useState(null);
+    const [newModelview, setNewModelview] = useState(null);
+
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
-
-    
 
     const handleAskGpt = () => (
         <div className="flex items-center ml-auto">
@@ -79,246 +79,207 @@ const ConceptBuilder = () => {
             )}
             <Button onClick={() => {
                 setStep(1);
-                handleConceptBuilder();
-                setActiveTab('suggested-concepts');
+                handleModelBuilder();
+                setActiveTab('objects');
             }}
-                className={`rounded text-xl p-4 ${(suggestedConceptData && suggestedConceptData.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
+                className={`rounded text-xl p-4 ${(suggestedConceptsData && suggestedConceptsData.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
             >
                 <FontAwesomeIcon icon={faRobot} size="1x" />
             </Button>
         </div>
     )
 
-    const handleDispatchOntologyData = () => {
-        if (!suggestedConceptData) {
-            alert('No Concept data to dispatch');
-            return;
+
+    const handleDispatchIrtvData = () => {
+        if (!model) {
+        alert('No IRTV data to dispatch');
+        return;
         }
-        if (!debug) console.log('54 dispatching Concept data:', data, suggestedConceptData);
-        const updatedOntologyData = {
-            ...data,
-            phData: {
-                ...data.phData,
-                ontology: suggestedConceptData,
-            },
-        };
-        dispatch(setOntologyData(updatedOntologyData));
-        setSuggestedConceptData(null);
+        if (!debug) console.log('156 dispatching IRTV data:', model, newModelview);
+        dispatch(setObjects(model.objects));
+        dispatch(setRelationships(model.relationships));
+        dispatch(setModelview([newModelview]));
         setDispatchDone(true);
     };
 
-    const handleConceptBuilder = async () => {
-        setIsLoading(true);
-        setDomainDesc("");
-        setConcepts("");
-        setActiveTab('suggested-concepts');
+  useEffect(() => {
+    // type ExistingObject = { id: string; name: string; description: string; typeName: string };
+    // type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
 
-        if (!topicDescr || topicDescr === '') {
-            alert(`Please provide a domain description.\nExamples:
-            - E-Scooter Rental Services\n
-            - Car sale administration\n
-            - Energy generation\n
-            - Data management\n
-            - Financial services for Car rental in Scandinavia\n
-        `);
-            setIsLoading(false);
-            return;
-        }
+    if (data) {
+      if (!debug) console.log('89 data', data);
+      const metis1 = data.phData?.metis;
+      const focus = data.phFocus;
+      const user = data.phUser;
+      if (!metis1) { console.error('Data does not contain metis:', data); return };
+      setMetis(metis1);
 
-        const userPrompt = (topicDescr) ? `
-    Identify and explain the key concepts and concepts supplied in the user input:
-    
-    ## User Input : **${topicDescr}**
-    Elaborate around this input and provide a detailed explanation of the domain.
-    Create concepts and relationships based on the user input.
+      if (metis?.metamodels) {
+        const metamodel = metis.metamodels.find((mmodel: { name: string }) => mmodel.name.includes('IRTV'));
+        const mmObjecttypeStrings = metamodel?.objecttypes.map((ot: any) =>
+          `${ot.id} ${ot.name}`).join(', ');
+        const mmRelationtypeStrings = metamodel?.relshiptypes.map((rt: any) =>
+          `${rt.id} ${rt.name}`).join(', ');
+        const mmObjecttypeviewStrings = metamodel?.objecttypeviews.map((otv: any) =>
+          `${otv.id} ${otv.name}`).join(', ');
 
-    `
-            : "";
+        setModelviewContextMetamodel("");
+      }
 
-        const userInput = (suggestedConcepts)
-            ? `
-    Include the following concepts in the Conceptual Apparatus:
-    **User Suggested Concepts:**
-    ${suggestedConcepts}
-    `
-            : "";
 
-        let conceptString = '';
+      const models = metis1.models;
+      const curmod = models?.find((model: any) => model.id === focus?.focusModel?.id) || models[0];
+      // if (!debug) console.log('95 currentModel', curmod, currentModel, metis?.models);
+      setCurrentModel(curmod);
 
-        if (ontologyReduxData && ontologyReduxData.concepts.length > 0) {
-            conceptString += `**Objects**\n\n${ontologyReduxData.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-            conceptString += `**Relationships**\n\n${ontologyReduxData.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
-        }
-        const contextItems = (conceptString && conceptString !== '') ? `
-    You must include the following existing concepts in the Conceptual Apparatus:
-    ## **Context:**
-    - Do not create any concepts that already is in Existing Context.
-    - Do not create any relationships that already is in Existing Context.
-    - You may create relationships between new and existing concepts.
-    ${conceptString}
-    `
-            : "";
+      const filteredRelationships = curmod?.relships?.filter((rel: any) => {
+        const fromObject = curmod?.objects?.find((obj: any) => obj.id === rel.fromobjectRef);
+        const toObject = curmod?.objects?.find((obj: any) => obj.id === rel.toobjectRef);
+        // if (!debug) console.log('127 fromObject', fromObject, 'toObject', toObject, 'rel', rel);
+        return fromObject?.typeName === 'Information' && toObject?.typeName === 'Information' && rel;
+      }) || [];
 
-        console.log('109 contextItems', contextItems, conceptString);
+      if (!debug) console.log('130 filteredRelationships', filteredRelationships);
 
-        // Imported Ontology
-        const contextOntology = (ontologyString && ontologyString !== '') ? `
-    ## **Ontology**
-    Use the names of following concepts from the ontology where ever possible:
-    **List of concepts:**
-    ${ontologyString} 
-    
-    Make sure to use these concepts in the Conceptual Apparatus.
-    `
-            : "";
+      const existingObjects = curmod?.objects?.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName })) || [];
+      const existingRelationships = filteredRelationships?.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo })) || [];
 
-        const contextMetamodel = `
+      setExistingInfoObjects({
+        objects: existingObjects?.filter((obj: any) => obj && obj.typeName === 'Information') || [],
+        relationships: existingRelationships
+      });
 
-    ## **Description**
-    Create a description of the concepts domain.
-    - Include the existing context description [**${allOntology?.description}**] in the new description.
-    - Add to existing description if new concepts are added.
+      const existInfoConcepts = ({
+        concepts: existingInfoObjects.objects.map((obj: any) => ({ name: obj.name, description: obj.description })),
+        relationships: existingInfoObjects.relationships.map((rel: any) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
+      });
 
-    ##Create a comprehensive presentation including the existing [**${allOntology?.presentation}**].
-
-    ## **Presentation**
-    Include the existing context in the Presentation.
-    It should includes the following components:
-    
-    **Title:** ${topicDescr}
-    
-    ### **Instructions**
-    
-    1. **Introduction**
-        - Provide an overview of the domain.
-        - Explain its significance in the current context.
-    
-    2. **Historical Background**
-        - Outline the evolution of this domain.
-        - Mention key milestones and breakthroughs.
-    
-    3. **Core Concepts and Theories**
-        - Explain fundamental principles.
-        - Include important models or frameworks.
-    
-    4. **Current Trends and Developments**
-        - Discuss recent advancements.
-        - Highlight emerging technologies or methodologies.
-    
-    5. **Applications**
-        - Describe real-world applications.
-        - Include case studies or success stories.
-    
-    6. **Challenges and Limitations**
-        - Identify common obstacles.
-        - Discuss any ethical, social, or technical issues.
-    
-    7. **Future Outlook**
-        - Predict future trends.
-        - Explore potential opportunities and risks.
-    
-    8. **Conclusion**
-        - Summarize key points.
-        - Emphasize the importance of the domain moving forward.
-    
-    9. **References**
-        - Cite all sources of information.
-        - Include additional resources for further reading.
-
-    
-    ### Example Presentation:
-    {
-    "ontologyData": {
-        "name": "Bike rental",
-        "description": "Brief description of the domain.",
-        "presentation": " ..........",
-        "concepts": [{ "id": "Electric_Bike", "name": "Electric Bike", "description": "Description of the concept." }],
-        "relationships": [{ "id": "Rents_a_bike","name": "Rents a bike", "nameFrom": "Bike", "nameTo": "Customer" }],
-        },
-    ],
+      let conceptString = '';
+      if (existInfoConcepts.concepts.length > 0) {
+        conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
+        conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
+      }
+      setExistingConcepts(conceptString);      // if (!debug) console.log('101 existingContext', existingContext);
+      // if (!debug) console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
+    } else {
+      console.error('Data does not contain data:', data);
     }
+
+  }, [data]);
+
+  // ------------------------- this Step is converting from concepts to IRTV ---------------------------------
+  const handleModelBuilder = async () => {
+    setIsLoading(true);
+    setStep(2);
+    setActiveTab('model');
+
+    const modelUserPrompt = ` 
+## **User Prompt**
+Create Information, Roles, Tasks, and Views objects according to list of concepts and relations in the Context as types defined in the Metamodel.
+Do not recreate objects that already exists in the 'Existing Context'.
+Make sure all objects have relationships.
     `;
 
-        setConceptSystemPrompt(conceptSystemPrompt);
-        setSystemBehaviorGuidelines("");
-        setConceptUserPrompt(userPrompt);
-        setConceptUserInput(userInput);
-        setConceptContextItems(contextItems);
-        setConceptContextOntology(contextOntology);
-        setConceptContextMetamodel(contextMetamodel);
+    let modelContextItems = (concepts && concepts !== '') ? `
 
-        try {
-            const res = await fetch("/streaming/api/genmodel", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    aiModelName: "gpt-4o-2024-08-06",
-                    schemaName: 'OntologySchema',
-                    systemPrompt: conceptSystemPrompt || "",
-                    systemBehaviorGuidelines: "",
-                    userPrompt: userPrompt || "",
-                    userInput: userInput || "",
-                    contextItems: contextItems || "",
-                    contextOntology: contextOntology || "",
-                    contextMetamodel: contextMetamodel || ""
-                })
-            });
+**IRTV Objects**
 
-            if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+Create IRTV objects and Relationships based on the following:
 
-            const reader = res.body?.getReader();
-            if (!reader) throw new Error("No reader available");
-            const decoder = new TextDecoder();
-            let data = "";
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                data += decoder.decode(value, { stream: true });
-            }
+## List of concepts and relations:
+  ${concepts}
+`
+      : '';
 
-            const parsed = JSON.parse(data);
-            console.log("205 Parsed data:", ontologyReduxData, parsed.ontologyData);
-            setConceptData(parsed.ontologyData);
-            if (parsed.ontologyData.concepts && Array.isArray(parsed.ontologyData.concepts)) {
+    modelContextItems += (existingContext && existingContext !== '') && `
+# Context
+## **Existing Context:**
+    ${existingContext}
+    Do not recreate objects from concepts that already is in Existing Context, but you may create relationship to/from existing context.
+`;
 
-                setSuggestedConceptData(parsed.ontologyData);
-                setDescrString(parsed.ontologyData.description);
-            } else {
-                console.error("Parsed data does not contain concepts or concepts is not an array");
-            }
-        } catch (e) {
-            console.error("Validation failed:", e instanceof Error ? e.message : e);
-        }
-        setIsLoading(false);
-    };
+    modelContextItems += (suggestedRoles && suggestedRoles !== '') && `
+**Roles**
+Create Roles including the following user suggested roles:
+${suggestedRoles}
+    `;
 
+    modelContextItems += (suggestedTasks && suggestedTasks !== '') && `
+Create Tasks including the following  user suggested tasks:
+  **Tasks**
+  ${suggestedTasks}
+if no suggested tasks, create necessary tasks that performs or have responsibilities for the views.
+    `;
 
-    const mergeOntologyData = (ontologyReduxData, suggestedCondeptData) => {  // suggestedData is the data returned from the AI model and owerwrites???? the ontologyReduxData
-        return {
-            ...ontologyReduxData,
-            ...suggestedConceptData,
-            concepts: [
-                ...(suggestedConceptData?.concepts || []).map(concept => ({
-                    ...concept,
-                    color: 'gray'
-                })),
-            ...(ontologyReduxData?.concepts || []),
-            ],
-            relationships: [
-                ...(suggestedConceptData?.relationships || []).map(rel => ({
-                    ...rel,
-                    color: 'gray'
-                })),
-            ...(ontologyReduxData?.relationships || []),
-            ],
-            // Merge other nested properties similarly
-        };
-    };
+    modelContextItems += (suggestedViews && suggestedViews !== '') && `
+Create Views including the following user suggested views:
+  **Views**
+  ${suggestedViews}
 
-    useEffect(() => {
-        setAllOntology(mergeOntologyData(ontologyReduxData, suggestedConceptData))
-    }, [suggestedConceptData]);
+  Views to access the Information objects.
+  Tasks applies Views to manipulate the Information objects.
+  Roles to perform or manage the Tasks.
+    `;
+    if (!debug) console.log('464 model', 'modelContextPrompt', modelContextItems);
 
+        setSystemPrompt(SystemIrtvPrompt);
+        setUserPrompt(modelUserPrompt);
+        setUserInput(modelUserInput);
+        setContextItems(modelContextItems);
+        setContextOntology(modelContextOntology);
+        setContextMetamodel(MetamodelPrompt);
+    // setModelContextMetamodel(metamodelContextPrompt);
+
+    if (!debug) console.log('476 Model IRTV step two :',
+      'modelSystemPrompt:', systemPrompt,
+      'modelUserPrompt:', modelUserPrompt,
+      'modelUserInput:', modelUserInput,
+      'contextItems:', modelContextItems,
+      'contextOntology:', modelContextOntology,
+      'contextMetamodel:', modelContextMetamodel);
+
+    try {
+      const res = await fetch("/streaming/api/genmodel", {
+        method: "POST",
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          schemaName: 'ObjectSchema',
+          systemPrompt: systemPrompt || "",
+          systemBehaviorGuidelines: "",
+          userPrompt: modelUserPrompt || "",
+          userInput: modelUserInput || "",
+          contextItems: modelContextItems || "",
+          contextOntology: modelContextOntology || "",
+          contextMetamodel: contextMetamodel || ""
+        })
+      });
+
+      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("No reader available");
+
+      const decoder = new TextDecoder();
+      let data = "";
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        data += decoder.decode(value, { stream: true });
+      }
+
+      const parsed = JSON.parse(data);
+      if (!debug) console.log('467 parsed', parsed);
+      const validatedData = ObjectSchema.parse(parsed);
+      // setDomain(validatedData);
+      setModel(validatedData); //this is irtv data  setMetis({ ...metis, models: [validatedData] });
+      setStep(3);
+    } catch (e) {
+      console.error("Validation failed:", e instanceof Error ? e.message : e);
+    }
+
+    setIsLoading(false);
+    setStep(3);
+  };
  
     return (
         <div className="flex  h-[calc(100vh-5rem)]">
@@ -326,7 +287,7 @@ const ConceptBuilder = () => {
                 <div className="m-1 mb-5">
                     <details>
                         <summary>
-                            <FontAwesomeIcon icon={faQuestionCircle} width="16" height="16" /> Concept Model
+                            <FontAwesomeIcon icon={faQuestionCircle} width="16" height="16" /> IRTV Model
                         </summary>
                         <div className="bg-gray-600 p-2">
                             <p>Build a Concept Model assisted by AI</p>
@@ -346,36 +307,9 @@ const ConceptBuilder = () => {
                     </details>
                 </div>
                 <CardTitle className="flex justify-between items-center flex-grow ps-1">
-                    Domain Explorer:
+                    Model Explorer:
                 </CardTitle>
                 <div className="flex flex-wrap items-start m-1">
-                    <label htmlFor="chatOutput" className="text-white mt-2">Chat Output</label>
-                    <Textarea
-                        id="chatOutput"
-                        className="flex-grow p-1 rounded bg-gray-800"
-                        value={`${descrString}`}
-                        disabled={isLoading}
-                        rows={12}
-                        placeholder="Chat output will be displayed here"
-                    />
-
-                    <label htmlFor="topicDescr" className="text-white">Topic</label>
-                    <Textarea
-                        id="topicDescr"
-                        className="flex-grow p-1 rounded bg-gray-600"
-                        value={topicDescr}
-                        disabled={isLoading}
-                        onChange={(e) => setTopicDescr(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') {
-                                e.preventDefault();
-                                handleAskGpt();
-                                setStep(1);
-                            }
-                        }}
-                        placeholder="Ask GPT to suggest Concepts from this topic"
-                        rows={3}
-                    />
                     <details className="m-2 w-full">
                         <summary className="text-white cursor-pointer">More ...</summary>
                         <div className="mt-2">
@@ -393,9 +327,9 @@ const ConceptBuilder = () => {
                                 <Input
                                     id="suggestedConcepts"
                                     className="flex-grow p-1 rounded bg-gray-800"
-                                    value={suggestedConceptData || ""}
+                                    value={suggestedConceptsData || ""}
                                     disabled={isLoading}
-                                    onChange={(e) => setSuggestedConceptData(e.target.value)}
+                                    onChange={(e) => setSuggestedConceptsData(e.target.value)}
                                     placeholder="Enter your concepts i.e.: Scooter, User, booking"
                                 />
                             </div>
@@ -423,8 +357,35 @@ const ConceptBuilder = () => {
                             </div>
                         </div>
                     </details>
-                    <CardTitle
-                        className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(suggestedConceptData && suggestedConceptData.length > 0) ? 'text-green-600' : 'text-green-200'}`}
+
+                        <CardTitle
+                            className={`flex justify-between items-center flex-grow ps-1 ${(model?.objects?.length > 0) ? 'text-green-600' : 'text-green-200'}`}
+                        >
+                            Model Builder (Create IRTV-Model):
+                            <div className="flex items-center ml-auto">
+                                {(isLoading && step === 2) ? (
+                                    <div style={{ marginLeft: 8, marginRight: 8 }}>
+                                        <LoadingCircularProgress />
+                                    </div>
+                                ) : (
+                                    <div style={{ marginLeft: 8, marginRight: 8, color: model?.objects?.length > 0 ? 'green' : 'gray' }}>
+                                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
+                                    </div>
+                                )}
+                                <Button onClick={async () => {
+                                    await handleModelBuilder();
+                                    setActiveTab('model');
+                                }}
+                                    className={`rounded text-xl p-4 ${(model?.objects?.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
+                                >
+                                    <FontAwesomeIcon icon={faRobot} size="1x" />
+                                </Button>
+                            </div>
+                        </CardTitle>
+
+
+                    {/* <CardTitle
+                        className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(suggestedModelData && suggestedModelData.length > 0) ? 'text-green-600' : 'text-green-200'}`}
                     >
                         Ask GPT to suggest Concepts
                         <div className="flex items-center ml-auto">
@@ -433,21 +394,21 @@ const ConceptBuilder = () => {
                                     <LoadingCircularProgress />
                                 </div>
                             ) : (
-                                <div style={{ marginLeft: 8, marginRight: 8, color: suggestedConceptData && step === 1 ? 'green' : 'gray' }}>
+                                <div style={{ marginLeft: 8, marginRight: 8, color: suggestedModelData && step === 1 ? 'green' : 'gray' }}>
                                     <FontAwesomeIcon icon={faCheckCircle} size="2x" />
                                 </div>
                             )}
                             <Button onClick={() => {
                                 setStep(1);
-                                handleConceptBuilder();
-                                setActiveTab('suggested-concepts');
+                                handleModelBuilder();
+                                setActiveTab('objects');
                             }}
-                                className={`rounded text-xl p-4 ${(suggestedConceptData && step === 1) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
+                                className={`rounded text-xl p-4 ${(suggestedModelData && step === 1) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
                             >
                                 <FontAwesomeIcon icon={faRobot} size="1x" />
                             </Button>
                         </div>
-                    </CardTitle>
+                    </CardTitle> */}
 
 
                 </div>
@@ -458,7 +419,7 @@ const ConceptBuilder = () => {
                         <div
                             className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
                         >
-                            Save to current Concept Store
+                            Save to current Model Store
                             <div className="flex items-center ml-auto">
                                 {!dispatchDone && step === 2 ? (
                                     <div style={{ marginLeft: 8, marginRight: 8 }}>
@@ -472,7 +433,7 @@ const ConceptBuilder = () => {
                                 <Button
                                     onClick={() => {
                                         setStep(2);
-                                        handleDispatchOntologyData();
+                                        handleDispatchIrtvData();
                                     }}
                                     className={`rounded text-xl ${dispatchDone && step === 4 || step === 5 ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}>
                                     <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
@@ -501,19 +462,19 @@ const ConceptBuilder = () => {
                                                 <div>
                                                     <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                                         <DialogTitle>---- System Prompt</DialogTitle>
-                                                        <ReactMarkdown>{conceptSystemPrompt}</ReactMarkdown>
+                                                        <ReactMarkdown>{systemPrompt}</ReactMarkdown>
                                                         <DialogTitle>---- System behavior Guidelines Prompt</DialogTitle>
                                                         <ReactMarkdown>{systemBehaviorGuidelines}</ReactMarkdown>
                                                         <DialogTitle>---- User Prompt</DialogTitle>
-                                                        <ReactMarkdown>{conceptUserPrompt}</ReactMarkdown>
+                                                        <ReactMarkdown>{userPrompt}</ReactMarkdown>
                                                         <DialogTitle>---- User Input</DialogTitle>
-                                                        <ReactMarkdown>{conceptUserInput}</ReactMarkdown>
+                                                        <ReactMarkdown>{userInput}</ReactMarkdown>
                                                         <DialogTitle>---- Context Prompt</DialogTitle>
-                                                        <ReactMarkdown>{conceptContextItems}</ReactMarkdown>
+                                                        <ReactMarkdown>{contextItems}</ReactMarkdown>
                                                         <DialogTitle>---- Ontology Prompt</DialogTitle>
-                                                        <ReactMarkdown>{conceptContextOntology}</ReactMarkdown>
+                                                        <ReactMarkdown>{contextOntology}</ReactMarkdown>
                                                         <DialogTitle>---- Metamodel Prompt</DialogTitle>
-                                                        <ReactMarkdown>{conceptContextMetamodel}</ReactMarkdown>
+                                                        <ReactMarkdown>{contextMetamodel}</ReactMarkdown>
                                                     </div>
                                                 </div>
                                             </DialogDescription>
@@ -527,8 +488,7 @@ const ConceptBuilder = () => {
                                 </Dialog>
                             </div>
                             <div className="mx-1 bg-gray-700 ">
-                                <OntologyCard ontologyData={mergeOntologyData(ontologyReduxData, suggestedConceptData)} />
-                            </div>
+                                <ObjectCard model={{ ...model, description: model?.description || '' }} />                           </div>
                        
                         </>
                     </TabsContent>

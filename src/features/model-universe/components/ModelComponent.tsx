@@ -1,4 +1,4 @@
-// src/features/featureA/components/FeatureAComponent.tsx
+// src/features/model/components/FeatureAComponent.tsx
 'use client';
 
 import React, { useRef, useState } from 'react';
@@ -10,14 +10,14 @@ import { handleGetFile } from './HandleGetFile';
 import { handleGetLocalFile } from './HandleGetLocalFile';
 import { handleGetLocalFileClick } from './HandleGetLocalFileClick';
 import { handleSaveToGithub } from './HandleSaveToGithub';
-import { clearStore, clearModel } from '../featureASlice';
+import { clearStore, clearModel } from '../modelSlice';
 // import { handleClearStore } from './HandleClearStore';
 
-function FeatureAComponent() {
+function ModelComponent() {
   const dispatch = useDispatch<AppDispatch>();
-  const data = useSelector((state: RootState) => state.featureA.data);
-  const status = useSelector((state: RootState) => state.featureA.status);
-  const error = useSelector((state: RootState) => state.featureA.error);
+  const data = useSelector((state: RootState) => state.model.data);
+  const status = useSelector((state: RootState) => state.model.status);
+  const error = useSelector((state: RootState) => state.model.error);
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'failed'>('idle');
   const [pullRequestUrl, setPullRequestUrl] = useState<string | null>(null);
@@ -102,4 +102,4 @@ function FeatureAComponent() {
   );
 }
 
-export default FeatureAComponent;
+export default ModelComponent;

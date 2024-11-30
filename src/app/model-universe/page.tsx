@@ -19,6 +19,12 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { setOntologyData, clearStore } from "@/features/ontology/ontologySlice";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
+import { handleSaveToLocalFile } from '@/features/model-universe/components/HandleSaveToLocalFile';
+import { handleGetLocalFile } from '@/features/model-universe/components/HandleGetLocalFile';
+import { handleGetLocalFileClick } from '@/features/model-universe/components/HandleGetLocalFileClick';
+import { relative } from "path";
+
+
 import { OntologyCard } from "@/components/ontology-card";
 import { ImportedOntologyCard } from "@/components/imported-ontology-card";
 import { ObjectSchema } from "@/objectSchema";
@@ -28,7 +34,8 @@ import { ModelviewCard } from "@/components/modelview-card";
 import { SystemConceptPrompt } from './prompts/concept-system-prompt';
 import { SystemIrtvPrompt } from './prompts/system-irtv-prompt';
 import { MetamodelPrompt } from './prompts/metamodel-irtv-prompt'; // default metamodel prompt for IRTV
-import ConceptBuilder from '@/components/aiBuilders/ConceptBuilder';
+import ModelBuilder from '@/components/model-universe/ModelBuilder';
+import LocalFile from "@/components/model-universe/LocalFile";
 import LocalFiles from "@/features/model-universe/components/LocalFiles";
 
 const debug = false;
@@ -37,9 +44,9 @@ const SyncPage = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dispatch = useDispatch<AppDispatch>();
 
-  const data = useSelector((state: RootState) => state.modelUniverse.data);
-  const status = useSelector((state: RootState) => state.modelUniverse.status);
-  const error = useSelector((state: RootState) => state.modelUniverse.error);
+  const data = useSelector((state: RootState) => state.model.data);
+  const status = useSelector((state: RootState) => state.model.status);
+  const error = useSelector((state: RootState) => state.model.error);
   console.log('42 data', data, 'status', status, 'error', error);
 
   const [topicDescr, setTopicDescr] = useState("");
@@ -111,277 +118,76 @@ const SyncPage = () => {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
-  // useEffect(() => {
-  //   setStep(1);
-  //   // const handleMessage = (event: MessageEvent) => {
-  //   //   if (event.data.type === 'SESSION_STORAGE_DATA') {
-  //   //     sessionStorage.setItem('memorystate', event.data.data);
-  //   //   }
-  //   // };
-  //   // window.addEventListener('message', handleMessage);
-  //   // return () => {
-  //   //   window.removeEventListener('message', handleMessage);
-  //   // };
-  // }, [existingContext, concepts]);
 
-  // useEffect(() => {
-  //   // type ExistingObject = { id: string; name: string; description: string; typeName: string };
-  //   // type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
-
-  //   if (data) {
-
-  //     let conceptString = '';
-  //     if (existInfoConcepts.concepts.length > 0) {
-  //       conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-  //       conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
-  //     }
-  //     setExistingConcepts(conceptString);      // if (!debug) console.log('101 existingContext', existingContext);
-  //     // if (!debug) console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
-  //   }
-  // }, [data]);
-
-  const handleFetchOntology = async () => {
-    try {
-      const response = await fetch(`/proxy?url=${encodeURIComponent(ontologyUrl)}`);
-      // const response = await fetch(`/proxy?url=${encodeURIComponent('https://community.opengroup.org/osdu/data/data-definitions/-/raw/master/E-R/DependenciesAndRelationships.json')}`);
-      if (!response.ok) {
-        throw new Error(`Failed to fetch ontology from URL: ${response.statusText}`);
-      }
-      const data = await response.json();
-      if (!debug) console.log('180 Fetched ontology data:', data);
-      if (Array.isArray(data)) {
-        const filteredOntology = data.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
-        setImpOntology(filteredOntology);
-      } else if (typeof data === 'object' && data !== null) {
-        const dataArr = Object.values(data);
-        if (!debug) console.log('186 dataArr', dataArr);
-        const filteredArr = dataArr.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
-        interface OntologyItem {
-          entity_name: string;
-          group: string;
+    useEffect(() => {
+  
+      if (data) {
+        if (!debug) console.log('89 data', data);
+        const metis1 = data.phData?.metis;
+        const focus = data.phFocus;
+        const user = data.phUser;
+        if (!metis1) { console.error('Data does not contain metis:', data); return };
+        setMetis(metis1);
+  
+        if (metis?.metamodels) {
+          const metamodel = metis.metamodels.find((mmodel: { name: string }) => mmodel.name.includes('IRTV'));
+          const mmObjecttypeStrings = metamodel?.objecttypes.map((ot: any) =>
+            `${ot.id} ${ot.name}`).join(', ');
+          const mmRelationtypeStrings = metamodel?.relshiptypes.map((rt: any) =>
+            `${rt.id} ${rt.name}`).join(', ');
+          const mmObjecttypeviewStrings = metamodel?.objecttypeviews.map((otv: any) =>
+            `${otv.id} ${otv.name}`).join(', ');
+          //         const metamodelPrompt = `
+          // **Metamodel:**
+          //   - **Object Types:** \n ${mmObjecttypeStrings} 
+          //   - **Relation Types:** \n ${mmRelationtypeStrings}
+          //   - **Object Typeviews:** \n ${mmObjecttypeviewStrings}
+          // `;
+          //         setModelContextMetamodel(metamodelPrompt);
+          setModelviewContextMetamodel("");
         }
+        // setMetamodelPrompt(`${MetamodelPrompt}`);
+  
+        const models = metis1.models;
+        const curmod = models?.find((model: any) => model.id === focus?.focusModel?.id) || models[0];
+        // if (!debug) console.log('95 currentModel', curmod, currentModel, metis?.models);
+        setCurrentModel(curmod);
+  
+        const filteredRelationships = curmod?.relships?.filter((rel: any) => {
+          const fromObject = curmod?.objects?.find((obj: any) => obj.id === rel.fromobjectRef);
+          const toObject = curmod?.objects?.find((obj: any) => obj.id === rel.toobjectRef);
+          // if (!debug) console.log('127 fromObject', fromObject, 'toObject', toObject, 'rel', rel);
+          return fromObject?.typeName === 'Information' && toObject?.typeName === 'Information' && rel;
+        }) || [];
+  
+        if (!debug) console.log('130 filteredRelationships', filteredRelationships);
+  
+        const existingObjects = curmod?.objects?.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName })) || [];
+        const existingRelationships = filteredRelationships?.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo })) || [];
 
-        const dataOntology = Array.from(new Map(filteredArr.map((item) => {
-          const ontologyItem = item as OntologyItem;
-          return [ontologyItem.entity_name, { name: ontologyItem.entity_name, description: ontologyItem.group }];
-        })).values());
+        setExistingInfoObjects({
+          objects: existingObjects?.filter((obj: any) => obj && obj.typeName === 'Information') || [],
+          relationships: existingRelationships
+        });
 
-        if (!debug) console.log('189 dataOntology', dataOntology);
-        const filteredMaster = Object.values(data).filter((item: any) => item.group === 'master-data');
-        const filteredWP = Object.values(data).filter((item: any) => item.group === 'work-product-component');
-        const conceptsNamesMaster = Array.from(new Set(filteredMaster.map((item: any) => item.entity_name + ' ')));
-        const conceptsNamesWP = Array.from(new Set(filteredWP.map((item: any) => item.entity_name + ' ')));
-        setOntologyString(`master-data:\n ${conceptsNamesMaster}, work-product-component:\n ${conceptsNamesWP}`);
-        const ontologyData = { name: "OSDU-EntityTypes", concepts: dataOntology, relationships: [] };
-        setOntologyData(ontologyData);
-        if (!debug) console.log('81 Fetched ontology data:', data, dataArr, dataOntology, ontologyData);
+        const existInfoConcepts = ({
+          concepts: existingInfoObjects.objects.map((obj: any) => ({ name: obj.name, description: obj.description })),
+          relationships: existingInfoObjects.relationships.map((rel: any) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
+        });
+
+        let conceptString = '';
+        if (existInfoConcepts.concepts.length > 0) {
+          conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
+          conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
+        }
+        setExistingConcepts(conceptString);      // if (!debug) console.log('101 existingContext', existingContext);
+        // if (!debug) console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
       } else {
-        console.error('Fetched data is neither an array nor an object:', data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch ontology data: ', error);
-    }
-  };
-
-  // test step Concept builder
-
-  // ------------------------- First Step is the concept step with concepts ---------------------------------------------------------------------------------------
-  const handleFirstStep = async () => {
-    setIsLoading(true);
-    setDomainDesc("");
-    setConcepts("");
-    setActiveTab('suggested-concepts');
-
-    if (!topicDescr || topicDescr === '') {
-      alert(`Please provide a domain description.\nExamples:
-        - E-Scooter Rental Services\n
-        - Car sale administration\n
-        - Energy generation\n
-        - Data management\n
-        - Financial services for Car rental in Scandinavia\n
-      `);
-      setIsLoading(false);
-      return;
-    }
-
-    if (!debug) console.log('263 1st.step \n topicDescr', topicDescr, '\n suggestedConcepts ', suggestedConcepts, '\n existingConcepts', existingConcepts, '\nontologyString', ontologyString);
-
-    const userPrompt = (topicDescr) ? `
-Identify and explain the key concepts and concepts related to the domain supplied in the user input:
-
-## User Input : **${topicDescr}**
-Elaborate around this input and provide a detailed explanation of the domain.
-
-  `
-      : "";
-
-    const userInput = (suggestedConcepts && suggestedConcepts !== '')
-      ? `
-Include the following concepts in the Conceptual Apparatus:
-**User Suggested Concepts:**
-  ${suggestedConcepts}
-`
-      : "";
-
-    const contextItems = (existingConcepts && existingConcepts !== '') ? `
-You must include the following existing concepts in the Conceptual Apparatus:
-## **Context:**
-  - Do not create any concepts that already is in Existing Context.
-  ${existingConcepts}
-`
-      : "";
-    // console.log('335 contextItems', contextItems, 'existingConcepts', existingConcepts);
-
-    const contextOntology = (ontologyString && ontologyString !== '') ? `
-## **Ontology**
-  Use the names of following concepts from the ontology where ever possible:
-  **List of concepts:**
-  ${ontologyString}
-
-  Make sure to use these concepts in the Conceptual Apparatus.
-
-    `: "";
-
-    const contextMetamodel = `
-## **Presentation**
-Create a comprehensive presentation of **[${topicDescr}]** that includes the following components:
-
-**Title:** ${topicDescr}
-
-### **Instructions**
-
-Please develop a detailed and engaging presentation on **[${topicDescr}]** that includes the following components:
-
-1. **Introduction**
-    - Provide a brief overview of the domain.
-    - Explain its significance in the current context.
-
-2. **Historical Background**
-    - Outline the evolution of this domain.
-    - Mention key milestones and breakthroughs.
-
-3. **Core Concepts and Theories**
-    - Explain fundamental principles.
-    - Include important models or frameworks.
-
-4. **Current Trends and Developments**
-    - Discuss recent advancements.
-    - Highlight emerging technologies or methodologies.
-
-5. **Applications**
-    - Describe real-world applications.
-    - Include case studies or success stories.
-
-6. **Challenges and Limitations**
-    - Identify common obstacles.
-    - Discuss any ethical, social, or technical issues.
-
-7. **Future Outlook**
-    - Predict future trends.
-    - Explore potential opportunities and risks.
-
-8. **Conclusion**
-    - Summarize key points.
-    - Emphasize the importance of the domain moving forward.
-
-9. **References**
-    - Cite all sources of information.
-    - Include additional resources for further reading.
-
-### **Additional Guidelines**
-
-- Use clear and concise language suitable for your target audience.
-- Incorporate visuals such as images, graphs, and charts to enhance understanding.
-- Ensure each slide focuses on a single idea for clarity.
-- Include speaker notes to elaborate on key points if necessary.
-- Proofread and edit your presentation for accuracy and coherence.
-- Ensure all sources are properly cited and referenced.
-- Submit your presentation in a format that is easily accessible and shareable and put it in the presentation field within the ontologyData in structured output.
-- Output of the presentation should be in markdown format with nice layout.
-
-### Example Presentation:
-{
-  "ontologyData": {
-      "name": "Bike rental",
-      "description": "Brief description of the domain.",
-      "presentation": " ..........",
-      "concepts": [{ "name": "Bike", "description": "Description of the concept." }],
-      "relationships": [{ "name": "Rental", "nameFrom": "Bike", "nameTo": "Customer" }],
-    },
-  ],
-}
-    `;
-
-    if (!topicDescr || topicDescr === '') {
-      alert("Please provide a domain description.");
-      setIsLoading(false);
-      return;
-    }
-
-    setConceptSystemPrompt(conceptSystemPrompt);
-    setSystemBehaviorGuidelines("");
-    setConceptUserPrompt(userPrompt);
-    setConceptUserInput(userInput);
-    setConceptContextItems(contextItems);
-    setConceptContextOntology(contextOntology);
-    setConceptContextMetamodel(contextMetamodel);
-    // setUserPrompt(prompt+contextPrompt+ontologyPrompt);
-
-    if (!debug) console.log('363 Concept step :',
-      'conceptSystemPrompt:', conceptSystemPrompt,
-      'userPrompt:', userPrompt,
-      'userInput:', userInput,
-      'contextItems:', contextItems,
-      'contextOntology:', contextOntology,
-      'contextMetamodel:', contextMetamodel);
-
-    try {
-      const res = await fetch("/streaming/api/genmodel", {
-        method: "POST",
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          schemaName: 'OntologySchema',
-          systemPrompt: conceptSystemPrompt || "",
-          systemBehaviorGuidelines: "",
-          userPrompt: userPrompt || "",
-          userInput: userInput || "",
-          contextItems: contextItems || "",
-          contextOntology: contextOntology || "",
-          contextMetamodel: contextMetamodel || ""
-        })
-      });
-
-      if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
-
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("No reader available");
-
-      const decoder = new TextDecoder();
-      let data = "";
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        data += decoder.decode(value, { stream: true });
+        console.error('Data does not contain data:', data);
       }
 
-      const parsed = JSON.parse(data);
-      if (debug) console.log('361 parsed', parsed);
-      if (parsed.ontologyData.concepts && Array.isArray(parsed.ontologyData.concepts)) {
-        setSelectedConcepts({ concepts: parsed.ontologyData.concepts, relationships: parsed.ontologyData.relationships });
-        setSuggestedConceptData(parsed.ontologyData);
-        const selectedconceptsString = parsed.ontologyData.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n');
-        const selectedRelationsString = parsed.ontologyData.relationships.map((rel: any) => `- ${rel.name} (from: ${rel.nameFrom} to: ${rel.nameTo})`).join('\n');
-        setConcepts(`**Concepts**\n\n ${selectedconceptsString}\n\n **Relations:**\n\n${selectedRelationsString}\n\n`);
-        if (debug) console.log('408 concepts', parsed.ontologyData.concepts, 'selectedconceptsString', selectedconceptsString, 'selectedRelationsString', selectedRelationsString);
-        setStep(2);
-      } else {
-        console.error("Parsed data does not contain concepts or concepts is not an array");
-      }
-    } catch (e) {
-      console.error("Validation failed:", e instanceof Error ? e.message : e);
-    }
-    setIsLoading(false);
-  };
+    }, [data]);
+
 
   // ------------------------- Second Step is converting from concepts to IRTV ---------------------------------
   const handleSecondStep = async () => {
@@ -437,8 +243,6 @@ Create Views including the following user suggested views:
   Roles to perform or manage the Tasks.
     `;
     if (!debug) console.log('464 model', 'modelContextPrompt', modelContextItems);
-
-    const ontologyPrompt = ``;
 
 
     setModelIrtvSystemPrompt(modelIrtvSystemPrompt);
@@ -622,11 +426,11 @@ Make horizontal and vertical space between the objects to make the modelview loo
           </div>
         </div>
       </header>
-      <div className="flex flex-col gap-1 m-1">
+
+      <div>
         <LocalFiles currentModel={currentModel} model={model} data={data} />
         <div className="flex mx-2">
-          <ConceptBuilder />
-          {/* Model Canvas -----------------------------------------------------------------------------------------------------------------------------------------*/}
+          <ModelBuilder />
         </div>
       </div>
     </div>
