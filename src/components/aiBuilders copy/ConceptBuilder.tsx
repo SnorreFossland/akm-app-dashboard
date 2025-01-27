@@ -3,7 +3,7 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faSave, faCheckCircle, faPaperPlane, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
-import { setOntologyData } from '@/features/ontology/ontologySlice';
+import { setOntologyData } from '@/features/model-universe/modelSlice';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,9 +22,9 @@ import { set } from 'zod';
 const debug = false;
 
 const ConceptBuilder = () => {
-    const data = useSelector((state: RootState) => state.ontology.data);
-    const error = useSelector((state: RootState) => state.ontology.error);
-    const status = useSelector((state: RootState) => state.ontology.status);
+    const data = useSelector((state: RootState) => state.modelUniverse);
+    const error = useSelector((state: RootState) => state.modelUniverse.error);
+    const status = useSelector((state: RootState) => state.modelUniverse.status);
     const reduxData = data;
 
     if (!debug) console.log('22 ConceptBuilder data:', data);
@@ -33,6 +33,7 @@ const ConceptBuilder = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [topicDescr, setTopicDescr] = useState("");
     const [domainDesc, setDomainDesc] = useState("");
+    const [impOntology, setImpOntology] = useState(null);
     const [suggestedConcepts, setSuggestedConcepts] = useState<{ concepts: any[], relationships: any[] } | null>(null);
     const [ontologyUrl, setOntologyUrl] = useState("");
     const [conceptSystemPrompt, setConceptSystemPrompt] = useState(SystemConceptPrompt);
@@ -63,6 +64,50 @@ const ConceptBuilder = () => {
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
+
+
+    const handleFetchOntology = async () => {
+        try {
+            const response = await fetch(`/proxy?url=${encodeURIComponent(ontologyUrl)}`);
+            // const response = await fetch(`/proxy?url=${encodeURIComponent('https://community.opengroup.org/osdu/data/data-definitions/-/raw/master/E-R/DependenciesAndRelationships.json')}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ontology from URL: ${response.statusText}`);
+            }
+            const data = await response.json();
+            if (!debug) console.log('180 Fetched ontology data:', data);
+            if (Array.isArray(data)) {
+                const filteredOntology = data.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
+                setImpOntology(filteredOntology);
+            } else if (typeof data === 'object' && data !== null) {
+                const dataArr = Object.values(data);
+                if (!debug) console.log('186 dataArr', dataArr);
+                const filteredArr = dataArr.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
+                interface OntologyItem {
+                    entity_name: string;
+                    group: string;
+                }
+
+                const dataOntology = Array.from(new Map(filteredArr.map((item) => {
+                    const ontologyItem = item as OntologyItem;
+                    return [ontologyItem.entity_name, { name: ontologyItem.entity_name, description: ontologyItem.group }];
+                })).values());
+
+                if (!debug) console.log('189 dataOntology', dataOntology);
+                const filteredMaster = Object.values(data).filter((item: any) => item.group === 'master-data');
+                const filteredWP = Object.values(data).filter((item: any) => item.group === 'work-product-component');
+                const conceptsNamesMaster = Array.from(new Set(filteredMaster.map((item: any) => item.entity_name + ' ')));
+                const conceptsNamesWP = Array.from(new Set(filteredWP.map((item: any) => item.entity_name + ' ')));
+                setOntologyString(`master-data:\n ${conceptsNamesMaster}, work-product-component:\n ${conceptsNamesWP}`);
+                const ontologyData = { name: "OSDU-EntityTypes", concepts: dataOntology, relationships: [] };
+                setOntologyData(ontologyData);
+                if (!debug) console.log('81 Fetched ontology data:', data, dataArr, dataOntology, ontologyData);
+            } else {
+                console.error('Fetched data is neither an array nor an object:', data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch ontology data: ', error);
+        }
+    };
 
     const handleAskGpt = () => (
         <div className="flex items-center ml-auto">

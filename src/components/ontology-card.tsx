@@ -2,9 +2,9 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Payment, columns } from "@/components/aiBuilders/concept-columns";
-import { ConceptTable } from "@/components/aiBuilders/concept-table";
-import { RelshipTable } from "@/components/aiBuilders/relship-table";
+import { columns } from "@/components/concept-builder/concept-columns";
+import { ConceptTable } from "@/components/concept-builder/concept-table";
+import { RelshipTable } from "@/components/concept-builder/relship-table";
 import ReactMarkdown from 'react-markdown';
 import 'tailwindcss/tailwind.css'; // Ensure Tailwind CSS is imported
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -19,15 +19,13 @@ interface OntologyCardProps {
     } | null;
 }
 interface Concept {
-    id: string;
     name: string;
     description: string;
 }
 interface Relationship {
-    id: string;
     name: string;
-    idForm: string;
-    idTo: string;
+    nameFrom: string;
+    nameTo: string;
 }
 
 const debug = false;
@@ -39,7 +37,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     const [activeTab, setActiveTab] = useState('concepts'); // concepts, diagram
     const [regen, setRegen] = useState(true);
 
-    if (!debug) console.log('35 ontology-card', ontologyData);
+    if (debug) console.log('35 ontology-card', ontologyData);
 
     const generateMermaidDiagram = useCallback((regen: boolean) => {
         try {
@@ -101,10 +99,17 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     return (
         <>
             <div className="p-1 w-100 rounded overflow-hidden">
+                <div className="bg-gray-700 p-1">
+                    <h3 className="flex pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">Domain name: <span className="mx-1 px-1 inline-block bg-gray-900"> {ontologyData?.name}</span></h3>
+                    <details>
+                        <summary className="m-1 text-gray-400 w-full cursor-pointe">Description...</summary>
+                        <div className="mx-1 px-1 inline-block bg-gray-900"> {ontologyData?.description}</div>
+                    </details>
+                </div>
                 <div className="">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-gray-700 m-1">
                         <TabsList className="mx-1 mb-0 bg-gray-700">
-                            <TabsTrigger value="summary" className='pb-2 mt-3'>Concepts Summary</TabsTrigger>
+                            <TabsTrigger value="summary" className='pb-2 mt-3'>Domain Summary</TabsTrigger>
                             <TabsTrigger value="concepts" className='pb-2 mt-3'>Concept List</TabsTrigger>
                             <TabsTrigger value="relationships" className='pb-2 mt-3'>Relationship List</TabsTrigger>
                             <TabsTrigger value="diagram" className='pb-2 mt-3'>Concept Map</TabsTrigger>
@@ -112,12 +117,12 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         <TabsContent value="summary" className="flex p-1 m-0 rounded bg-background  ">
                             <Card className="w-full border-gray-700 h-[calc(100vh-12rem)]">
                                 <CardHeader>
-                                    <CardTitle className="bg-gray-800 px-2 m-0 font-bold">Short Summary </CardTitle>
+                                    {/* <CardTitle className="bg-gray-800 px-2 m-0 font-bold">Short Summary </CardTitle> */}
                                     {/* <div className="mx-2">{ontologyData?.description}</div> */}
                                 </CardHeader>
                                 <CardContent>
                                     <div
-                                        className="prose prose-sm bg-gray-700 p-2 divide-y divide-gray-600 max-h-[calc(100vh-16rem)] 
+                                        className="prose prose-sm bg-gray-800 p-2 divide-y divide-gray-600 max-h-[calc(100vh-16rem)] 
                                                 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"
                                         style={{ width: '100%' }}
                                     >

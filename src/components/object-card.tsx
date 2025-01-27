@@ -4,11 +4,11 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from 'react-markdown';
 
-interface Model {
+export interface Model {
     name: string;
     description: string;
     objects: { id: string; name: string; typeName: string; proposedType: string }[];
-    relationships: { fromobjectRef: string; nameFrom: string; id: string; name: string; toobjectRef: string; nameTo: string; typeRef: string }[];
+    relships: { fromobjectRef: string; nameFrom: string; id: string; name: string; toobjectRef: string; nameTo: string; typeRef: string }[];
 }
 
 const debug = false;
@@ -50,7 +50,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
         // Add objects
         model.objects.forEach((object) => {
-            const objColor = (obj: string) => {
+            const objColor = (obj: any) => {
                 switch (obj.typeName) {
                     case 'role':
                         return 'fill: bg-blue-500, stroke: #333, stroke-width: 2px';
@@ -66,8 +66,8 @@ export const ObjectCard = ({ model }: { model: Model }) => {
             // diagram += `style ${object.id} ${objColor}\n`; // Set custom color for the object
         });
         // Add relationships
-        model.relationships.forEach((relationship) => {
-            diagram += `${relationship.fromobjectRef} -->|${relationship.name}| ${relationship.toobjectRef};\n\n`;
+        model.relships.forEach((relship) => {
+            diagram += `${relship.fromobjectRef} -->|${relship.name}| ${relship.toobjectRef};\n\n`;
         });
         setMermaidDiagram(diagram);
         // diagramRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -167,11 +167,11 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="bg-gray-800 divide-y divide-gray-700 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                        {model?.relationships?.map((relationship) => (
-                                                            <tr key={relationship.id}>
-                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relationship.nameFrom}</td>
-                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relationship.name}</td>
-                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relationship.nameTo}</td>
+                                                        {model?.relships?.map((relship) => (
+                                                            <tr key={relship.id}>
+                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relship.nameFrom}</td>
+                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relship.name}</td>
+                                                                <td className="px-4 py-2 whitespace-nowrap text-gray-300">{relship.nameTo}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>

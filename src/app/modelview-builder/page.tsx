@@ -1,4 +1,4 @@
-import ModelBuilder from '@/components/model-universe/ModelBuilder';
+import ModelviewBuilder from '@/components/model-universe/ModelviewBuilder';
 import ModelComponent from "@/features/model-universe/components/ModelComponent";
 
 const SyncPage = () => {
@@ -7,7 +7,7 @@ const SyncPage = () => {
     <div className="akm-canvas flex flex-col gap-1 m-1">
       <ModelComponent /> 
       <div className="flex flex-col gap-1 m-1">
-          <ModelBuilder />
+          <ModelviewBuilder />
       </div>
     </div>
   );

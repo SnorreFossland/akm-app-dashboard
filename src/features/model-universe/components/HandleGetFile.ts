@@ -1,12 +1,12 @@
 // src/features/featureA/components/HandleGetFile.ts
-import { getFeatureAData } from '../modelSlice';
+import { getmodelData } from '../modelSlice';
 import { AppDispatch } from '@/store/store';
 
 
 export const handleGetFile = async (dispatch: AppDispatch, setFileStatus: React.Dispatch<React.SetStateAction<'idle' | 'loading' | 'failed'>>, setFileContent: (content: any) => void) => {
   setFileStatus('loading');
   try {
-    const result = await dispatch(getFeatureAData()).unwrap();
+    const result = await dispatch(getmodelData()).unwrap();
     setFileStatus('idle');
     console.log('File fetched successfully:', result);
     if (result) {

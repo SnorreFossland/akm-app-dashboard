@@ -1,7 +1,7 @@
 // src/components/aiBuilders/concept-columns.tsx
 import React from 'react';
 import { useDispatch } from 'react-redux';
-import { editConcept } from '@/features/ontology/ontologySlice';
+import { editConcepzt } from '@/features/model-universe/modelSlice';
 import { ColumnDef, Row } from '@tanstack/react-table';
 import ActionsCell from './ActionsCell';
 import { Input } from '@/components/ui/input';

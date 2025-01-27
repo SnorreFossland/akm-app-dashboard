@@ -11,7 +11,7 @@ import {
     ColumnDef,
     SortingState
 } from '@tanstack/react-table';
-import { deleteConcept } from '@/features/ontology/ontologySlice';
+import { deleteConcept } from '@/features/model-universe/modelSlice';
 import ActionsCell from './ActionsCell';
 import { Input } from '@/components/ui/input';
 import {

@@ -90,6 +90,7 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
 - Generate relationships flowing from Roles ➔ Tasks ➔ Views ➔ Information objects.
 - Maintain formal, precise language throughout.
 - Ensure all objects have at least one relationship.
+- Task and Views should have at least two relationships.
 - Make sure to also create 'Roles', 'Tasks' and 'Views' that are connected to Information objects.
 - Make sure you use uuid for the for all objects in the model.
 

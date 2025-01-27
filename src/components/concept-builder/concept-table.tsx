@@ -1,13 +1,13 @@
-import React from 'react';
+import React, { useState } from 'react';
+import { ColumnDef, TableMeta } from '@tanstack/react-table';
 import {
     useReactTable,
     getCoreRowModel,
     getFilteredRowModel,
     getPaginationRowModel,
-    getSortedRowModel, // Import for sorted row model
-    SortingState, // Import for sorting state
+    getSortedRowModel,
+    SortingState,
     flexRender,
-    ColumnDef,
 } from '@tanstack/react-table';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -18,52 +18,64 @@ import {
     DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Checkbox } from '@/components/ui/checkbox';
-import { columns } from './relship-columns'; // Ensure this is correctly typed
+import { columns } from './concept-columns'; // Ensure this is correctly typed
 
-// Define the Relationship type based on your data structure
-interface Relationship {
-    id: string;
+// Define the Concept type
+interface Concept {
     name: string;
     description: string;
     color?: string; // Optional color property
-    // Add other relevant fields if necessary
 }
 
-// Add a row number column
-const rowNumberColumn: ColumnDef<Relationship> = {
+interface ConceptTableProps {
+    data: Concept[];
+}
+
+export interface ConceptTableMeta extends TableMeta<Concept> { // Exported Interface
+    onEdit?: (id: string) => void;
+    onDelete?: (id: string) => void;
+}
+
+const rowNumberColumn: ColumnDef<Concept> = {
     id: 'rowNumber',
     header: '#',
     cell: (info) => info.row.index + 1,
 };
 
-// Ensure the row number column is included in the columns array
 const columnsWithRowNumber = [rowNumberColumn, ...columns];
 
-interface RelshipTableProps {
-    data: Relationship[];
-}
-
-export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
+export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
     // Manage sorting state
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [pageSize, setPageSize] = React.useState(20); // Default page size
     const [pageIndex, setPageIndex] = React.useState(0); // Default page index
 
-    const table = useReactTable<Relationship>({
+    const onEdit = (id: string) => {
+        console.log(`Edit concept with id: ${id}`);
+        // Implement global edit logic if needed
+    };
+
+    const onDelete = (id: string) => {
+        console.log(`Delete concept with id: ${id}`);
+        // Your delete logic here, e.g., dispatch(deleteConcept(id))
+    };
+
+    const table = useReactTable<Concept>({
         data,
         columns: columnsWithRowNumber,
         getCoreRowModel: getCoreRowModel(),
         getFilteredRowModel: getFilteredRowModel(),
-        getSortedRowModel: getSortedRowModel(), // Enable sorted row model
         getPaginationRowModel: getPaginationRowModel(),
+        getSortedRowModel: getSortedRowModel(),
         state: {
-            sorting, // Connect sorting state
-            pagination: {
-                pageIndex,
-                pageSize,
-            },
+            sorting,
+            pagination: { pageIndex, pageSize },
         },
-        onSortingChange: setSorting, // Handle sorting changes
+        meta: {
+            onEdit,
+            onDelete,
+        } as ConceptTableMeta,
+        onSortingChange: setSorting,
         onPaginationChange: (updater) => {
             const newState = typeof updater === 'function' ? updater({ pageIndex, pageSize }) : updater;
             setPageIndex(newState.pageIndex);
@@ -121,7 +133,7 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
                                         <div
                                             {...{
                                                 className: header.column.getCanSort()
-                                                    ? 'cursor-pointer select-none flex items-center'
+                                                    ? 'cursor-pointer select-none'
                                                     : '',
                                                 onClick: header.column.getToggleSortingHandler(),
                                             }}
@@ -168,7 +180,8 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
                     Page {table.getState().pagination.pageIndex + 1} of{' '}
                     {table.getPageCount()}
                 </span>
-                <select className='bg-transparent'
+                <select
+                    className='bg-transparent'
                     value={pageSize}
                     onChange={(e) => {
                         setPageSize(Number(e.target.value));

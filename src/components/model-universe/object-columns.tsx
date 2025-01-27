@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { editConcept } from '@/features/ontology/ontologySlice';
+import { editConcept } from '@/features/model-universe/modelSlice';
 import { MoreHorizontal } from 'lucide-react';
 import {
     DropdownMenu,

@@ -10,6 +10,9 @@ export const MetamodelPrompt = `
   - Relationship Types:
   ${metamodel.relshiptypes.map((rel) => `- id: ${rel.id}, name: ${rel.name}, from ${rel.fromobjtypeRef}, to ${rel.toobjtypeRef}`).join('\n')}
 
+  - Typeviews:
+  ${metamodel.objecttypeviews.map((view) => `- id: ${view.id}, name: ${view.name}`).join('\n')}
+
 ## **Instructions**
 
 You are tasked with first creating **Information** objects from the list of Terms given by the  **Terms** and establishing relationships among them, 
@@ -152,5 +155,14 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
       "toobjectRef": "Task uuid",
       "nameTo": "Task"
     }
-  ]    
+  ],
+  "objectviews": [
+    {
+      "id": "UUIDv4",
+      "name": "Approval Request"
+      "description": "View of the approval request."
+      "objectRef": "obj uuid",
+      "typeviewRef": "Typeview uuid"
+    }
+      
     `;

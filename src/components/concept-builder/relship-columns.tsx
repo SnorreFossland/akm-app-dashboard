@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { editRelationship } from '@/features/ontology/ontologySlice';// Ensure this action exists
+import { editRelationship } from '@/features/model-universe/modelSlice';// Ensure this action exists
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -13,6 +13,14 @@ import { Button } from '@/components/ui/button';
 import { ColumnDef } from '@tanstack/react-table';
 
 
+
+
+interface Relationship {
+    name: string;
+    nameFrom: string;
+    nameTo: string;
+    color?: string;
+}
 // NameCell Component
 const NameCell: React.FC<{ row: any }> = ({ row }) => {
     const dispatch = useDispatch();
@@ -24,7 +32,7 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
             console.log('Name cannot be empty.');
             return;
         }
-        console.log('Saving name for:', row.original.id, name);
+        console.log('Saving name for:', row.original.name, name);
         dispatch(editRelationship({ ...row.original, name }));
         setIsEditing(false);
     };
@@ -43,7 +51,7 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
         <span
             className={`${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'} text-sm font-medium cursor-pointer`}
             onDoubleClick={() => {
-                console.log('Entering edit mode for name:', row.original.id);
+                console.log('Entering edit mode for name:', row.original.name);
                 setIsEditing(true);
             }}
         >
@@ -78,15 +86,15 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => {
                     // Optionally handle edit via actions menu
-                    console.log('Edit action clicked for:', row.original.id);
+                    console.log('Edit action clicked for:', row.original.name);
                     // Trigger editing by setting a global editing state if needed
                     // For inline editing, double-click is used
                 }}>
                     Double-Click on Name text to Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
-                    console.log('Delete action clicked for:', row.original.id);
-                    dispatch(deleteRelationship(row.original.id));
+                    console.log('Delete action clicked for:', row.original.name);
+                    dispatch(deleteRelationship(row.original.name));
                 }}>
                     Delete
                 </DropdownMenuItem>
@@ -95,25 +103,26 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
     );
 };
 
-export const columns: ColumnDef<string>[] = [
+
+export const columns: ColumnDef<Relationship>[] = [
     {
-        accessorKey: "id",
-        header: () => <span>Id</span>,
+        accessorKey: "name",
+        header: () => <span>Name</span>,
         cell: ({ row }) => {
             const relationship = row.original;
             const colorClass = relationship.color ? `text-${relationship.color}-500` : 'text-gray-200';
             return (
                 <span className={`${colorClass} text-sm font-medium`}>
-                    {relationship.id}
+                    {relationship.name}
                 </span>
             );
         },
     },
-    {
-        accessorKey: "name",
-        header: () => <span>Name</span>,
-        cell: ({ row }) => <NameCell row={row} />,
-    },
+    // {
+    //     accessorKey: "name",
+    //     header: () => <span>Name</span>,
+    //     cell: ({ row }) => <NameCell row={row} />,
+    // },
     {
         accessorKey: "nameFrom",
         header: () => <span>Name from</span>,

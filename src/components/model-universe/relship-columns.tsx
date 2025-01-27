@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { editRelationship } from '@/features/ontology/ontologySlice';// Ensure this action exists
+import { editRelationship } from '@/features/model-universe/modelSlice';// Ensure this action exists
 import {
     DropdownMenu,
     DropdownMenuContent,

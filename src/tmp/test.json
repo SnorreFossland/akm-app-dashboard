@@ -1,0 +1,226 @@
+Objects:  - "1a2b3c4d-5e6f-7g8h-9i0j-1k2l3m4n5o6p",
+"Well",
+"A structure created to extract oil or gas from underground reservoirs.",
+"(Well)",
+"(Generic)"
+ - "2b3c4d5e-6f7g-8h9i-0j1k-2l3m4n5o6p7q",
+"FlowTest",
+"A test conducted to measure the rate of oil or gas production from a well.",
+"(FlowTest)",
+"(Generic)"
+ - "3c4d5e6f-7g8h-9i0j-1k2l-3m4n5o6p7q8r",
+"PressureTest",
+"A test to assess the pressure within a well to ensure its structural integrity.",
+"(PressureTest)",
+"(Generic)"
+ - "4d5e6f7g-8h9i-0j1k-2l3m-4n5o6p7q8r9s",
+"FluidAnalysis",
+"The process of analyzing the composition and properties of fluids extracted from a well.",
+"(FluidAnalysis)",
+"(Generic)"
+ - "5e6f7g8h-9i0j-1k2l-3m4n-5o6p7q8r9s0t",
+"ProductionValues",
+"Data representing the output and efficiency of a well during production testing.",
+"(ProductionValues)",
+"(Generic)"
+ - "6f7g8h9i-0j1k-2l3m-4n5o-6p7q8r9s0t1u",
+"WellFluidsReport",
+"A report detailing the findings from fluid analysis conducted during production testing.",
+"(WellFluidsReport)",
+"(Generic)"
+ - "7g8h9i0j-1k2l-3m4n-5o6p-7q8r9s0t1u2v",
+"WellOperationsReport",
+"A report summarizing the operations and results of production tests conducted on a well.",
+"(WellOperationsReport)",
+"(Generic)"
+ - "8h9i0j1k-2l3m-4n5o-6p7q-8r9s0t1u2v3w",
+"Reservoir",
+"A subsurface pool of hydrocarbons contained in porous or fractured rock formations.",
+"(Reservoir)",
+"(Generic)"
+ - "9i0j1k2l-3m4n-5o6p-7q8r-9s0t1u2v3w4x",
+"TubularAssembly",
+"A collection of tubular components used in the construction and operation of a well.",
+"(TubularAssembly)",
+"(Generic)"
+ - "0j1k2l3m-4n5o-6p7q-8r9s-0t1u2v3w4x5y",
+"Wellbore",
+"The hole drilled by a drilling rig to explore for or extract oil or gas.",
+"(Wellbore)",
+"(Generic)"
+ - "1k2l3m4n-5o6p-7q8r-9s0t-1u2v3w4x5y6z",
+"Conduct Flow Test",
+"Performing a test to measure the rate of oil or gas production from a well.",
+"()",
+"(Generic)"
+ - "2l3m4n5o-6p7q-8r9s-0t1u-2v3w4x5y6z7a",
+"Conduct Pressure Test",
+"Performing a test to assess the pressure within a well to ensure its structural integrity.",
+"()",
+"(Generic)"
+ - "3m4n5o6p-7q8r-9s0t-1u2v-3w4x5y6z7a8b",
+"Analyze Fluid Composition",
+"Analyzing the composition and properties of fluids extracted from a well.",
+"()",
+"(Generic)"
+ - "4n5o6p7q-8r9s-0t1u-2v3w-4x5y6z7a8b9c",
+"Summarize Well Operations",
+"Summarizing the operations and results of production tests conducted on a well.",
+"()",
+"(Generic)"
+ - "5o6p7q8r-9s0t-1u2v-3w4x-5y6z7a8b9c0d",
+"Well Test Results",
+"Presentation of the results from various tests conducted on a well.",
+"()",
+"(Generic)"
+ - "6p7q8r9s-0t1u-2v3w-4x5y-6z7a8b9c0d1e",
+"Fluid Analysis Report",
+"Presentation of the findings from fluid analysis conducted during production testing.",
+"()",
+"(Generic)"
+ - "7q8r9s0t-1u2v-3w4x-5y6z-7a8b9c0d1e2f",
+"Operations Summary",
+"Presentation of the operations and results of production tests conducted on a well.",
+"()",
+"(Generic)"
+ - "8r9s0t1u-2v3w-4x5y-6z7a-8b9c0d1e2f3g",
+"Test Engineer",
+"Responsible for conducting tests and analyzing results in well operations.",
+"()",
+"(Generic)"
+ - "9s0t1u2v-3w4x-5y6z-7a8b-9c0d1e2f3g4h",
+"Operations Manager",
+"Oversees the operations and ensures the integrity of well testing processes.",
+"()",
+"(Generic)"
+ - "60ee9bfb-e2da-4306-73e1-ca1e84edb52d",
+"Workspace for Well testing",
+"(empty)",
+"(undefined)",
+"(Generic)"
+ - "86c8bd86-bb29-4678-3d84-c225502fc7ba",
+"Facility",
+"(empty)",
+"(Facility)",
+"(Information)"
+ - "398f532b-77d3-43cf-fc4b-fa7dd8614350",
+"Well",
+"(empty)",
+"()",
+"(Information)"
+ - "4f49ab04-c650-46ee-2376-234e5bae0492",
+"Wellbore",
+"(empty)",
+"()",
+"(Information)"
+ - "f5039421-abb1-4c96-250d-1fa854a8c652",
+"Slot",
+"(empty)",
+"()",
+"(Information)"
+ - "e5f9c1a8-c30c-42a4-1825-ca2a496381dd",
+"Platform",
+"(empty)",
+"()",
+"(Information)"
+ - "878c2082-6db0-41d5-a777-2ed6d7839575",
+"Conduit",
+"(empty)",
+"(Conduit)",
+"(Information)"
+ - "adfbb6b7-efba-4f2a-58a2-4710d311be00",
+"Geobody",
+"(empty)",
+"(Geobody)",
+"(Information)"
+ - "61cb057c-2de8-44e7-b904-7a7d9ed5fec8",
+"Formation",
+"(empty)",
+"(Formation)",
+"(Information)"
+ - "579ff38e-df75-454f-927d-007b3d7dc690",
+"Reservoir",
+"(empty)",
+"(Reservoir)",
+"(Information)"
+ - "0b734c9b-cb54-4b4d-c429-9a35d8d9bf67",
+"GeoHazard",
+"(empty)",
+"(Hazard)",
+"(Information)"
+ - "ede1a869-a6fc-483e-4e7c-99fe76c425b1",
+"Target",
+"(empty)",
+"(Target)",
+"(Information)"
+ - "2832ffe7-8012-42cd-1ded-7c3d4f0ea813",
+"Realisation Criteria",
+"(empty)",
+"()",
+"(Information)"
+ 
+ Relships:  - "8aff9b43-6146-44d9-758e-b823acac91f4",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"e5f9c1a8-c30c-42a4-1825-ca2a496381dd",
+"86c8bd86-bb29-4678-3d84-c225502fc7ba"
+ - "6c389e45-d8e0-488c-2120-43c2e82b3830",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"398f532b-77d3-43cf-fc4b-fa7dd8614350",
+"86c8bd86-bb29-4678-3d84-c225502fc7ba"
+ - "72259bd7-995a-4bc3-6993-de1480980818",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"4f49ab04-c650-46ee-2376-234e5bae0492",
+"86c8bd86-bb29-4678-3d84-c225502fc7ba"
+ - "97d8e0aa-1413-49a5-6b80-5531c003b093",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"f5039421-abb1-4c96-250d-1fa854a8c652",
+"86c8bd86-bb29-4678-3d84-c225502fc7ba"
+ - "9b0971c4-f610-42e8-b558-464af14c8dd1",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"61cb057c-2de8-44e7-b904-7a7d9ed5fec8",
+"adfbb6b7-efba-4f2a-58a2-4710d311be00"
+ - "f59b9193-1f45-476f-45e9-7c4567931728",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"579ff38e-df75-454f-927d-007b3d7dc690",
+"adfbb6b7-efba-4f2a-58a2-4710d311be00"
+ - "09297398-7eaf-4443-5830-a1c78415b18e",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"0b734c9b-cb54-4b4d-c429-9a35d8d9bf67",
+"adfbb6b7-efba-4f2a-58a2-4710d311be00"
+ - "e601dfc7-cc68-45d9-fae0-b7aa89246f45",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"878c2082-6db0-41d5-a777-2ed6d7839575",
+"86c8bd86-bb29-4678-3d84-c225502fc7ba"
+ - "c618d07d-e14f-4932-6399-0edb2d86b5f3",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"878c2082-6db0-41d5-a777-2ed6d7839575",
+"adfbb6b7-efba-4f2a-58a2-4710d311be00"
+ - "a2d7b5b3-2ee3-4bee-8d92-3c712d815cb3",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"4f49ab04-c650-46ee-2376-234e5bae0492",
+"878c2082-6db0-41d5-a777-2ed6d7839575"
+ - "5caef6b6-3c35-4811-5862-6c94c7baa96f",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"ede1a869-a6fc-483e-4e7c-99fe76c425b1",
+"adfbb6b7-efba-4f2a-58a2-4710d311be00"
+ - "e4321563-7743-4141-8863-e0e09675dad2",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"878c2082-6db0-41d5-a777-2ed6d7839575",
+"2832ffe7-8012-42cd-1ded-7c3d4f0ea813"
+ - "2a566ac6-34fc-4a2c-5b94-355a3b88adc4",
+"refersTo",
+"7efd38eb-82a8-457f-9fda-7b75ef71d942",
+"4f49ab04-c650-46ee-2376-234e5bae0492",
+"2832ffe7-8012-42cd-1ded-7c3d4f0ea813"

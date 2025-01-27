@@ -1,4 +1,4 @@
-// src/features/featureA/featureAAPI.ts
+// src/features/model-universe/modelAPI.ts
 
 interface DataType {
         phData: { metis: any }
@@ -7,7 +7,7 @@ interface DataType {
         phSource: any
 }
 
-export async function fetchFeatureADataFromGitHub(): Promise<DataType> {
+export async function fetchModelDataFromGitHub(): Promise<DataType> {
     const response = await fetch('/api/featureAData');
 
     if (!response.ok) {
@@ -18,8 +18,8 @@ export async function fetchFeatureADataFromGitHub(): Promise<DataType> {
     return data
 }
 
-export async function saveFeatureADataToGitHub(data: any): Promise<DataType> {
-    const response = await fetch('/api/saveFeatureAData', {
+export async function saveModelDataToGitHub(data: any): Promise<DataType> {
+    const response = await fetch('/api/saveModelUniverseData', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',

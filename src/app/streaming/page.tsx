@@ -3,13 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
-import { set } from "zod";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faSave, faCheckCircle, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 
-import { getFeatureAData } from '@/features/featureA/featureASlice';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading, LoadingBars, LoadingPulse, LoadingCircularProgress, LoadingDots } from "@/components/loading";
@@ -32,9 +30,6 @@ import { MetamodelPrompt } from './prompts/metamodel-irtv-prompt'; // default me
 
 import { handleSaveToLocalFile } from '@/features/featureA/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/featureA/components/HandleGetLocalFile';
-import { handleGetLocalFileClick } from '@/features/featureA/components/HandleGetLocalFileClick';
-import { relative } from "path";
-import { Item } from "@radix-ui/react-dropdown-menu";
 
 const debug = false;
 
@@ -60,9 +55,7 @@ const SyncPage = () => {
   const [ontologyData, setOntologyData] = useState<any>(null);
   const [ontologyString, setOntologyString] = useState("");
   const [concepts, setConcepts] = useState("");
-  const [selectedConcepts, setSelectedConcepts] = useState({ concepts: [], relationships: [] });
-  const [isContextVisible, setIsContextVisible] = useState(false);
-  const [isOntologyVisible, setIsOntologyVisible] = useState(false);
+
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [dispatchDone, setDispatchDone] = useState(false);
@@ -71,8 +64,7 @@ const SyncPage = () => {
   const [currentModel, setCurrentModel] = useState<any>(null);
   const [newModelview, setNewModelview] = useState<any | null>(null);
 
-  // const [systemPrompt, setSystemPrompt] = useState("");
-  // const [userPrompt, setUserPrompt] = useState("");
+
 
   const [systemBehaviorGuidelines, setSystemBehaviorGuidelines] = useState("");
 
@@ -527,12 +519,12 @@ Create Views including the following user suggested views:
     const ontologyPrompt = ``;
 
 
-    setModelIrtvSystemPrompt(modelIrtvSystemPrompt);
-    setModelUserPrompt(modelUserPrompt);
-    setModelUserInput(modelUserInput);
-    setModelContextItems(modelContextItems);
-    setModelContextOntology(modelContextOntology);
-    setModelContextMetamodel(modelContextMetamodel);
+    // setModelIrtvSystemPrompt(modelIrtvSystemPrompt);
+    // setModelUserPrompt(modelUserPrompt);
+    // setModelUserInput(modelUserInput);
+    // setModelContextItems(modelContextItems);
+    // setModelContextOntology(modelContextOntology);
+    // setModelContextMetamodel(modelContextMetamodel);
     // setModelContextMetamodel(metamodelContextPrompt);
 
     if (!debug) console.log('476 Model IRTV step two :',
@@ -718,7 +710,6 @@ Make horizontal and vertical space between the objects to make the modelview loo
           </div>
         </div>
       </header>
-      {/* Innput fields  --------------------------------------------------------------------------------------*/}
       <div>
         <div className="flex justify-between mx-2 px-4 text-white rounded">
           <div className="flex justify-between align-center bg-gray-800">
@@ -726,6 +717,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> Current Model: </h3> <span className="inline-block"> {currentModel?.name}</span>
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> No. of Objects: </h3> <span className="inline-block"> {currentModel?.objects.length}</span>
           </div>
+          {/* Innput fields  --------------------------------------------------------------------------------------*/}
           <input
             type="file"
             ref={fileInputRef}
@@ -977,7 +969,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                 </CardContent> */}
             </Card>
 
-            <Card className="mb-0.5">  { /* 4th Step: Generate a Modelview with Objectviews and Relshipviews */}
+            <Card className="mb-0.5">  { /* 4th Step: Save a Modelview */}
               <CardHeader>
                 <CardTitle
                   className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}

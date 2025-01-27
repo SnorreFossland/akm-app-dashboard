@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { editConcept } from '@/features/ontology/ontologySlice';
+import { editConcept } from '@/features/model-universe/modelSlice';
 import { MoreHorizontal } from 'lucide-react';
 import {
     DropdownMenu,
@@ -31,7 +31,7 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
             console.log('Name cannot be empty.');
             return;
         }
-        console.log('Saving name for:', row.original.id, name);
+        console.log('Saving name for:', row.original.name, name);
         dispatch(editConcept({ ...row.original, name }));
         setIsEditing(false);
     };
@@ -50,7 +50,7 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
         <span
             className={`${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'} text-sm font-medium cursor-pointer`}
             onDoubleClick={() => {
-                console.log('Entering edit mode for name:', row.original.id);
+                console.log('Entering edit mode for name:', row.original.name);
                 setIsEditing(true);
             }}
         >
@@ -69,7 +69,7 @@ const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
             console.log('Description cannot be empty.');
             return;
         }
-        console.log('Saving description for:', row.original.id, description);
+        console.log('Saving description for:', row.original.name, description);
         dispatch(editConcept({ ...row.original, description }));
         setIsEditing(false);
     };
@@ -87,7 +87,7 @@ const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
         <span
             className={`${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'} text-sm font-medium cursor-pointer`}
             onDoubleClick={() => {
-                console.log('Entering edit mode for description:', row.original.id);
+                console.log('Entering edit mode for description:', row.original.name);
                 setIsEditing(true);
             }}
         >
@@ -102,7 +102,7 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
     function deleteConcept(id: string) {
         return {
             type: 'ontology/deleteConcept',
-            payload: id,
+            payload: name,
         };
     }
 
@@ -116,22 +116,22 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                {/* <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.id)}>
+                {/* <DropdownMenuItem onClick={() => navigator.clipboard.writeText(row.original.name)}>
                         Copy ID
                     </DropdownMenuItem> */}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={() => {
                     // Optionally handle edit via actions menu
-                    console.log('Edit action clicked for:', row.original.id);
+                    console.log('Edit action clicked for:', row.original.name);
                     // Trigger editing by setting a global editing state if needed
                     // For inline editing, double-click is used
                 }}>
                     Double-Click on text to Edit
                 </DropdownMenuItem>
                 <DropdownMenuItem onClick={() => {
-                    console.log('Delete action clicked for:', row.original.id);
+                    console.log('Delete action clicked for:', row.original.name);
                     // Trigger delete action
-                    dispatch(deleteConcept(row.original.id))
+                    dispatch(deleteConcept(row.original.name))
                 }}>
                     Delete
                 </DropdownMenuItem>
@@ -142,23 +142,23 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
 
 export const columns: ColumnDef<Concept>[] = [
     {
-        accessorKey: "id",
-        header: () => <span>Id</span>,
+        accessorKey: "name",
+        header: () => <span>Name</span>,
         cell: ({ row }) => {
             const concept = row.original;
             const colorClass = concept.color ? `text-${concept.color}-500` : 'text-gray-200'; // Default color
             return (
                 <span className={`${colorClass} text-sm font-medium`} >
-                    {concept.id}
+                    {concept.name}
                 </span>
             );
         },
     },
-    {
-        accessorKey: "name",
-        header: () => <span>Name</span>,
-        cell: ({ row }) => <NameCell row={row} />,
-    },
+    // {
+    //     accessorKey: "name",
+    //     header: () => <span>Name</span>,
+    //     cell: ({ row }) => <NameCell row={row} />,
+    // },
     {
         accessorKey: "description",
         header: () => <span>Description</span>,

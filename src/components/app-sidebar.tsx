@@ -64,19 +64,19 @@ const data = {
     description: "Homepage",
   },
   navMain: [
-    {
-      title: "Modelling",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Modelling",
-          url: "/modelling",
-          icon: Rabbit,
-          description: "AKM Modeller.",
-        },
-      ],
-    },
+    // {
+    //   title: "Modelling",
+    //   url: "#",
+    //   icon: Bot,
+    //   items: [
+    //     {
+    //       title: "Modelling",
+    //       url: "/modelling",
+    //       icon: Rabbit,
+    //       description: "AKM Modeller.",
+    //     },
+    //   ],
+    // },
     {
       title: "AKM AI Playground",
       url: "#",
@@ -89,12 +89,12 @@ const data = {
         //   icon: Star,
         //   description: "Vercel-AI",
         // },
-        // {
-        //   title: "Synchronous Test",
-        //   url: "/synchronous",
-        //   icon: Star,
-        //   description: "Synchronous Test",
-        // },
+        {
+          title: "Prompt Builder",
+          url: "/prompt-builder",
+          icon: Star,
+          description: "Prompt Builder",
+        },
         {
           title: "Concept Builder",
           url: "/concept-builder",
@@ -102,25 +102,25 @@ const data = {
           description: "Concept Knowledge Modelling",
         },
         {
-          title: "AKM Model Universe",
+          title: "Model Builder (IRTV) ",
           url: "/model-universe",
           icon: Star,
-          description: "Active Knowledge Modelling Universe",
+          description: "Active Knowledge Modelling with IRTV",
         },
         {
-          title: "Enterpr. Modeling(POPS)",
+          title: "Model Builder(POPS)",
           url: "/streaming",
           icon: Star,
           description: "Product, Organisation, Process, System (POPS) Modelling",
         },
         {
-          title: "Concept Modelling-IRTV",
-          url: "/streaming",
+          title: "Modelview Builder ",
+          url: "/model-universe",
           icon: Star,
-          description: "Streaming",
+          description: "Active Knowledge Modelling with IRTV",
         },
         {
-          title: "Meta Modelling-TD",
+          title: "streaming test",
           url: "/streaming",
           icon: Star,
           description: "Streaming",
@@ -145,59 +145,59 @@ const data = {
         // },
       ],
     },
-    {
-      title: "Models",
-      url: "#",
-      icon: Bot,
-      items: [
-        {
-          title: "Genesis",
-          url: "#",
-          icon: Rabbit,
-          description: "Our fastest model for general use cases.",
-        },
-        {
-          title: "Explorer",
-          url: "#",
-          icon: Bird,
-          description: "Performance and speed for efficiency.",
-        },
-        {
-          title: "Quantum",
-          url: "#",
-          icon: Turtle,
-          description: "The most powerful model for complex computations.",
-        },
-      ],
-    },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
-    {
-      title: "API",
-      url: "#",
-      icon: Code2,
-      items: [
+    // {
+    //   title: "Models",
+    //   url: "#",
+    //   icon: Bot,
+    //   items: [
+    //     {
+    //       title: "Genesis",
+    //       url: "#",
+    //       icon: Rabbit,
+    //       description: "Our fastest model for general use cases.",
+    //     },
+    //     {
+    //       title: "Explorer",
+    //       url: "#",
+    //       icon: Bird,
+    //       description: "Performance and speed for efficiency.",
+    //     },
+    //     {
+    //       title: "Quantum",
+    //       url: "#",
+    //       icon: Turtle,
+    //       description: "The most powerful model for complex computations.",
+    //     },
+    //   ],
+    // },
+    // {
+    //   title: "Documentation",
+    //   url: "#",
+    //   icon: BookOpen,
+    //   items: [
+    //     {
+    //       title: "Introduction",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Get Started",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Tutorials",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Changelog",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
+    // {
+    //   title: "API",
+    //   url: "#",
+    //   icon: Code2,
+    //   items: [
         // {
         //   title: "Chat",
         //   url: "#",
@@ -218,8 +218,8 @@ const data = {
         //   title: "Speech",
         //   url: "#",
         // },
-      ],
-    },
+    //   ],
+    // },
     {
       title: "Settings",
       url: "#",

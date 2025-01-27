@@ -29,7 +29,7 @@ export async function POST(req: Request) {
 
   console.log('27 route schema', schemaName);
   
-  const messages = [
+  const messages: { role: string; content: string }[] = [
     systemPrompt ? { role: 'system', content: systemPrompt } : null,
     systemBehaviorGuidelines ? { role: 'system', content: systemBehaviorGuidelines } : null,
     userPrompt ? { role: 'user', content: userPrompt } : null,
@@ -37,9 +37,9 @@ export async function POST(req: Request) {
     contextItems ? { role: 'assistant', content: contextItems } : null,
     contextOntology ? { role: 'assistant', content: contextOntology } : null,
     contextMetamodel ? { role: 'assistant', content: contextMetamodel } : null,
-  ].filter(Boolean);
+  ].filter((message): message is { role: string; content: string } => message !== null);
 
-  console.log('42 route messages', messages);
+  // console.log('42 route messages', messages);
 
   const response = await client.chat.completions.create({
     model: aiModelName,
