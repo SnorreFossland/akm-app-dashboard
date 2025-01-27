@@ -9,7 +9,7 @@ export async function POST(request: NextRequest) {
     const repo = process.env.GITHUB_REPO;
     const path = process.env.GITHUB_PATH;
     const baseBranch = process.env.GITHUB_BASE_BRANCH;
-    const newBranchName = `featureA-update-${Date.now()}`;
+    const newBranchName = `featureA-update-`//${Date.now()}`;
 
     if (!GITHUB_TOKEN || !owner || !repo || !path || !baseBranch) {
         return NextResponse.json(

@@ -15,7 +15,7 @@ export const ObjectSchema = z.object({
             })
         )
         .describe("List of objects"),
-    relationships: z
+    relships: z
         .array(
             z.object({
                 id: z.string().describe("UUID - Unique identifier of the relationship"),

@@ -3,14 +3,14 @@ import Link from "next/link";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 
-import { FeatureAComponent } from '@/features';
+// import { FeatureAComponent } from '@/features';
 import { Card } from "@/components/ui/card";
 
 export default function Home() {
   return (
     <>
-      <header className="flex items-center p-2 m-0 bg-gray-800 text-white shadow-md z-10 fixed w-full">
-        <h1 className="ml-4 text-xl">AKM App</h1>
+      <header className="items-center p-2 m-0 bg-gray-800 w-full">
+        <h1 className="ml-4 text-xl w-full">AKM App</h1>
       </header>
       <div className="pt-16"> {/* Add padding to avoid overlap with fixed header */}
         <Tabs defaultValue="akm-project" className="w-full">
@@ -22,7 +22,7 @@ export default function Home() {
             <div className="flex gap-4 items-center flex-col sm:flex-row w-full">
               <main className="flex flex-col gap-8 row-start-4 items-center sm:items-start w-full">
               <Card className="w-full">
-                <FeatureAComponent />
+                {/* <FeatureAComponent /> */}
               </Card>
               </main>
             </div>

@@ -3,13 +3,11 @@
 import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
-import { set } from "zod";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faSave, faCheckCircle, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 
-import { getFeatureAData } from '@/features/featureA/featureASlice';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Loading, LoadingBars, LoadingPulse, LoadingCircularProgress, LoadingDots } from "@/components/loading";
@@ -32,8 +30,6 @@ import { MetamodelPrompt } from './prompts/metamodel-irtv-prompt'; // default me
 
 import { handleSaveToLocalFile } from '@/features/featureA/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/featureA/components/HandleGetLocalFile';
-import { handleGetLocalFileClick } from '@/features/featureA/components/HandleGetLocalFileClick';
-import { relative } from "path";
 
 const debug = false;
 
@@ -42,8 +38,8 @@ const SyncPage = () => {
   const dispatch = useDispatch<AppDispatch>();
 
   const data = useSelector((state: RootState) => state.featureA.data);
-  const status = useSelector((state: RootState) => state.featureA.status);
   const error = useSelector((state: RootState) => state.featureA.error);
+  const status = useSelector((state: RootState) => state.featureA.status);
 
   const [topicDescr, settopicDescr] = useState("");
   const [domainDesc, setDomainDesc] = useState("");
@@ -59,9 +55,7 @@ const SyncPage = () => {
   const [ontologyData, setOntologyData] = useState<any>(null);
   const [ontologyString, setOntologyString] = useState("");
   const [concepts, setConcepts] = useState("");
-  const [selectedConcepts, setSelectedConcepts] = useState({ concepts: [], relationships: [] });
-  const [isContextVisible, setIsContextVisible] = useState(false);
-  const [isOntologyVisible, setIsOntologyVisible] = useState(false);
+
   const [step, setStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
   const [dispatchDone, setDispatchDone] = useState(false);
@@ -70,8 +64,7 @@ const SyncPage = () => {
   const [currentModel, setCurrentModel] = useState<any>(null);
   const [newModelview, setNewModelview] = useState<any | null>(null);
 
-  // const [systemPrompt, setSystemPrompt] = useState("");
-  // const [userPrompt, setUserPrompt] = useState("");
+
 
   const [systemBehaviorGuidelines, setSystemBehaviorGuidelines] = useState("");
 
@@ -131,11 +124,11 @@ const SyncPage = () => {
     // type ExistingObject = { id: string; name: string; description: string; typeName: string };
     // type ExistingRelationship = { id: string; name: string; nameFrom: string; nameTo: string };
 
-    if (data?.project) {
+    if (data) {
       if (!debug) console.log('89 data', data);
-      const metis1 = data.project?.phData?.metis;
-      const focus = data.project?.phFocus;
-      const user = data.project?.phUser;
+      const metis1 = data.phData?.metis;
+      const focus = data.phFocus;
+      const user = data.phUser;
       if (!metis1) { console.error('Data does not contain metis:', data); return };
       setMetis(metis1);
 
@@ -147,17 +140,14 @@ const SyncPage = () => {
           `${rt.id} ${rt.name}`).join(', ');
         const mmObjecttypeviewStrings = metamodel?.objecttypeviews.map((otv: any) =>
           `${otv.id} ${otv.name}`).join(', ');
-
-//         const metamodelPrompt = `
-// **Metamodel:**
-//   - **Object Types:** \n ${mmObjecttypeStrings} 
-//   - **Relation Types:** \n ${mmRelationtypeStrings}
-//   - **Object Typeviews:** \n ${mmObjecttypeviewStrings}
-// `;
-
-//         setModelContextMetamodel(metamodelPrompt);
+        //         const metamodelPrompt = `
+        // **Metamodel:**
+        //   - **Object Types:** \n ${mmObjecttypeStrings} 
+        //   - **Relation Types:** \n ${mmRelationtypeStrings}
+        //   - **Object Typeviews:** \n ${mmObjecttypeviewStrings}
+        // `;
+        //         setModelContextMetamodel(metamodelPrompt);
         setModelviewContextMetamodel("");
-
       }
       // setMetamodelPrompt(`${MetamodelPrompt}`);
 
@@ -195,7 +185,10 @@ const SyncPage = () => {
       }
       setExistingConcepts(conceptString);      // if (!debug) console.log('101 existingContext', existingContext);
       // if (!debug) console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
+    } else {
+      console.error('Data does not contain data:', data);
     }
+
   }, [data]);
 
   // const handlePasteFromClipboard = async () => {
@@ -229,12 +222,20 @@ const SyncPage = () => {
       const data = await response.json();
       if (!debug) console.log('180 Fetched ontology data:', data);
       if (Array.isArray(data)) {
-        const filteredOntology = data.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
+        const filteredOntology = data.filter((item: any) => 
+          item.group === 'master-data' || 
+          item.group === 'work-product-component' ||
+          item.group === 'abstract');
+
         setOntology(filteredOntology);
       } else if (typeof data === 'object' && data !== null) {
         const dataArr = Object.values(data);
         if (!debug) console.log('186 dataArr', dataArr);
-        const filteredArr = dataArr.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
+        const filteredArr = dataArr.filter((item: any) => 
+          item.group === 'master-data' || 
+          item.group === 'work-product-component' ||
+          item.group === 'abstract'
+        );
         interface OntologyItem {
           entity_name: string;
           group: string;
@@ -518,12 +519,12 @@ Create Views including the following user suggested views:
     const ontologyPrompt = ``;
 
 
-    setModelIrtvSystemPrompt(modelIrtvSystemPrompt);
-    setModelUserPrompt(modelUserPrompt);
-    setModelUserInput(modelUserInput);
-    setModelContextItems(modelContextItems);
-    setModelContextOntology(modelContextOntology);
-    setModelContextMetamodel(modelContextMetamodel);
+    // setModelIrtvSystemPrompt(modelIrtvSystemPrompt);
+    // setModelUserPrompt(modelUserPrompt);
+    // setModelUserInput(modelUserInput);
+    // setModelContextItems(modelContextItems);
+    // setModelContextOntology(modelContextOntology);
+    // setModelContextMetamodel(modelContextMetamodel);
     // setModelContextMetamodel(metamodelContextPrompt);
 
     if (!debug) console.log('476 Model IRTV step two :',
@@ -709,7 +710,6 @@ Make horizontal and vertical space between the objects to make the modelview loo
           </div>
         </div>
       </header>
-      {/* Innput fields  --------------------------------------------------------------------------------------*/}
       <div>
         <div className="flex justify-between mx-2 px-4 text-white rounded">
           <div className="flex justify-between align-center bg-gray-800">
@@ -717,6 +717,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> Current Model: </h3> <span className="inline-block"> {currentModel?.name}</span>
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> No. of Objects: </h3> <span className="inline-block"> {currentModel?.objects.length}</span>
           </div>
+          {/* Innput fields  --------------------------------------------------------------------------------------*/}
           <input
             type="file"
             ref={fileInputRef}
@@ -968,7 +969,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                 </CardContent> */}
             </Card>
 
-            <Card className="mb-0.5">  { /* 4th Step: Generate a Modelview with Objectviews and Relshipviews */}
+            <Card className="mb-0.5">  { /* 4th Step: Save a Modelview */}
               <CardHeader>
                 <CardTitle
                   className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
@@ -1031,161 +1032,118 @@ Make horizontal and vertical space between the objects to make the modelview loo
 
           {/* Model Canvas -----------------------------------------------------------------------------------------------------------------------------------------*/}
           <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-screen">
-            <Card className="h-full p-1"> {/* Model Canvas */}
-              <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (IRTV)</CardTitle>
-              <Tabs value={activeTab} onValueChange={setActiveTab}>
-                <TabsList className="m-1 mb-0 bg-transparent">
-                  <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Current Knowledge</TabsTrigger>
-                  <TabsTrigger value="imported-ontology" className='pb-2 mt-3'>Imported Ontology</TabsTrigger>
-                  <TabsTrigger value="suggested-concepts" className='pb-2 mt-3'>GPT Suggested Concepts</TabsTrigger>
-                  <TabsTrigger value="model" className='pb-2 mt-3'>GPT Suggested Model</TabsTrigger>
-                  <TabsTrigger value="modelview" className='pb-2 mt-3'>GPT Suggested Modelview</TabsTrigger>
-                  {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
-                  <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger> */}
-                </TabsList>
-                <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background">
-                  <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="bg-gray-700 mx-1 px-1 mt-0">
-                    <TabsList className=" mb-0 bg-gray-700 mt-0">
-                      <TabsTrigger value="model-summary" className='pb-2 mt-3'>Current Model Summary</TabsTrigger>
-                      <TabsTrigger value="model-objects" className='pb-2 mt-3'>Currrent Model</TabsTrigger>
-                      <TabsTrigger value="model-modelviews" className='pb-2 mt-3'>Current Modelview</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="model-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200">
-                      <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <div className="">
-                          {data && data.project && data.project.phData && data.project.phData.metis && data.project.phData.metis.models && (
-                            <>
-                              <div className="flex justify-left items-center py-2 text-left">
-                                <h4 className="px-2 text-gray-400 font-bold">AKM File</h4>
-                                <h4 className="px-2 mb-1 font-bold whitespace-nowrap bg-gray-700">{data.project.phSource}.json</h4>
-                              </div>
-                              <div className="flex flex-wrap">
-                                <div className="px-2 col text-left mb-4 w-1/3">
-                                  <h4 className="text-gray-400 font-bold">Model Suite:</h4>
-                                  <div className="border border-gray-600 p-2">
-                                    <h5 className="text-gray-400 font-bold">Name</h5>
-                                    <h4 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phData.metis.name}</h4>
-                                    <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                    <h4 className=" bg-gray-800 p-1">{data.project.phData.metis.description}</h4>
-                                  </div>
-                                  <div className="col text-left">
-                                    <h4 className="text-gray-400 font-bold">Project:</h4>
+            {metis
+              ? <Card className="h-full p-1"> {/* Model Canvas */}
+                <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (IRTV)</CardTitle>
+                <Tabs value={activeTab} onValueChange={setActiveTab}>
+                  <TabsList className="m-1 mb-0 bg-transparent">
+                    <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Current Knowledge</TabsTrigger>
+                    <TabsTrigger value="imported-ontology" className='pb-2 mt-3'>Imported Ontology</TabsTrigger>
+                    <TabsTrigger value="suggested-concepts" className='pb-2 mt-3'>GPT Suggested Concepts</TabsTrigger>
+                    <TabsTrigger value="model" className='pb-2 mt-3'>GPT Suggested Model</TabsTrigger>
+                    <TabsTrigger value="modelview" className='pb-2 mt-3'>GPT Suggested Modelview</TabsTrigger>
+                    {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
+                    <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger> */}
+                  </TabsList>
+                  <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background">
+                    <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="bg-gray-700 mx-1 px-1 mt-0">
+                      <TabsList className=" mb-0 bg-gray-700 mt-0">
+                        <TabsTrigger value="model-summary" className='pb-2 mt-3'>Current Model Summary</TabsTrigger>
+                        <TabsTrigger value="model-objects" className='pb-2 mt-3'>Current Model</TabsTrigger>
+                        <TabsTrigger value="model-modelviews" className='pb-2 mt-3'>Current Modelview</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="model-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200">
+                        <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                          <div className="">
+                            {data && data.phData && data.phData.metis && data.phData.metis.models && (
+                              <>
+                                <div className="flex justify-left items-center py-2 text-left">
+                                  <h4 className="px-2 text-gray-400 font-bold">AKM File</h4>
+                                  <h4 className="px-2 mb-1 font-bold whitespace-nowrap bg-gray-700">{data.phSource}.json</h4>
+                                </div>
+                                <div className="flex flex-wrap">
+                                  <div className="px-2 col text-left mb-4 w-1/3">
+                                    <h4 className="text-gray-400 font-bold">Model Suite:</h4>
                                     <div className="border border-gray-600 p-2">
-                                      <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.id}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.projectNumber}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.name}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.org}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.repo}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.path}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.file}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.branch}</h5>
-                                      <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                      <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.project.phFocus.focusProj.username}</h5>
+                                      <h5 className="text-gray-400 font-bold">Name</h5>
+                                      <h4 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phData.metis.name}</h4>
+                                      <h5 className="text-gray-400 p-1 font-bold">Description</h5>
+                                      <h4 className=" bg-gray-800 p-1">{data.phData.metis.description}</h4>
+                                    </div>
+                                    <div className="col text-left">
+                                      <h4 className="text-gray-400 font-bold">Project:</h4>
+                                      <div className="border border-gray-600 p-2">
+                                        <h5 className="text-gray-400 font-bold px-1">id</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.id}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.projectNumber}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">name</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.name}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">repo</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.org}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">repo</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.repo}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">path</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.path}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">file</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.file}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">branch</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.branch}</h5>
+                                        <h5 className="text-gray-400 font-bold px-1">username</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.username}</h5>
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div className="px-4 col text-left w-2/3">
+                                    <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
+                                    <div className="border border-gray-600 p-2">
+                                      {data.phData.metis.models.map((model: any, index) => (
+                                        <div key={model.id} className="flex flex-col">
+                                          <h5 className="text-gray-400 font-bold">Name</h5>
+                                          <h4 className="bg-gray-800 p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
+                                          <h5 className="text-gray-400 p-1 font-bold">Description</h5>
+                                          <h4 className="bg-gray-800 p-2">{model.description}</h4>
+                                          <hr className="my-1" />
+                                        </div>
+                                      ))}
                                     </div>
                                   </div>
                                 </div>
-                                <div className="px-4 col text-left w-2/3">
-                                  <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
-                                  <div className="border border-gray-600 p-2">
-                                    {data.project.phData.metis.models.map((model: any, index) => (
-                                      <div key={model.id} className="flex flex-col">
-                                        <h5 className="text-gray-400 font-bold">Name</h5>
-                                        <h4 className="bg-gray-800 p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
-                                        <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                        <h4 className="bg-gray-800 p-2">{model.description}</h4>
-                                        <hr className="my-1" />
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              </div>
-                            </>
-                          )}
+                              </>
+                            )}
+                          </div>
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="model-objects" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                        <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                        </div>
+                        {data && data.phData && data.phData.metis && data.phData.metis.models && (
+                          <ObjectCard model={{ name: data.phData.metis.models[0].name, objects: data.phData.metis.models[0].objects, relationships: data.phData.metis.models[0].relships }} />
+                        )}
+                      </TabsContent>
+                      <TabsContent value="model-modelviews" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                        <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                          <ModelviewCard modelviews={data?.phData?.metis.models[0].modelviews} />
+                        </div>
+                      </TabsContent>
+                    </Tabs>
+                  </TabsContent>
+                  <TabsContent value="imported-ontology" className="bg-background m-0 py-2 rounded ">
+                    {(ontologyData?.concepts.length > 0) &&
+                      <div className="flex justify-center items-center">
+                        <div className="text-gray-400 mx-5">The Ontology concepts is fetched from URL:</div>
+                        <div className="text-gray-400">
+                          <a href={ontologyUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
+                            {ontologyUrl}
+                          </a>
                         </div>
                       </div>
-                    </TabsContent>
-                    <TabsContent value="model-objects" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                      <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                      </div>
-                      {data && data.project && data.project.phData && data.project.phData.metis && data.project.phData.metis.models && (
-                        <ObjectCard model={{ name: data.project.phData.metis.models[0].name, objects: data.project.phData.metis.models[0].objects, relationships: data.project.phData.metis.models[0].relships }} />
-                      )}
-                    </TabsContent>
-                    <TabsContent value="model-modelviews" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                      <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <ModelviewCard modelviews={data?.project.phData.metis.models[0].modelviews} />
-                      </div>
-                    </TabsContent>
-                  </Tabs>
-                </TabsContent>
-                <TabsContent value="imported-ontology" className="bg-background m-0 py-2 rounded ">
-                  {(ontologyData?.concepts.length > 0) &&
-                    <div className="flex justify-center items-center">
-                      <div className="text-gray-400 mx-5">The Ontology concepts is fetched from URL:</div>
-                      <div className="text-gray-400">
-                        <a href={ontologyUrl} target="_blank" rel="noopener noreferrer" className="text-blue-400 underline">
-                          {ontologyUrl}
-                        </a>
-                      </div>
+                    }
+                    <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                      <ImportedOntologyCard ontologyData={ontologyData} />
                     </div>
-                  }
-                  <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                    <ImportedOntologyCard ontologyData={ontologyData} />
-                  </div>
-                </TabsContent>
-                <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                  <>
-                    <div className="flex justify-end pb-1 pt-0 mx-2">
-                      <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                        Show Prompt
-                      </button>
-                    </div>
-                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                      <DialogContent className="max-w-5xl"> {/* Added max-w-4xl for wider dialog */}
-                        <DialogHeader>
-                          <DialogDescription>
-                            <div>
-                              <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                <DialogTitle>---- System Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptSystemPrompt}</ReactMarkdown>
-                                <DialogTitle>---- System behavior Guidelines Prompt</DialogTitle>
-                                <ReactMarkdown>{systemBehaviorGuidelines}</ReactMarkdown>
-                                <DialogTitle>---- User Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptUserPrompt}</ReactMarkdown>
-                                <DialogTitle>---- User Input</DialogTitle>
-                                <ReactMarkdown>{conceptUserInput}</ReactMarkdown>
-                                <DialogTitle>---- Context Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptContextItems}</ReactMarkdown>
-                                <DialogTitle>---- Ontology Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptContextOntology}</ReactMarkdown>
-                                <DialogTitle>---- Metamodel Prompt</DialogTitle>
-                                <ReactMarkdown>{conceptContextMetamodel}</ReactMarkdown>
-                              </div>
-                            </div>
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                            Close
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    <div className="mx-1 bg-gray-700 ">
-                      <OntologyCard ontologyData={suggestedConceptData} />
-                    </div>
-                  </>
-                </TabsContent>
-                <TabsContent value="model" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                  {showModel && (
+                  </TabsContent>
+                  <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
                     <>
                       <div className="flex justify-end pb-1 pt-0 mx-2">
                         <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
@@ -1198,18 +1156,20 @@ Make horizontal and vertical space between the objects to make the modelview loo
                             <DialogDescription>
                               <div>
                                 <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                  <DialogTitle>modelIrtvSystemPrompt : </DialogTitle>
-                                  <ReactMarkdown>{modelIrtvSystemPrompt}</ReactMarkdown>
-                                  <DialogTitle>User Prompt</DialogTitle>
-                                  <ReactMarkdown>{modelUserPrompt}</ReactMarkdown>
-                                  <DialogTitle>User Input Prompt</DialogTitle>
-                                  <ReactMarkdown>{modelUserInput}</ReactMarkdown>
-                                  <DialogTitle>Context items</DialogTitle>
-                                  <ReactMarkdown>{modelContextItems}</ReactMarkdown>
-                                  <DialogTitle>Context ontology</DialogTitle>
-                                  <ReactMarkdown>{modelContextOntology}</ReactMarkdown>
-                                  <DialogTitle>Metamodel Irtv Prompt</DialogTitle>
-                                  <ReactMarkdown>{modelContextMetamodel}</ReactMarkdown>
+                                  <DialogTitle>---- System Prompt</DialogTitle>
+                                  <ReactMarkdown>{conceptSystemPrompt}</ReactMarkdown>
+                                  <DialogTitle>---- System behavior Guidelines Prompt</DialogTitle>
+                                  <ReactMarkdown>{systemBehaviorGuidelines}</ReactMarkdown>
+                                  <DialogTitle>---- User Prompt</DialogTitle>
+                                  <ReactMarkdown>{conceptUserPrompt}</ReactMarkdown>
+                                  <DialogTitle>---- User Input</DialogTitle>
+                                  <ReactMarkdown>{conceptUserInput}</ReactMarkdown>
+                                  <DialogTitle>---- Context Prompt</DialogTitle>
+                                  <ReactMarkdown>{conceptContextItems}</ReactMarkdown>
+                                  <DialogTitle>---- Ontology Prompt</DialogTitle>
+                                  <ReactMarkdown>{conceptContextOntology}</ReactMarkdown>
+                                  <DialogTitle>---- Metamodel Prompt</DialogTitle>
+                                  <ReactMarkdown>{conceptContextMetamodel}</ReactMarkdown>
                                 </div>
                               </div>
                             </DialogDescription>
@@ -1221,55 +1181,101 @@ Make horizontal and vertical space between the objects to make the modelview loo
                           </DialogFooter>
                         </DialogContent>
                       </Dialog>
-                      <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <ObjectCard model={model} />
+                      <div className="mx-1 bg-gray-700 ">
+                        <OntologyCard ontologyData={suggestedConceptData} />
                       </div>
                     </>
-                  )}
-                </TabsContent>
-                <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                  <>
-                    <div className="flex justify-end pb-1 pt-0 mx-2">
-                      <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                        Show Prompt
-                      </button>
-                    </div>
-                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                      <DialogContent className="max-w-5xl"> {/* Added max-w-4xl for wider dialog */}
-                        <DialogHeader>
-                          <DialogDescription>
-                            <div>
-                              <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                <DialogTitle>System Prompt</DialogTitle>
-                                <ReactMarkdown>{modelviewSystemPrompt}</ReactMarkdown>
-                                <DialogTitle>User Prompt</DialogTitle>
-                                <ReactMarkdown>{modelviewUserPrompt}</ReactMarkdown>
-                                <DialogTitle>User Input</DialogTitle>
-                                <ReactMarkdown>{modelviewUserInput}</ReactMarkdown>
-                                <DialogTitle>Context items</DialogTitle>
-                                <ReactMarkdown>{modelviewContextItems}</ReactMarkdown>
-                                <DialogTitle>Context ontology</DialogTitle>
-                                <ReactMarkdown>{modelviewContextOntology}</ReactMarkdown>
-                                <DialogTitle>Context Metamodel</DialogTitle>
-                                <ReactMarkdown>{modelviewContextMetamodel}</ReactMarkdown>
+                  </TabsContent>
+                  <TabsContent value="model" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                    {showModel && model && (
+                      <>
+                        <div className="flex justify-end pb-1 pt-0 mx-2">
+                          <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
+                            Show Prompt
+                          </button>
+                        </div>
+                        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                          <DialogContent className="max-w-5xl"> {/* Added max-w-4xl for wider dialog */}
+                            <DialogHeader>
+                              <DialogDescription>
+                                <div>
+                                  <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                    <DialogTitle>modelIrtvSystemPrompt : </DialogTitle>
+                                    <ReactMarkdown>{modelIrtvSystemPrompt}</ReactMarkdown>
+                                    <DialogTitle>User Prompt</DialogTitle>
+                                    <ReactMarkdown>{modelUserPrompt}</ReactMarkdown>
+                                    <DialogTitle>User Input Prompt</DialogTitle>
+                                    <ReactMarkdown>{modelUserInput}</ReactMarkdown>
+                                    <DialogTitle>Context items</DialogTitle>
+                                    <ReactMarkdown>{modelContextItems}</ReactMarkdown>
+                                    <DialogTitle>Context ontology</DialogTitle>
+                                    <ReactMarkdown>{modelContextOntology}</ReactMarkdown>
+                                    <DialogTitle>Metamodel Irtv Prompt</DialogTitle>
+                                    <ReactMarkdown>{modelContextMetamodel}</ReactMarkdown>
+                                  </div>
+                                </div>
+                              </DialogDescription>
+                            </DialogHeader>
+                            <DialogFooter>
+                              <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                                Close
+                              </Button>
+                            </DialogFooter>
+                          </DialogContent>
+                        </Dialog>
+                        <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                          <ObjectCard model={{ ...model, description: model.description || '' }} />
+                        </div>
+                      </>
+                    )}
+                  </TabsContent>
+                  <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                    <>
+                      <div className="flex justify-end pb-1 pt-0 mx-2">
+                        <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
+                          Show Prompt
+                        </button>
+                      </div>
+                      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                        <DialogContent className="max-w-5xl"> {/* Added max-w-4xl for wider dialog */}
+                          <DialogHeader>
+                            <DialogDescription>
+                              <div>
+                                <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                  <DialogTitle>System Prompt</DialogTitle>
+                                  <ReactMarkdown>{modelviewSystemPrompt}</ReactMarkdown>
+                                  <DialogTitle>User Prompt</DialogTitle>
+                                  <ReactMarkdown>{modelviewUserPrompt}</ReactMarkdown>
+                                  <DialogTitle>User Input</DialogTitle>
+                                  <ReactMarkdown>{modelviewUserInput}</ReactMarkdown>
+                                  <DialogTitle>Context items</DialogTitle>
+                                  <ReactMarkdown>{modelviewContextItems}</ReactMarkdown>
+                                  <DialogTitle>Context ontology</DialogTitle>
+                                  <ReactMarkdown>{modelviewContextOntology}</ReactMarkdown>
+                                  <DialogTitle>Context Metamodel</DialogTitle>
+                                  <ReactMarkdown>{modelviewContextMetamodel}</ReactMarkdown>
+                                </div>
                               </div>
-                            </div>
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                            Close
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    <div className="mx-1 ">
-                      <ModelviewCard modelviews={[newModelview]} />
-                    </div>
-                  </>
-                </TabsContent>
-              </Tabs>
-            </Card>
+                            </DialogDescription>
+                          </DialogHeader>
+                          <DialogFooter>
+                            <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                              Close
+                            </Button>
+                          </DialogFooter>
+                        </DialogContent>
+                      </Dialog>
+                      <div className="mx-1 ">
+                        <ModelviewCard modelviews={[newModelview]} />
+                      </div>
+                    </>
+                  </TabsContent>
+                </Tabs>
+              </Card>
+              : <div className="flex justify-center items-center h-screen">
+                <LoadingCircularProgress />
+              </div>
+            }
           </div>
         </div>
       </div>
@@ -1280,7 +1286,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
             </Button>
           )} */}
     </div>
-  );
+  )
 };
 
 export default SyncPage;

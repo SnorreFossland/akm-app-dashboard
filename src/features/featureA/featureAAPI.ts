@@ -1,12 +1,10 @@
 // src/features/featureA/featureAAPI.ts
 
 interface DataType {
-    project: {
         phData: { metis: any }
         phFocus: any
         phUser: any
         phSource: any
-    }
 }
 
 export async function fetchFeatureADataFromGitHub(): Promise<DataType> {

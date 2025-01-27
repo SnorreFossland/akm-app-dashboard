@@ -10,7 +10,7 @@ import { handleGetFile } from './HandleGetFile';
 import { handleGetLocalFile } from './HandleGetLocalFile';
 import { handleGetLocalFileClick } from './HandleGetLocalFileClick';
 import { handleSaveToGithub } from './HandleSaveToGithub';
-import { clearStore, clearModel} from '../featureASlice';
+import { clearStore, clearModel } from '../featureASlice';
 // import { handleClearStore } from './HandleClearStore';
 
 function FeatureAComponent() {
@@ -46,10 +46,10 @@ function FeatureAComponent() {
           <Button onClick={() => handleGetLocalFileClick(fileInputRef)}>
             Get Local File
           </Button>
-          <Button onClick={() => dispatch(clearModel ())}>
+          <Button onClick={() => dispatch(clearModel())}>
             Clear Model
           </Button>
-          <Button onClick={() => dispatch(clearStore ())}>
+          <Button onClick={() => dispatch(clearStore())}>
             Clear Store
           </Button>
         </div>
@@ -65,11 +65,11 @@ function FeatureAComponent() {
       {data ? (
         <div className='feature-a-data text-left mx-2 p-4 bg-gray-700'>
           <div className='grid grid-cols-2 gap-4'>
-            <h5>{data?.project?.phData?.metis?.name}</h5> <br />
+            <h5>{data?.phData?.metis?.name}</h5> <br />
             <div className='text-left text-gray p-4 bg-gray-800'>
               <h5>Models: </h5>
               <ul>
-                {data?.project?.phData?.metis?.models.map((model: any) => (
+                {data?.phData?.metis?.models.map((model: any) => (
                   <li key={model.name}>
                     {`${model.name} - ${model?.objects?.length} `}<br />
                   </li>
@@ -78,7 +78,7 @@ function FeatureAComponent() {
             </div>
             <div className='text-left text-gray p-4 bg-gray-800'>
               <h6>Metamodels: </h6>
-              {data?.project?.phData?.metis?.metamodels.map((metamodel: any) => (
+              {data?.phData?.metis?.metamodels.map((metamodel: any) => (
                 <React.Fragment key={metamodel.name}>
                   - {metamodel.name} <br />
                 </React.Fragment>

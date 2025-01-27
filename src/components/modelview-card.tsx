@@ -119,9 +119,9 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                                                     <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Loc</th>
                                                 </tr>
                                             </thead>
-                                            <tbody>
+                                            {/* <tbody>
                                                 <tr>
-                                                    <td colSpan={3}>
+                                                    <td colSpan={3}> */}
                                                         <tbody className="bg-gray-900 divide-y divide-gray-700">
                                                             {modelviews && modelviews[0]?.objectviews?.map((ov) => (
                                                                 <tr key={ov.id}>
@@ -130,10 +130,11 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                                                                     <td className="px-4 py-2 whitespace-nowrap text-gray-300 ">{ov.loc}</td>
                                                                 </tr>
                                                             ))}
-                                                        </tbody>
-                                                    </td>
+                                                        
+                                                     </tbody>
+                                                    {/* </td>
                                                 </tr>
-                                            </tbody>
+                                            </tbody>  */}
                                         </table>
                                     </CardContent>
                                 </Card>
@@ -153,7 +154,7 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
                                                         </tr>
                                                     </thead>
                                                     <tbody className="bg-gray-900 divide-y divide-gray-700">
-                                                        {(modelviews[0]) &&  modelviews[0]?.relshipviews?.map((rv: any) => (
+                                                        {modelviews && modelviews[0] &&  modelviews[0]?.relshipviews?.map((rv: any) => (
                                                              <tr key={rv.id}>
                                                                 {/* <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.fromobjviewRef}</td> */}
                                                                 <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rv.name}</td>
