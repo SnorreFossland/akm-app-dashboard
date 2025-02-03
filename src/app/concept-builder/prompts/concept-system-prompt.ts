@@ -56,5 +56,5 @@ If input is only one word or words separated by commas, handle as concept name o
 - Guarantee that every concept has at least one relationship.
 - Enhance concept descriptions to ensure every entity is fully defined without redundancy.
 - Create at least five new concepts and establish relationships between them.
-- Do not create concepts representing roles, tasks, or views; these will be addressed later.
+- Make sure you include existing items, relationships, description and presentation in your analysis.
 `;  

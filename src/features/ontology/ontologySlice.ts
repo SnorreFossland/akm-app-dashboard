@@ -55,12 +55,12 @@ const ontologySlice = createSlice({
             if (state.data) {
                 const newConcepts = (action.payload.concepts || []).map((concept: any) => ({
                     ...concept,
-                    color: 'gray'
+                    color: 'lightgreen'
                 }));
 
                 const newRelationships = (action.payload.relationships || []).map((relationship: any) => ({
                     ...relationship,
-                    color: 'gray'
+                    color: 'lightgreen'
                 }));
 
                 state.data = {

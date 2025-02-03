@@ -37,6 +37,7 @@ import {
   SidebarItem,
   SidebarLabel,
 } from "@/components/ui/sidebar"
+import { ModeToggle } from '@/components/mode-toggle'
 
 const data = {
   teams: [
@@ -333,6 +334,7 @@ export function AppSidebar() {
           <StorageCard />
         </SidebarItem>
       </SidebarContent>
+      <ModeToggle />
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>
