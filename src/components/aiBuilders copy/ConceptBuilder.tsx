@@ -15,7 +15,7 @@ import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { SystemConceptPrompt } from '@/app/concept-builder/prompts/concept-system-prompt';
+import { SystemConceptPrompt } from '@/app/concept-builder/promptstmp/concept-system-prompt';
 
 import { set } from 'zod';
 

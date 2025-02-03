@@ -226,20 +226,18 @@ const Modelbuilder = () => {
                 if (done) break;
                 data += decoder.decode(value, { stream: true });
             }
+            console.log('205 Data:', data, curmod); // Add this line to log the data
+            const parsed = JSON.parse(data);
+            console.log('206 Parsed:', parsed); // Add this line to log the parsed data
+            const validatedData = ObjectSchema.parse(parsed);
+            console.log('209 Validated data:', validatedData, curmod); // Add this line to log the validated data
 
-            // Add a check to ensure the JSON is complete
-            try {
-                const parsed = JSON.parse(data);
-                const validatedData = ObjectSchema.parse(parsed);
-                setModel({ ...validatedData, id: curmod?.id });
-                setStep(3);
-            } catch (parseError) {
-                console.error("JSON Parsing Error:", parseError);
-                alert("Received malformed data from the server. Please try again.");
-            }
+            setModel({...validatedData, id: curmod?.id});
+            console.log('212 Model set:', validatedData, model); // Add this line to confirm the model is set
+
+            setStep(3);
         } catch (e) {
             console.error("Validation failed:", e instanceof Error ? e.message : e);
-            alert("An error occurred while generating the model. Please check the console for details.");
         }
 
         setIsLoading(false);

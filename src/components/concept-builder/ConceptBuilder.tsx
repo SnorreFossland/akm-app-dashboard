@@ -16,7 +16,7 @@ import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt } from '@/components/concept-builder/prompts';
+import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt } from '@/app/concept-builder/prompts';
 
 const debug = false;
 
@@ -72,9 +72,9 @@ const ConceptBuilder = () => {
     const ontologyConcepts = ontologyReduxData?.concepts;
     const ontologyRelationships = ontologyReduxData?.relationships;
     const modelConceptss = data.phData.metis?.models.map((model: any) => (model.objects.length > 0) && model.objects?.map((o: any) => o.typename === "information" && o).filter(Boolean));
-    const modelConcepts = modelConceptss.flat().filter(Boolean);
+    const modelConcepts = modelConceptss?.flat().filter(Boolean);
     const modelRelationshipss = data.phData.metis?.models.map((model: any) => (model.relationships?.lenght > 0) && model.relationships?.map((r: any) => modelConcepts.find((o: any) => o.id === r.fromObj) && r).filter(Boolean));
-    const modelRelationships = modelRelationshipss.flat().filter(Boolean);
+    const modelRelationships = modelRelationshipss?.flat().filter(Boolean);
     const existingConcepts = ontologyConcepts?.concat(modelConcepts);
     const existingRelationships = ontologyRelationships?.concat(modelRelationships);
 
@@ -90,7 +90,7 @@ const ConceptBuilder = () => {
             }
 
             if (typeof data === 'object' && data !== null) {
-                const dataArr = Object.values(data);
+                // const dataArr = Object.values(data);
                 const filteredMaster = Object.values(data).filter((item: any) => item.group === 'master-data');
                 const filteredWP = Object.values(data).filter((item: any) => item.group === 'work-product-component');
                 const conceptsNamesMaster = Array.from(new Set(filteredMaster.map((item: any) => item.entity_name + ' ')));

@@ -2,10 +2,14 @@
 import React, { useEffect, useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
-import { Card, CardTitle, Dialog, DialogContent, DialogFooter, DialogTitle, Button, LoadingCircularProgress, Tabs, TabsContent } from 'your-component-library';
+import { Card, CardTitle } from '@/components/ui/card';
+import { Dialog, DialogContent, DialogFooter, DialogTitle } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { LoadingCircularProgress } from '@/components/loading';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 
 import { ModelviewSchema } from "@/modelviewSchema";
-import { ModelviewCard } from '@/components/modelview-card';
+// import { ModelviewCard } from '@/components/modelview-card';
 
 const ModelviewBuilder = () => {
     const [data, setData] = useState(null);
