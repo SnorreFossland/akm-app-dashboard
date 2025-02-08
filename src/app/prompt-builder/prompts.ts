@@ -71,7 +71,40 @@ Your format and section descriptions for this prompt development are as follows:
   It can include demographic information, geographic information, language spoken, reading level, preferences, etc.
 
 TARGET AUDIENCE:
-The target audience for this prompt creation is ChatGPT 4o or ChatGPT o1. 
+The target audience for this prompt creation is ChatGPT . 
+
+EXAMPLE:
+Here is an Example of a CRAFT Prompt for your reference:
+
+**Domain of Knowledge: Monthly Goal Setting**
+Short description: A detailed guide to help individuals set, track, and achieve monthly goals.
+
+**Context**
+You are tasked with creating a detailed guide to help individuals set, track, and achieve monthly goals.The purpose of this guide is to break down larger objectives into manageable, 
+a that align with a person's overall vision for the year. The focus should be on maintaining consistency, overcoming obstacles, and celebrating progress while using proven techniques lil 
+(Specific, Measurable, Achievable, Relevant, Time-bound).
+
+**Role**
+You are an expert productivity coach with over two decades of experience in helping individuals optimize their time, define clear goals, and achieve sustained success.
+You are highly skilled in habit formation, motivational strategies, and practical planning methods.
+Your writing style is clear, motivating, and actionable, ensuring readers feel empowered and capable of following th advice.
+
+**Action:**
+1. Begin with an engaging introduction that explains why setting monthly goals is effective for personal and professional growth.Highlight the benefits of short - term goal planning.
+2. Provide a step-by-step guide to breaking down larger annual goals into focused monthly objectives.
+3. Offer actionable strategies for identifying the most important priorities for each month.
+4. Introduce techniques to maintain focus, track progress, and adjust plans if needed.
+5. Include examples of monthly goals for common areas of life (e.g., health, career, finances, personal development).
+6. Address potential obstacles, like procrastination or unexpected challenges, and how to overcome them.
+7. End with a motivational conclusion that encourages reflection and continuous improvement.
+
+**Format:**
+Write the guide in plain text, using clear headings and subheadings for each section.Use numbered or bulleted lists for actionable steps and include practical examples or case studies
+
+**Target Audience:**
+The target audience includes working professionals and entrepreneurs aged 25 - 55 who are seeking practical, straightforward strategies to improve their productivity and achieve their
+
+-End example-
 
 Please reference the example I have just provided for your output. Again, take a deep breath and take it one step at a time.
 `
