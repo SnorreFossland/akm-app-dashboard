@@ -4,9 +4,9 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faCheckCircle, faPaperPlane, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
-
-import { Textarea } from '@/components/ui/textarea';
+import { setDomainData } from '@/features/model-universe/modelSlice';
 import { Button } from '@/components/ui/button';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardTitle } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
@@ -28,33 +28,30 @@ export default function PromptBuilder() {
 
     const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
     const [result, setResult] = useState<string>("");
+    const [suggestedDomainData, setSuggestedDomainData] = useState<any>(null);
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
 
-    const handleDispatchOntologyData = () => {
-        if (!suggestedOntologyData) {
+    const handleDispatchDomainData = () => {
+        if (!suggestedDomainData) {
             alert('No Concept data to dispatch');
             return;
         }
-        const updatedOntologyData = {
+        const upatedDomainData = {
             phData: {
                 ...data.phData,
-                ontology: suggestedOntologyData,
+                domain: suggestedDomainData,
             },
             phFocus: data.phFocus,
             phUser: data.phUser,
             phSource: data.phSource,
         };
 
-        const uniqueConcepts = Array.from(new Map(updatedOntologyData.phData.ontology.concepts.map((item: Concept) => [item.name, item])).values());
-        const uniqueRelationships = Array.from(new Map(updatedOntologyData.phData.ontology.relationships.map((item: Relationship) => [item.name, item])).values());
 
-        updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
-        updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
 
-        dispatch(setOntologyData(updatedOntologyData));
-        setSuggestedOntologyData(null);
+        dispatch(setDomainData(upatedDomainData));
+        setSuggestedDomainData(null);
         setDispatchDone(true);
     };
 
@@ -78,6 +75,7 @@ export default function PromptBuilder() {
             if (!response.ok) throw new Error(`Error: ${response.statusText}`);
             const data = await response.json();
             setResult(data.response);
+            setSuggestedDomainData(data.domain);
         } catch (error) {
             console.error("Error building prompt:", error);
             setResult("Failed to build prompt.");
@@ -141,13 +139,13 @@ export default function PromptBuilder() {
                                         <LoadingCircularProgress />
                                     </div>
                                 ) : (
-                                    <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone && step === 2 ? 'green' : 'gray' }}>
+                                    <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone ? 'green' : 'gray' }}>
                                         <FontAwesomeIcon icon={faCheckCircle} size="2x" />
                                     </div>
                                 )}
                                 <Button
                                     onClick={() => {
-                                        handleDispatchOntologyData();
+                                        handleDispatchDomainData();
                                     }}
                                     className="rounded text-xl p-4 bg-green-700 text-white">
                                     <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
@@ -170,17 +168,16 @@ export default function PromptBuilder() {
                         </TabsList>
                         <TabsContent value="existing-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
                             <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                                test1
+
                                 <ReactMarkdown>
-                                    {/* {ontologyData?.presentation} */}
-                                    {result}
+                                    {`# ${data?.phData?.domain?.name}\n\n## ${data?.phData?.domain?.description}\n\n${data?.phData?.domain?.summary}`}
                                 </ReactMarkdown>
                             </div>
                         </TabsContent>
                         <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
                             <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
                                 {result}test
-                                {/* <DomainCard ontologyData={ontologyDataList} /> */}
+                                {/* <DomainCard DomainData={DomainDataList} /> */}
                             </div>
                         </TabsContent>
                     </Tabs>

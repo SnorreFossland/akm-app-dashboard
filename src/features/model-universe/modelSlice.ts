@@ -71,6 +71,7 @@ export interface DataType {
         }[],
       }[],
     },
+    domain: { name: string, description: string, summary: string },
     ontology: { name: string, description: string, presentation: string, concepts: { name: string, description: string }[], relationships: { name: string, description: string, nameFrom: string, nameTo: string }[] },
   },
   phFocus: {
@@ -191,6 +192,7 @@ export const initialState: DataType = {
       ],
       metamodels: [],
     },
+    domain: { name: 'domain blank', description: 'domain blank description', summary: 'domain blank summary' },
     ontology: {
       name: 'Ontology blank domain',
       description: 'Ontology blank initial domain.',
@@ -366,6 +368,9 @@ const modelSlice = createSlice({
     setSource(state, action: PayloadAction<DataType['phSource']>) {
       state.phSource = action.payload;
     },
+    setDomainData(state, action: PayloadAction<DataType['phData']['domain']>) {
+      state.phData.domain = action.payload || state.phData.domain;
+    },
     setOntologyData(state, action: PayloadAction<DataType>) {
       console.log('348 action.payload', action.payload, state);
       const newConcepts = (action.payload.phData.ontology?.concepts || []).map((concept: any) => ({
@@ -448,5 +453,21 @@ const modelSlice = createSlice({
   },
 });
 
-export const { setFileData, setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, setFocusModelview, setSource, setOntologyData, editConcept, deleteConcept, editRelationship, clearModel, clearStore } = modelSlice.actions;
+export const { 
+  setFileData, 
+  setNewModel, 
+  setObjects, 
+  setRelationships, 
+  setNewModelview, 
+  setFocusModel, 
+  setFocusModelview, 
+  setSource, 
+  setDomainData,
+  setOntologyData, 
+  editConcept, 
+  deleteConcept, 
+  editRelationship, 
+  clearModel, 
+  clearStore 
+} = modelSlice.actions;
 export default modelSlice.reducer;
