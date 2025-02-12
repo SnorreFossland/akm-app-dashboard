@@ -265,7 +265,7 @@ const ConceptBuilder = () => {
     }, [suggestedOntologyData, ontologyReduxData]);
 
     return (
-        <div className="flex  h-[calc(100vh-5rem)]">
+        <div className="flex  h-[calc(100vh-5rem)] w-full">
             <div className="border-solid rounded border-4 border-green-700 w-1/4">
                 <div className="m-1 mb-5">
                     <details>
