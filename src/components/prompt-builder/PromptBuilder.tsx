@@ -18,7 +18,7 @@ export default function PromptBuilder() {
             return;
         }
         try {
-            const response = await fetch("/prompt-builder/api", {
+            const response = await fetch("/api/genprompt", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ prompt: prompt.text, domain: prompt.domain }),
