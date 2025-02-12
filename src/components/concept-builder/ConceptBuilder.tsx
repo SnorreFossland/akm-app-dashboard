@@ -5,7 +5,7 @@ import { RootState, AppDispatch } from '@/store/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faCheckCircle, faPaperPlane, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
 import { setOntologyData } from '@/features/model-universe/modelSlice';
-import { CardTitle } from '@/components/ui/card';
+import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -124,7 +124,7 @@ const ConceptBuilder = () => {
 
         updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
         updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
-        
+
         dispatch(setOntologyData(updatedOntologyData));
         setSuggestedOntologyData(null);
         setDispatchDone(true);
@@ -211,7 +211,7 @@ const ConceptBuilder = () => {
             }
 
             const parsed = JSON.parse(data);
-            if (parsed.ontologyData.concepts && Array.isArray(parsed.ontologyData.concepts)) {             
+            if (parsed.ontologyData.concepts && Array.isArray(parsed.ontologyData.concepts)) {
                 setSuggestedOntologyData(parsed.ontologyData);
                 setDescrString(parsed.ontologyData.description);
                 setIsLoading(false);
@@ -422,70 +422,75 @@ const ConceptBuilder = () => {
                     </CardTitle>
                 </div>
             </div>
-            
-            <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full">
-                <Tabs value={activeTab} onValueChange={setActiveTab}>
-                    <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                        <TabsTrigger value="existing-concepts" className="bg-blue-800 text-white rounded px-1 py-0">Existing Concepts</TabsTrigger>
-                        <TabsTrigger value="suggested-concepts" className="bg-blue-800 text-white rounded px-1 py-0">Suggested Concepts</TabsTrigger>
-                    </TabsList>
-                    <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                        <>
-                            <div className="flex justify-end pb-1 pt-0 mx-2">
-                                <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                                    Show Prompt
-                                </button>
-                                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                    <DialogContent className="max-w-5xl">
-                                        <DialogHeader>
-                                            <DialogDescription>
-                                                {printPromptsDiv}   
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <DialogFooter>
-                                            <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                Close
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-                            <div className="mx-1 bg-gray-700 ">
-                                <OntologyCard ontologyData={ontologyDataList} />
-                            </div>
-                        </>
-                    </TabsContent>
-                    <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                        <>
-                            <div className="flex justify-end pb-1 pt-0 mx-2">
-                                <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                                    Show Prompt
-                                </button>
-                                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                    <DialogContent className="max-w-5xl">
-                                        <DialogHeader>
-                                            <DialogDescription>
-                                                <div>
-                                                    <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                        {printPromptsDiv}
+
+            {/* <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full"> */}
+            <div className="border-solid rounded border-4 border-blue-800 h-full w-full">
+                <Card className="p-1">
+                    <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Concepts)</CardTitle>
+
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
+                            <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Concepts</TabsTrigger>
+                            <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Concepts</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
+                            <>
+                                <div className="flex justify-end pb-1 pt-0 mx-2">
+                                    <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
+                                        Show Prompt
+                                    </button>
+                                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                                        <DialogContent className="max-w-5xl">
+                                            <DialogHeader>
+                                                <DialogDescription>
+                                                    {printPromptsDiv}
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <DialogFooter>
+                                                <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                                                    Close
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                                <div className="mx-1 bg-gray-700 ">
+                                    <OntologyCard ontologyData={ontologyDataList} />
+                                </div>
+                            </>
+                        </TabsContent>
+                        <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
+                            <>
+                                <div className="flex justify-end pb-1 pt-0 mx-2">
+                                    <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
+                                        Show Prompt
+                                    </button>
+                                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                                        <DialogContent className="max-w-5xl">
+                                            <DialogHeader>
+                                                <DialogDescription>
+                                                    <div>
+                                                        <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                                            {printPromptsDiv}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </DialogDescription>
-                                        </DialogHeader>
-                                        <DialogFooter>
-                                            <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                Close
-                                            </Button>
-                                        </DialogFooter>
-                                    </DialogContent>
-                                </Dialog>
-                            </div>
-                            <div className="mx-1 bg-gray-700 ">
-                                <OntologyCard ontologyData={ontologyDataList} />
-                            </div>
-                        </>
-                    </TabsContent>
-                </Tabs>
+                                                </DialogDescription>
+                                            </DialogHeader>
+                                            <DialogFooter>
+                                                <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                                                    Close
+                                                </Button>
+                                            </DialogFooter>
+                                        </DialogContent>
+                                    </Dialog>
+                                </div>
+                                <div className="mx-1 bg-gray-700 ">
+                                    <OntologyCard ontologyData={ontologyDataList} />
+                                </div>
+                            </>
+                        </TabsContent>
+                    </Tabs>
+                </Card>
             </div>
 
         </div>

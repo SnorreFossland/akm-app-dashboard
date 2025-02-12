@@ -1,20 +1,72 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { RootState, AppDispatch } from '@/store/store';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faRobot, faCheckCircle, faPaperPlane, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+
 import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
+import { Card, CardTitle } from '@/components/ui/card';
+import ReactMarkdown from 'react-markdown';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { LoadingCircularProgress } from '@/components/loading';
+import { TabsContent } from '@/components/ui/tabs';   // Updated default prompt text
+
 import { systemPrompt } from '@/app/prompt-builder/prompts';
 // Use a revised system prompt that does not ask for the topic.
 const revisedSystemPrompt = "Please create the best ChatGPT prompt based on the provided domain.";
 
 export default function PromptBuilder() {
-    // Updated default prompt text
+    const data = useSelector((state: RootState) => state.modelUniverse);
+    const dispatch = useDispatch<AppDispatch>();
+    const [dispatchDone, setDispatchDone] = useState(false);
+    const [isLoading, setIsLoading] = useState(false);
+    const [activeTab, setActiveTab] = useState('existing-domain-description');
+    const [isModalOpen, setIsModalOpen] = useState(false);
+
     const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
     const [result, setResult] = useState<string>("");
 
+    const handleOpenModal = () => setIsModalOpen(true);
+    const handleCloseModal = () => setIsModalOpen(false);
+
+    const handleDispatchOntologyData = () => {
+        if (!suggestedOntologyData) {
+            alert('No Concept data to dispatch');
+            return;
+        }
+        const updatedOntologyData = {
+            phData: {
+                ...data.phData,
+                ontology: suggestedOntologyData,
+            },
+            phFocus: data.phFocus,
+            phUser: data.phUser,
+            phSource: data.phSource,
+        };
+
+        const uniqueConcepts = Array.from(new Map(updatedOntologyData.phData.ontology.concepts.map((item: Concept) => [item.name, item])).values());
+        const uniqueRelationships = Array.from(new Map(updatedOntologyData.phData.ontology.relationships.map((item: Relationship) => [item.name, item])).values());
+
+        updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
+        updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
+
+        dispatch(setOntologyData(updatedOntologyData));
+        setSuggestedOntologyData(null);
+        setDispatchDone(true);
+    };
+
+
     const handleBuildPrompt = async () => {
         console.log("14 Building prompt...", prompt);
+        setIsLoading(true);
+        setActiveTab('suggested-concepts');
         // Validate that a topic is provided before generating a prompt.
         if (!prompt.domain.trim()) {
             alert("Please enter a domain/topic before generating a new prompt.");
+            setIsLoading(false);
             return;
         }
         try {
@@ -29,12 +81,14 @@ export default function PromptBuilder() {
         } catch (error) {
             console.error("Error building prompt:", error);
             setResult("Failed to build prompt.");
+        } finally {
+            setIsLoading(false);
         }
     };
 
     return (
         <div className="flex h-[calc(100vh-5rem)] w-full">
-            <div className="border-solid rounded border-4 border-green-700 w-1/4">
+            <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full">
                 <h2 className="text-xl font-bold mb-2">Prompt Builder</h2>
                 {/* Revised prompt text area */}
                 <Textarea
@@ -57,7 +111,7 @@ export default function PromptBuilder() {
                 <button onClick={handleBuildPrompt} className="btn mt-2">
                     Build Prompt
                 </button>
-                <div className="border-solid rounded border-4 border-blue-800 h-full mt-4">
+                <div className="border-solid rounded border-4 border-blue-800 mt-4">
                     {result && (
                         <div className="mt-4">
                             <h3 className="font-semibold">Result:</h3>
@@ -73,6 +127,64 @@ export default function PromptBuilder() {
                         </div>
                     )}
                 </div>
+                <div className="m-1 mt-auto">
+                    <CardTitle
+                        className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(dispatchDone) ? 'text-green-600' : 'text-green-200'}`}
+                    >
+                        <div
+                            className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
+                        >
+                            Save to current Store
+                            <div className="flex items-center ml-auto">
+                                {!dispatchDone ? (
+                                    <div style={{ marginLeft: 8, marginRight: 8 }}>
+                                        <LoadingCircularProgress />
+                                    </div>
+                                ) : (
+                                    <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone && step === 2 ? 'green' : 'gray' }}>
+                                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
+                                    </div>
+                                )}
+                                <Button
+                                    onClick={() => {
+                                        handleDispatchOntologyData();
+                                    }}
+                                    className="rounded text-xl p-4 bg-green-700 text-white">
+                                    <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
+                                </Button>
+                            </div>
+                        </div>
+                    </CardTitle>
+                </div>
+            </div>
+
+
+
+            <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full">
+                <Card className="p-1 h-full">
+                    <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Domain description)</CardTitle>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+                        <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
+                            <TabsTrigger value="existing-domain-description" className="pb-2 mt-3">Existing Domain description</TabsTrigger>
+                            <TabsTrigger value="suggested-domain-description" className="pb-2 mt-3">Suggested Domain description</TabsTrigger>
+                        </TabsList>
+                        <TabsContent value="existing-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
+                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
+                                test1
+                                <ReactMarkdown>
+                                    {/* {ontologyData?.presentation} */}
+                                    {result}
+                                </ReactMarkdown>
+                            </div>
+                        </TabsContent>
+                        <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
+                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
+                                {result}test
+                                {/* <DomainCard ontologyData={ontologyDataList} /> */}
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </Card>
             </div>
         </div>
     );

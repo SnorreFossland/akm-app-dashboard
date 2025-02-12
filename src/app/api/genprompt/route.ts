@@ -6,14 +6,14 @@ import { generateText } from "ai";
 const modelName = "gpt-4-turbo";
 
 export async function POST(req: Request) {
-  console.log("9 Received request:", req.json());
   try {
     const { prompt, domain } = await req.json(); // Extract domain as well
     if (!prompt || typeof prompt !== "string" || !domain || typeof domain !== "string") {
       console.error("Invalid or missing prompt/domain");
       return NextResponse.json({ error: "Invalid or missing prompt/domain" }, { status: 400 });
     }
-
+    
+    console.log("16 Received prompt:", prompt, "Domain:", domain);
     // Create final prompt including domain info
     const finalPrompt = `${prompt}\n\nDomain/Topic: ${domain}`;
     console.log("Received prompt:", finalPrompt);
