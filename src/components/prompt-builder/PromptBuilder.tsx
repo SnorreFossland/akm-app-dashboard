@@ -21,7 +21,7 @@ const revisedSystemPrompt = "Please create the best ChatGPT prompt based on the 
 export default function PromptBuilder() {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
-    const [dispatchDone, setDispatchDone] = useState(false);
+    const [dispatchDone, setDispatchDone] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('existing-domain-description');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -84,12 +84,13 @@ export default function PromptBuilder() {
 
     const handleExecutePrompt = async () => {
         console.log("14 Executing prompt for domain...", prompt);
+        setActiveTab('suggested-domain-description');
 
         if (!prompt.domain.trim()) {
             alert("Please enter a domain/topic before executing the prompt.");
             return;
         }
-        
+
         try {
             const response = await fetch("/api/gendomain", {
                 method: "POST",
@@ -111,8 +112,8 @@ export default function PromptBuilder() {
 
 
     return (
-        <div className="flex h-[calc(100vh-5rem)] w-full">
-            <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full">
+        <div className="flex h-[calc(100vh-5rem)] w-full overflow-hidden">
+            <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
                 <h2 className="text-xl font-bold mb-2">Prompt Builder</h2>
                 {/* Revised prompt text area */}
                 <Textarea
@@ -145,13 +146,13 @@ export default function PromptBuilder() {
                                 rows={10}
                                 className="bg-gray-80 p-2 border rounded"
                             />
-                            <Button onClick={ handleExecutePrompt } className="btn mt-2">
+                            <Button onClick={handleExecutePrompt} className="btn mt-2">
                                 Send to ChatGPT
                             </Button>
                         </div>
                     )}
                 </div>
-                <div className="m-1 mt-auto">
+                <div className="mt-auto">
                     <CardTitle
                         className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(dispatchDone) ? 'text-green-600' : 'text-green-200'}`}
                     >
@@ -184,7 +185,7 @@ export default function PromptBuilder() {
 
 
 
-            <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full">
+            <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full overflow-y-auto">
                 <Card className="p-1 h-full">
                     <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Domain description)</CardTitle>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
@@ -194,9 +195,8 @@ export default function PromptBuilder() {
                         </TabsList>
                         <TabsContent value="existing-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
                             <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-
                                 <ReactMarkdown>
-                                    {`# ${data?.phData?.domain?.name}\n\n## ${data?.phData?.domain?.description}\n\n${data?.phData?.domain?.summary}`}
+                                    {`# ${data?.phData?.domain}\n\n## ${data?.phData?.domain?.description}\n\n${data?.phData?.domain?.summary}`}
                                 </ReactMarkdown>
                             </div>
                         </TabsContent>
@@ -206,6 +206,36 @@ export default function PromptBuilder() {
                                     {suggestedDomainData}
                                 </ReactMarkdown>
                                 {/* <DomainCard DomainData={DomainDataList} /> */}
+                            </div>
+                            <div className="mt-auto">
+                                <CardTitle
+                                    className={`flex justify-between items-center float-bottom flex-grow ps-1 bg-gray-600 border border-gray-700
+                                            ${(dispatchDone) ? 'text-green-600' : 'text-green-200'}`}
+                                >
+                                    <div
+                                        className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
+                                    >
+                                        Save to current Store
+                                        <div className="flex items-center ml-auto">
+                                            {!dispatchDone ? (
+                                                <div style={{ marginLeft: 8, marginRight: 8 }}>
+                                                    <LoadingCircularProgress />
+                                                </div>
+                                            ) : (
+                                                <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone ? 'green' : 'gray' }}>
+                                                    <FontAwesomeIcon icon={faCheckCircle} size="2x" />
+                                                </div>
+                                            )}
+                                            <Button
+                                                onClick={() => {
+                                                    handleDispatchDomainData();
+                                                }}
+                                                className="rounded text-xl p-4 bg-green-700 text-white">
+                                                <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </CardTitle>
                             </div>
                         </TabsContent>
                     </Tabs>

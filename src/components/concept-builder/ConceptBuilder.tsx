@@ -265,8 +265,8 @@ const ConceptBuilder = () => {
     }, [suggestedOntologyData, ontologyReduxData]);
 
     return (
-        <div className="flex  h-[calc(100vh-5rem)] w-full">
-            <div className="border-solid rounded border-4 border-green-700 w-1/4">
+        <div className="flex h-[calc(100vh-5rem)] w-full overflow-hidden">
+            <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
                 <div className="m-1 mb-5">
                     <details>
                         <summary>
@@ -391,7 +391,7 @@ const ConceptBuilder = () => {
                         </div>
                     </CardTitle>
                 </div>
-                <div className="m-1 mt-auto">
+                <div className="mt-auto">
                     <CardTitle
                         className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(dispatchDone) ? 'text-green-600' : 'text-green-200'}`}
                     >
@@ -424,8 +424,8 @@ const ConceptBuilder = () => {
             </div>
 
             {/* <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full"> */}
-            <div className="border-solid rounded border-4 border-blue-800 h-full w-full">
-                <Card className="p-1">
+            <div className="border-solid rounded border-4 border-blue-800 h-full w-full overflow-y-auto">
+                <Card className="p-1 h-full">
                     <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Concepts)</CardTitle>
 
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
