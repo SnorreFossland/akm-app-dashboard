@@ -41,6 +41,7 @@ The best prompts include comprehensive details to fully inform the Large Languag
     examples,
     and the best approach to accomplish the objective.
 Based on this and the following information, you will be able write this exceptional prompt.
+No Yapping, just the best prompt ever written.
 
 ROLE:
 You are an LLM prompt generation expert.

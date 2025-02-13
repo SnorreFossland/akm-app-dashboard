@@ -27,7 +27,7 @@ export default function PromptBuilder() {
     const [isModalOpen, setIsModalOpen] = useState(false);
 
     const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
-    const [result, setResult] = useState<string>("");
+    const [finalPrompt, setFinalPrompt] = useState<string>("");
     const [suggestedDomainData, setSuggestedDomainData] = useState<any>(null);
 
     const handleOpenModal = () => setIsModalOpen(true);
@@ -35,22 +35,20 @@ export default function PromptBuilder() {
 
     const handleDispatchDomainData = () => {
         if (!suggestedDomainData) {
-            alert('No Concept data to dispatch');
+            alert('No Domain data to dispatch');
             return;
         }
-        const upatedDomainData = {
-            phData: {
-                ...data.phData,
-                domain: suggestedDomainData,
-            },
-            phFocus: data.phFocus,
-            phUser: data.phUser,
-            phSource: data.phSource,
-        };
+        // const upatedDomainData = {
+        //     phData: {
+        //         ...data.phData,
+        //         domain: suggestedDomainData,
+        //     },
+        //     phFocus: data.phFocus,
+        //     phUser: data.phUser,
+        //     phSource: data.phSource,
+        // };
 
-
-
-        dispatch(setDomainData(upatedDomainData));
+        dispatch(setDomainData(suggestedDomainData));
         setSuggestedDomainData(null);
         setDispatchDone(true);
     };
@@ -74,15 +72,43 @@ export default function PromptBuilder() {
             });
             if (!response.ok) throw new Error(`Error: ${response.statusText}`);
             const data = await response.json();
-            setResult(data.response);
+            setFinalPrompt(data.response);
             setSuggestedDomainData(data.domain);
         } catch (error) {
             console.error("Error building prompt:", error);
-            setResult("Failed to build prompt.");
+            setFinalPrompt("Failed to build prompt.");
         } finally {
             setIsLoading(false);
         }
     };
+
+    const handleExecutePrompt = async () => {
+        console.log("14 Executing prompt for domain...", prompt);
+
+        if (!prompt.domain.trim()) {
+            alert("Please enter a domain/topic before executing the prompt.");
+            return;
+        }
+        
+        try {
+            const response = await fetch("/api/gendomain", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ prompt: finalPrompt }),
+            });
+            if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+            const data = await response.json();
+            setSuggestedDomainData(data.response);
+            console.log("102 Generated Domain data:", data.response);
+        } catch (error) {
+            console.error("Error building domain data:", error);
+            setSuggestedDomainData("Failed to build Domain summary.");
+        } finally {
+            setIsLoading(false);
+        }
+    }
+
+
 
     return (
         <div className="flex h-[calc(100vh-5rem)] w-full">
@@ -106,22 +132,22 @@ export default function PromptBuilder() {
                         onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
                     />
                 </div>
-                <button onClick={handleBuildPrompt} className="btn mt-2">
+                <Button onClick={handleBuildPrompt} className="btn mt-2">
                     Build Prompt
-                </button>
+                </Button>
                 <div className="border-solid rounded border-4 border-blue-800 mt-4">
-                    {result && (
+                    {finalPrompt && (
                         <div className="mt-4">
                             <h3 className="font-semibold">Result:</h3>
                             <Textarea
-                                value={result}
-                                onChange={(e) => setResult(e.target.value)}
+                                value={finalPrompt}
+                                onChange={(e) => setFinalPrompt(e.target.value)}
                                 rows={10}
                                 className="bg-gray-80 p-2 border rounded"
                             />
-                            <button onClick={handleBuildPrompt} className="btn mt-2">
+                            <Button onClick={ handleExecutePrompt } className="btn mt-2">
                                 Send to ChatGPT
-                            </button>
+                            </Button>
                         </div>
                     )}
                 </div>
@@ -176,7 +202,9 @@ export default function PromptBuilder() {
                         </TabsContent>
                         <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
                             <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                                {result}test
+                                <ReactMarkdown>
+                                    {suggestedDomainData}
+                                </ReactMarkdown>
                                 {/* <DomainCard DomainData={DomainDataList} /> */}
                             </div>
                         </TabsContent>

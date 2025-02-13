@@ -407,10 +407,12 @@ const modelSlice = createSlice({
     deleteConcept: (state, action: PayloadAction<string>) => {
       state.phData.ontology.concepts = state?.phData.ontology.concepts.filter(concept => concept.name !== action.payload);
     },
-    editRelationship: (state, action: PayloadAction<{ id: string }>) => {
-      const index = state.phData.ontology.relationships.findIndex(r => r.id === action.payload.id);
+    editRelationship: (state, action: PayloadAction<DataType['phData']['ontology']['relationships'][number]>) => {
+      const index = state.phData.ontology.relationships.findIndex(r => r.name === action.payload.name);
       if (index !== -1) {
-        state.phData.ontology.relationships[index] = action.payload;
+        if (index !== -1) {
+          state.phData.ontology.relationships[index] = action.payload;
+        }
       }
     },
 
