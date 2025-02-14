@@ -5,6 +5,9 @@ import OpenAI from "openai";
 // import { generateText } from "ai";
 
 const modelName = "gpt-4-turbo";
+const modelAi = `llama-3`;
+// Alternative models you can use:
+
 
 export async function POST(req: Request) {
   try {

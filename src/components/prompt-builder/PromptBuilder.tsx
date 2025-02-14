@@ -196,7 +196,7 @@ export default function PromptBuilder() {
     }
 
     return (
-        <div className="flex h-[calc(100vh-5rem)] w-full overflow-hidden">
+        <div className="flex h-[calc(100vh-8rem)] w-full overflow-hidden">
             <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
                 <h2 className="text-xl font-bold mb-2">Prompt Builder</h2>
                 {/* Revised prompt text area */}
@@ -252,8 +252,8 @@ export default function PromptBuilder() {
                 </div>
             </div>
 
-            <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full overflow-y-auto">
-                <Card className="p-1 h-full">
+            <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-[calc(100vh-10rem)] overflow-y-hidden">
+                <Card className="p-1 h-[calc(100vh-8rem)]">
                     <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Domain description)</CardTitle>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
                         <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
@@ -261,16 +261,15 @@ export default function PromptBuilder() {
                             <TabsTrigger value="suggested-domain-description" className="pb-2 mt-3">Suggested Domain description</TabsTrigger>
                         </TabsList>
                         <TabsContent value="existing-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
-                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                                <ReactMarkdown>
+                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-5rem)]">
+                                <ReactMarkdown className="prose prose-lg">
                                     {`${data?.phData?.domain}`}
-                                    {/* {`# ${data?.phData?.domain}\n\n## ${data?.phData?.domain?.description}\n\n${data?.phData?.domain?.summary}`} */}
                                 </ReactMarkdown>
                             </div>
                         </TabsContent>
                         <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
-                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                                <ReactMarkdown>
+                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-5rem)]">
+                                <ReactMarkdown className="prose prose-lg">
                                     {(dispatchDone) ? suggestedDomainData : 'suggesteDomainData are dispatched to Store'}
                                 </ReactMarkdown>
                             </div>

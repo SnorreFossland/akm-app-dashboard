@@ -8,26 +8,26 @@ import { Card } from "@/components/ui/card";
 
 export default function Home() {
   return (
-    <>
+    <div className="flex flex-col w-full h-full">
       <header className="items-center p-2 m-0 bg-gray-800 w-full">
         <h1 className="ml-4 text-xl w-full">AKM App</h1>
       </header>
-      <div className="pt-16"> {/* Add padding to avoid overlap with fixed header */}
-        <Tabs defaultValue="akm-project" className="w-full">
+      <div className="pt-16 h-[calc(100vh-4rem)] overflow-auto"> {/* Add padding to avoid overlap with fixed header */}
+        <Tabs defaultValue="akm-project" className="w-full h-full">
           <TabsList>
             <TabsTrigger value="akm-project">AKM Projects</TabsTrigger>
             <TabsTrigger value="akm-objects">Objects</TabsTrigger>
           </TabsList>
-            <TabsContent value="akm-project" className="w-full">
-            <div className="flex gap-4 items-center flex-col sm:flex-row w-full">
-              <main className="flex flex-col gap-8 row-start-4 items-center sm:items-start w-full">
-              <Card className="w-full">
-                {/* <FeatureAComponent /> */}
-              </Card>
+          <TabsContent value="akm-project" className="w-full h-full">
+            <div className="flex gap-4 items-center flex-col sm:flex-row w-full h-full">
+              <main className="flex flex-col gap-8 row-start-4 items-center sm:items-start w-full h-full">
+                <Card className="w-full h-full">
+                  {/* <FeatureAComponent /> */}
+                </Card>
               </main>
             </div>
-            </TabsContent>
-          <TabsContent value="akm-objects" className="w-full">
+          </TabsContent>
+          <TabsContent value="akm-objects" className="w-full h-full">
             <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
               <main className="flex flex-col gap-2 row-start-2 items-center sm:items-start">
                 <Link href="/login">
@@ -55,6 +55,6 @@ export default function Home() {
           </TabsContent>
         </Tabs>
       </div>
-    </>
+    </div>
   );
 }
