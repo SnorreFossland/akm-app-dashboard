@@ -19,10 +19,11 @@ export async function POST(req: Request) {
     console.log("Received prompt:", finalPrompt);
 
     // Generate response from OpenAI API
+    
     const text = await generateText({
       model: openai(modelName),
       prompt: finalPrompt,
-      maxTokens: 150,
+      // maxTokens: 150,
     });
 
     if (!text || typeof text.text !== "string") {

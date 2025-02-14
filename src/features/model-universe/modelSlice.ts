@@ -71,7 +71,7 @@ export interface DataType {
         }[],
       }[],
     },
-    domain: { name: string, description: string, summary: string },
+    domain: { name: string, description: string, presentation: string },
     ontology: { name: string, description: string, presentation: string, concepts: { name: string, description: string }[], relationships: { name: string, description: string, nameFrom: string, nameTo: string }[] },
   },
   phFocus: {
@@ -192,11 +192,11 @@ export const initialState: DataType = {
       ],
       metamodels: [],
     },
-    domain: { name: 'domain blank', description: 'domain blank description', summary: 'domain blank summary' },
+    domain: { name: 'domain blank', description: 'domain blank description', presentation: 'domain blank presentation' },
     ontology: {
       name: 'Ontology blank domain',
-      description: 'Ontology blank initial domain.',
-      presentation: 'Domain blank Presentation',
+      description: 'Ontology blank description.',
+      presentation: 'Ontology blank Presentation',
       concepts: [],
       relationships: [],  
     },
