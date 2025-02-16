@@ -136,12 +136,18 @@ const ConceptBuilder = () => {
             conceptString += `**Concepts**\n\n${existingConcepts?.map((c: any) => (c) && `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
             conceptString += `**Relationships**\n\n${existingRelationships?.map((r: any) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
+        const userPrompt = `${UserPrompt} \n\n ${data.phData.domain}`;
+            // ## Domain name: \n\n ${data.phData.domain?.name || ""} \n\n 
+            // ## Domain description: \n\n ${data.phData.domain?.description || ""} \n\n
+            // ## Domain presentation: \n\n ${data.phData.domain?.presentation || ""} \n\n
+            // `;
+
 
         setSystemPrompt(SystemPrompt);
         setSystemBehaviorGuidelines(SystemBehaviorGuidelines);
         setContextOntology((impOntologyString) ? `${ExistingOntology} ${impOntologyString}` : "");
-        setUserPrompt(UserPrompt);
-        setUserInput((topicDescr) ? `${UserInput} \n\n ${topicDescr}` : "");  // TODO: Is this and previous the same??
+        setUserPrompt(userPrompt);
+        setUserInput((topicDescr !== '') ? `${UserInput} \n\n ${topicDescr}` : "");  // TODO: Is this and previous the same??
         setContextItems((conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "");
         setContextMetamodel(`${MetamodelPrompt}`);
 
@@ -266,7 +272,7 @@ const ConceptBuilder = () => {
 
     return (
         <div className="flex h-[calc(100vh-5rem)] w-full overflow-hidden">
-            <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
+            <div className="border-solid rounded border-4 border-green-700 w-1/4 flex flex-col overflow-y-auto">
                 <div className="m-1 mb-5">
                     <details>
                         <summary>
@@ -289,9 +295,11 @@ const ConceptBuilder = () => {
                         </div>
                     </details>
                 </div>
-                <CardTitle className="flex justify-between items-center flex-grow ps-1">
-                    Concept Builder:
-                </CardTitle>
+                <div className="flex justify-between items-center flex-gro ps-1 bg-gray-600 border border-gray-700">
+                    <CardTitle className="flex justify-between items-center flex-grow ps-1">
+                        Concept Builder:
+                    </CardTitle>
+                </div>
                 <div className="flex flex-wrap items-start m-1">
                     <label htmlFor="chatOutput" className="text-white mt-2">Chat Output</label>
                     <Textarea
@@ -424,7 +432,7 @@ const ConceptBuilder = () => {
             </div>
 
             {/* <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full"> */}
-            <div className="border-solid rounded border-4 border-blue-800 h-full w-full overflow-y-auto">
+            <div className="border-solid rounded border-4 border-blue-800  w-full overflow-y-auto">
                 <Card className="p-1 h-full">
                     <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Concepts)</CardTitle>
 

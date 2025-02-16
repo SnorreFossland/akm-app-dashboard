@@ -120,6 +120,7 @@ export default function PromptBuilder() {
     // const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
     const [finalPrompt, setFinalPrompt] = useState<string>("");
     const [suggestedDomainData, setSuggestedDomainData] = useState<any>(null);
+    const [domainDataDone, setDomainDataDone] = useState(false);
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
@@ -129,7 +130,6 @@ export default function PromptBuilder() {
             alert('No Domain data to dispatch');
             return;
         }
-
         dispatch(setDomainData(suggestedDomainData));
         setSuggestedDomainData(null);
         setDispatchDone(true);
@@ -157,7 +157,9 @@ export default function PromptBuilder() {
                 throw new Error(`Error: ${response.statusText} - ${errorMsg}`);
             }
             const data = await response.json();
+            console.log("160 Generated finalPrompt data:", data);
             setFinalPrompt(data.response);
+            setIsLoading(false);
             // setSuggestedDomainData(data.domain);
         } catch (error) {
             console.error("Error building prompt:", error);
@@ -170,6 +172,8 @@ export default function PromptBuilder() {
     const handleExecutePrompt = async () => {
         console.log("14 Executing prompt for domain...", prompt);
         setActiveTab('suggested-domain-description');
+        setIsLoading(true);
+        
 
         if (!prompt.domain.trim()) {
             alert("Please enter a domain/topic before executing the prompt.");
@@ -186,6 +190,7 @@ export default function PromptBuilder() {
             const data = await response.text();
             console.log("188 Generated Domain data:", data);
             setSuggestedDomainData(data);
+            setDomainDataDone(true);
             // setSuggestedDomainData(`## Name: ${data.name}\n\n### Description:\n${data.description}\n\n### Presentation:\n${data.presentation.map((item: string) => `- ${item}`).join('\n')}`);
         } catch (error) {
             console.error("Error building domain data:", error);
@@ -199,10 +204,10 @@ export default function PromptBuilder() {
         <div className="flex h-[calc(100vh-8rem)] w-full overflow-hidden">
             <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
                 <h2 className="text-xl font-bold mb-2">Prompt Builder</h2>
-                {/* Revised prompt text area */}
+                {/* Building prompt */}
                 <Textarea
                     value={prompt.text}
-                    onChange={(e) => setPrompt({ ...prompt, text: e.target.value })}
+                    onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
                     rows={10}
                     placeholder="System prompt for building your final prompt..."
                 />
@@ -220,7 +225,7 @@ export default function PromptBuilder() {
                 {/* Replace Build Prompt CardTitle */}
                 <ActionCardTitleButton
                     title="Build Prompt"
-                    done={dispatchDone}
+                    done={finalPrompt !== "" || !isLoading}
                     onClick={handleBuildPrompt}
                     icon={faRobot}
                 />
@@ -237,7 +242,7 @@ export default function PromptBuilder() {
                             {/* Replace Build Domain Description CardTitle */}
                             <ActionCardTitleButton
                                 title="Build Domain Description"
-                                done={dispatchDone}
+                                done={(domainDataDone) || !isLoading}
                                 onClick={handleExecutePrompt}
                                 icon={faRobot}
                             />
@@ -268,9 +273,9 @@ export default function PromptBuilder() {
                             </div>
                         </TabsContent>
                         <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
-                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-5rem)]">
-                                <ReactMarkdown className="prose prose-lg">
-                                    {(dispatchDone) ? suggestedDomainData : 'suggesteDomainData are dispatched to Store'}
+                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-15rem)]">
+                                <ReactMarkdown className="prose prose-lg h-full w-full">
+                                    {(dispatchDone) ? suggestedDomainData : 'suggestedDomainData are dispatched to Store'}
                                 </ReactMarkdown>
                             </div>
                             <div className="mt-auto">

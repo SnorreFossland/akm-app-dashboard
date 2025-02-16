@@ -22,7 +22,7 @@ export async function POST(req: Request) {
 
     console.log("16 Received prompt:", prompt);
     // Create final prompt including instruction to return a JSON with domain with name, description, presentation
-    const finalPrompt = `${prompt}\n\nPlease respond with the domain's "name", "description", and "presentation" in md format.`;
+    const finalPrompt = `${prompt}\n\nPlease respond with the domain's "name", "description" and "presentation" in md format.`;
     console.log("23 Received prompt:", finalPrompt);
 
     // Generate response from OpenAI API
