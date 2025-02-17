@@ -7,9 +7,7 @@ const modelName = "gpt-4-turbo";
 
 export async function POST(req: Request) {
     try {
-        const requestBody = await req.json(); // Parse the JSON body once
-        const { prompt } = requestBody;
-        console.log("Received request:", requestBody);
+        const { prompt } = await req.json(); // Parse the JSON body
 
         if (!prompt || typeof prompt !== "string") {
             console.error("Invalid or missing prompt");
