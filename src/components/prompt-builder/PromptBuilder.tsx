@@ -115,6 +115,7 @@ export default function PromptBuilder() {
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState('existing-domain-description');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [chatOutput, setChatOutput] = useState<string>("");
 
     const [prompt, setPrompt] = useState({ text: systemPrompt, domain: "" });
     // const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
@@ -159,13 +160,14 @@ export default function PromptBuilder() {
 
             });
             if (!response.ok) {
-                const errorMsg = await response.text();
-                throw new Error(`Error: ${response.statusText} - ${errorMsg}`);
+                throw new Error(`Error: ${response.statusText}`);
             }
             const data = await response.json();
             console.log("160 Generated finalPrompt data:", data);
-            setFinalPrompt(data.response);
-            setIsLoading(false);
+            setChatOutput(data.response); // Ensure 'data.response' is a string 
+            setPrompt("");
+            // setFinalPrompt(data.response);
+            // setIsLoading(false);
 
         } catch (error) {
             console.error("Error building prompt:", error);
@@ -196,9 +198,26 @@ export default function PromptBuilder() {
     //         setChatOutput("An error occurred while submitting the prompt.");
     //     }
     // };
-
-
-
+    // return (
+    //     <div className="flex flex-col gap-4 p-4 max-w-4xl mx-auto">
+    //       <button onClick={handleSubmit} className="btn">
+    //         Submit
+    //       </button>
+    //       <h1 className="text-2xl font-bold">AKM Concept Definer</h1>
+    //       <Textarea
+    //         value={prompt}
+    //         onChange={(e) => setPrompt(e.target.value)}
+    //         onKeyDown={(e) => {
+    //           if (e.key === "Enter") {
+    //         handleSubmit();
+    //           }
+    //         }}
+    //         rows={10} // Added this line to make the textarea more lines
+    //         placeholder="What Domain do you want?"
+    //       />
+    //       {chatOutput && <div className="chat-output">{chatOutput}</div>}
+    //     </div>
+    //   );
 
 
     // const handleExecutePrompt = async () => {
@@ -239,28 +258,23 @@ export default function PromptBuilder() {
                 {/* Building prompt */}
                 <Textarea
                     value={prompt.text}
-                    onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === "Enter") {
+                            handleBuildPrompt()
+                        }
+                    }}
                     rows={10}
                     placeholder="System prompt for building your final prompt..."
                 />
-                {/* Input field for the domain/topic */}
-                {/* <div className="mt-4">
-                    <label className="block font-semibold mb-1">Enter your Domain/Topic:</label>
-                    <input
-                        type="text"
-                        className="w-full p-2 border rounded"
-                        placeholder="E.g., E-Scooter Rental Services"
-                        value={prompt.domain}
-                        onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
-                    />
-                </div> */}
-                {/* Replace Build Prompt CardTitle */}
+
                 <ActionCardTitleButton
                     title="Build Prompt"
                     done={finalPrompt !== "" || !isLoading}
                     onClick={handleBuildPrompt}
                     icon={faRobot}
                 />
+                {chatOutput && <div className="chat-output">{chatOutput}</div>}
                 {/* <div className="border-solid rounded border-4 border-blue-800 mt-4">
                     {finalPrompt && (
                         <div className="mt-4">
