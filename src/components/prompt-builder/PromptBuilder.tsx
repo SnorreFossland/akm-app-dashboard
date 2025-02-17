@@ -117,7 +117,7 @@ export default function PromptBuilder() {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [chatOutput, setChatOutput] = useState<string>("");
 
-    const [prompt, setPrompt] = useState({ text: systemPrompt, domain: "" });
+    const [prompt, setPrompt] = useState(systemPrompt);
     // const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
     const [finalPrompt, setFinalPrompt] = useState<string>("");
     const [suggestedDomainData, setSuggestedDomainData] = useState<any>(null);
@@ -154,10 +154,6 @@ export default function PromptBuilder() {
                 "Content-Type": "application/json",
                 },
                 body: JSON.stringify({ prompt }),
-            //     method: "POST",
-            //     headers: { "Content-Type": "application/json" },
-            //     body: JSON.stringify({ prompt: prompt.text, domain: prompt.domain }),
-
             });
             if (!response.ok) {
                 throw new Error(`Error: ${response.statusText}`);
@@ -177,87 +173,13 @@ export default function PromptBuilder() {
         }
     };
 
-
-    // const handleSubmit = async () => {
-    //     try {
-    //         const response = await fetch("/prompt-builder/api", {
-    //             method: "POST",
-    //             headers: {
-    //                 "Content-Type": "application/json",
-    //             },
-    //             body: JSON.stringify({ prompt }),
-    //         });
-    //         if (!response.ok) {
-    //             throw new Error(`Error: ${response.statusText}`);
-    //         }
-    //         const data = await response.json();
-    //         setChatOutput(data.response); // Ensure 'data.response' is a string
-    //         setPrompt("");
-    //     } catch (error) {
-    //         console.error('Submit Error:', error);
-    //         setChatOutput("An error occurred while submitting the prompt.");
-    //     }
-    // };
-    // return (
-    //     <div className="flex flex-col gap-4 p-4 max-w-4xl mx-auto">
-    //       <button onClick={handleSubmit} className="btn">
-    //         Submit
-    //       </button>
-    //       <h1 className="text-2xl font-bold">AKM Concept Definer</h1>
-    //       <Textarea
-    //         value={prompt}
-    //         onChange={(e) => setPrompt(e.target.value)}
-    //         onKeyDown={(e) => {
-    //           if (e.key === "Enter") {
-    //         handleSubmit();
-    //           }
-    //         }}
-    //         rows={10} // Added this line to make the textarea more lines
-    //         placeholder="What Domain do you want?"
-    //       />
-    //       {chatOutput && <div className="chat-output">{chatOutput}</div>}
-    //     </div>
-    //   );
-
-
-    // const handleExecutePrompt = async () => {
-    //     console.log("14 Executing prompt for domain...", prompt);
-    //     setActiveTab('suggested-domain-description');
-    //     setIsLoading(true);
-        
-
-    //     if (!prompt.domain.trim()) {
-    //         alert("Please enter a domain/topic before executing the prompt.");
-    //         return;
-    //     }
-
-    //     try {
-    //         const response = await fetch("/api/gendomain", {
-    //             method: "POST",
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify({ prompt: finalPrompt }),
-    //         });
-    //         if (!response.ok) throw new Error(`Error: ${response.statusText}`);
-    //         const data = await response.text();
-    //         console.log("188 Generated Domain data:", data);
-    //         setSuggestedDomainData(data);
-    //         setDomainDataDone(true);
-    //         // setSuggestedDomainData(`## Name: ${data.name}\n\n### Description:\n${data.description}\n\n### Presentation:\n${data.presentation.map((item: string) => `- ${item}`).join('\n')}`);
-    //     } catch (error) {
-    //         console.error("Error building domain data:", error);
-    //         setSuggestedDomainData("Failed to build Domain summary.");
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // }
-
     return (
         <div className="flex h-[calc(100vh-8rem)] w-full overflow-hidden">
             <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
                 <h2 className="text-xl font-bold mb-2">Prompt Builder</h2>
                 {/* Building prompt */}
                 <Textarea
-                    value={prompt.text}
+                    value={prompt}
                     onChange={(e) => setPrompt(e.target.value)}
                     onKeyDown={(e) => {
                         if (e.key === "Enter") {
@@ -267,6 +189,7 @@ export default function PromptBuilder() {
                     rows={10}
                     placeholder="System prompt for building your final prompt..."
                 />
+                {chatOutput && <div className="chat-output">{chatOutput}</div>}
 
                 <ActionCardTitleButton
                     title="Build Prompt"
@@ -274,7 +197,6 @@ export default function PromptBuilder() {
                     onClick={handleBuildPrompt}
                     icon={faRobot}
                 />
-                {chatOutput && <div className="chat-output">{chatOutput}</div>}
                 {/* <div className="border-solid rounded border-4 border-blue-800 mt-4">
                     {finalPrompt && (
                         <div className="mt-4">
@@ -338,6 +260,10 @@ export default function PromptBuilder() {
     );
 }
 
+
+
+
+//
 // "use client";
 
 // import { useState } from "react";
