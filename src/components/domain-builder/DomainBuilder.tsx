@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardTitle } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
-// import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingCircularProgress } from '@/components/loading';
 import { TabsContent } from '@/components/ui/tabs';   // Updated default prompt text
@@ -108,7 +108,7 @@ const ActionCardTitleButton = ({
     );
 };
 
-export default function PromptBuilder() {
+export default function DomainBuilder() {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
     const [dispatchDone, setDispatchDone] = useState(true);

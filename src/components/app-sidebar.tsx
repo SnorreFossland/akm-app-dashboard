@@ -96,6 +96,12 @@ const data = {
           description: "Prompt Builder",
         },
         {
+          title: "Domain Builder",
+          url: "/domain-builder",
+          icon: Star,
+          description: "Domain Builder",
+        },
+        {
           title: "Concept Builder",
           url: "/concept-builder",
           icon: Star,
