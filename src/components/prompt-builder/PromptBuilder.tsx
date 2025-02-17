@@ -141,16 +141,22 @@ export default function PromptBuilder() {
         setIsLoading(true);
         setActiveTab('suggested-concepts');
         // Validate that a topic is provided before generating a prompt.
-        if (!prompt.domain.trim()) {
-            alert("Please enter a domain/topic before generating a new prompt.");
-            setIsLoading(false);
-            return;
-        }
+        // if (!prompt.domain.trim()) {
+        //     alert("Please enter a domain/topic before generating a new prompt.");
+        //     setIsLoading(false);
+        //     return;
+        // }
         try {
             const response = await fetch("/api/genprompt", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: prompt.text, domain: prompt.domain }),
+                headers: {
+                "Content-Type": "application/json",
+                },
+                body: JSON.stringify({ prompt }),
+            //     method: "POST",
+            //     headers: { "Content-Type": "application/json" },
+            //     body: JSON.stringify({ prompt: prompt.text, domain: prompt.domain }),
+
             });
             if (!response.ok) {
                 const errorMsg = await response.text();
@@ -160,7 +166,7 @@ export default function PromptBuilder() {
             console.log("160 Generated finalPrompt data:", data);
             setFinalPrompt(data.response);
             setIsLoading(false);
-            // setSuggestedDomainData(data.domain);
+
         } catch (error) {
             console.error("Error building prompt:", error);
             setFinalPrompt("Failed to build prompt.");
@@ -169,36 +175,62 @@ export default function PromptBuilder() {
         }
     };
 
-    const handleExecutePrompt = async () => {
-        console.log("14 Executing prompt for domain...", prompt);
-        setActiveTab('suggested-domain-description');
-        setIsLoading(true);
+
+    // const handleSubmit = async () => {
+    //     try {
+    //         const response = await fetch("/prompt-builder/api", {
+    //             method: "POST",
+    //             headers: {
+    //                 "Content-Type": "application/json",
+    //             },
+    //             body: JSON.stringify({ prompt }),
+    //         });
+    //         if (!response.ok) {
+    //             throw new Error(`Error: ${response.statusText}`);
+    //         }
+    //         const data = await response.json();
+    //         setChatOutput(data.response); // Ensure 'data.response' is a string
+    //         setPrompt("");
+    //     } catch (error) {
+    //         console.error('Submit Error:', error);
+    //         setChatOutput("An error occurred while submitting the prompt.");
+    //     }
+    // };
+
+
+
+
+
+    // const handleExecutePrompt = async () => {
+    //     console.log("14 Executing prompt for domain...", prompt);
+    //     setActiveTab('suggested-domain-description');
+    //     setIsLoading(true);
         
 
-        if (!prompt.domain.trim()) {
-            alert("Please enter a domain/topic before executing the prompt.");
-            return;
-        }
+    //     if (!prompt.domain.trim()) {
+    //         alert("Please enter a domain/topic before executing the prompt.");
+    //         return;
+    //     }
 
-        try {
-            const response = await fetch("/api/gendomain", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: finalPrompt }),
-            });
-            if (!response.ok) throw new Error(`Error: ${response.statusText}`);
-            const data = await response.text();
-            console.log("188 Generated Domain data:", data);
-            setSuggestedDomainData(data);
-            setDomainDataDone(true);
-            // setSuggestedDomainData(`## Name: ${data.name}\n\n### Description:\n${data.description}\n\n### Presentation:\n${data.presentation.map((item: string) => `- ${item}`).join('\n')}`);
-        } catch (error) {
-            console.error("Error building domain data:", error);
-            setSuggestedDomainData("Failed to build Domain summary.");
-        } finally {
-            setIsLoading(false);
-        }
-    }
+    //     try {
+    //         const response = await fetch("/api/gendomain", {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify({ prompt: finalPrompt }),
+    //         });
+    //         if (!response.ok) throw new Error(`Error: ${response.statusText}`);
+    //         const data = await response.text();
+    //         console.log("188 Generated Domain data:", data);
+    //         setSuggestedDomainData(data);
+    //         setDomainDataDone(true);
+    //         // setSuggestedDomainData(`## Name: ${data.name}\n\n### Description:\n${data.description}\n\n### Presentation:\n${data.presentation.map((item: string) => `- ${item}`).join('\n')}`);
+    //     } catch (error) {
+    //         console.error("Error building domain data:", error);
+    //         setSuggestedDomainData("Failed to build Domain summary.");
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // }
 
     return (
         <div className="flex h-[calc(100vh-8rem)] w-full overflow-hidden">
@@ -212,7 +244,7 @@ export default function PromptBuilder() {
                     placeholder="System prompt for building your final prompt..."
                 />
                 {/* Input field for the domain/topic */}
-                <div className="mt-4">
+                {/* <div className="mt-4">
                     <label className="block font-semibold mb-1">Enter your Domain/Topic:</label>
                     <input
                         type="text"
@@ -221,7 +253,7 @@ export default function PromptBuilder() {
                         value={prompt.domain}
                         onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
                     />
-                </div>
+                </div> */}
                 {/* Replace Build Prompt CardTitle */}
                 <ActionCardTitleButton
                     title="Build Prompt"
@@ -229,7 +261,7 @@ export default function PromptBuilder() {
                     onClick={handleBuildPrompt}
                     icon={faRobot}
                 />
-                <div className="border-solid rounded border-4 border-blue-800 mt-4">
+                {/* <div className="border-solid rounded border-4 border-blue-800 mt-4">
                     {finalPrompt && (
                         <div className="mt-4">
                             <h3 className="font-semibold">Final Prompt:</h3>
@@ -239,7 +271,6 @@ export default function PromptBuilder() {
                                 rows={10}
                                 className="bg-gray-80 p-2 border rounded"
                             />
-                            {/* Replace Build Domain Description CardTitle */}
                             <ActionCardTitleButton
                                 title="Build Domain Description"
                                 done={(domainDataDone) || !isLoading}
@@ -254,7 +285,7 @@ export default function PromptBuilder() {
                         dispatchDone={dispatchDone}
                         handleDispatchDomainData={handleDispatchDomainData}
                     />
-                </div>
+                </div> */}
             </div>
 
             <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-[calc(100vh-10rem)] overflow-y-hidden">
@@ -292,3 +323,59 @@ export default function PromptBuilder() {
         </div>
     );
 }
+
+// "use client";
+
+// import { useState } from "react";
+// import  { Textarea } from "@/components/ui/textarea";
+// import { systemPrompt, systemPromptTest } from "@/app/prompt-builder/prompts";
+
+// export default function VercelAiPage() {
+//   const [prompt, setPrompt] = useState(systemPrompt);
+
+//   const [chatOutput, setChatOutput] = useState<string>("");
+
+
+//   const handleSubmit = async () => {
+//     try {
+//       const response = await fetch("/prompt-builder/api", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//         },
+//         body: JSON.stringify({ prompt }),
+//       });
+//       if (!response.ok) {
+//         throw new Error(`Error: ${response.statusText}`);
+//       }
+//       const data = await response.json();
+//       setChatOutput(data.response); // Ensure 'data.response' is a string
+//       setPrompt("");
+//     } catch (error) {
+//       console.error('Submit Error:', error);
+//       setChatOutput("An error occurred while submitting the prompt.");
+//     }
+//   };
+
+//   return (
+//     <div className="flex flex-col gap-4 p-4 max-w-4xl mx-auto">
+//       <button onClick={handleSubmit} className="btn">
+//         Submit
+//       </button>
+//       <h1 className="text-2xl font-bold">AKM Concept Definer</h1>
+//       <Textarea
+//         value={prompt}
+//         onChange={(e) => setPrompt(e.target.value)}
+//         onKeyDown={(e) => {
+//           if (e.key === "Enter") {
+//         handleSubmit();
+//           }
+//         }}
+//         rows={10} // Added this line to make the textarea more lines
+//         placeholder="What Domain do you want?"
+//       />
+
+//       {chatOutput && <div className="chat-output">{chatOutput}</div>}
+//     </div>
+//   );
+// }
