@@ -138,32 +138,32 @@ export default function PromptBuilder() {
 
 
     const handleBuildPrompt = async () => {
-        console.log("14 Building prompt...", prompt);
+        console.log("Building prompt...", prompt);
         setIsLoading(true);
         setActiveTab('suggested-concepts');
-        // Validate that a topic is provided before generating a prompt.
-        // if (!prompt.domain.trim()) {
-        //     alert("Please enter a domain/topic before generating a new prompt.");
-        //     setIsLoading(false);
-        //     return;
-        // }
+
         try {
+            const requestBody = JSON.stringify({ prompt });
+            console.log("Request payload:", requestBody);
+
             const response = await fetch("/api/genprompt", {
                 method: "POST",
                 headers: {
-                "Content-Type": "application/json",
+                    "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ prompt }),
+                body: requestBody,
             });
+
             if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
+                const errorText = await response.statusText
+                console.error("Response error text:", response,errorText);
+                throw new Error(`Error: ${response.statusText} - ${errorText}`);
             }
+
             const data = await response.json();
-            console.log("160 Generated finalPrompt data:", data);
+            console.log("Generated finalPrompt data:", data);
             setChatOutput(data.response); // Ensure 'data.response' is a string 
             setPrompt("");
-            // setFinalPrompt(data.response);
-            // setIsLoading(false);
 
         } catch (error) {
             console.error("Error building prompt:", error);
@@ -190,7 +190,6 @@ export default function PromptBuilder() {
                     placeholder="System prompt for building your final prompt..."
                 />
                 {chatOutput && <div className="chat-output">{chatOutput}</div>}
-
                 <ActionCardTitleButton
                     title="Build Prompt"
                     done={finalPrompt !== "" || !isLoading}
@@ -242,7 +241,7 @@ export default function PromptBuilder() {
                         <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
                             <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-15rem)]">
                                 <ReactMarkdown className="prose prose-lg h-full w-full">
-                                    {(dispatchDone) ? suggestedDomainData : 'suggestedDomainData are dispatched to Store'}
+                                    {/* {(dispatchDone) ? suggestedDomainData : 'suggestedDomainData are dispatched to Store'} */}
                                 </ReactMarkdown>
                             </div>
                             <div className="mt-auto">
