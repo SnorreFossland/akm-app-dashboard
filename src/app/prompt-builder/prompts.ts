@@ -1,7 +1,7 @@
 
-export const systemPrompt = `
-CONTEXT:
+export const systemPrompt = `CONTEXT:
 We are going to create one of the best ChatGPT prompts ever written.
+
 The best prompts include comprehensive details to fully inform the Large Language Model of the prompt’s:
     goals,
     required areas of expertise,
@@ -11,6 +11,7 @@ The best prompts include comprehensive details to fully inform the Large Languag
     references,
     examples,
     and the best approach to accomplish the objective.
+    
 Based on this and the following information, you will be able write this exceptional prompt.
 No Yapping, just the best prompt ever written.
 

@@ -10,9 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardTitle } from '@/components/ui/card';
 import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingCircularProgress } from '@/components/loading';
-import { TabsContent } from '@/components/ui/tabs';   // Updated default prompt text
 
 import { systemPrompt } from '@/app/prompt-builder/prompts';
 // Use a revised system prompt that does not ask for the topic.
@@ -118,7 +117,7 @@ export default function DomainBuilder() {
 
     const [prompt, setPrompt] = useState({ text: systemPrompt, domain: "" });
     // const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
-    const [finalPrompt, setFinalPrompt] = useState<string>("");
+    const [finalPrompt, setFinalPrompt] = useState<string>("test");
     const [suggestedDomainData, setSuggestedDomainData] = useState<any>(null);
     const [domainDataDone, setDomainDataDone] = useState(false);
 
@@ -135,45 +134,46 @@ export default function DomainBuilder() {
         setDispatchDone(true);
     };
 
+    // setFinalPrompt(data.phData.domain?.prompt || 'the final test prompt')
 
-    const handleBuildPrompt = async () => {
-        console.log("14 Building prompt...", prompt);
-        setIsLoading(true);
-        setActiveTab('suggested-concepts');
-        // Validate that a topic is provided before generating a prompt.
-        if (!prompt.domain.trim()) {
-            alert("Please enter a domain/topic before generating a new prompt.");
-            setIsLoading(false);
-            return;
-        }
-        try {
-            const response = await fetch("/api/genprompt", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: prompt.text, domain: prompt.domain }),
-            });
-            if (!response.ok) {
-                const errorMsg = await response.text();
-                throw new Error(`Error: ${response.statusText} - ${errorMsg}`);
-            }
-            const data = await response.json();
-            console.log("160 Generated finalPrompt data:", data);
-            setFinalPrompt(data.response);
-            setIsLoading(false);
-            // setSuggestedDomainData(data.domain);
-        } catch (error) {
-            console.error("Error building prompt:", error);
-            setFinalPrompt("Failed to build prompt.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
+    // const handleBuildPrompt = async () => {
+    //     console.log("14 Building prompt...", prompt);
+    //     setIsLoading(true);
+    //     setActiveTab('suggested-concepts');
+    //     // Validate that a topic is provided before generating a prompt.
+    //     if (!prompt.domain.trim()) {
+    //         alert("Please enter a domain/topic before generating a new prompt.");
+    //         setIsLoading(false);
+    //         return;
+    //     }
+    //     try {
+    //         const response = await fetch("/api/genprompt", {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify({ prompt: prompt.text, domain: prompt.domain }),
+    //         });
+    //         if (!response.ok) {
+    //             const errorMsg = await response.text();
+    //             throw new Error(`Error: ${response.statusText} - ${errorMsg}`);
+    //         }
+    //         const data = await response.json();
+    //         console.log("160 Generated finalPrompt data:", data);
+    //         setFinalPrompt(data.response);
+    //         setIsLoading(false);
+    //         // setSuggestedDomainData(data.domain);
+    //     } catch (error) {
+    //         console.error("Error building prompt:", error);
+    //         setFinalPrompt("Failed to build prompt.");
+    //     } finally {
+    //         setIsLoading(false);
+    //     }
+    // };
 
     const handleExecutePrompt = async () => {
         console.log("14 Executing prompt for domain...", prompt);
         setActiveTab('suggested-domain-description');
         setIsLoading(true);
-        
+
 
         if (!prompt.domain.trim()) {
             alert("Please enter a domain/topic before executing the prompt.");
@@ -203,15 +203,14 @@ export default function DomainBuilder() {
     return (
         <div className="flex h-[calc(100vh-8rem)] w-full overflow-hidden">
             <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
-                <h2 className="text-xl font-bold mb-2">Prompt Builder</h2>
-                {/* Building prompt */}
-                <Textarea
+                <h2 className="text-xl font-bold mb-2">Define Domain Scope (Summeary)</h2>
+                {/* <Textarea
                     value={prompt.text}
                     onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
                     rows={10}
                     placeholder="System prompt for building your final prompt..."
                 />
-                {/* Input field for the domain/topic */}
+
                 <div className="mt-4">
                     <label className="block font-semibold mb-1">Enter your Domain/Topic:</label>
                     <input
@@ -222,17 +221,17 @@ export default function DomainBuilder() {
                         onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
                     />
                 </div>
-                {/* Replace Build Prompt CardTitle */}
+
                 <ActionCardTitleButton
                     title="Build Prompt"
                     done={finalPrompt !== "" || !isLoading}
                     onClick={handleBuildPrompt}
                     icon={faRobot}
-                />
+                /> */}
                 <div className="border-solid rounded border-4 border-blue-800 mt-4">
                     {finalPrompt && (
                         <div className="mt-4">
-                            <h3 className="font-semibold">Final Prompt:</h3>
+                            <h3 className="font-semibold">Domain Prompt:</h3>
                             <Textarea
                                 value={finalPrompt}
                                 onChange={(e) => setFinalPrompt(e.target.value)}
@@ -241,7 +240,7 @@ export default function DomainBuilder() {
                             />
                             {/* Replace Build Domain Description CardTitle */}
                             <ActionCardTitleButton
-                                title="Build Domain Description"
+                                title="Generate Domain Summery"
                                 done={(domainDataDone) || !isLoading}
                                 onClick={handleExecutePrompt}
                                 icon={faRobot}
@@ -259,16 +258,16 @@ export default function DomainBuilder() {
 
             <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-[calc(100vh-10rem)] overflow-y-hidden">
                 <Card className="p-1 h-[calc(100vh-8rem)]">
-                    <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Domain description)</CardTitle>
+                    <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Domain Summary)</CardTitle>
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
                         <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                            <TabsTrigger value="existing-domain-description" className="pb-2 mt-3">Existing Domain description</TabsTrigger>
-                            <TabsTrigger value="suggested-domain-description" className="pb-2 mt-3">Suggested Domain description</TabsTrigger>
+                            <TabsTrigger value="existing-domain-description" className="pb-2 mt-3">Existing Domain Summary</TabsTrigger>
+                            <TabsTrigger value="suggested-domain-description" className="pb-2 mt-3">Suggested Domain Summary</TabsTrigger>
                         </TabsList>
                         <TabsContent value="existing-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
                             <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-5rem)]">
                                 <ReactMarkdown className="prose prose-lg">
-                                    {`${data?.phData?.domain}`}
+                                    {`${data?.phData?.domain?.presentation}`}
                                 </ReactMarkdown>
                             </div>
                         </TabsContent>

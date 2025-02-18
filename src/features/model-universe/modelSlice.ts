@@ -71,7 +71,7 @@ export interface DataType {
         }[],
       }[],
     },
-    domain: { name: string, description: string, presentation: string },
+    domain: { name: string, description: string, prompt: string, presentation: string },
     ontology: { name: string, description: string, presentation: string, concepts: { name: string, description: string }[], relationships: { name: string, description: string, nameFrom: string, nameTo: string }[] },
   },
   phFocus: {
@@ -192,7 +192,7 @@ export const initialState: DataType = {
       ],
       metamodels: [],
     },
-    domain: { name: 'domain blank', description: 'domain blank description', presentation: 'domain blank presentation' },
+    domain: { name: 'domain blank', description: 'domain blank description', prompt: 'domain prompt',presentation: 'domain blank presentation' },
     ontology: {
       name: 'Ontology blank domain',
       description: 'Ontology blank description.',
@@ -370,6 +370,9 @@ const modelSlice = createSlice({
     },
     setDomainData(state, action: PayloadAction<DataType['phData']['domain']>) {
       state.phData.domain = action.payload || state.phData.domain;
+    },
+    setPrompt(state, action: PayloadAction<DataType['phData']['domain']['prompt']>) {
+      state.phData.domain.prompt = action.payload || state.phData.domain.prompt;
     },
     setOntologyData(state, action: PayloadAction<DataType>) {
       console.log('348 action.payload', action.payload, state);

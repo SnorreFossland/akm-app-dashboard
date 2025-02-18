@@ -19522,7 +19522,20 @@
       "currentModelRef": "e07be786-dcce-4b36-9d83-b5b2805fcc3e",
       "currentModelviewRef": "bb8777b8-7464-43e6-b2a1-9c87fab9d409",
       "currentMetamodelRef": "b9f5b34e-2ea4-4f68-6421-2e1253c2322d"
-    }
+    },
+    "domain": {
+      "name": "domain initial name",
+      "description": "domain initial description",
+      "prompt": "domain intial prompt",
+      "presentation": " domain initial presentation"
+    },
+    "ontology": {
+      "name": "Ontology blank domain",
+      "description": "Ontology blank description.",
+      "presentation": "Ontology blank Presentation",
+      "concepts": [],
+      "relationships": []
+    },
   },
   "phFocus": {
     "focusTab": "Modelling",

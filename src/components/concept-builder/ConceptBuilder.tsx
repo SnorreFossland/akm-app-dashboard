@@ -137,10 +137,10 @@ const ConceptBuilder = () => {
             conceptString += `**Relationships**\n\n${existingRelationships?.map((r: any) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
         const userPrompt = `${UserPrompt} \n\n ${data.phData.domain}`;
-            // ## Domain name: \n\n ${data.phData.domain?.name || ""} \n\n 
-            // ## Domain description: \n\n ${data.phData.domain?.description || ""} \n\n
-            // ## Domain presentation: \n\n ${data.phData.domain?.presentation || ""} \n\n
-            // `;
+        // ## Domain name: \n\n ${data.phData.domain?.name || ""} \n\n 
+        // ## Domain description: \n\n ${data.phData.domain?.description || ""} \n\n
+        // ## Domain presentation: \n\n ${data.phData.domain?.presentation || ""} \n\n
+        // `;
 
 
         setSystemPrompt(SystemPrompt);
@@ -297,11 +297,11 @@ const ConceptBuilder = () => {
                 </div>
                 <div className="flex justify-between items-center flex-gro ps-1 bg-gray-600 border border-gray-700">
                     <CardTitle className="flex justify-between items-center flex-grow ps-1">
-                        Concept Builder:
+                        Define Domain Ontology:
                     </CardTitle>
                 </div>
                 <div className="flex flex-wrap items-start m-1">
-                    <label htmlFor="chatOutput" className="text-white mt-2">Chat Output</label>
+                    <label htmlFor="chatOutput" className="text-white mt-2">Ontology Description</label>
                     <Textarea
                         id="chatOutput"
                         className="flex-grow p-1 rounded bg-gray-800"
@@ -434,12 +434,12 @@ const ConceptBuilder = () => {
             {/* <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full"> */}
             <div className="border-solid rounded border-4 border-blue-800  w-full overflow-y-auto">
                 <Card className="p-1 h-full">
-                    <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Concepts)</CardTitle>
+                    <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Define Ontology)</CardTitle>
 
                     <Tabs value={activeTab} onValueChange={setActiveTab}>
                         <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                            <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Concepts</TabsTrigger>
-                            <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Concepts</TabsTrigger>
+                            <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Ontology Concepts</TabsTrigger>
+                            <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Ontology Concepts</TabsTrigger>
                         </TabsList>
                         <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
                             <>

@@ -90,31 +90,31 @@ const data = {
         //   description: "Vercel-AI",
         // },
         {
-          title: "Prompt Builder",
+          title: "Prepare Domain Prompt",
           url: "/prompt-builder",
           icon: Star,
           description: "Prompt Builder",
         },
         {
-          title: "Domain Builder",
+          title: "Define Domain Scope",
           url: "/domain-builder",
           icon: Star,
           description: "Domain Builder",
         },
         {
-          title: "Concept Builder",
+          title: "Define Domain Ontology",
           url: "/concept-builder",
           icon: Star,
           description: "Concept Knowledge Modelling",
         },
         {
-          title: "Model Builder (IRTV) ",
+          title: "Generate Model (IRTV) ",
           url: "/model-universe",
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",
         },
         {
-          title: "Model Builder(POPS)",
+          title: "Generate Model (POPS)",
           url: "/streaming",
           icon: Star,
           description: "Product, Organisation, Process, System (POPS) Modelling",
@@ -204,26 +204,26 @@ const data = {
     //   url: "#",
     //   icon: Code2,
     //   items: [
-        // {
-        //   title: "Chat",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Completion",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Images",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Video",
-        //   url: "#",
-        // },
-        // {
-        //   title: "Speech",
-        //   url: "#",
-        // },
+    // {
+    //   title: "Chat",
+    //   url: "#",
+    // },
+    // {
+    //   title: "Completion",
+    //   url: "#",
+    // },
+    // {
+    //   title: "Images",
+    //   url: "#",
+    // },
+    // {
+    //   title: "Video",
+    //   url: "#",
+    // },
+    // {
+    //   title: "Speech",
+    //   url: "#",
+    // },
     //   ],
     // },
     {
@@ -321,14 +321,14 @@ export function AppSidebar() {
       </SidebarHeader>
       <SidebarContent>
         <div style={{ marginLeft: '20px' }}>
-          <Link href="/"> 
+          <Link href="/">
             Home
-          </Link> 
+          </Link>
         </div>
         <div style={{ marginLeft: '20px' }}>
-          <Link href="/modelling"> 
+          <Link href="/modelling">
             AKM Modeller
-          </Link> 
+          </Link>
         </div>
         <SidebarItem>
           <SidebarLabel>Platform</SidebarLabel>

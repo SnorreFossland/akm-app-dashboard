@@ -94,15 +94,15 @@ const Modelbuilder = () => {
                 }
             }
 
-            const filteredObjTypes = curMetamodel?.objecttypes.filter((objtype: any) => 
-                objtype.typeName !== 'Element' && 
+            const filteredObjTypes = curMetamodel?.objecttypes.filter((objtype: any) =>
+                objtype.typeName !== 'Element' &&
                 objtype.typeName !== 'EntityType' &&
                 objtype.typeName !== 'Generic' &&
-                objtype.typeName !== 'Label' 
+                objtype.typeName !== 'Label'
             );
 
-            const filteredRelTypes = curMetamodel?.relshiptypes.filter((reltype: any) => 
-                reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Element') && 
+            const filteredRelTypes = curMetamodel?.relshiptypes.filter((reltype: any) =>
+                reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Element') &&
                 reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'EntityType') &&
                 reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Generic') &&
                 reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Label') &&
@@ -117,8 +117,8 @@ const Modelbuilder = () => {
                 ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`).join('\n')}\n\n
                 ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
             `   // TODO: from to use name instead of id, the same for objecttypeviews and typeName instead of typeviewRef
-        
-            const contextmetatypesString = `## **Metamodel**\n\n ${ metatypesString }`
+
+            const contextmetatypesString = `## **Metamodel**\n\n ${metatypesString}`
 
             if (!debug) console.log('122 metatypesString:', curMetamodel);
 
@@ -141,7 +141,7 @@ const Modelbuilder = () => {
 
             setExistingInfoObjects({
                 objects: existingObjects?.filter(obj => obj && obj.typeName === 'Information') || [],
-                relships: existingRelationships.filter(rel => 
+                relships: existingRelationships.filter(rel =>
                     existingObjects.some(obj => obj.id === rel.nameFrom || obj.id === rel.nameTo)
                 ) || []
             });
@@ -232,7 +232,7 @@ const Modelbuilder = () => {
             const validatedData = ObjectSchema.parse(parsed);
             console.log('209 Validated data:', validatedData, curmod); // Add this line to log the validated data
 
-            setModel({...validatedData, id: curmod?.id});
+            setModel({ ...validatedData, id: curmod?.id });
             console.log('212 Model set:', validatedData, model); // Add this line to confirm the model is set
 
             setStep(3);
@@ -251,7 +251,7 @@ const Modelbuilder = () => {
                 <div className="m-1 mb-5">
                     <details>
                         <summary>
-                            <FontAwesomeIcon icon={faQuestionCircle} width="16" height="16" /> IRTV Model
+                            <FontAwesomeIcon icon={faQuestionCircle} width="16" height="16" />Generate IRTV Model
                         </summary>
                         <div className="bg-gray-600 p-2">
                             <p>Build a Concept Model assisted by AI</p>
@@ -271,13 +271,13 @@ const Modelbuilder = () => {
                     </details>
                 </div>
                 <CardTitle className="flex justify-between items-center flex-grow ps-1">
-                    Model Explorer:
+                    Generator IRTV from Ontology:
                 </CardTitle>
                 <div className="flex flex-wrap items-start m-1">
                     <CardTitle
                         className={`flex justify-between items-center flex-grow ps-1 ${(model?.objects?.length > 0) ? 'text-green-600' : 'text-green-200'}`}
                     >
-                        Model Builder (Create Concept IRTV-Model):
+                        Generate IRTV:
                         <div className="flex items-center ml-auto">
                             {(isLoading && step === 2) ? (
                                 <div style={{ marginLeft: 8, marginRight: 8 }}>
@@ -333,7 +333,7 @@ const Modelbuilder = () => {
                         >
                             Save to current Model Store
                             <div className="flex items-center ml-auto">
-                                {!dispatchDone && step ===3 ? (
+                                {!dispatchDone && step === 3 ? (
                                     <div style={{ marginLeft: 8, marginRight: 8 }}>
                                         <LoadingCircularProgress />
                                     </div>
@@ -465,7 +465,7 @@ const Modelbuilder = () => {
                                             <DialogContent className="max-w-5xl">
                                                 <DialogHeader>
                                                     <DialogDescription>
-                                                        {printPromptsDiv}       
+                                                        {printPromptsDiv}
                                                     </DialogDescription>
                                                 </DialogHeader>
                                                 <DialogFooter>
