@@ -271,7 +271,7 @@ const Modelbuilder = () => {
                     </details>
                 </div>
                 <CardTitle className="flex justify-between items-center flex-grow ps-1">
-                    Generator IRTV from Ontology:
+                    Generate IRTV from Ontology:
                 </CardTitle>
                 <div className="flex flex-wrap items-start m-1">
                     <CardTitle

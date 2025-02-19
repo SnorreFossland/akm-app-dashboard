@@ -90,19 +90,19 @@ const data = {
         //   description: "Vercel-AI",
         // },
         {
-          title: "Prepare Domain Prompt",
+          title: "1 Prepare Domain Prompt",
           url: "/prompt-builder",
           icon: Star,
           description: "Prompt Builder",
         },
         {
-          title: "Define Domain Scope",
+          title: "2 Define Domain Scope",
           url: "/domain-builder",
           icon: Star,
           description: "Domain Builder",
         },
         {
-          title: "Define Domain Ontology",
+          title: "3 Define Domain Ontology",
           url: "/concept-builder",
           icon: Star,
           description: "Concept Knowledge Modelling",
