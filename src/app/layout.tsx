@@ -41,7 +41,8 @@ export default async function RootLayout({
               {/* <ModeToggle className="fixed z-1 text-gray-500" /> */}
               <AppSidebar />
               <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
-                <div className="h-full rounded-md border-2 border-dashed p-0">
+                <div className="h-full rounded-md border-2 p-0">
+                {/* <div className="h-full rounded-md border-2 border-dashed p-0"> */}
                   {children}
                 </div>
               </main>

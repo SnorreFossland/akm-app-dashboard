@@ -26,7 +26,7 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: "Failed to generate response" }, { status: 500 });
     }
 
-    console.log("Generated response:", text.text);
+    console.log("29 Generated response:", text.text, text);
 
     // Return a structured JSON response with the text string
     return NextResponse.json({ prompt, response: text.text }); // Extracted 'text.text'

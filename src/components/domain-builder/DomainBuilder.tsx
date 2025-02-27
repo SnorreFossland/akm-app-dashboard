@@ -15,7 +15,7 @@ import { LoadingCircularProgress } from '@/components/loading';
 
 import { systemPrompt } from '@/app/prompt-builder/prompts';
 // Use a revised system prompt that does not ask for the topic.
-const revisedSystemPrompt = "Please create the best ChatGPT prompt to provide a summary with main points by evaluating and describe the provided domain.";
+const systemPrompt = "As a domain expert onDomain/Topic supplied, please provide the best extensive presentation ever created. If appropriate, make a dotted list of phases and steps.";
 
 // New reusable IconButton component
 const IconButton = ({
@@ -124,170 +124,192 @@ export default function DomainBuilder() {
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
 
+    useEffect(() => {
+        // if (!data.phData.domain.prompt) {
+            
+            setFinalPrompt(data.phData.domain.prompt);
+        // }
+    }, []);
+
     const handleDispatchDomainData = () => {
         if (!suggestedDomainData) {
             alert('No Domain data to dispatch');
             return;
         }
         dispatch(setDomainData(suggestedDomainData));
-        setSuggestedDomainData(null);
+        // setSuggestedDomainData(null);
         setDispatchDone(true);
     };
 
-    // setFinalPrompt(data.phData.domain?.prompt || 'the final test prompt')
-
-    // const handleBuildPrompt = async () => {
-    //     console.log("14 Building prompt...", prompt);
-    //     setIsLoading(true);
-    //     setActiveTab('suggested-concepts');
-    //     // Validate that a topic is provided before generating a prompt.
-    //     if (!prompt.domain.trim()) {
-    //         alert("Please enter a domain/topic before generating a new prompt.");
-    //         setIsLoading(false);
-    //         return;
-    //     }
-    //     try {
-    //         const response = await fetch("/api/genprompt", {
-    //             method: "POST",
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify({ prompt: prompt.text, domain: prompt.domain }),
-    //         });
-    //         if (!response.ok) {
-    //             const errorMsg = await response.text();
-    //             throw new Error(`Error: ${response.statusText} - ${errorMsg}`);
-    //         }
-    //         const data = await response.json();
-    //         console.log("160 Generated finalPrompt data:", data);
-    //         setFinalPrompt(data.response);
-    //         setIsLoading(false);
-    //         // setSuggestedDomainData(data.domain);
-    //     } catch (error) {
-    //         console.error("Error building prompt:", error);
-    //         setFinalPrompt("Failed to build prompt.");
-    //     } finally {
-    //         setIsLoading(false);
-    //     }
-    // };
-
-    const handleExecutePrompt = async () => {
-        console.log("14 Executing prompt for domain...", prompt);
+     const handleExecutePrompt = async () => {
+        console.log("179 Executing prompt for domain...", prompt);
         setActiveTab('suggested-domain-description');
         setIsLoading(true);
-
-
-        if (!prompt.domain.trim()) {
+        const systemPrompt = data.phData.domain.prompt;
+        const userPrompt = data.phData.domain.prompt;
+        setFinalPrompt(data.phData.domain.prompt);
+        if (!data.phData.domain.prompt.trim()) {
             alert("Please enter a domain/topic before executing the prompt.");
+            setIsLoading(false);
             return;
         }
-
+        console.log("188 Executing prompt for domain...", finalPrompt, userPrompt, data.phData.domain);
         try {
-            const response = await fetch("/api/gendomain", {
+           const res = (finalPrompt) && await fetch("/api/gendomain", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: finalPrompt }),
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    aiModelName: "gpt-4o-2024-08-06",
+                    schemaName: 'DomainSchema',
+                    systemPrompt: systemPrompt || "",
+                    // systemBehaviorGuidelines: systemBehaviorGuidelines || "",
+                    userPrompt: userPrompt || "",
+                    // userInput: userInput || "",
+                    // contextItems: contextItems || "",
+                    // contextOntology: contextOntology || "",
+                    // contextMetamodel: contextMetamodel || ""
+                })
             });
-            if (!response.ok) throw new Error(`Error: ${response.statusText}`);
-            const data = await response.text();
-            console.log("188 Generated Domain data:", data);
-            setSuggestedDomainData(data);
+            console.log("161 Response:", res);
+            if (res instanceof Response && !res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+
+            
+            const reader = (res instanceof Response) ? res.body?.getReader() : null;
+            if (!reader) throw new Error("No reader available");
+            const decoder = new TextDecoder();
+            let data = "";
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                data += decoder.decode(value, { stream: true });
+            }
+            const parsed = JSON.parse(data);
+
+            console.log("201 Generated Domain data:", parsed, data);
+            const domainData = {
+                name: parsed.domainData.name,
+                description: parsed.domainData.description,
+                prompt: parsed.domainData.prompt,
+                presentation: parsed.domainData.presentation
+            };
+            console.log("194 Generated Domain data:", domainData);
+            setSuggestedDomainData(domainData);
             setDomainDataDone(true);
-            // setSuggestedDomainData(`## Name: ${data.name}\n\n### Description:\n${data.description}\n\n### Presentation:\n${data.presentation.map((item: string) => `- ${item}`).join('\n')}`);
         } catch (error) {
             console.error("Error building domain data:", error);
-            setSuggestedDomainData("Failed to build Domain summary.");
+            setSuggestedDomainData({ name: "Failed to build domain data.", description: "", presentation: [] });
         } finally {
             setIsLoading(false);
         }
     }
-
+    
     return (
-        <div className="flex h-[calc(100vh-8rem)] w-full overflow-hidden">
-            <div className="border-solid rounded border-4 border-green-700 w-1/4 h-full flex flex-col overflow-y-auto">
-                <h2 className="text-xl font-bold mb-2">Define Domain Scope (Summeary)</h2>
-                {/* <Textarea
-                    value={prompt.text}
-                    onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
-                    rows={10}
-                    placeholder="System prompt for building your final prompt..."
-                />
-
-                <div className="mt-4">
-                    <label className="block font-semibold mb-1">Enter your Domain/Topic:</label>
-                    <input
-                        type="text"
-                        className="w-full p-2 border rounded"
-                        placeholder="E.g., E-Scooter Rental Services"
-                        value={prompt.domain}
-                        onChange={(e) => setPrompt({ ...prompt, domain: e.target.value })}
-                    />
-                </div>
-
-                <ActionCardTitleButton
-                    title="Build Prompt"
-                    done={finalPrompt !== "" || !isLoading}
-                    onClick={handleBuildPrompt}
-                    icon={faRobot}
-                /> */}
-                <div className="border-solid rounded border-4 border-blue-800 mt-4">
-                    {finalPrompt && (
-                        <div className="mt-4">
-                            <h3 className="font-semibold">Domain Prompt:</h3>
-                            <Textarea
-                                value={finalPrompt}
-                                onChange={(e) => setFinalPrompt(e.target.value)}
-                                rows={10}
-                                className="bg-gray-80 p-2 border rounded"
-                            />
-                            {/* Replace Build Domain Description CardTitle */}
-                            <ActionCardTitleButton
-                                title="Generate Domain Summery"
-                                done={(domainDataDone) || !isLoading}
-                                onClick={handleExecutePrompt}
-                                icon={faRobot}
-                            />
-                        </div>
-                    )}
-                </div>
-                <div className="mt-auto">
-                    <DispatchCardTitle
-                        dispatchDone={dispatchDone}
-                        handleDispatchDomainData={handleDispatchDomainData}
-                    />
-                </div>
-            </div>
-
-            <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-[calc(100vh-10rem)] overflow-y-hidden">
-                <Card className="p-1 h-[calc(100vh-8rem)]">
-                    <CardTitle className="flex justify-center text-white m-1">Active Knowledge Canvas (Domain Summary)</CardTitle>
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-                        <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                            <TabsTrigger value="existing-domain-description" className="pb-2 mt-3">Existing Domain Summary</TabsTrigger>
-                            <TabsTrigger value="suggested-domain-description" className="pb-2 mt-3">Suggested Domain Summary</TabsTrigger>
-                        </TabsList>
-                        <TabsContent value="existing-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
-                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-5rem)]">
-                                <ReactMarkdown className="prose prose-lg">
-                                    {`${data?.phData?.domain?.presentation}`}
-                                </ReactMarkdown>
-                            </div>
-                        </TabsContent>
-                        <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
-                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-15rem)]">
-                                <ReactMarkdown className="prose prose-lg h-full w-full">
-                                    {(dispatchDone) ? suggestedDomainData : 'suggestedDomainData are dispatched to Store'}
-                                </ReactMarkdown>
-                            </div>
-                            <div className="mt-auto">
-                                <DispatchCardTitle
-                                    dispatchDone={dispatchDone}
-                                    handleDispatchDomainData={handleDispatchDomainData}
-                                    extraClassName="float-bottom"
+        <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-700 w-full bg-transparent">
+             <CardTitle className="flex justify-center text-gray-400 m-1 text-xl">AI Powered Active Knowledge Canvas (Domain Builder)</CardTitle>
+            <div className="flex h-[calc(100vh-8rem)] w-full overflow-hidden">
+                <div className="border-solid rounded border-4 border-green-900 w-1/4 h-full flex flex-col overflow-y-auto">
+                    <h2 className="text-xl font-bold mb-2">Define Domain Scope (Summary)</h2>
+                    <div className="border-solid rounded border-4 border-blue-800 mt-4">
+                        <h3 className="font-semibold">Domain Prompt:</h3>
+                        {finalPrompt && (
+                            <div className="mt-4">
+                                <Textarea
+                                    className="bg-gray-80 p-2 border rounded"
+                                    value={finalPrompt}
+                                    onChange={(e) => setFinalPrompt(e.target.value)}
+                                    rows={25}
+                                />
+                                <ActionCardTitleButton
+                                    title="Generate Domain Summary"
+                                    done={(domainDataDone) || !isLoading}
+                                    onClick={handleExecutePrompt}
+                                    icon={faRobot}
                                 />
                             </div>
-                        </TabsContent>
-                    </Tabs>
-                </Card>
+                        )}
+                    </div>
+                    <div className="mt-auto">
+                        <DispatchCardTitle
+                            dispatchDone={dispatchDone}
+                            handleDispatchDomainData={handleDispatchDomainData}
+                        />
+                    </div>
+                </div>
+                {/* ------------- */}
+                <div className="border-solid rounded border-1 border-green-900 w-3/4 h-full overflow-y-hidden">
+                    <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full bg-transparent">
+                        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+                            <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
+                                <TabsTrigger value="existing-domain-description" className="pb-2 mt-3">Existing Domain Summary</TabsTrigger>
+                                <TabsTrigger value="suggested-domain-description" className="pb-2 mt-3">Suggested Domain Summary</TabsTrigger>
+                            </TabsList>
+                            <TabsContent value="existing-domain-description" className="m-0 px-1 py-2 rounded bg-background">
+                                <div className="m-2 p-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
+                                    <div className="text-white px-2 bg-gray-800 h-[calc(100vh-21rem)] overflow-y-auto">
+                                        {/* {!editedDomainPresentation
+                                            ? */}
+                                            <ReactMarkdown className="prose prose-xs text-white custom-markdown">
+                                                {`${data?.phData?.domain.presentation}`}
+                                            </ReactMarkdown>
+                                            {/* :
+                                            <Textarea
+                                                className="p-2 bg-gray-900 text-lg text-gray-300"
+                                                value={editedPrompt}
+                                                onChange={(e) => setEditedPrompt(e.target.value)}
+                                                rows={20}
+                                                placeholder="Edit the stored prompt here..."
+                                            />
+                                        } */}
+                                    </div>
+                                    {/* <div className="flex justify-between bg-gray-700">
+                                        <IconButton
+                                            onClick={() => setEditedPrompt(data?.phData?.domain.prompt || "")}
+                                            icon={faEdit}
+                                            className="mr-2 w-full"
+                                        />
+                                        <IconButton
+                                            onClick={handleDispatchEditedPrompt}
+                                            icon={faPaperPlane}
+                                            className="mr-2 w-full"
+                                        />
+                                        <IconButton
+                                            onClick={handleDeletePrompt}
+                                            icon={faTrash}
+                                            className="ml-2 bg-red-700 w-full"
+                                        />
+                                    </div> 
+                                    <ActionCardTitleButton
+                                        title="Next step:  Go to Domain Builder"
+                                        done={true}
+                                        onClick={() => window.location.href = "/domain-builder"}
+                                        icon={faLink}
+                                    />*/}
+                                </div>
+                            </TabsContent>
+                            <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
+                                <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-15rem)]">
+                                    <ReactMarkdown className="prose prose-lg h-full w-full">
+                                        {(suggestedDomainData) 
+                                            ? `## Name: ${suggestedDomainData.name}\n\n### Description:\n${suggestedDomainData.description}\n\n### Presentation:\n${suggestedDomainData.presentation}` 
+                                            : 'The generated DomainData are dispatched to Store'}
+                                    </ReactMarkdown>
+                                </div>
+                                <div className="mt-auto">
+                                    <DispatchCardTitle
+                                        dispatchDone={dispatchDone}
+                                        handleDispatchDomainData={handleDispatchDomainData}
+                                        extraClassName="float-bottom"
+                                    />
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </Card>
+                </div>
             </div>
         </div>
     );
 }
+
+{/* <ReactMarkdown className="prose prose-lg">
+    {`${data?.phData?.domain.presentation}`}
+</ReactMarkdown> */}

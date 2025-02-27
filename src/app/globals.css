@@ -170,3 +170,20 @@
   --color-purple: #ddbbff;
   --color-pink: #ffcccc;
 }
+
+.custom-markdown {
+  width: 100%;
+  /* Adjust the width as needed */
+  max-width: 100%;
+  /* Ensure it doesn't exceed the container's width */
+}
+
+.bg-active-item {
+  background-color: #eed8c210;
+  /* example active background color */
+}
+
+.text-active-item {
+  color: #f9d3b6;
+  /* example active text color */
+}

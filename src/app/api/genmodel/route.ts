@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import OpenAI from "openai";
 import { zodResponseFormat } from "openai/helpers/zod";
+import { DomainSchema } from "@/domainSchema";
 import { ObjectSchema } from "@/objectSchema";
 import { OntologySchema } from "@/ontologySchema";
 import { ModelviewSchema } from "@/modelviewSchema";
@@ -17,7 +18,9 @@ export async function POST(req: Request) {
   const client = new OpenAI();
 
   let schema;
-  if (schemaName === 'OntologySchema') {
+  if (schemaName === 'DomainSchema') {
+    schema = DomainSchema;
+  } else if (schemaName === 'OntologySchema') {
     schema = OntologySchema;
   } else if (schemaName === 'ObjectSchema') {
     schema = ObjectSchema;

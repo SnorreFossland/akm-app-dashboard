@@ -3,76 +3,20 @@ import { fetchModelDataFromGitHub, saveModelDataToGitHub } from './modelAPI';
 
 export interface DataType {
   phData: {
-    metis: {
+    metis: Metis,
+    domain: {
       name: string,
       description: string,
-      metamodels: []
-      models: {
-        id: string,
-        name: string,
-        description: string,
-        metamodelRef: string,
-        objects: {
-          id: string,
-          name: string,
-          description: string,
-          proposedType: string,
-          typeRef: string,
-          typeName: string,
-          category: string,
-        }[],
-        relships: {
-          id: string,
-          name: string,
-          typeRef: string,
-          fromobjectRef: string,
-          nameFrom: string,
-          toobjectRef: string,
-          nameTo: string,
-        }[],
-        modelviews: {
-          id: string,
-          name: string,
-          description: string,
-          modelRef: string,
-          modified: boolean,
-          markedAsDeleted: boolean,
-          objectviews: {
-            id: string,
-            name: string,
-            type: string,
-            loc: string,
-            size: string,
-            memberscale: number,
-            objectRef: string,
-            modified: boolean,
-            markedAsDeleted: boolean,
-            isSelect: boolean,
-            isGroup: boolean,
-            isExpanded: boolean,
-            image: string,
-            icon: string,
-            fillColor: string,
-            strokeColor: string,
-            strokeWidth: string,
-            strokeColor2: string,
-            textColor: string,
-            textColor2: string,
-            viewkind: string,
-          }[],
-          relshipviews: {
-            id: string,
-            name: string,
-            relshipRef: string,
-            fromobjviewRef: string,
-            toobjviewRef: string,
-            points: number[],
-          }[],
-        }[],
-      }[],
+      prompt: string,
+      presentation: string,
     },
-    domain: { name: string, description: string, prompt: string, presentation: string },
-    ontology: { name: string, description: string, presentation: string, concepts: { name: string, description: string }[], relationships: { name: string, description: string, nameFrom: string, nameTo: string }[] },
+    ontology: {
+      name: string,
+      description: string,
+      presentation: string,
+      concepts: { name: string, description: string }[],
+      relationships: { name: string, description: string, nameFrom: string, nameTo: string }[]
+    },
   },
   phFocus: {
     focusModel: {
@@ -106,15 +50,83 @@ export interface DataType {
     email: string;
   };
   phSource: string;
-  // status: 'idle', // or any initial status value
-  // error: string | null,
 };
 
-export const initialState: DataType = { 
+export interface Metis {
+  name: string;
+  description: string;
+  metamodels: [];
+  models: Model[];
+}
+export interface Model {
+  id: string;
+  name: string;
+  description: string;
+  metamodelRef: string,
+  objects: {
+    id: string,
+    name: string,
+    description: string,
+    proposedType: string,
+    typeRef: string,
+    typeName: string,
+    category: string,
+  }[],
+  relships: {
+    id: string,
+    name: string,
+    typeRef: string,
+    fromobjectRef: string,
+    nameFrom: string,
+    toobjectRef: string,
+    nameTo: string,
+  }[],
+  modelviews: {
+    id: string,
+    name: string,
+    description: string,
+    modelRef: string,
+    modified: boolean,
+    markedAsDeleted: boolean,
+    objectviews: {
+      id: string,
+      name: string,
+      type: string,
+      loc: string,
+      size: string,
+      memberscale: number,
+      objectRef: string,
+      modified: boolean,
+      markedAsDeleted: boolean,
+      isSelect: boolean,
+      isGroup: boolean,
+      isExpanded: boolean,
+      image: string,
+      icon: string,
+      fillColor: string,
+      strokeColor: string,
+      strokeWidth: string,
+      strokeColor2: string,
+      textColor: string,
+      textColor2: string,
+      viewkind: string,
+    }[],
+    relshipviews: {
+      id: string,
+      name: string,
+      relshipRef: string,
+      fromobjviewRef: string,
+      toobjviewRef: string,
+      points: number[],
+    }[],
+  }[],
+}
+
+export const initialState: DataType = {
   phData: {
     metis: {
       name: 'AKMM Blank',
-      description: 'AKMM blank model',  
+      description: 'AKMM blank model',
       models: [
         {
           id: 'm1',
@@ -192,13 +204,14 @@ export const initialState: DataType = {
       ],
       metamodels: [],
     },
-    domain: { name: 'domain blank', description: 'domain blank description', prompt: 'domain prompt',presentation: 'domain blank presentation' },
+    domainPrompt: 'Domain blank prompt',
+    domain: { name: 'domain blank', description: 'domain blank description', prompt: 'domain prompt', presentation: 'domain blank presentation' },
     ontology: {
       name: 'Ontology blank domain',
       description: 'Ontology blank description.',
       presentation: 'Ontology blank Presentation',
       concepts: [],
-      relationships: [],  
+      relationships: [],
     },
   },
   phFocus: {
@@ -282,13 +295,13 @@ const modelSlice = createSlice({
       state.phUser = { ...action.payload.phUser };
       state.phSource = action.payload.phSource;
     },
- 
-    setNewModel(state, action: PayloadAction<DataType['phData']['metis']['models'][number]>) { 
+
+    setNewModel(state, action: PayloadAction<DataType['phData']['metis']['models'][number]>) {
       let currentModel = state?.phData.metis.models.find(model => model.id === action.payload.id);
       console.log('283 currentModel', action.payload, currentModel, state, state?.phFocus.focusModel.id);
       if (!currentModel) currentModel = state?.phData.metis.models[0];
       if (currentModel) {
-        currentModel = {...currentModel}
+        currentModel = { ...currentModel }
         currentModel.name = action.payload.name;
         currentModel.description = action.payload.description;
         currentModel.metamodelRef = currentModel.metamodelRef;
@@ -371,8 +384,12 @@ const modelSlice = createSlice({
     setDomainData(state, action: PayloadAction<DataType['phData']['domain']>) {
       state.phData.domain = action.payload || state.phData.domain;
     },
-    setPrompt(state, action: PayloadAction<DataType['phData']['domain']['prompt']>) {
-      state.phData.domain.prompt = action.payload || state.phData.domain.prompt;
+    setDomainPrompt(state, action: PayloadAction<DataType['phData']['domain']['prompt']>) {
+      console.log('375 action.payload', action.payload, state);
+      state.phData.domain.prompt = action.payload;
+    },
+    deleteDomainPrompt(state) {
+      state.phData.domain.prompt = "";
     },
     setOntologyData(state, action: PayloadAction<DataType>) {
       console.log('348 action.payload', action.payload, state);
@@ -458,21 +475,23 @@ const modelSlice = createSlice({
   },
 });
 
-export const { 
-  setFileData, 
-  setNewModel, 
-  setObjects, 
-  setRelationships, 
-  setNewModelview, 
-  setFocusModel, 
-  setFocusModelview, 
-  setSource, 
-  setDomainData,
-  setOntologyData, 
-  editConcept, 
-  deleteConcept, 
-  editRelationship, 
-  clearModel, 
-  clearStore 
+export const {
+    setFileData,
+    setNewModel,
+    setObjects,
+    setRelationships,
+    setNewModelview,
+    setFocusModel,
+    setFocusModelview,
+    setSource,
+    setDomainPrompt,
+    setDomainData,
+    setOntologyData,
+    editConcept,
+    deleteConcept,
+    editRelationship,
+    clearModel,
+    clearStore,
+    deleteDomainPrompt // Add the new action here
 } = modelSlice.actions;
 export default modelSlice.reducer;

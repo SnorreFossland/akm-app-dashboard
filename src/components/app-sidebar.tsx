@@ -64,31 +64,12 @@ const data = {
     description: "Homepage",
   },
   navMain: [
-    // {
-    //   title: "Modelling",
-    //   url: "#",
-    //   icon: Bot,
-    //   items: [
-    //     {
-    //       title: "Modelling",
-    //       url: "/modelling",
-    //       icon: Rabbit,
-    //       description: "AKM Modeller.",
-    //     },
-    //   ],
-    // },
     {
       title: "AKM AI Playground",
       url: "#",
       icon: SquareTerminal,
       isActive: true,
       items: [
-        // {
-        //   title: "Vercel-AI",
-        //   url: "/vercel-ai",
-        //   icon: Star,
-        //   description: "Vercel-AI",
-        // },
         {
           title: "1 Prepare Domain Prompt",
           url: "/prompt-builder",
@@ -96,31 +77,31 @@ const data = {
           description: "Prompt Builder",
         },
         {
-          title: "2 Define Domain Scope",
+          title: "2 Def. Domain Scope",
           url: "/domain-builder",
           icon: Star,
           description: "Domain Builder",
         },
         {
-          title: "3 Define Domain Ontology",
+          title: "3 Def. Domain Ontology",
           url: "/concept-builder",
           icon: Star,
           description: "Concept Knowledge Modelling",
         },
         {
-          title: "Generate Model (IRTV) ",
-          url: "/model-universe",
+          title: "4 Gen. IRTV Obj & Rels ",
+          url: "/model-builder",
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",
         },
         {
-          title: "Generate Model (POPS)",
+          title: "4 Gen. POPS Obj & Rels",
           url: "/streaming",
           icon: Star,
           description: "Product, Organisation, Process, System (POPS) Modelling",
         },
         {
-          title: "Modelview Builder ",
+          title: "5 Modelview Builder ",
           url: "/model-universe",
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",

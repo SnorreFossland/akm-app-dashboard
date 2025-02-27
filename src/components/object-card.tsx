@@ -4,12 +4,73 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from 'react-markdown';
 
-export interface Model {
-    name: string;
-    description: string;
-    objects: { id: string; name: string; typeName: string; proposedType: string }[];
-    relships: { fromobjectRef: string; nameFrom: string; id: string; name: string; toobjectRef: string; nameTo: string; typeRef: string }[];
-}
+
+import { Model } from '@/features/model-universe/modelSlice';
+
+
+// export interface Model {
+//     id: string;
+//     name: string;
+//     description: string;
+//     metamodelRef: string,
+//     objects: {
+//         id: string,
+//         name: string,
+//         description: string,
+//         proposedType: string,
+//         typeRef: string,
+//         typeName: string,
+//         category: string,
+//     }[],
+//     relships: {
+//         id: string,
+//         name: string,
+//         typeRef: string,
+//         fromobjectRef: string,
+//         nameFrom: string,
+//         toobjectRef: string,
+//         nameTo: string,
+//     }[],
+//     modelviews: {
+//         id: string,
+//         name: string,
+//         description: string,
+//         modelRef: string,
+//         modified: boolean,
+//         markedAsDeleted: boolean,
+//         objectviews: {
+//             id: string,
+//             name: string,
+//             type: string,
+//             loc: string,
+//             size: string,
+//             memberscale: number,
+//             objectRef: string,
+//             modified: boolean,
+//             markedAsDeleted: boolean,
+//             isSelect: boolean,
+//             isGroup: boolean,
+//             isExpanded: boolean,
+//             image: string,
+//             icon: string,
+//             fillColor: string,
+//             strokeColor: string,
+//             strokeWidth: string,
+//             strokeColor2: string,
+//             textColor: string,
+//             textColor2: string,
+//             viewkind: string,
+//         }[],
+//         relshipviews: {
+//             id: string,
+//             name: string,
+//             relshipRef: string,
+//             fromobjviewRef: string,
+//             toobjviewRef: string,
+//             points: number[],
+//         }[],
+//     }[],
+// }
 
 const debug = false;
 

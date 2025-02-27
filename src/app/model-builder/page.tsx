@@ -1,13 +1,13 @@
-import ModelBuilder from '@/components/model-universe/ModelBuilder';
+import ModelBuilder from '@/components/model-builder/ModelBuilder';
 import ModelComponent from "@/features/model-universe/components/ModelComponent";
 
 const SyncPage = () => {
 
   return (
     <div className="akm-canvas flex flex-col gap-1 m-1">
-      <ModelComponent /> 
+      <ModelComponent />
       <div className="flex flex-col gap-1 m-1">
-          <ModelBuilder />
+        <ModelBuilder />
       </div>
     </div>
   );

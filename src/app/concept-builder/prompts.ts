@@ -95,7 +95,7 @@ Elaborate around "User input" and add to the domain description.
 Add also concepts and relationships based on words separated by comma.
 Make sure no duplicates are created.
 
-## **User input**: ` // User input is inserted after this propmt
+## **User input**: \n\n` // User input is inserted after this propmt
 
 export const ExistingContext = `
 ## **Context:**

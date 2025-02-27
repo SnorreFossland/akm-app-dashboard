@@ -3,10 +3,10 @@ import ModelComponent from "@/features/model-universe/components/ModelComponent"
 
 const SyncPage = () => {
   return (
-    <div className="akm-canvas flex flex-col gap-1 m-1">
-      <div className="flex flex-col gap-1 m-1">
+    <div className="akm-canvas flex flex-col w-full h-full overflow-hidden">
+      <div className="flex flex-col">
         <ModelComponent />
-        <div className="flex mx-2">
+        <div className="flex overflow-hidden">
           <ConceptBuilder />
         </div>
       </div>
