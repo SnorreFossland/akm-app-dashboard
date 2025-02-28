@@ -12,7 +12,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
 import { LoadingCircularProgress } from "@/components/loading";
 import { setDomainPrompt, deleteDomainPrompt, setDomainData } from "@/features/model-universe/modelSlice";
-import { set } from "zod";
+
+import { systemPrompt } from '@/app/prompt-builder/prompts';
+// import { set } from "zod";
 
 export default function VercelAiPage() {
     const data = useSelector((state) => state.modelUniverse);
@@ -129,12 +131,15 @@ export default function VercelAiPage() {
         }
         setIsLoading(true);
 
-        const clarificationInstruction = `
-        You are a prompt expert. For the Domain/Topic/Theme: "${domainInput}", 
-        generate clarifying questions asking the user for further details (e.g., unique features, objectives, phases, challenges, and context). 
-        Audience: AI model. Audience's Goal: To generate a perfect prompt for describing a domain.
-        Format: Markdown.
-        Do not generate the final prompt yet; simply ask for clarification.`;
+        const clarificationInstruction = `${systemPrompt}  Domain/Topic/Theme: "${domainInput}", `
+
+        // const clarificationInstruction = `
+        // You are a prompt expert. For the Domain/Topic/Theme: "${domainInput}", 
+        // generate clarifying questions asking the user for further details (e.g., unique features, objectives, phases, challenges, and context). 
+        // Audience: AI model. Audience's Goal: To generate a perfect prompt for describing a domain.
+        // Format: Markdown.
+        // Do not generate the final prompt yet; simply ask for clarification.`;
+
 
         try {
             const response = await fetch("/api/genprompt", {
@@ -429,7 +434,7 @@ export default function VercelAiPage() {
                                 </div>
                             </TabsContent>
                             <TabsContent value="final-suggested-prompt" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
+                                <div className="m-1 py-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
                                     <ReactMarkdown className="prose prose-lg">
                                         {finalPrompt}
                                     </ReactMarkdown>

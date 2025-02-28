@@ -444,56 +444,33 @@ const ConceptBuilder = () => {
                         </CardTitle>
                     </div>
                 </div>
-
+                {/* ------------- */}
                 {/* <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full"> */}
-                <div className="border-solid rounded border-4 border-blue-800  w-full overflow-y-auto">
+                <div className="border-solid rounded border-4 border-blue-800  w-full overflow-y-none">
                     <Card className="p-1 h-full">
                         <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                                <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Ontology Concepts</TabsTrigger>
-                                <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Ontology Concepts</TabsTrigger>
+                                <TabsTrigger value="existing-concepts" className="mt-2">Existing Ontology Concepts</TabsTrigger>
+                                <TabsTrigger value="suggested-concepts" className="mt-2">Suggested Ontology Concepts</TabsTrigger>
                             </TabsList>
                             <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                                <>
-                                    <div className="flex justify-end pb-1 pt-0 mx-2">
-                                        <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                                            Show Prompt
-                                        </button>
-                                        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                            <DialogContent className="max-w-5xl">
-                                                <DialogHeader>
-                                                    <DialogDescription>
-                                                        {printPromptsDiv}
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                <DialogFooter>
-                                                    <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                        Close
-                                                    </Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                    <div className="mx-1 bg-gray-700 ">
-                                        <OntologyCard ontologyData={ontologyDataList} />
-                                    </div>
-                                </>
+                                <div className="mx-1 bg-gray-700 ">
+                                    <OntologyCard ontologyData={data.phData.ontology} />
+                                </div>
                             </TabsContent>
                             <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
                                 <>
                                     <div className="flex justify-end pb-1 pt-0 mx-2">
-                                        <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
+                                        <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs hover:bg-blue-700">
                                             Show Prompt
                                         </button>
                                         <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                                             <DialogContent className="max-w-5xl">
                                                 <DialogHeader>
                                                     <DialogDescription>
-                                                        <div>
-                                                            <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                                {printPromptsDiv}
-                                                            </div>
-                                                        </div>
+                                                        {/* <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
+                                                            {printPromptsDiv}
+                                                        {/* </div> */}
                                                     </DialogDescription>
                                                 </DialogHeader>
                                                 <DialogFooter>

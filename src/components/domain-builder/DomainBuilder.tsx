@@ -12,10 +12,10 @@ import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingCircularProgress } from '@/components/loading';
+import TextareaAutosize from 'react-textarea-autosize';
 
-import { systemPrompt } from '@/app/prompt-builder/prompts';
 // Use a revised system prompt that does not ask for the topic.
-const systemPrompt = "As a domain expert onDomain/Topic supplied, please provide the best extensive presentation ever created. If appropriate, make a dotted list of phases and steps.";
+const userPrompt = "As a domain expert onDomain/Topic supplied, please provide the best extensive presentation ever created. If appropriate, make a dotted list of phases and steps.";
 
 // New reusable IconButton component
 const IconButton = ({
@@ -115,7 +115,8 @@ export default function DomainBuilder() {
     const [activeTab, setActiveTab] = useState('existing-domain-description');
     const [isModalOpen, setIsModalOpen] = useState(false);
 
-    const [prompt, setPrompt] = useState({ text: systemPrompt, domain: "" });
+    // const [prompt, setPrompt] = useSta                                                                                                                                                                             +df
+    // te({ text: systemPrompt, domain: "" });
     // const [prompt, setPrompt] = useState({ text: revisedSystemPrompt, domain: "" });
     const [finalPrompt, setFinalPrompt] = useState<string>("test");
     const [suggestedDomainData, setSuggestedDomainData] = useState<any>(null);
@@ -153,9 +154,9 @@ export default function DomainBuilder() {
             setIsLoading(false);
             return;
         }
-        console.log("188 Executing prompt for domain...", finalPrompt, userPrompt, data.phData.domain);
+        console.log("188 Executing prompt for domain...", systemPrompt, userPrompt, data.phData.domain);
         try {
-           const res = (finalPrompt) && await fetch("/api/gendomain", {
+           const res = (systemPrompt) && await fetch("/api/gendomain", {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -163,7 +164,7 @@ export default function DomainBuilder() {
                     schemaName: 'DomainSchema',
                     systemPrompt: systemPrompt || "",
                     // systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                    userPrompt: userPrompt || "",
+                    // userPrompt: userPrompt || "",
                     // userInput: userInput || "",
                     // contextItems: contextItems || "",
                     // contextOntology: contextOntology || "",
@@ -213,15 +214,17 @@ export default function DomainBuilder() {
                         <h3 className="font-semibold">Domain Prompt:</h3>
                         {finalPrompt && (
                             <div className="mt-4">
-                                <Textarea
+                                <TextareaAutosize
                                     className="bg-gray-80 p-2 border rounded"
                                     value={finalPrompt}
                                     onChange={(e) => setFinalPrompt(e.target.value)}
-                                    rows={25}
+                                    minRows={5}
+                                    maxRows={18}
+                                    style={{ width: "100%" }}
                                 />
                                 <ActionCardTitleButton
                                     title="Generate Domain Summary"
-                                    done={(domainDataDone) || !isLoading}
+                                    done={domainDataDone || !isLoading}
                                     onClick={handleExecutePrompt}
                                     icon={faRobot}
                                 />
@@ -286,8 +289,8 @@ export default function DomainBuilder() {
                                     />*/}
                                 </div>
                             </TabsContent>
-                            <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background h-full">
-                                <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-15rem)]">
+                            <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background">
+                                <div className="m-1 px-1 rounded  bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-17rem)]">
                                     <ReactMarkdown className="prose prose-lg h-full w-full">
                                         {(suggestedDomainData) 
                                             ? `## Name: ${suggestedDomainData.name}\n\n### Description:\n${suggestedDomainData.description}\n\n### Presentation:\n${suggestedDomainData.presentation}` 
