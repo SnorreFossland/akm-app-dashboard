@@ -17,6 +17,8 @@ import { handleGetLocalFile } from './HandleGetLocalFile';
 import { handleSaveToGithub } from './HandleSaveToGithub';
 import { clearStore, clearModel } from '../modelSlice';
 import { handleGetDefaultFile } from './HandleGetDefaultFile';
+
+import Header from '@/components/Header'
 // import { set } from 'zod';
 // import { handleClearStore } from './HandleClearStore';
 
@@ -62,8 +64,8 @@ function ModelComponent() {
       setFocusObjectview(data.phFocus.focusObjectview);
       // setFocusRelationship(data.phFocus.focusRelship);
       // setFocusRelationshipview(data.phFocus.focusRelshipview);
-    // }
-    // if (data.phData.metis) {
+      // }
+      // if (data.phData.metis) {
       setMetis(data.phData.metis);
       setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id));
       setCurrentModelview(currentModel?.modelviews.find(mv => mv.id === focusModelview?.id));
@@ -91,8 +93,9 @@ function ModelComponent() {
 
   return (
     <div className='model-universe-a-component w-full'>
-      <header className="m-2 me-auto w-full bg-blue-500/60 text-gradient-to-r from-green-700 to-blue-900 text-transparent bg-clip-text shadow-md shadow-green-50/50">
-        <div className="flex justify-between items-center font-bold text-white text-green-500 mx-5">
+      {/* <header className="m-2 me-auto w-full bg-blue-500/60 text-gradient-to-r from-green-700 to-blue-900 text-transparent bg-clip-text shadow-md shadow-green-50/50">
+        <Header metisName={data.phData.metis?.name} />
+         <div className="flex justify-between items-center font-bold text-white text-green-500 mx-5">
           <div className="me-5 mb-0 mt-4 text-muted-foreground">AKM file :
             <span className="px-2 text-gray-300">{data.phData.metis?.name}.json</span>
           </div>
@@ -101,9 +104,9 @@ function ModelComponent() {
             </div><div className="flex items-center mx-5">
             <div className="mx-4 text-orange-700">AI-Powered Dashboard</div>
             <FontAwesomeIcon icon={faRobot} className="text-orange-700" />
-          </div>
-        </div>
-      </header>
+          </div> 
+        </div> 
+      </header> */}
       <div className="flex justify-between bg-gray-800">
         <div className="flex justify-between bg-gray-600 p-1">
           <div className=" px-1 bg-gray-800">

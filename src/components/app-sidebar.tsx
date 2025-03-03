@@ -58,10 +58,9 @@ const data = {
     },
   ],
   user: {
-    title: "Home",
-    url: "/",
-    icon: Star,
-    description: "Homepage",
+    name: "Modeller",
+    email: "home@example.com",
+    avatar: "/avatar.png",
   },
   navMain: [
     {
@@ -71,31 +70,31 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "1 Prepare Domain Prompt",
+          title: "1 Domain Prompt gen.",
           url: "/prompt-builder",
           icon: Star,
           description: "Prompt Builder",
         },
         {
-          title: "2 Def. Domain Scope",
+          title: "2 Domain Scope def.",
           url: "/domain-builder",
           icon: Star,
           description: "Domain Builder",
         },
         {
-          title: "3 Def. Domain Ontology",
+          title: "3 Domain Ontology",
           url: "/concept-builder",
           icon: Star,
           description: "Concept Knowledge Modelling",
         },
         {
-          title: "4 Gen. IRTV Obj & Rels ",
+          title: "4 IRTV Model AI suggest",
           url: "/model-builder",
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",
         },
         {
-          title: "4 Gen. POPS Obj & Rels",
+          title: "4 POPS Model Obj & Rels",
           url: "/streaming",
           icon: Star,
           description: "Product, Organisation, Process, System (POPS) Modelling",
@@ -299,6 +298,7 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader>
         <TeamSwitcher teams={data.teams} />
+      <ModeToggle />
       </SidebarHeader>
       <SidebarContent>
         <div style={{ marginLeft: '20px' }}>
@@ -327,7 +327,6 @@ export function AppSidebar() {
           <StorageCard />
         </SidebarItem>
       </SidebarContent>
-      <ModeToggle />
       <SidebarFooter>
         <NavUser user={data.user} />
       </SidebarFooter>

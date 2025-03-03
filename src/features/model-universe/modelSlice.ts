@@ -122,117 +122,116 @@ export interface Model {
   }[],
 }
 
-export const initialState: DataType = {
-  phData: {
-    metis: {
-      name: 'AKMM Blank',
-      description: 'AKMM blank model',
-      models: [
-        {
-          id: 'm1',
-          name: 'Blank Model 1',
-          description: 'Blank Model 1 Description',
-          metamodelRef: '42c16e69-49ec-45b9-080e-0ca3ab8e0223',
-          objects: [
-            {
-              id: '1',
-              name: 'Object 1',
-              description: 'Object 1 Description',
-              proposedType: 'Object',
-              typeRef: '1',
-              typeName: 'Object',
-              category: 'Object',
-            },
-          ],
-          relships: [
-            {
-              id: '1',
-              name: 'Relationship 1',
-              typeRef: '1',
-              fromobjectRef: '1',
-              nameFrom: 'Object 1',
-              toobjectRef: '1',
-              nameTo: 'Object 1',
-            },
-          ],
-          modelviews: [
-            {
-              id: 'mv1',
-              name: 'Model View 1',
-              description: 'Model View 1 Description',
-              modelRef: 'm1',
-              modified: false,
-              markedAsDeleted: false,
-              objectviews: [
-                {
-                  id: 'ov1',
-                  name: 'Blank Object View 1',
-                  type: 'Object',
-                  loc: '0,0',
-                  size: '100,100',
-                  memberscale: 1,
-                  objectRef: '1',
-                  modified: false,
-                  markedAsDeleted: false,
-                  isSelect: false,
-                  isGroup: false,
-                  isExpanded: false,
-                  image: '',
-                  icon: '',
-                  fillColor: '',
-                  strokeColor: '',
-                  strokeWidth: '',
-                  strokeColor2: '',
-                  textColor: '',
-                  textColor2: '',
-                  viewkind: '',
-                },
-              ],
-              relshipviews: [
-                {
-                  id: 'rv1',
-                  name: 'Relationship View 1',
-                  relshipRef: '1',
-                  fromobjviewRef: '1',
-                  toobjviewRef: '1',
-                  points: [1, 2, 3, 4],
-                },
-              ],
-            },
-          ],
-        },
-      ],
-      metamodels: [],
-    },
-    domainPrompt: 'Domain blank prompt',
-    domain: { name: 'domain blank', description: 'domain blank description', prompt: 'domain prompt', presentation: 'domain blank presentation' },
-    ontology: {
-      name: 'Ontology blank domain',
-      description: 'Ontology blank description.',
-      presentation: 'Ontology blank Presentation',
-      concepts: [],
-      relationships: [],
-    },
-  },
-  phFocus: {
-    focusModel: {
-      id: 'm1',
-      name: 'Model 1',
-    },
-    focusModelview: {
-      id: 'mv1',
-      name: 'Model View 1',
-    },
-  },
-  phUser: {
-    id: '1',
-    name: 'User 1',
-    email: 'user@email.com'
-  },
-  phSource: 'AKM Blank',
-  // status: 'idle',
-  // error: null,
-};
+export const initialState: DataType = {phData: {metis: {name: '', description: '', models: [], metamodels: []}, domain: {name: '', description: '', prompt: '', presentation: ''}, ontology: {name: '', description: '', presentation: '', concepts: [], relationships: []}}, phFocus: {focusModel: {id: '', name: ''}, focusModelview: {id: '', name: ''}}, phUser: {id: '', name: '', email: ''}, phSource: ''};
+//   phData: {
+//     metis: {
+//       name: 'AKMM Blank',
+//       description: 'AKMM blank model',
+//       models: [
+//         {
+//           id: 'm1',
+//           name: 'Blank Model 1',
+//           description: 'Blank Model 1 Description',
+//           metamodelRef: '42c16e69-49ec-45b9-080e-0ca3ab8e0223',
+//           objects: [
+//             {
+//               id: '1',
+//               name: 'Object 1',
+//               description: 'Object 1 Description',
+//               proposedType: 'Object',
+//               typeRef: '1',
+//               typeName: 'Object',
+//               category: 'Object',
+//             },
+//           ],
+//           relships: [
+//             {
+//               id: '1',
+//               name: 'Relationship 1',
+//               typeRef: '1',
+//               fromobjectRef: '1',
+//               nameFrom: 'Object 1',
+//               toobjectRef: '1',
+//               nameTo: 'Object 1',
+//             },
+//           ],
+//           modelviews: [
+//             {
+//               id: 'mv1',
+//               name: 'Model View 1',
+//               description: 'Model View 1 Description',
+//               modelRef: 'm1',
+//               modified: false,
+//               markedAsDeleted: false,
+//               objectviews: [
+//                 {
+//                   id: 'ov1',
+//                   name: 'Blank Object View 1',
+//                   type: 'Object',
+//                   loc: '0,0',
+//                   size: '100,100',
+//                   memberscale: 1,
+//                   objectRef: '1',
+//                   modified: false,
+//                   markedAsDeleted: false,
+//                   isSelect: false,
+//                   isGroup: false,
+//                   isExpanded: false,
+//                   image: '',
+//                   icon: '',
+//                   fillColor: '',
+//                   strokeColor: '',
+//                   strokeWidth: '',
+//                   strokeColor2: '',
+//                   textColor: '',
+//                   textColor2: '',
+//                   viewkind: '',
+//                 },
+//               ],
+//               relshipviews: [
+//                 {
+//                   id: 'rv1',
+//                   name: 'Relationship View 1',
+//                   relshipRef: '1',
+//                   fromobjviewRef: '1',
+//                   toobjviewRef: '1',
+//                   points: [1, 2, 3, 4],
+//                 },
+//               ],
+//             },
+//           ],
+//         },
+//       ],
+//       metamodels: [],
+//     },
+//     domain: { name: 'domain blank', description: 'domain blank description', prompt: 'domain prompt', presentation: 'domain blank presentation' },
+//     ontology: {
+//       name: 'Ontology blank domain',
+//       description: 'Ontology blank description.',
+//       presentation: 'Ontology blank Presentation',
+//       concepts: [],
+//       relationships: [],
+//     },
+//   },
+//   phFocus: {
+//     focusModel: {
+//       id: 'm1',
+//       name: 'Model 1',
+//     },
+//     focusModelview: {
+//       id: 'mv1',
+//       name: 'Model View 1',
+//     },
+//   },
+//   phUser: {
+//     id: '1',
+//     name: 'User 1',
+//     email: 'user@email.com'
+//   },
+//   phSource: 'AKM Blank',
+//   // status: 'idle',
+//   // error: null,
+// };
 
 // Define the async thunk
 export const fetchOntology = createAsyncThunk(

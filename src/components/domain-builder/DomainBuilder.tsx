@@ -15,7 +15,7 @@ import { LoadingCircularProgress } from '@/components/loading';
 import TextareaAutosize from 'react-textarea-autosize';
 
 // Use a revised system prompt that does not ask for the topic.
-const userPrompt = "As a domain expert onDomain/Topic supplied, please provide the best extensive presentation ever created. If appropriate, make a dotted list of phases and steps.";
+const systemPrompt = "As a domain expert onDomain/Topic supplied, please provide the best extensive presentation ever created. If appropriate, make a dotted list of phases and steps.";
 
 // New reusable IconButton component
 const IconButton = ({
@@ -146,7 +146,7 @@ export default function DomainBuilder() {
         console.log("179 Executing prompt for domain...", prompt);
         setActiveTab('suggested-domain-description');
         setIsLoading(true);
-        const systemPrompt = data.phData.domain.prompt;
+        // const systemPrompt = data.phData.domain.prompt;
         const userPrompt = data.phData.domain.prompt;
         setFinalPrompt(data.phData.domain.prompt);
         if (!data.phData.domain.prompt.trim()) {
@@ -164,7 +164,7 @@ export default function DomainBuilder() {
                     schemaName: 'DomainSchema',
                     systemPrompt: systemPrompt || "",
                     // systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                    // userPrompt: userPrompt || "",
+                    userPrompt: userPrompt || "",
                     // userInput: userInput || "",
                     // contextItems: contextItems || "",
                     // contextOntology: contextOntology || "",

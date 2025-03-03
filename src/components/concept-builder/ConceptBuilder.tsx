@@ -144,8 +144,8 @@ const ConceptBuilder = () => {
             conceptString += `**Concepts**\n\n${existingConcepts?.map((c: any) => (c) && `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
             conceptString += `**Relationships**\n\n${existingRelationships?.map((r: any) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
-        const userPrompt = `${UserPrompt} \n\n ${data.phData.domain.description || ""}`;    
-        const userInput = `${UserInput} \n\n ${topicDescr}`;
+        const userPrompt = `${UserPrompt} \n\n **Domain name:**  ${data.phData.domain.name} \\ **Domain description:** ${data.phData.domain.description || ""}`;    
+        const userInput = `${UserInput} \n\n ${data.phData.domain.presentation}`//${topicDescr};
 
         // ## Domain name: \n\n ${data.phData.domain?.name || ""} \n\n 
         // ## Domain description: \n\n ${data.phData.domain?.description || ""} \n\n

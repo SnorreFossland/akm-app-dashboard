@@ -19517,7 +19517,7 @@
           "modified": false
         }
       ],
-      "name": "AKM-Core-Template",
+      "name": "AKMM-Core-Template",
       "description": "Modelling based on AKM-Core_MM Metamodel",
       "currentModelRef": "e07be786-dcce-4b36-9d83-b5b2805fcc3e",
       "currentModelviewRef": "bb8777b8-7464-43e6-b2a1-9c87fab9d409",
@@ -19625,7 +19625,7 @@
       "email": ""
     }
   },
-  "phTemplate": "AKM-Core-Template",
-  "phSource": "AKM-Core-Template",
+  "phTemplate": "AKMM-Core-Template",
+  "phSource": "AKMM-Core-Template",
   "lastUpdate": "2025-01-22T16:47:33.384Z"
 }

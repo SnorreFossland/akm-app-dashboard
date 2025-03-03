@@ -1,3 +1,4 @@
+import Head from "next/head";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ReduxProvider } from './providers/ReduxProvider';
@@ -26,7 +27,11 @@ export default async function RootLayout({
   const sidebarState = cookieStore.get("sidebar:state");
 
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        {/* This helps Next.js better understand how to handle the preloaded resources */}
+        <meta name="next-size-adjust" content="true" />
+      </head>
       <body className={`${inter.className}`}>
         <ReduxProvider>
           <ThemeProvider

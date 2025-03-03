@@ -266,13 +266,13 @@ export default function VercelAiPage() {
                             <div className="p-1 mb-2 w-full h-full">
                                 <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
                                     <span className="text-xs italic text-orange-500 mb-2">
-                                        As the Supercomputer "Deep Thought" in The "Hitchhiker’s Guide to the Galaxy" said :<br />
+                                        As the Supercomputer "Deep Thought" in The "Hitchhiker’s Guide to the Galaxy" replied :<br />
                                         «The Answer to the Ultimate Question of Life, the Universe, and Everything is » :
                                     </span>
                                     <span className="text-xl font-bold animate-bounce"> "42"</span>
                                     <hr className="my-2 bg-green-500" />
                                     <span className="text-xs italic text-orange-400 mb-4">
-                                        But we are here, to create the best AI-question (prompt), ever written.
+                                        But we are here, to create the best Question (Prompt), ever written.
                                     </span>
                                     <span className="text-xl font bold"> 😄</span>
                                 </div>
@@ -346,18 +346,6 @@ export default function VercelAiPage() {
                                 <div className="chat-output m-2 max-h-[calc(100vh-24rem)] overflow-y-auto">
                                     <ReactMarkdown className="prose prose-sm">{finalPrompt}</ReactMarkdown>
                                     </div>)
-                                    {/*
-                                    : (
-                                        <>
-                                            <Textarea
-                                                className="p-1 bg-gray-950 text-white"
-                                                value={finalPrompt}
-                                                onChange={(e) => setFinalPrompt(e.target.value)}
-                                                rows={15}
-                                                placeholder="Edit the final prompt here..."
-                                            />
-                                        </>
-                                )} */}
                                 <div className="text-sm font-bold flex justify-between mt-2">
                                     <IconButton
                                         onClick={() => setEditing(!editing)}
@@ -376,12 +364,9 @@ export default function VercelAiPage() {
                         )}
                     </div>
                 </div>
-                {/* ------------- */}
+
                 <div className="border-solid rounded border-1 border-green-900 w-3/4 h-full overflow-y-hidden">
                     <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full bg-transparent">
-                        {/* <CardTitle className="flex justify-center text-white m-1">
-                            Prompt Overview
-                        </CardTitle> */}
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
                             <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
                                 <TabsTrigger value="existing-prompt" className="pb-2 mt-3">
