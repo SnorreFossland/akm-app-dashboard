@@ -129,17 +129,22 @@ export default function VercelAiPage() {
             setClarificationPrompt("Domain/Topic input cannot be empty.");
             return;
         }
-        setIsLoading(true);
 
-        const clarificationInstruction = `${systemPrompt}  Domain/Topic/Theme: "${domainInput}", `
+        const clarificationInstruction = `
+        You are a prompt expert. For the Domain/Topic/Theme: "${domainInput}", 
+        generate a few clarifying questions asking the user for further details . 
+        Audience: AI model. Audience's Goal: To generate a perfect prompt for describing a domain.`;
 
         // const clarificationInstruction = `
         // You are a prompt expert. For the Domain/Topic/Theme: "${domainInput}", 
-        // generate clarifying questions asking the user for further details (e.g., unique features, objectives, phases, challenges, and context). 
-        // Audience: AI model. Audience's Goal: To generate a perfect prompt for describing a domain.
-        // Format: Markdown.
-        // Do not generate the final prompt yet; simply ask for clarification.`;
+        // generate a few clarifying questions asking the user for further details (e.g., unique features, objectives, phases, challenges, and context). 
+        // Audience: AI model. Audience's Goal: To generate a perfect prompt for describing a domain.`;
 
+        const currentDetails = additionalDetails.trim();
+        const allDetails = [collectedAdditionalDetails, currentDetails].filter(Boolean).join("\n");
+        const combinedInput = allDetails ? `${domainInput}\nAdditional details: ${allDetails}` : domainInput;
+
+        setIsLoading(true);
 
         try {
             const response = await fetch("/api/genprompt", {
@@ -153,7 +158,7 @@ export default function VercelAiPage() {
             const data = await response.json();
             console.log("121 Clarification  data:", data);
             setClarificationPrompt(data.response);
-            setFinalPrompt(data.prompt);
+            // setFinalPrompt(data.prompt);
             setPhase("clarification");
         } catch (error) {
             console.error("Error during clarification request:", error);
@@ -164,7 +169,7 @@ export default function VercelAiPage() {
     };
 
     // Second step: Either continue adding details or generate the final prompt
-    const handleFinalizeOrContinue = async (action: "continue" | "finalize") => {
+    const handleFinalize = async (action: "continue" | "finalize") => {
         // Combine the original domain input with all collected additional details and any current additional details
         setCurAction(action);
         const currentDetails = additionalDetails.trim();
@@ -172,9 +177,8 @@ export default function VercelAiPage() {
         const combinedInput = allDetails ? `${domainInput}\nAdditional details: ${allDetails}` : domainInput;
         setAdditionalDetails("");
         setIsLoading(true);
-        const finalPromptInstruction = `You are a prompt expert. Based on the following Domain/Topic/Theme information and additional details: 
+        const finalPromptInstruction = `As a prompt expert, you will create based on the ${systemPrompt}  and the following Domain/Topic/Theme: 
         "${combinedInput}", generate a perfect, detailed, and unambiguous prompt that instructs an AI to elaborate, analyze, and creatively describe the domain, with phases, aspects topology
-        Add an example of the expected output including phases, aspects, and topology.
         **Format:** Markdown.
         `;
         try {
@@ -260,11 +264,11 @@ export default function VercelAiPage() {
             </CardTitle>
             <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden">
                 <div className="p-1 border-solid rounded border-4 border-green-900 w-2/5 flex flex-col h-full">
-                    <h2 className="font-bold mb-2">Generate Perfect Domain Prompt:</h2>
-                    <div className="h-full">
+                    {/* <h2 className="font-bold mb-2">Generate Perfect Domain Prompt:</h2> */}
+                    <div className="h-full min-w-[30rem]">
                         {(phase === "initial") && (
                             <div className="p-1 mb-2 w-full h-full">
-                                <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
+                                {/* <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
                                     <span className="text-xs italic text-orange-500 mb-2">
                                         As the Supercomputer "Deep Thought" in The "Hitchhiker’s Guide to the Galaxy" replied :<br />
                                         «The Answer to the Ultimate Question of Life, the Universe, and Everything is » :
@@ -275,10 +279,10 @@ export default function VercelAiPage() {
                                         But we are here, to create the best Question (Prompt), ever written.
                                     </span>
                                     <span className="text-xl font bold"> 😄</span>
-                                </div>
-                                <div className="text-xs bg-white bg-opacity-10 p-1">
+                                </div> */}
+                                {/* <div className="text-xs bg-white bg-opacity-10 p-1">
                                     Provide the Domain/Topic for which you wish to create an extraordinary prompt.
-                                </div>
+                                </div> */}
                                 <div className="text-sm font-bold text-white p-1 mt-auto overflow-y-hidden">Enter a Domain/Topic/Theme below:
                                     <Textarea
                                         className="p-1 bg-gray-950 text-white"
@@ -290,7 +294,7 @@ export default function VercelAiPage() {
                                             }
                                         }}
                                         rows={10}
-                                        placeholder="ex. Knowledge model for E-Scooter rental service, Wind energy , etc."
+                                        placeholder={`Provide the Domain/Topic for which you wish to create an extraordinary prompt. \n Ex. Knowledge model for E-Scooter rental service, Wind energy , etc.`}
                                     />
                                 </div>
                                 <div className="">
@@ -322,16 +326,16 @@ export default function VercelAiPage() {
                                     placeholder={`For each question above, write your answer on a new line or bullet point. For example:\n1. [Answer to question 1]\n2. [Answer to question 2]`}
                                 />
                                 <div className="mt-auto">
-                                    {/* <ActionCardTitleButton
-                                        title="Continue Adding Details"
+                                    <ActionCardTitleButton
+                                        title="Continue generate Prompt"
                                         done={!isLoading}
-                                        onClick={() => handleFinalizeOrContinue("continue")}
+                                        onClick={() => handleAskForClarification}
                                         icon={faRobot}
-                                    /> */}
+                                    />
                                     <ActionCardTitleButton
                                         title="Finalize Prompt"
                                         done={curAction === "finalized" && !isLoading}
-                                        onClick={() => handleFinalizeOrContinue("finalize")}
+                                        onClick={() => handleFinalize("finalize")}
                                         icon={faCheckCircle}
                                     />
                                 </div>
@@ -339,7 +343,7 @@ export default function VercelAiPage() {
                         )}
 
                         {phase === "final" && (
-                            <>
+                            <div className="p-1 mb-2 h-full">
                                 <div className="text-sm font-bold mb-2">Final Perfect Prompt:</div>
                                 {/* {editing ? (
                                 */}
@@ -360,13 +364,13 @@ export default function VercelAiPage() {
                                         handleDispatchFinalPrompt={handleDispatchFinalPrompt}
                                     />
                                 </div>
-                            </>
+                            </div>
                         )}
                     </div>
                 </div>
 
-                <div className="border-solid rounded border-1 border-green-900 w-3/4 h-full overflow-y-hidden">
-                    <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full bg-transparent">
+                <div className="border-solid rounded border-1 border-green-900 h-full w-full overflow-y-hidden">
+                    <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
                             <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
                                 <TabsTrigger value="existing-prompt" className="pb-2 mt-3">
@@ -378,9 +382,9 @@ export default function VercelAiPage() {
                             </TabsList>
                             <TabsContent value="existing-prompt" className="m-0 px-1 py-2 rounded bg-background">
                                 <div className="m-2 p-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                                    <div className="text-white px-2 bg-gray-800 max-h-[calc(100vh-21rem)] overflow-y-auto">
+                                    <div className="text-white px-2 bg-gray-900 max-h-[calc(100vh-21rem)] overflow-y-auto">
                                         {!editedPrompt ? (
-                                            <ReactMarkdown className="prose prose-xs text-white custom-markdown">
+                                            <ReactMarkdown className="prose prose-xs text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
                                                 {`${data?.phData?.domain.prompt || "No existing prompt in store."}`}
                                             </ReactMarkdown>
                                         ) : (
@@ -419,12 +423,12 @@ export default function VercelAiPage() {
                                 </div>
                             </TabsContent>
                             <TabsContent value="final-suggested-prompt" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="m-1 py-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
-                                    <ReactMarkdown className="prose prose-lg">
+                                <div className=" py-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
+                                    <ReactMarkdown className="prose prose-xs text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
                                         {finalPrompt}
                                     </ReactMarkdown>
                                 </div>
-                                <div className="mb-auto">
+                                <div className="mb-auto min-w-[50%]">
                                     <DispatchCardTitle
                                         dispatchDone={dispatchDone}
                                         handleDispatchFinalPrompt={handleDispatchFinalPrompt}

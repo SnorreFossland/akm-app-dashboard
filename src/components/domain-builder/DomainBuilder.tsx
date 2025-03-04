@@ -240,7 +240,7 @@ export default function DomainBuilder() {
                 </div>
                 {/* ------------- */}
                 <div className="border-solid rounded border-1 border-green-900 w-3/4 h-full overflow-y-hidden">
-                    <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full bg-transparent">
+                    <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
                             <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
                                 <TabsTrigger value="existing-domain-description" className="pb-2 mt-3">Existing Domain Summary</TabsTrigger>
@@ -290,7 +290,7 @@ export default function DomainBuilder() {
                                 </div>
                             </TabsContent>
                             <TabsContent value="suggested-domain-description" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="m-1 px-1 rounded  bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-17rem)]">
+                                <div className="m-1 px-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-17rem)]">
                                     <ReactMarkdown className="prose prose-lg h-full w-full">
                                         {(suggestedDomainData) 
                                             ? `## Name: ${suggestedDomainData.name}\n\n### Description:\n${suggestedDomainData.description}\n\n### Presentation:\n${suggestedDomainData.presentation}` 

@@ -450,8 +450,8 @@ const ConceptBuilder = () => {
                     <Card className="p-1 h-full">
                         <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                                <TabsTrigger value="existing-concepts" className="mt-2">Existing Ontology Concepts</TabsTrigger>
-                                <TabsTrigger value="suggested-concepts" className="mt-2">Suggested Ontology Concepts</TabsTrigger>
+                                <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Ontology Concepts</TabsTrigger>
+                                <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Ontology Concepts</TabsTrigger>
                             </TabsList>
                             <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
                                 <div className="mx-1 bg-gray-700 ">

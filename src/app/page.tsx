@@ -26,7 +26,7 @@ export default function Home() {
   const slide1 = (
     <div className="flex flex-row items-center justify-between h-full p-2 md:p-2 gap-4 max-w-7xl mx-auto ">
       <div className="flex flex-col items-left justify-start space-y-2 md:space-y-4 text-sm md:text-xl p-4 w-full md:w-1/3  p-4 bg-gradient-to-r from-green-950 to-blue-1000">
-        <div className="font-semibold bg-gradient-to-r from-green-400 to-blue-600 bg-clip-text text-transparent">
+        <div className="font-semibold bg-gradient-to-l from-green-400 to-blue-600 bg-clip-text text-transparent">
           AI Powered - Active Knowledge Modelling (AKM). <br />
           Using AI to help building a Active Knowledge Models - consisting of various models exploring different aspects of the Domain.
         </div>
@@ -163,9 +163,18 @@ export default function Home() {
         <div className="text-4xl font-semibold text-blue-700">Active AI Powered Knowledge Models</div>
         <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 opacity-10 animate-pulse"></div>
         <div className="text-sm text-gray-700 space-y-1">
-          <div>Info 1: Overview</div>
-          <div>Info 2: Details</div>
-          <div>Info 3: More Info</div>
+          <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
+            <span className="text-xs italic text-orange-500 mb-2">
+              As the Supercomputer "Deep Thought" in The "Hitchhiker’s Guide to the Galaxy" replied :<br />
+              «The Answer to the Ultimate Question of Life, the Universe, and Everything is » :
+            </span>
+            <span className="text-xl font-bold animate-bounce"> "42"</span>
+            <hr className="my-2 bg-green-500" />
+            <span className="text-xs italic text-orange-400 mb-4">
+              But we are here, to create the best Question (Prompt), ever written.
+            </span>
+            <span className="text-xl font bold"> 😄</span>
+          </div>
         </div>
       </div>
     </div>
@@ -192,12 +201,11 @@ export default function Home() {
         <div className="flex items-center justify-center h-full overflow-hidden">
           <button
             onClick={prevSlide}
-            className="flex-shrink-0 mr-4 bg-white/10 rounded-full p-2 shadow-md hover:bg-white"
+            className="flex-shrink-0 mr-4 bg-white/10 rounded-full p-2 shadow-md hover:bg-gray"
             aria-label="Previous"
           >
             <ChevronLeft size={24} />
           </button>
-
           <div className="relative flex flex-1 items-center justify-center">
             <div
               className="flex transition-transform duration-300 h-full w-full"
@@ -213,7 +221,6 @@ export default function Home() {
               ))}
             </div>
           </div>
-
           <button
             onClick={nextSlide}
             className="flex-shrink-0 ml-4 bg-white/20 rounded-full p-2 shadow-md hover:bg-white"

@@ -93,6 +93,7 @@ function ModelComponent() {
 
   return (
     <div className='model-universe-a-component w-full'>
+      <Header metisName={data.phData.metis?.name} />
       {/* <header className="m-2 me-auto w-full bg-blue-500/60 text-gradient-to-r from-green-700 to-blue-900 text-transparent bg-clip-text shadow-md shadow-green-50/50">
         <Header metisName={data.phData.metis?.name} />
          <div className="flex justify-between items-center font-bold text-white text-green-500 mx-5">
