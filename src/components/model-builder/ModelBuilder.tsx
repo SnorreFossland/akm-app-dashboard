@@ -213,7 +213,8 @@ const Modelbuilder = () => {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    aiModelName: "gpt-4o-2024-08-06",
+                    aiModelName: "gpt-4o",
+                    // aiModelName: "gpt-4o-2024-08-06",
                     schemaName: 'ObjectSchema',
                     systemPrompt: systemPrompt || "",
                     systemBehaviorGuidelines: systemBehaviorGuidelines || "",
@@ -258,9 +259,10 @@ const Modelbuilder = () => {
 
     return (
         <div className="flex flex-col h-[calc(100vh-9rem)] border-solid rounded border-4 border-green-700 w-full bg-transparent">
-            <CardTitle className="flex justify-center text-gray-400 m-1 text-xl">
-                AI Powered Active Knowledge Canvas (Model Builder IRTV)
-            </CardTitle>
+            <CardTitle className="flex justify-start text-gray-400 text-xl">
+                 <span className="text-active-item me-auto px-2">Model Builder (IRTV)</span>
+                 <span className="mx-auto text-center">AI Powered Active Knowledge Modelling Canvas</span>
+             </CardTitle>
             <div className="flex  h-[calc(100vh-5rem)] w-full">
                 <div className="border-solid rounded border-4 border-green-700 w-1/4">
                     <div className="m-1 mb-5">
@@ -290,7 +292,7 @@ const Modelbuilder = () => {
                     </CardTitle>
                     <div className="flex flex-wrap items-start m-1">
                         <CardTitle
-                            className={`flex justify-between items-center flex-grow ps-1 ${(model?.objects?.length > 0) ? 'text-green-600' : 'text-green-200'}`}
+                            className={`flex justify-between items-center flex-grow ps-1 ${(model?.objects && model.objects.length > 0) ? 'text-green-600' : 'text-green-200'}`}
                         >
                             Generate IRTV Obj.Rels:
                             <div className="flex items-center ml-auto">

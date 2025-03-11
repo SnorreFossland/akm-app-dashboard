@@ -19524,15 +19524,15 @@
       "currentMetamodelRef": "b9f5b34e-2ea4-4f68-6421-2e1253c2322d"
     },
     "domain": {
-      "name": "domain initial name",
-      "description": "domain initial description",
-      "prompt": "domain intial prompt",
-      "presentation": " domain initial presentation"
+      "name": "",
+      "description": "",
+      "prompt": "",
+      "presentation": " "
     },
     "ontology": {
-      "name": "Ontology blank domain",
-      "description": "Ontology blank description.",
-      "presentation": "Ontology blank Presentation",
+      "name": "",
+      "description": "",
+      "presentation": "",
       "concepts": [],
       "relationships": []
     }

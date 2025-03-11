@@ -5,7 +5,10 @@ import { ReduxProvider } from './providers/ReduxProvider';
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarLayout, SidebarTrigger } from "@/components/ui/sidebar";
 
-const inter = Inter({ subsets: ["latin"] });
+const inter = Inter({
+  subsets: ['latin'],
+  display: 'swap', // Controls loading behavior
+})
 
 import { ThemeProvider } from "@/components/theme-provider"
 // import { ModeToggle } from '@/components/mode-toggle'

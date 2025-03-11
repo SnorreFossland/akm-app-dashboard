@@ -68,7 +68,7 @@ function ModelComponent() {
       // if (data.phData.metis) {
       setMetis(data.phData.metis);
       setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id));
-      setCurrentModelview(currentModel?.modelviews.find(mv => mv.id === focusModelview?.id));
+      setCurrentModelview(currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id));
       
     }
   }, [data.phFocus, data.phData.metis, focusModel?.id, focusModelview?.id, currentModel?.modelviews]);
@@ -76,13 +76,15 @@ function ModelComponent() {
   const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedModel = data.phData.metis.models.find(model => model.name === event.target.value);
     setCurrentModel(selectedModel);
+    setFocusModel(selectedModel);
+    setFocusModelview(selectedModel?.modelviews[0]);
     // if (selectedModel) {
     //   setCurrentModelview(selectedModel.modelviews[0]);
     // }
   };
 
   const handleModelviewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedModelview = currentModel.modelviews.find(mv => mv.name === event.target.value);
+    const selectedModelview = currentModel.modelviews.find((mv: { name: string }) => mv.name === event.target.value);
     setCurrentModelview(selectedModelview);
   };
 

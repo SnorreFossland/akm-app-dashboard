@@ -1,15 +1,19 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { fetchModelDataFromGitHub, saveModelDataToGitHub } from './modelAPI';
 
+// Define a specific type for the domain data
+interface DomainData {
+  name: string;
+  description: string;
+  prompt: string;
+  presentation: string;
+  additionalContext?: string; // Make this optional since it's a new field
+}
+
 export interface DataType {
   phData: {
     metis: Metis,
-    domain: {
-      name: string,
-      description: string,
-      prompt: string,
-      presentation: string,
-    },
+    domain: DomainData,
     ontology: {
       name: string,
       description: string,
@@ -122,7 +126,7 @@ export interface Model {
   }[],
 }
 
-export const initialState: DataType = {phData: {metis: {name: '', description: '', models: [], metamodels: []}, domain: {name: '', description: '', prompt: '', presentation: ''}, ontology: {name: '', description: '', presentation: '', concepts: [], relationships: []}}, phFocus: {focusModel: {id: '', name: ''}, focusModelview: {id: '', name: ''}}, phUser: {id: '', name: '', email: ''}, phSource: ''};
+export const initialState: DataType = { phData: { metis: { name: '', description: '', models: [], metamodels: [] }, domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' }, ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] } }, phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } }, phUser: { id: '', name: '', email: '' }, phSource: '' };
 //   phData: {
 //     metis: {
 //       name: 'AKMM Blank',
@@ -380,8 +384,12 @@ const modelSlice = createSlice({
     setSource(state, action: PayloadAction<DataType['phSource']>) {
       state.phSource = action.payload;
     },
-    setDomainData(state, action: PayloadAction<DataType['phData']['domain']>) {
-      state.phData.domain = action.payload || state.phData.domain;
+    setDomainData(state, action: PayloadAction<DomainData>) {
+      // Preserve any existing fields not provided in the payload
+      state.phData.domain = {
+        ...state.phData.domain,
+        ...action.payload
+      };
     },
     setDomainPrompt(state, action: PayloadAction<DataType['phData']['domain']['prompt']>) {
       console.log('375 action.payload', action.payload, state);
@@ -389,6 +397,12 @@ const modelSlice = createSlice({
     },
     deleteDomainPrompt(state) {
       state.phData.domain.prompt = "";
+    },
+    setDomainAdditionalContext(state, action: PayloadAction<string>) {
+      state.phData.domain.additionalContext = action.payload;
+    },
+    resetDomainData(state) {
+      state.phData.domain = initialState.phData.domain;
     },
     setOntologyData(state, action: PayloadAction<DataType>) {
       console.log('348 action.payload', action.payload, state);
@@ -475,22 +489,24 @@ const modelSlice = createSlice({
 });
 
 export const {
-    setFileData,
-    setNewModel,
-    setObjects,
-    setRelationships,
-    setNewModelview,
-    setFocusModel,
-    setFocusModelview,
-    setSource,
-    setDomainPrompt,
-    setDomainData,
-    setOntologyData,
-    editConcept,
-    deleteConcept,
-    editRelationship,
-    clearModel,
-    clearStore,
-    deleteDomainPrompt // Add the new action here
+  setFileData,
+  setNewModel,
+  setObjects,
+  setRelationships,
+  setNewModelview,
+  setFocusModel,
+  setFocusModelview,
+  setSource,
+  setDomainPrompt,
+  setDomainData,
+  setOntologyData,
+  editConcept,
+  deleteConcept,
+  editRelationship,
+  clearModel,
+  clearStore,
+  deleteDomainPrompt, // Add the new action here
+  setDomainAdditionalContext,
+  resetDomainData
 } = modelSlice.actions;
 export default modelSlice.reducer;

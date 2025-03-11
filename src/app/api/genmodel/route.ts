@@ -32,15 +32,15 @@ export async function POST(req: Request) {
 
   console.log('27 route schema', schemaName);
   
-  const messages: { role: string; content: string }[] = [
-    systemPrompt ? { role: 'system', content: systemPrompt } : null,
-    systemBehaviorGuidelines ? { role: 'system', content: systemBehaviorGuidelines } : null,
-    userPrompt ? { role: 'user', content: userPrompt } : null,
-    userInput ? { role: 'user', content: userInput } : null,
-    contextItems ? { role: 'assistant', content: contextItems } : null,
-    contextOntology ? { role: 'assistant', content: contextOntology } : null,
-    contextMetamodel ? { role: 'assistant', content: contextMetamodel } : null,
-  ].filter((message): message is { role: string; content: string } => message !== null);
+  const messages = [
+    systemPrompt ? { role: 'system' as const, content: systemPrompt } : null,
+    systemBehaviorGuidelines ? { role: 'system' as const, content: systemBehaviorGuidelines } : null,
+    userPrompt ? { role: 'user' as const, content: userPrompt } : null,
+    userInput ? { role: 'user' as const, content: userInput } : null,
+    contextItems ? { role: 'assistant' as const, content: contextItems } : null,
+    contextOntology ? { role: 'assistant' as const, content: contextOntology } : null,
+    contextMetamodel ? { role: 'assistant' as const, content: contextMetamodel } : null,
+  ].filter((message): message is { role: 'system' | 'user' | 'assistant'; content: string } => message !== null);
 
   // console.log('42 route messages', messages);
 

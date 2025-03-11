@@ -70,7 +70,7 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "1 Domain Prompt gen.",
+          title: "1 Prepare Domain Prompt",
           url: "/prompt-builder",
           icon: Star,
           description: "Prompt Builder",
@@ -82,22 +82,22 @@ const data = {
           description: "Domain Builder",
         },
         {
-          title: "3 Domain Ontology",
+          title: "3 Domain Ontology def.",
           url: "/concept-builder",
           icon: Star,
           description: "Concept Knowledge Modelling",
         },
         {
-          title: "4 IRTV Model AI suggest",
-          url: "/model-builder",
-          icon: Star,
-          description: "Active Knowledge Modelling with IRTV",
-        },
-        {
-          title: "4 POPS Model Obj & Rels",
+          title: "4 POPS Model Obj gen.",
           url: "/streaming",
           icon: Star,
           description: "Product, Organisation, Process, System (POPS) Modelling",
+        },
+        {
+          title: "4 IRTV Model gen.",
+          url: "/model-builder",
+          icon: Star,
+          description: "Active Knowledge Modelling with IRTV",
         },
         {
           title: "5 Modelview Builder ",

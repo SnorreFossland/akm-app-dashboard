@@ -13,7 +13,7 @@ import ReactMarkdown from "react-markdown";
 import { LoadingCircularProgress } from "@/components/loading";
 import { setDomainPrompt, deleteDomainPrompt, setDomainData } from "@/features/model-universe/modelSlice";
 
-import { systemPrompt } from '@/app/prompt-builder/prompts';
+import { systemPrompt, systemPromptExample } from '@/app/prompt-builder/prompts';
 // import { set } from "zod";
 
 export default function VercelAiPage() {
@@ -31,6 +31,8 @@ export default function VercelAiPage() {
     const [domainInput, setDomainInput] = useState("");
     // State for clarifying questions returned by ChatGPT
     const [clarificationPrompt, setClarificationPrompt] = useState("");
+    // State for storing the response from ChatGPT
+    const [clarificationResponse, setClarificationResponse] = useState("");
     // States for additional details and confirmation after clarification
     const [additionalDetails, setAdditionalDetails] = useState("");
     // New state to accumulate multiple rounds of additional details
@@ -43,6 +45,8 @@ export default function VercelAiPage() {
     const [editing, setEditing] = useState(true);
     // State for the current action (continue or finalize)
     const [curAction, setCurAction] = useState<"continue" | "finalize" | "finalized">("finalize");
+    // State to track the last time Enter was pressed
+    const [lastEnterPress, setLastEnterPress] = useState<number>(0);
     // Reusable IconButton component
     interface IconButtonProps {
         onClick: () => void;
@@ -124,27 +128,46 @@ export default function VercelAiPage() {
 
     // First step: Ask for clarification based on the domain input
     const handleAskForClarification = async () => {
-        if (!domainInput.trim()) {
+        if (phase === "initial" && !domainInput.trim()) {
             console.error("Domain/Topic input is empty");
             setClarificationPrompt("Domain/Topic input cannot be empty.");
             return;
         }
 
-        const clarificationInstruction = `
-        You are a prompt expert. For the Domain/Topic/Theme: "${domainInput}", 
-        generate a few clarifying questions asking the user for further details . 
-        Audience: AI model. Audience's Goal: To generate a perfect prompt for describing a domain.`;
-
-        // const clarificationInstruction = `
-        // You are a prompt expert. For the Domain/Topic/Theme: "${domainInput}", 
-        // generate a few clarifying questions asking the user for further details (e.g., unique features, objectives, phases, challenges, and context). 
-        // Audience: AI model. Audience's Goal: To generate a perfect prompt for describing a domain.`;
-
-        const currentDetails = additionalDetails.trim();
-        const allDetails = [collectedAdditionalDetails, currentDetails].filter(Boolean).join("\n");
-        const combinedInput = allDetails ? `${domainInput}\nAdditional details: ${allDetails}` : domainInput;
-
         setIsLoading(true);
+
+        // Combine the original domain input with all collected additional details
+        const currentDetails = additionalDetails.trim();
+
+        // If we have new details, add them to collected details
+        if (currentDetails && phase === "clarification") {
+            setCollectedAdditionalDetails((prev) => {
+                const roundNumber = prev ? prev.split('\n\nClarification Round').length : 0;
+                return prev ? `${prev}\n\nClarification Round ${roundNumber + 1}:\n${currentDetails}`
+                    : `Clarification Round 1:\n${currentDetails}`;
+            });
+            setAdditionalDetails("");
+        }
+       
+        // Create appropriate prompt based on current phase
+        const allDetails = phase === "clarification" ? `${collectedAdditionalDetails}${currentDetails ? `\n\n${currentDetails}` : ''}` : domainInput;
+
+
+        let clarificationInstruction = ``;
+        if (phase === "initial" &&  domainInput) {
+            // In clarification phase with no new details, generate questions
+            clarificationInstruction = `\n\nDomain:\n\n ${domainInput}"\n\n"${allDetails}", \n generate clarifying 3 questions to ask for further details about the Domain. Use plain text format.`;
+        } else if (phase === "clarification") {
+            // When in initial phase, summarize the domain and ask clarifying questions
+            clarificationInstruction = `Provide a concise summary of this Domain/Topic/Theme: "${domainInput}" ${allDetails}.\n\n
+            First, suggest a good Domain definition name but including ${domainInput}.
+            Then, provide a 1-2 sentence overview of this domain.
+            Then, identify 3 key aspects or focus areas of this domain.`
+            // Finally, generate 3 specific questions to gather more details about this domain.`;
+        } else {
+            // With new details, suggest domain definition based on all collected information
+            clarificationInstruction = `Suggest a good Domain definition/scope based on: \n\nDomain/Topic/Theme:\n\n ${domainInput}"\n\n"${collectedAdditionalDetails}}`;
+        }
 
         try {
             const response = await fetch("/api/genprompt", {
@@ -155,11 +178,15 @@ export default function VercelAiPage() {
             if (!response.ok) {
                 throw new Error(`Error: ${response.statusText}`);
             }
-            const data = await response.json();
-            console.log("121 Clarification  data:", data);
+            const data = await response.json(); // response is the clarification questions
+            console.log("173 Clarification data:", data);
             setClarificationPrompt(data.response);
-            // setFinalPrompt(data.prompt);
+            setClarificationResponse(allDetails);
+            setFinalPrompt("The final prompt is under construction.");
+            setAdditionalDetails("");
             setPhase("clarification");
+            setCurAction("continue");
+            setActiveTab("final-suggested-prompt");
         } catch (error) {
             console.error("Error during clarification request:", error);
             setClarificationPrompt("An error occurred while asking for clarification.");
@@ -168,59 +195,57 @@ export default function VercelAiPage() {
         }
     };
 
-    // Second step: Either continue adding details or generate the final prompt
-    const handleFinalize = async (action: "continue" | "finalize") => {
-        // Combine the original domain input with all collected additional details and any current additional details
-        setCurAction(action);
-        const currentDetails = additionalDetails.trim();
-        const allDetails = [collectedAdditionalDetails, currentDetails].filter(Boolean).join("\n");
-        const combinedInput = allDetails ? `${domainInput}\nAdditional details: ${allDetails}` : domainInput;
-        setAdditionalDetails("");
+    // Second step: Generate the final prompt based on all collected information
+    const handleFinalize = async () => {
         setIsLoading(true);
-        const finalPromptInstruction = `As a prompt expert, you will create based on the ${systemPrompt}  and the following Domain/Topic/Theme: 
-        "${combinedInput}", generate a perfect, detailed, and unambiguous prompt that instructs an AI to elaborate, analyze, and creatively describe the domain, with phases, aspects topology
-        **Format:** Markdown.
+
+        // Combine all collected information
+        const allInformation = collectedAdditionalDetails
+        // `${domainInput}\n\nAdditional Information:\n${collectedAdditionalDetails}` :
+        // domainInput;
+        const allInfo = allInformation.trim() ? `\n\nAdditional Context:\n${allInformation}` : "";
+
+        const finalPromptInstruction = `As a prompt expert, create a detailed prompt template based on the following information:
+        \n\nDomain: \n\n${clarificationPrompt}
+        ${allInfo}
+        \n\nYour task is to generate a well-structured prompt that could be given to an AI assistant.
+        \n\nReference the system prompt for guidance: 
+        \n\n**System Prompt:**
+        \n\n${systemPrompt}
+        \n\n**Example System Prompt:**
+        \n\n${systemPromptExample}
         `;
+        // \n\nYour task is to generate a well-structured prompt that could be given to an AI assistant.  .
+        // \n\nReturn only the prompt text without any explanations or meta-commentary.
+
         try {
             const response = await fetch("/api/genprompt", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ prompt: finalPromptInstruction }),
+                body: JSON.stringify({ 
+                    aiModelName: "gpt-4.5", 
+                    prompt: finalPromptInstruction 
+                }),
             });
             if (!response.ok) {
                 throw new Error(`Error: ${response.statusText}`);
             }
             const dataResponse = await response.json();
-            console.log("Final Prompt Response:", dataResponse);
-            if (action === "continue") {
-                // Append the current additional details (if any) to the collected additional details
-                const newDetails = additionalDetails.trim();
-                if (newDetails) {
-                    setCollectedAdditionalDetails((prev) => (prev ? prev + "\n" + newDetails : newDetails));
-                }
-                setFinalPrompt(dataResponse.response);
-                setClarificationPrompt(dataResponse.response);
-                setActiveTab("final-suggested-prompt");
-                setPhase("clarification");
-                setIsLoading(false);
-                // setPhase("clarification");
-                // Clear the input fields to allow further additions
-                if (additionalDetails === "") {
-                    alert("Additional details added. You may continue to add more details or finalize the prompt.");
-                }
-                return;
-            } else if (action === "finalize") {
-                setFinalPrompt(dataResponse.response);
-                setPhase("final");
-                setActiveTab("final-suggested-prompt");
-                setCurAction("finalized");
-            }
+            console.log("224 Final Prompt Response:", dataResponse);
+
+            // Fix: Only use the response part, not the original prompt
+            setFinalPrompt(dataResponse.response);
+            setPhase("final");
+            setActiveTab("final-suggested-prompt");
         } catch (error) {
             console.error("Error during final prompt generation:", error);
             setFinalPrompt("An error occurred while generating the final prompt.");
         } finally {
             setIsLoading(false);
         }
+
+        console.log("200 Final Prompt Instruction:", finalPromptInstruction);
+
     };
 
     // Dispatch the final prompt to the Redux store
@@ -230,8 +255,22 @@ export default function VercelAiPage() {
             return;
         }
         console.log("193 Dispatching Final Prompt:", finalPrompt, domainInput, additionalDetails);
+        // First, get the existing domain data
+        const currentDomainData = data?.phData?.domain || {};
+        // Create a complete domain data object that preserves existing values
+        const completeData = {
+            name: domainInput || currentDomainData.name || "",
+            description: currentDomainData.description || "",
+            prompt: finalPrompt, // Update with the new prompt
+            presentation: currentDomainData.presentation || "",
+            // Add any additional context gathered during prompt building
+            additionalContext: collectedAdditionalDetails || currentDomainData.additionalContext || ""
+        };
+
+        // Dispatch both the prompt and complete domain data
         dispatch(setDomainPrompt(finalPrompt));
-        dispatch(setDomainData({ name: domainInput, description: "", prompt: finalPrompt, presentation: "" }));
+        dispatch(setDomainData(completeData));
+
         setDispatchDone(true);
         setActiveTab("existing-prompt");
     };
@@ -259,30 +298,17 @@ export default function VercelAiPage() {
 
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-800 w-full bg-transparent">
-            <CardTitle className="flex justify-center text-gray-400 text-xl">
-                AI Powered Active Knowledge Canvas (Prompt Builder)
+            <CardTitle className="flex justify-start text-gray-400 text-xl">
+                <span className="text-active-item me-auto px-2">Prompt Builder</span>
+                <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span>
             </CardTitle>
             <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden">
                 <div className="p-1 border-solid rounded border-4 border-green-900 w-2/5 flex flex-col h-full">
                     {/* <h2 className="font-bold mb-2">Generate Perfect Domain Prompt:</h2> */}
                     <div className="h-full min-w-[30rem]">
+
                         {(phase === "initial") && (
                             <div className="p-1 mb-2 w-full h-full">
-                                {/* <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
-                                    <span className="text-xs italic text-orange-500 mb-2">
-                                        As the Supercomputer "Deep Thought" in The "Hitchhiker’s Guide to the Galaxy" replied :<br />
-                                        «The Answer to the Ultimate Question of Life, the Universe, and Everything is » :
-                                    </span>
-                                    <span className="text-xl font-bold animate-bounce"> "42"</span>
-                                    <hr className="my-2 bg-green-500" />
-                                    <span className="text-xs italic text-orange-400 mb-4">
-                                        But we are here, to create the best Question (Prompt), ever written.
-                                    </span>
-                                    <span className="text-xl font bold"> 😄</span>
-                                </div> */}
-                                {/* <div className="text-xs bg-white bg-opacity-10 p-1">
-                                    Provide the Domain/Topic for which you wish to create an extraordinary prompt.
-                                </div> */}
                                 <div className="text-sm font-bold text-white p-1 mt-auto overflow-y-hidden">Enter a Domain/Topic/Theme below:
                                     <Textarea
                                         className="p-1 bg-gray-950 text-white"
@@ -295,6 +321,12 @@ export default function VercelAiPage() {
                                         }}
                                         rows={10}
                                         placeholder={`Provide the Domain/Topic for which you wish to create an extraordinary prompt. \n Ex. Knowledge model for E-Scooter rental service, Wind energy , etc.`}
+                                        ref={(input) => {
+                                            if (input && phase === "initial") {
+                                                input.focus();
+                                            }
+                                        }}
+                                        autoFocus
                                     />
                                 </div>
                                 <div className="">
@@ -311,31 +343,63 @@ export default function VercelAiPage() {
                         {phase === "clarification" && (
                             <div className="p-1 mb-2 w-full h-full">
                                 <div className="p-1 text-sm font-bold px-1 bg-white bg-opacity-5 ">Domain:
-                                    <span className="chat-output p-2 px-2 bg-white bg-opacity-10 overflow-y-auto">{domainInput}</span>
+                                    <div className="chat-output p-2 px-2 bg-white bg-opacity-10 overflow-y-auto">{domainInput}</div>
+                                    {/* <div className="text-sm font-bold mt-2">{additionalDetails}</div> */}
                                 </div>
-                                <div className="text-sm font-bold mt-2">Clarification Questions:</div>
+                                {/* <div className="text-sm font-bold mt-2">Clarification Questions:</div> */}
                                 <div className="chat-output bg-gray-800 h-3/6 overflow-y-auto">
-                                    <ReactMarkdown className="prose prose-sm">{clarificationPrompt}</ReactMarkdown>
+                                    <div className="p-3 bg-gray-700 rounded shadow">Clarification...
+                                        <div className="chat-output m-2 max-h-[calc(100vh-24rem)] overflow-y-auto">
+                                            <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
+                                                {clarificationResponse}
+                                            </ReactMarkdown>
+                                        </div>
+                                        <div className="text-sm font-bold mt-2">Clarification Questions:</div>
+                                        <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
+                                            {clarificationPrompt}
+                                        </ReactMarkdown>
+                                    </div>
                                 </div>
                                 <div className="text-sm font-bold mt-2">Additional Details (Optional):</div>
                                 <Textarea
                                     className="p-1 bg-gray-950 text-white"
                                     value={additionalDetails}
                                     onChange={(e) => setAdditionalDetails(e.target.value)}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter") {
+                                            // Track when Enter was last pressed
+                                            const now = Date.now();
+                                            const timeSinceLastEnter = now - lastEnterPress;
+
+                                            // If Enter was pressed within the last 500ms, execute the function
+                                            if (timeSinceLastEnter < 2500) {
+                                                handleAskForClarification();
+                                                setLastEnterPress(0); // Reset timer
+                                            } else {
+                                                setLastEnterPress(now); // Update the last press time
+                                            }
+                                        }
+                                    }}
                                     rows={10}
-                                    placeholder={`For each question above, write your answer on a new line or bullet point. For example:\n1. [Answer to question 1]\n2. [Answer to question 2]`}
+                                    placeholder={`For each question above, write your answer on a new line or bullet point.`}
+                                    ref={(input) => {
+                                        if (input && phase === "clarification") {
+                                            input.focus();
+                                        }
+                                    }}
+                                    autoFocus
                                 />
                                 <div className="mt-auto">
                                     <ActionCardTitleButton
-                                        title="Continue generate Prompt"
+                                        title="Add to Prompt"
                                         done={!isLoading}
-                                        onClick={() => handleAskForClarification}
+                                        onClick={handleAskForClarification}
                                         icon={faRobot}
                                     />
                                     <ActionCardTitleButton
                                         title="Finalize Prompt"
                                         done={curAction === "finalized" && !isLoading}
-                                        onClick={() => handleFinalize("finalize")}
+                                        onClick={handleFinalize}
                                         icon={faCheckCircle}
                                     />
                                 </div>
@@ -345,15 +409,29 @@ export default function VercelAiPage() {
                         {phase === "final" && (
                             <div className="p-1 mb-2 h-full">
                                 <div className="text-sm font-bold mb-2">Final Perfect Prompt:</div>
-                                {/* {editing ? (
-                                */}
-                                <div className="chat-output m-2 max-h-[calc(100vh-24rem)] overflow-y-auto">
-                                    <ReactMarkdown className="prose prose-sm">{finalPrompt}</ReactMarkdown>
-                                    </div>)
+                                {editing ? (
+                                    <Textarea
+                                        className="p-1 bg-gray-950 text-white"
+                                        value={finalPrompt}
+                                        onChange={(e) => setFinalPrompt(e.target.value)}
+                                        rows={20}
+                                        placeholder="Edit the final prompt here..."
+                                        // ref={(input) => {
+                                        //     if (input && phase === "final") {
+                                        //         input.focus();
+                                        //     }
+                                        // }}
+                                        // autoFocus
+                                    />
+                                ) : (
+                                    <div className="chat-output m-2 max-h-[calc(100vh-24rem)] overflow-y-auto">
+                                        <ReactMarkdown className="prose prose-sm">{finalPrompt}</ReactMarkdown>
+                                    </div>
+                                )}
                                 <div className="text-sm font-bold flex justify-between mt-2">
                                     <IconButton
                                         onClick={() => setEditing(!editing)}
-                                        icon={editing ? faEdit : faCheckCircle}
+                                        icon={!editing ? faEdit : faCheckCircle}
                                         className="m-2 w-full"
                                     />
                                 </div>
@@ -384,7 +462,7 @@ export default function VercelAiPage() {
                                 <div className="m-2 p-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
                                     <div className="text-white px-2 bg-gray-900 max-h-[calc(100vh-21rem)] overflow-y-auto">
                                         {!editedPrompt ? (
-                                            <ReactMarkdown className="prose prose-xs text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
+                                            <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
                                                 {`${data?.phData?.domain.prompt || "No existing prompt in store."}`}
                                             </ReactMarkdown>
                                         ) : (
@@ -399,7 +477,7 @@ export default function VercelAiPage() {
                                     </div>
                                     <div className="flex justify-between bg-gray-700">
                                         <IconButton
-                                            onClick={() => setEditedPrompt(data?.phData?.domain.prompt || "")}
+                                            onClick={() => { setEditedPrompt(data?.phData?.domain.prompt || ""); setPhase("final"); }}
                                             icon={faEdit}
                                             className="mr-2 w-full"
                                         />
@@ -424,7 +502,7 @@ export default function VercelAiPage() {
                             </TabsContent>
                             <TabsContent value="final-suggested-prompt" className="m-0 px-1 py-2 rounded bg-background">
                                 <div className=" py-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
-                                    <ReactMarkdown className="prose prose-xs text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
+                                    <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
                                         {finalPrompt}
                                     </ReactMarkdown>
                                 </div>
@@ -443,3 +521,21 @@ export default function VercelAiPage() {
         </div>
     );
 }
+
+
+
+{/* <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
+                                    <span className="text-xs italic text-orange-500 mb-2">
+                                        As the Supercomputer "Deep Thought" in The "Hitchhiker’s Guide to the Galaxy" replied :<br />
+                                        «The Answer to the Ultimate Question of Life, the Universe, and Everything is » :
+                                    </span>
+                                    <span className="text-xl font-bold animate-bounce"> "42"</span>
+                                    <hr className="my-2 bg-green-500" />
+                                    <span className="text-xs italic text-orange-400 mb-4">
+                                        But we are here, to create the best Question (Prompt), ever written.
+                                    </span>
+                                    <span className="text-xl font bold"> 😄</span>
+                                </div> */}
+{/* <div className="text-xs bg-white bg-opacity-10 p-1">
+                                    Provide the Domain/Topic for which you wish to create an extraordinary prompt.
+                                </div> */}

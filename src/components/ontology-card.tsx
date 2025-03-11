@@ -3,8 +3,9 @@ import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { columns } from "@/components/concept-builder/concept-columns";
-import { ConceptTable } from "@/components/concept-builder/concept-table";
+import { ConceptTable, ConceptTableProps } from "@/components/concept-builder/concept-table";
 import { RelshipTable } from "@/components/concept-builder/relship-table";
+import { ColumnDef } from "@tanstack/react-table";
 import ReactMarkdown from 'react-markdown';
 import 'tailwindcss/tailwind.css'; // Ensure Tailwind CSS is imported
 import '@fortawesome/fontawesome-free/css/all.min.css';
@@ -26,6 +27,8 @@ interface Relationship {
     name: string;
     nameFrom: string;
     nameTo: string;
+    description: string;
+    color?: string;
 }
 
 const debug = false;
@@ -211,9 +214,9 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                 <CardHeader className="px-3 pt-3 pb-0">
                                     <CardTitle className="bg-gray-800 px-2 text-1xl rounded">Concepts</CardTitle>
                                 </CardHeader>
-                                <div className="">
-                                    {ontologyData && <ConceptTable columns={columns} data={ontologyData.concepts} />}
-                                </div>
+                                <CardContent className="max-h-[calc(100vh-26rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                    {ontologyData && <ConceptTable data={ontologyData.concepts} />}
+                                </CardContent>
                             </Card>
                         </TabsContent>
                         <TabsContent value="relationships" className=" m-0 px-1 py-1 rounded bg-background">
@@ -221,9 +224,9 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                 <CardHeader className="px-3 pt-3 pb-0">
                                     <CardTitle className="bg-gray-800 px-2 text-1xl rounded">Relations</CardTitle>
                                 </CardHeader>
-                                <div className="">
-                                    {ontologyData && <RelshipTable columns={columns} data={ontologyData.relationships} />}
-                                </div>
+                                <CardContent className="max-h-[calc(100vh-26rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                    {ontologyData && <RelshipTable data={ontologyData.relationships} />}
+                                </CardContent>
                             </Card>
                         </TabsContent>
                         <TabsContent value="diagram" className="m-0 px-1 rounded bg-background h-[calc(100vh-22rem)] overflow-hidden">

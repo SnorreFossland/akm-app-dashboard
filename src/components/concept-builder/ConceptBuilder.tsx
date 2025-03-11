@@ -16,8 +16,9 @@ import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
-import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt 
-    } from '@/app/concept-builder/prompts';
+import {
+    SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt
+} from '@/app/concept-builder/prompts';
 
 const debug = false;
 
@@ -144,8 +145,8 @@ const ConceptBuilder = () => {
             conceptString += `**Concepts**\n\n${existingConcepts?.map((c: any) => (c) && `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
             conceptString += `**Relationships**\n\n${existingRelationships?.map((r: any) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
-        const userPrompt = `${UserPrompt} \n\n **Domain name:**  ${data.phData.domain.name} \\ **Domain description:** ${data.phData.domain.description || ""}`;    
-        const userInput = `${UserInput} \n\n ${data.phData.domain.presentation}`//${topicDescr};
+        const userPrompt = `${UserPrompt} \n\n **Domain name:**  ${data.phData.domain.name} \\ **Domain description:** ${data.phData.domain.description || ""}`;
+        const userInput = `${UserInput} \n\n ${topicDescr}`;
 
         // ## Domain name: \n\n ${data.phData.domain?.name || ""} \n\n 
         // ## Domain description: \n\n ${data.phData.domain?.description || ""} \n\n
@@ -281,9 +282,10 @@ const ConceptBuilder = () => {
     }, [suggestedOntologyData, ontologyReduxData]);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-8rem)] w-full bg-transparent"> 
-            <CardTitle className="flex justify-center text-gray-400 m-1 text-xl">
-                AI Powered Active Knowledge Canvas (Ontology Builder)
+        <div className="flex flex-col h-[calc(100vh-8rem)] w-full bg-transparent">
+            <CardTitle className="flex justify-start text-gray-400 text-xl">
+                <span className="text-active-item me-auto px-2">Ontology Builder</span>
+                <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span>
             </CardTitle>
             <div className="flex h-[calc(100vh-5rem)] w-full overflow-hidden">
                 <div className="border-solid rounded border-4 border-green-700 w-1/4 flex flex-col overflow-y-auto">
@@ -319,13 +321,12 @@ const ConceptBuilder = () => {
                         <Textarea
                             id="chatOutput"
                             className="flex-grow p-1 rounded bg-gray-800"
-                            value={`${descrString}`}
+                            value={`${descrString} \n\n ${topicDescr}`}
                             disabled={isLoading}
                             onChange={(e) => setDescrString(e.target.value)}
                             rows={12}
                             placeholder="Domain Summary"
                         />
-
                         {/* <label htmlFor="topicDescr" className="text-white">Domain Topic</label>
                         <Textarea
                             id="topicDescr"
@@ -469,7 +470,7 @@ const ConceptBuilder = () => {
                                                 <DialogHeader>
                                                     <DialogDescription>
                                                         {/* <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
-                                                            {printPromptsDiv}
+                                                        {printPromptsDiv}
                                                         {/* </div> */}
                                                     </DialogDescription>
                                                 </DialogHeader>
