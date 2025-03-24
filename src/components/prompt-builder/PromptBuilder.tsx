@@ -51,6 +51,8 @@ export default function VercelAiPage() {
     const [curAction, setCurAction] = useState<"continue" | "finalize" | "finalized">("finalize");
     // State to track the last time Enter was pressed
     const [lastEnterPress, setLastEnterPress] = useState<number>(0);
+    // State for selected model
+    const [selectedModel, setSelectedModel] = useState<string>("gpt-4-turbo");
     // Reusable IconButton component
     interface IconButtonProps {
         onClick: () => void;
@@ -208,14 +210,19 @@ export default function VercelAiPage() {
                 response = await fetch("/api/genprompt", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt: clarificationInstruction }),
+                    body: JSON.stringify({
+                        prompt: clarificationInstruction,
+                        aiModelName: selectedModel
+                    }),
                 });
             }
             if (!response.ok) {
-                console.error("Error fetching clarification:", response.statusText);
-                // throw new Error(`Error: ${response.statusText}`);
+                const errorData = await response.json();
+                // Display the error message to the user
+                console.error("API Error:", errorData.error);
+                setClarificationPrompt(`Error: ${errorData.error}`);
+                return;
             }
-            // Use the actual response if available, otherwise fall back to dummyResponse
             const data = await response.json();
             console.log("173 Clarification data:", data);
             setClarificationPrompt(data.response);
@@ -280,12 +287,16 @@ The assistant will provide structured responses with:
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
-                        aiModelName: "gpt-4.5",
+                        aiModelName: selectedModel,
                         prompt: finalPromptInstruction
                     }),
                 });
                 if (!response.ok) {
-                    throw new Error(`Error: ${response.statusText}`);
+                    const errorData = await response.json();
+                    // Display the error message to the user
+                    console.error("API Error:", errorData.error);
+                    setClarificationPrompt(`Error: ${errorData.error}`);
+                    return;
                 }
                 dataResponse = await response.json();
             }
@@ -366,6 +377,17 @@ The assistant will provide structured responses with:
                     >
                         {!useDummyResponse ? 'LIVE' : 'DUMMY'}
                     </Button>
+                    {!useDummyResponse && (
+                        <>
+                            <span className="text-sm">Model:</span>
+                            <Button
+                                onClick={() => setSelectedModel(selectedModel === 'gpt-4-turbo' ? 'deepseek-coder' : 'gpt-4-turbo')}
+                                className={`px-2 py-1 rounded text-xs ${selectedModel === 'gpt-4-turbo' ? 'bg-blue-600' : 'bg-purple-600'}`}
+                            >
+                                {selectedModel === 'gpt-4-turbo' ? 'GPT-4' : 'Deepseek'}
+                            </Button>
+                        </>
+                    )}
                 </div>
             </CardTitle>
             <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden">
@@ -597,8 +619,8 @@ The assistant will provide structured responses with:
                                     <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Prompt Builder</h2>
 
                                     <p className="text-white mb-3">
-                                        The Prompt Builder is an AI-powered tool that helps you create perfect prompts for domain-specific knowledge models. 
-                                        Its about asking the right questions to ask AI to give the best definition of a subject  (The Domain we want to explore).  
+                                        The Prompt Builder is an AI-powered tool that helps you create perfect prompts for domain-specific knowledge models.
+                                        Its about asking the right questions to ask AI to give the best definition of a subject  (The Domain we want to explore).
                                     </p>
 
                                     <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
@@ -621,7 +643,7 @@ The assistant will provide structured responses with:
                                             <li>Edit the final prompt to add any missing details</li>
                                         </ul>
                                     </div>
-{/* 
+                                    {/* 
                                     <div className="mt-6 text-center">
                                         <button onClick={() => setActiveTab("final-suggested-prompt")}
                                             className="bg-green-700 hover:bg-green-600 text-white py-2 px-4 rounded">

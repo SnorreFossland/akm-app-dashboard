@@ -1,13 +1,15 @@
 "use server"
 import { NextResponse } from "next/server";
 import { openai } from "@ai-sdk/openai";
+import { deepseek } from "@ai-sdk/deepseek";
 import { generateText } from "ai";
 
-const modelName = "gpt-4-turbo";
+// Default model if none is specified
+const defaultModel = "gpt-4-turbo";
 
 export async function POST(req: Request) {
   try {
-    const { prompt } = await req.json(); // Parse the JSON body
+    const { prompt, aiModelName } = await req.json(); // Parse the JSON body
 
     if (!prompt || typeof prompt !== "string") {
       console.error("Invalid or missing prompt");
@@ -15,66 +17,65 @@ export async function POST(req: Request) {
     }
 
     console.log("Received prompt:", prompt);
-    // Generate response from OpenAI API
-    const text = await generateText({
-      model: openai(modelName),
-      prompt,
-    });
+    console.log("Using model:", aiModelName || defaultModel);
 
-    if (!text || typeof text.text !== "string") { // Ensure text.text is a string
-      console.error("Failed to generate a response from OpenAI");
-      return NextResponse.json({ error: "Failed to generate response" }, { status: 500 });
+    // Choose the model provider based on the specified model name
+    let modelProvider;
+
+    if (aiModelName?.includes("deepseek")) {
+      // Check for Deepseek API key
+      const deepseekApiKey = process.env.DEEPSEEK_API_KEY;
+      if (!deepseekApiKey) {
+        return NextResponse.json({
+          error: "Deepseek API key is missing. Set the DEEPSEEK_API_KEY environment variable."
+        }, { status: 500 });
+      }
+      modelProvider = deepseek(aiModelName, { apiKey: deepseekApiKey });
+    } else {
+      // Check for OpenAI API key
+      const openaiApiKey = process.env.OPENAI_API_KEY;
+      if (!openaiApiKey) {
+        return NextResponse.json({
+          error: "OpenAI API key is missing. Set the OPENAI_API_KEY environment variable."
+        }, { status: 500 });
+      }
+      modelProvider = openai(aiModelName || defaultModel, { apiKey: openaiApiKey });
     }
 
-    console.log("29 Generated response:", text.text, text);
+    try {
+      // Generate response from the selected API
+      const text = await generateText({
+        model: modelProvider,
+        prompt,
+      });
 
-    // Return a structured JSON response with the text string
-    return NextResponse.json({ prompt, response: text.text }); // Extracted 'text.text'
+      if (!text || typeof text.text !== "string") {
+        console.error("Failed to generate a response");
+        return NextResponse.json({ error: "Failed to generate response" }, { status: 500 });
+      }
+
+      console.log("29 Generated response:", text.text, text);
+
+      // Return a structured JSON response with the text string
+      return NextResponse.json({ prompt, response: text.text });
+    } catch (apiError) {
+      // Handle specific API errors
+      console.error("API call error:", apiError);
+      
+      // Check for insufficient balance error from Deepseek
+      if (apiError.responseBody && apiError.responseBody.includes("Insufficient Balance")) {
+        return NextResponse.json({ 
+          error: "Your Deepseek account has insufficient balance. Please add funds to your account or switch to GPT-4."
+        }, { status: 402 });
+      }
+      
+      // Handle other API errors
+      return NextResponse.json({ 
+        error: `API error: ${apiError.message || "Unknown error occurred"}`
+      }, { status: 500 });
+    }
   } catch (error) {
     console.error("Error processing request:", error);
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
-
-
-// "use server"
-// import { NextResponse } from "next/server";
-// import { openai } from "@ai-sdk/openai";
-// import { generateText } from "ai";
-
-// const modelName = "gpt-4-turbo";
-
-// export async function POST(req: Request) {
-//   try {
-//     const { prompt, domain } = await req.json(); // Extract domain as well
-//     if (!prompt || typeof prompt !== "string" || !domain || typeof domain !== "string") {
-//       console.error("Invalid or missing prompt/domain");
-//       return NextResponse.json({ error: "Invalid or missing prompt/domain" }, { status: 400 });
-//     }
-    
-//     console.log("16 Received prompt:", prompt, "Domain:", domain);
-//     // Create final prompt including domain info
-//     const finalPrompt = `${prompt}\n\nDomain/Topic: ${domain}`;
-//     console.log("Received prompt:", finalPrompt);
-
-//     // Generate response from OpenAI API
-    
-//     const text = await generateText({
-//       model: openai(modelName),
-//       prompt: finalPrompt,
-//       // maxTokens: 150,
-//     });
-
-//     if (!text || typeof text.text !== "string") {
-//       console.error("Failed to generate a response from OpenAI");
-//       return NextResponse.json({ error: "Failed to generate response" }, { status: 500 });
-//     }
-
-//     console.log("Generated response:", text.text);
-//     return NextResponse.json({ prompt: finalPrompt, response: text.text });
-//   } catch (error) {
-//     console.error("Error processing request:", error);
-//     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
-//   }
-// }
