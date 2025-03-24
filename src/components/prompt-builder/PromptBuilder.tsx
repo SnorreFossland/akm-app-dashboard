@@ -1,6 +1,5 @@
 "use client";
-import React from "react";
-import { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,9 +22,6 @@ export default function VercelAiPage() {
 
     // Phase can be "initial", "clarification", or "final"
     const [phase, setPhase] = useState("initial");
-
-    // Add toggle for using dummy responses vs real API calls
-    const [useDummyResponse, setUseDummyResponse] = useState(true);
 
     const [dispatchDone, setDispatchDone] = useState(true);
     const [isLoading, setIsLoading] = useState(false);
@@ -52,7 +48,48 @@ export default function VercelAiPage() {
     // State to track the last time Enter was pressed
     const [lastEnterPress, setLastEnterPress] = useState<number>(0);
     // State for selected model
-    const [selectedModel, setSelectedModel] = useState<string>("gpt-4-turbo");
+    const [selectedModel, setSelectedModel] = useState<string>("deepseek-coder");
+    const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
+    const [isDragging, setIsDragging] = useState(false);
+    const containerRef = useRef(null);
+
+    const startDragging = (e) => {
+        e.preventDefault();
+        setIsDragging(true);
+    };
+
+    const stopDragging = () => {
+        setIsDragging(false);
+    };
+
+    const onDrag = (e) => {
+        if (isDragging && containerRef.current) {
+            const containerRect = containerRef.current.getBoundingClientRect();
+            const containerWidth = containerRect.width;
+
+            // Calculate position relative to container
+            const relativeX = e.clientX - containerRect.left;
+            const newPosition = (relativeX / containerWidth) * 100;
+
+            // Limit the resize range (minimum 20%, maximum 80%)
+            const limitedPosition = Math.max(20, Math.min(80, newPosition));
+            setDividerPosition(limitedPosition);
+        }
+    };
+
+    // Add these effects for handling mouse events
+    useEffect(() => {
+        if (isDragging) {
+            document.addEventListener('mousemove', onDrag);
+            document.addEventListener('mouseup', stopDragging);
+        }
+
+        return () => {
+            document.removeEventListener('mousemove', onDrag);
+            document.removeEventListener('mouseup', stopDragging);
+        };
+    }, [isDragging]);
+
     // Reusable IconButton component
     interface IconButtonProps {
         onClick: () => void;
@@ -158,7 +195,6 @@ export default function VercelAiPage() {
         // Create appropriate prompt based on current phase
         const allDetails = phase === "clarification" ? `${collectedAdditionalDetails}${currentDetails ? `\n\n${currentDetails}` : ''}` : domainInput;
 
-
         let clarificationInstruction = ``;
         if (phase === "initial" && domainInput) {
             // In clarification phase with no new details, generate questions
@@ -175,12 +211,11 @@ export default function VercelAiPage() {
             clarificationInstruction = `Suggest a good Domain definition/scope based on: \n\nDomain/Topic/Theme:\n\n ${domainInput}"\n\n"${collectedAdditionalDetails}}`;
         }
 
-
         try {
             console.log("125 Clarification Instruction:", clarificationInstruction);
 
             let response;
-            if (useDummyResponse) {
+            if (selectedModel === "dummy") {
                 // Use dummy response for testing
                 response = {
                     ok: true,
@@ -243,11 +278,10 @@ export default function VercelAiPage() {
     // Second step: Generate the final prompt based on all collected information
     const handleFinalize = async () => {
         setIsLoading(true);
-
+        setCurAction("finalized");
         // Combine all collected information
         const allInformation = collectedAdditionalDetails
         const allInfo = allInformation.trim() ? `\n\nAdditional Context:\n${allInformation}` : "";
-
         const finalPromptInstruction = `As a prompt expert, create a detailed prompt template based on the following information:
         \n\nDomain: \n\n${clarificationPrompt}
         ${allInfo}
@@ -259,9 +293,10 @@ export default function VercelAiPage() {
         \n\n${systemPromptExample}
         `;
 
+
         try {
             let dataResponse;
-            if (useDummyResponse) {
+            if (selectedModel === "dummy") {
                 // Use dummy response
                 dataResponse = {
                     response: `# AI-Generated Domain Prompt for ${domainInput}
@@ -338,7 +373,6 @@ The assistant will provide structured responses with:
         // Dispatch both the prompt and complete domain data
         dispatch(setDomainPrompt(finalPrompt));
         dispatch(setDomainData(completeData));
-
         setDispatchDone(true);
         setActiveTab("existing-prompt");
     };
@@ -366,75 +400,92 @@ The assistant will provide structured responses with:
 
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-800 w-full bg-transparent">
-            <CardTitle className="flex justify-start text-gray-400 text-xl">
+            <CardTitle className="flex justify-start items-center text-gray-400 text-xl">
                 <span className="text-active-item me-auto px-2">Prompt Builder</span>
                 <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span>
                 <div className="flex items-center gap-2 ml-auto">
-                    <span className="text-sm">API:</span>
-                    <Button
-                        onClick={() => setUseDummyResponse(!useDummyResponse)}
-                        className={`${!useDummyResponse ? 'bg-green-600' : 'bg-gray-600'} text-white px-2 py-1 rounded text-xs`}
+                    <span className="text-sm">Model:</span>
+                    <select
+                        value={selectedModel}
+                        onChange={(e) => setSelectedModel(e.target.value)}
+                        className="bg-gray-800 text-white text-xs rounded p-1 border border-gray-700"
                     >
-                        {!useDummyResponse ? 'LIVE' : 'DUMMY'}
-                    </Button>
-                    {!useDummyResponse && (
-                        <>
-                            <span className="text-sm">Model:</span>
-                            <Button
-                                onClick={() => setSelectedModel(selectedModel === 'gpt-4-turbo' ? 'deepseek-coder' : 'gpt-4-turbo')}
-                                className={`px-2 py-1 rounded text-xs ${selectedModel === 'gpt-4-turbo' ? 'bg-blue-600' : 'bg-purple-600'}`}
-                            >
-                                {selectedModel === 'gpt-4-turbo' ? 'GPT-4' : 'Deepseek'}
-                            </Button>
-                        </>
+                        <option value="deepseek-coder">Deepseek Coder</option>
+                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                        <option value="mistral-large">Mistral Large</option>
+                        <option value="dummy">Dummy (Testing)</option>
+                    </select>
+                    {clarificationPrompt?.includes("Insufficient Balance") && (
+                        <span className="text-xs text-red-500">⚠️ Account balance issue</span>
                     )}
                 </div>
             </CardTitle>
-            <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden">
-                <div className="p-1 border-solid rounded border-4 border-green-900 w-2/5 flex flex-col h-full">
+            <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden" ref={containerRef}>
+                <div className="p-1 border-solid rounded border-4 border-green-900 flex flex-col h-full" style={{ width: `${dividerPosition}%` }}>
                     {/* <h2 className="font-bold mb-2">Generate Perfect Domain Prompt:</h2> */}
-                    <div className="h-full min-w-[30rem]">
-
+                    <div className="h-full w-full overflow-y-hidden">
                         {(phase === "initial") && (
-                            <div className="p-1 mb-2 w-full h-full">
-                                <div className="text-sm font-bold text-white p-1 mt-auto overflow-y-hidden">Enter a Domain/Topic/Theme below:
-                                    <Textarea
-                                        className="p-1 bg-gray-950 text-white"
-                                        value={domainInput}
-                                        onChange={(e) => setDomainInput(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                handleAskForClarification();
-                                            }
-                                        }}
-                                        rows={10}
-                                        placeholder={`E.g., Financial Risk Assessment, Healthcare Outcome Prediction, E-commerce Recommendation Systems, Predictive Maintenance, Customer Churn Analysis...`}
-                                        ref={(input) => {
-                                            if (input && phase === "initial") {
-                                                input.focus();
-                                            }
-                                        }}
-                                        autoFocus
-                                    />
+                            <div className="p-1 w-full h-full flex flex-col">
+                                <div className="flex flex-col h-full w-full shadow-lg shadow-green-800/90 border-l-4 border-t-4 border-green-600">
+                                    {/* Chat welcome message */}
+                                    <div className="flex-grow overflow-y-auto p-4 flex flex-col">
+                                        <div className="bg-gray-800 rounded-lg px-4 max-w-3/4 self-start">
+                                            <div className="flex items-center mb-2">
+                                                <FontAwesomeIcon icon={faRobot} className="mr-2 text-green-500" />
+                                                <span className="font-semibold text-green-400">AI Assistant</span>
+                                            </div>
+                                            <p className="text-white">Welcome! I'm here to help you build the perfect prompt. Please enter a domain, topic, or theme you'd like to explore.</p>
+                                            <p className="text-gray-400 text-sm mt-2">Examples: Financial Risk Assessment, Healthcare Outcome Prediction, E-commerce Recommendation Systems...</p>
+                                        </div>
+                                        {/* Chat input area */}
+                                        <div className="border-t border-gray-700 px-3 rounded-lg mt-auto">
+                                            <div className="text-sm text-gray-400 mb-2">
+                                                <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
+                                                Enter a Domain/Topic/Theme:
+                                            </div>
+                                            <div className="flex items-center">
+                                                <Textarea
+                                                    className="flex-grow bg-gray-950 text-white rounded-l-lg border-r-0 border-gray-700"
+                                                    value={domainInput}
+                                                    onChange={(e) => setDomainInput(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === "Enter") {
+                                                            handleAskForClarification();
+                                                        }
+                                                    }}
+                                                    rows={1}
+                                                    placeholder="Type your domain here..."
+                                                    ref={(input) => {
+                                                        if (input && phase === "initial") {
+                                                            input.focus();
+                                                        }
+                                                    }}
+                                                    autoFocus
+                                                />
+                                                <div className="flex-shrink-0">
+                                                    <ActionCardTitleButton
+                                                        title=""
+                                                        done={!isLoading}
+                                                        onClick={handleAskForClarification}
+                                                        icon={faPaperPlane}
+                                                    />
+                                                </div>
+                                            </div>
+                                            {/* <div className="text-xs text-gray-500 mt-2">
+                                                Examples: Financial Risk Assessment, Healthcare Outcome Prediction, E-commerce Recommendation Systems, Predictive Maintenance, Customer Churn Analysis
+                                            </div> */}
+                                        </div>
+                                    </div>
                                 </div>
-                                <div className="">
-                                    <ActionCardTitleButton
-                                        title="Generate prompt"
-                                        done={!isLoading && !finalPrompt}
-                                        onClick={handleAskForClarification}
-                                        icon={faRobot}
-                                    />
-                                </div>
-                                <div className="text-sm font-bold mt-2 h-auto"></div>
-                                <div className="text-sm p-4 mb-auto mt-5 mb-4 relative overflow-hidden rounded-lg bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 shadow-lg">
+                                {/* <div className="text-sm font-bold h-auto"></div> */}
+                                {/* Frame with Socratis and 42}*/}
+                                <div className="text-sm px-4 mt-5 relative rounded-lg bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 shadow-lg">
                                     {/* Fancy decorative elements */}
                                     <div className="absolute inset-0 border-2 border-cyan-400 rounded-lg opacity-30 m-1"></div>
                                     <div className="absolute inset-0 border border-emerald-300 rounded-lg opacity-20 m-2"></div>
-
-                                    {/* Content with enhanced typography */}
                                     <div className="relative z-10 text-center">
                                         <div className="text-lg font-bold text-white m-1">
-                                            <h2 className="text-lg font-bold text-white mb-2">
+                                            <h2 className="text-lg font-bold text-white mt-2">
                                                 Socrates' Wisdom on Questions
                                             </h2>
 
@@ -450,13 +501,13 @@ The assistant will provide structured responses with:
                                                 </span>
                                             </div>
                                         </div>
-                                        <div className="h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent my-4 opacity-60"></div>
-                                        <div className="flex items-center justify-center gap-2 my-2">
+                                        <div className="h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent my-1 opacity-60"></div>
+                                        <div className="flex items-center justify-center gap-2 my-1">
                                             <div className="h-[2px] w-8 bg-gradient-to-r from-transparent to-cyan-500 opacity-70"></div>
                                             <span className="text-cyan-400 text-xl">✧</span>
                                             <div className="h-[2px] w-8 bg-gradient-to-r from-cyan-500 to-transparent opacity-70"></div>
                                         </div>
-                                        <div className="h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent my-4 opacity-60"></div>
+                                        <div className="h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent my-1 opacity-60"></div>
 
                                         <span className="block text- italic text-cyan-300 mb-3 font-light">
                                             And in the " The Hitchhiker's Guide to the Galaxy ", after thinking in 7 mill years, the Supercomputer " Deep Thought " finally came up with an answer:
@@ -495,7 +546,7 @@ The assistant will provide structured responses with:
 
                         {phase === "clarification" && (
                             <div className="p-1 mb-2 w-full h-full">
-                                <div className="p-1 text-sm font-bold px-1 bg-white bg-opacity-5 ">Domain:
+                                <div className="p-1 mt-auto text-sm font-bold px-1 bg-white bg-opacity-5 ">Domain:
                                     <div className="chat-output p-2 px-2 bg-white bg-opacity-10 overflow-y-auto">{domainInput}</div>
                                     {/* <div className="text-sm font-bold mt-2">{additionalDetails}</div> */}
                                 </div>
@@ -523,7 +574,6 @@ The assistant will provide structured responses with:
                                             // Track when Enter was last pressed
                                             const now = Date.now();
                                             const timeSinceLastEnter = now - lastEnterPress;
-
                                             // If Enter was pressed within the last 500ms, execute the function
                                             if (timeSinceLastEnter < 2500) {
                                                 handleAskForClarification();
@@ -533,7 +583,7 @@ The assistant will provide structured responses with:
                                             }
                                         }
                                     }}
-                                    rows={10}
+                                    rows={5}
                                     placeholder={`For each question above, write your answer on a new line or bullet point.`}
                                     ref={(input) => {
                                         if (input && phase === "clarification") {
@@ -551,7 +601,7 @@ The assistant will provide structured responses with:
                                     />
                                     <ActionCardTitleButton
                                         title="Finalize Prompt"
-                                        done={curAction === "finalized" && !isLoading}
+                                        done={phase === "clarification" && curAction !== "finalized"}
                                         onClick={handleFinalize}
                                         icon={faCheckCircle}
                                     />
@@ -561,7 +611,7 @@ The assistant will provide structured responses with:
 
                         {phase === "final" && (
                             <div className="p-1 mb-2 h-full">
-                                <div className="text-sm font-bold mb-2">Final Perfect Prompt:</div>
+                                <div className="mb-2 mt-auto text-sm font-bold ">Final Perfect Prompt:</div>
                                 {editing ? (
                                     <Textarea
                                         className="p-1 bg-gray-950 text-white"
@@ -600,7 +650,15 @@ The assistant will provide structured responses with:
                     </div>
                 </div>
 
-                <div className="border-solid rounded border-1 border-green-900 h-full w-full overflow-y-hidden">
+                {/* Draggable divider */}
+                <div
+                    className="cursor-col-resize w-1 bg-green-600 hover:bg-green-400 active:bg-green-300 h-full flex items-center justify-center"
+                    onMouseDown={startDragging}
+                >
+                    <div className="h-8 w-1 bg-green-300 rounded-full"></div>
+                </div>
+
+                <div className="border-solid rounded border-1 border-green-900 h-full overflow-y-hidden" style={{ width: `${100 - dividerPosition}%` }} ref={containerRef}>
                     <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
                         <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
                             <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
