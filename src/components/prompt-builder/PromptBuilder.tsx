@@ -10,7 +10,7 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
 import { LoadingCircularProgress } from "@/components/loading";
-import { setDomainPrompt, deleteDomainPrompt, setDomainData } from "@/features/model-universe/modelSlice";
+import { deleteDomainPrompt, setDomainData } from "@/features/model-universe/modelSlice";
 
 import { systemPrompt, systemPromptExample } from '@/app/prompt-builder/prompts';
 import { json } from "stream/consumers";
@@ -266,7 +266,7 @@ export default function VercelAiPage() {
             setAdditionalDetails("");
             setPhase("clarification");
             setCurAction("continue");
-            setActiveTab("final-suggested-prompt");
+            // setActiveTab("final-suggested-prompt");
         } catch (error) {
             console.error("Error during clarification request:", error);
             setClarificationPrompt("An error occurred while asking for clarification.");
@@ -361,17 +361,48 @@ The assistant will provide structured responses with:
         // First, get the existing domain data
         const currentDomainData = data?.phData?.domain || {};
         // Create a complete domain data object that preserves existing values
+        // Add this function to your existing code
+
+        const extractDomainInfo = (clarificationResponse: string) => {
+            // Extract domain name
+            const nameMatch = clarificationResponse.match(/Domain Definition Name:?\s*(.*?)(?:\n|\r|$)/i);
+            const name = nameMatch ? nameMatch[1].trim() : "";
+
+            // Extract overview
+            const overviewMatch = clarificationResponse.match(/Overview:?\s*(.*?)(?=\n\n|Key Aspects:|$)/is);
+            const overview = overviewMatch ? overviewMatch[1].trim() : "";
+
+            // Extract key aspects
+            const aspectsMatch = clarificationResponse.match(/Key Aspects:?\s*([\s\S]*?)(?=\n\n|$)/i);
+            let keyAspects: string[] = [];
+
+            if (aspectsMatch && aspectsMatch[1]) {
+                // Split by line breaks and extract aspect titles
+                const aspectLines = aspectsMatch[1].split("\n").filter(line => line.trim());
+                keyAspects = aspectLines.map(line => {
+                    // Extract aspect name before the dash or colon if present
+                    const aspectMatch = line.match(/[•\-–]?\s*(.*?)(?:\s+[–\-–]\s+|\s*:\s*|$)/);
+                    return aspectMatch ? aspectMatch[1].trim() : line.trim();
+                });
+            }
+
+            return {
+                name,
+                overview,
+                keyAspects
+            };
+        };
+
         const completeData = {
-            name: domainInput || currentDomainData.name || "",
-            description: currentDomainData.description || "",
+            name: extractDomainInfo.name || currentDomainData.name || "",
+            description: extractDomainInfo.overview+extractDomainInfo.keyAspects || currentDomainData.description || "",
             prompt: finalPrompt, // Update with the new prompt
             presentation: currentDomainData.presentation || "",
             // Add any additional context gathered during prompt building
             additionalContext: collectedAdditionalDetails || currentDomainData.additionalContext || ""
         };
 
-        // Dispatch both the prompt and complete domain data
-        dispatch(setDomainPrompt(finalPrompt));
+        // Use setDomainData instead of the non-existent setDomainPrompt
         dispatch(setDomainData(completeData));
         setDispatchDone(true);
         setActiveTab("existing-prompt");
@@ -384,7 +415,18 @@ The assistant will provide structured responses with:
             return;
         }
         console.log("205 Dispatching Edited Prompt:", editedPrompt);
-        dispatch(setDomainPrompt(editedPrompt));
+
+        // Get current domain data
+        const currentDomainData = data?.phData?.domain || {};
+
+        // Create updated domain data with new prompt
+        const updatedData = {
+            ...currentDomainData,
+            prompt: editedPrompt
+        };
+
+        // Use setDomainData instead of setDomainPrompt
+        dispatch(setDomainData(updatedData));
         setDispatchDone(true);
         setEditedPrompt("");
     };
@@ -426,26 +468,28 @@ The assistant will provide structured responses with:
                     <div className="h-full w-full overflow-y-hidden">
                         {(phase === "initial") && (
                             <div className="p-1 w-full h-full flex flex-col">
-                                <div className="flex flex-col h-full w-full shadow-lg shadow-green-800/90 border-l-4 border-t-4 border-green-600">
+                                <div className="flex flex-col h-full w-full">
                                     {/* Chat welcome message */}
-                                    <div className="flex-grow overflow-y-auto p-4 flex flex-col">
+                                    <div className="flex-grow overflow-y-auto p- flex flex-col">
                                         <div className="bg-gray-800 rounded-lg px-4 max-w-3/4 self-start">
-                                            <div className="flex items-center mb-2">
-                                                <FontAwesomeIcon icon={faRobot} className="mr-2 text-green-500" />
-                                                <span className="font-semibold text-green-400">AI Assistant</span>
+                                            <div className="flex items-center mb-1">
+                                                <FontAwesomeIcon icon={faRobot} className="mr-1 text-green-500 text-xs" />
+                                                <span className="font-medium text-green-400 text-sm">AI Assistant</span>
                                             </div>
-                                            <p className="text-white">Welcome! I'm here to help you build the perfect prompt. Please enter a domain, topic, or theme you'd like to explore.</p>
-                                            <p className="text-gray-400 text-sm mt-2">Examples: Financial Risk Assessment, Healthcare Outcome Prediction, E-commerce Recommendation Systems...</p>
+                                            <p className="text-white">Welcome! I'm here to help you build the best prompt to ask for definition and description of a Subject or Domain. </p>
+                                            <p className="text-gray-400 text-sm mt-2">You start with Domain name or keywords for you domain, and the AI Assistant will ask you for more data input. The final Prompt will be used in next step to create this definition.</p>
                                         </div>
                                         {/* Chat input area */}
                                         <div className="border-t border-gray-700 px-3 rounded-lg mt-auto">
-                                            <div className="text-sm text-gray-400 mb-2">
-                                                <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
-                                                Enter a Domain/Topic/Theme:
+                                            <div className="flex justify-between items-center mb-1">
+                                                <h4 className="text-sm font-medium text-gray-300">
+                                                    <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
+                                                    Enter a Domain/Topic/Theme:
+                                                </h4>
                                             </div>
-                                            <div className="flex items-center">
+                                            <div className="flex items-center relative">
                                                 <Textarea
-                                                    className="flex-grow bg-gray-950 text-white rounded-l-lg border-r-0 border-gray-700"
+                                                    className="flex-grow bg-gray-800 text-white border-gray-600 hover:border-b-green-500 focus:border-b-green-400 transition-colors duration-200 rounded-l-lg pr-10"
                                                     value={domainInput}
                                                     onChange={(e) => setDomainInput(e.target.value)}
                                                     onKeyDown={(e) => {
@@ -454,7 +498,7 @@ The assistant will provide structured responses with:
                                                         }
                                                     }}
                                                     rows={1}
-                                                    placeholder="Type your domain here..."
+                                                    placeholder="Ask AI"
                                                     ref={(input) => {
                                                         if (input && phase === "initial") {
                                                             input.focus();
@@ -462,24 +506,32 @@ The assistant will provide structured responses with:
                                                     }}
                                                     autoFocus
                                                 />
-                                                <div className="flex-shrink-0">
-                                                    <ActionCardTitleButton
-                                                        title=""
-                                                        done={!isLoading}
-                                                        onClick={handleAskForClarification}
-                                                        icon={faPaperPlane}
-                                                    />
-                                                </div>
+                                                {domainInput.trim() && (
+                                                    <div className="absolute right-14 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                                        <span className="text-green-400 text-lg font-bold animate-pulse">...</span>
+                                                    </div>
+                                                )}
+                                                <Button
+                                                    onClick={handleAskForClarification}
+                                                    disabled={!domainInput.trim() || isLoading}
+                                                    className={`ml-1 h-full ${!domainInput.trim() ? 'bg-gray-600 hover:bg-gray-600 cursor-not-allowed' : isLoading ? 'bg-green-800 animate-pulse' : 'bg-green-700 hover:bg-green-600'} text-white rounded-r-lg`}
+                                                >
+                                                    {isLoading ? (
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                                                            {/* <span className="inline-block">...</span> */}
+                                                        </div>
+                                                    ) : (
+                                                        <FontAwesomeIcon icon={faPaperPlane} />
+                                                    )}
+                                                </Button>
                                             </div>
-                                            {/* <div className="text-xs text-gray-500 mt-2">
-                                                Examples: Financial Risk Assessment, Healthcare Outcome Prediction, E-commerce Recommendation Systems, Predictive Maintenance, Customer Churn Analysis
-                                            </div> */}
                                         </div>
                                     </div>
                                 </div>
                                 {/* <div className="text-sm font-bold h-auto"></div> */}
                                 {/* Frame with Socratis and 42}*/}
-                                <div className="text-sm px-4 mt-5 relative rounded-lg bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 shadow-lg">
+                                <div className="text-sm px-4 mt-5 mb-3 relative rounded-lg bg-gradient-to-br from-purple-900 via-indigo-900 to-blue-900 shadow-lg">
                                     {/* Fancy decorative elements */}
                                     <div className="absolute inset-0 border-2 border-cyan-400 rounded-lg opacity-30 m-1"></div>
                                     <div className="absolute inset-0 border border-emerald-300 rounded-lg opacity-20 m-2"></div>
@@ -565,46 +617,81 @@ The assistant will provide structured responses with:
                                     </div>
                                 </div>
                                 <div className="text-sm font-bold mt-2">Additional Details (Optional):</div>
-                                <Textarea
-                                    className="p-1 bg-gray-950 text-white"
-                                    value={additionalDetails}
-                                    onChange={(e) => setAdditionalDetails(e.target.value)}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter") {
-                                            // Track when Enter was last pressed
-                                            const now = Date.now();
-                                            const timeSinceLastEnter = now - lastEnterPress;
-                                            // If Enter was pressed within the last 500ms, execute the function
-                                            if (timeSinceLastEnter < 2500) {
-                                                handleAskForClarification();
-                                                setLastEnterPress(0); // Reset timer
-                                            } else {
-                                                setLastEnterPress(now); // Update the last press time
+                                <div className="flex items-center relative">
+                                    <Textarea
+                                        className="flex-grow bg-gray-950 text-white border-gray-600 hover:border-b-green-500 focus:border-b-green-400 transition-colors duration-200 rounded-l-lg pr-10"
+                                        value={additionalDetails}
+                                        onChange={(e) => setAdditionalDetails(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") {
+                                                // Track when Enter was last pressed
+                                                const now = Date.now();
+                                                const timeSinceLastEnter = now - lastEnterPress;
+                                                // If Enter was pressed within the last 500ms, execute the function
+                                                if (timeSinceLastEnter < 2500) {
+                                                    handleAskForClarification();
+                                                    setLastEnterPress(0); // Reset timer
+                                                } else {
+                                                    setLastEnterPress(now); // Update the last press time
+                                                }
                                             }
-                                        }
-                                    }}
-                                    rows={5}
-                                    placeholder={`For each question above, write your answer on a new line or bullet point.`}
-                                    ref={(input) => {
-                                        if (input && phase === "clarification") {
-                                            input.focus();
-                                        }
-                                    }}
-                                    autoFocus
-                                />
-                                <div className="mt-auto">
-                                    <ActionCardTitleButton
-                                        title="Add to Prompt"
-                                        done={!isLoading}
+                                        }}
+                                        rows={1}
+                                        placeholder={`For each question above, write your answer on a new line or bullet point.`}
+                                        ref={(input) => {
+                                            if (input && phase === "clarification") {
+                                                input.focus();
+                                            }
+                                        }}
+                                        autoFocus
+                                    />
+                                    {additionalDetails.trim() && (
+                                        <div className="absolute right-14 top-1/3 transform -translate-y-1/2 pointer-events-none">
+                                            <span className="text-green-400 text-lg font-bold animate-pulse">...</span>
+                                        </div>
+                                    )}
+                                    <Button
                                         onClick={handleAskForClarification}
-                                        icon={faRobot}
-                                    />
-                                    <ActionCardTitleButton
-                                        title="Finalize Prompt"
-                                        done={phase === "clarification" && curAction !== "finalized"}
+                                        disabled={isLoading}
+                                        className={`ml-1 h-14 self-start ${isLoading ? 'bg-gray-700 cursor-not-allowed' : 'bg-gradient-to-r from-green-800 to-green-600 hover:from-green-700 hover:to-green-500'} text-white rounded-r-lg`}
+                                    >
+                                        {isLoading ? (
+                                            <div className="flex items-center justify-center">
+                                                <div className="h-5 w-5 border-2 border-t-transparent border-green-400 rounded-full animate-spin"></div>
+                                            </div>
+                                        ) : (
+                                            <div className="flex flex-col items-center">
+                                                <FontAwesomeIcon icon={faPaperPlane} />
+                                                <span className="text-xs mt-1">Add</span>
+                                            </div>
+                                        )}
+                                    </Button>
+                                </div>
+
+                                <div className="mt-3 pt-3">
+                                    <button
                                         onClick={handleFinalize}
-                                        icon={faCheckCircle}
-                                    />
+                                        disabled={curAction === "finalized"}
+                                        className={`w-full flex items-center justify-between px-4 py-3 rounded-md transition-all duration-300 ${curAction === "finalized"
+                                            ? "bg-gray-700 cursor-not-allowed"
+                                            : "bg-gradient-to-br from-cyan-800 to-green-700 hover:from-cyan-700 hover:to-green-600 shadow-lg hover:shadow-cyan-900/30"
+                                            }`}
+                                    >
+                                        <span className="text-lg font-medium text-white">Finalize Prompt</span>
+                                        <div className="flex items-center">
+                                            {curAction === "finalized" ? (
+                                                <div className="mr-2 h-5 w-5 border-2 border-t-transparent border-cyan-400 rounded-full animate-spin"></div>
+                                            ) : (
+                                                <div className="w-6 h-6 mr-2 flex items-center justify-center text-cyan-300">
+                                                    <FontAwesomeIcon icon={faCheckCircle} className="text-cyan-300" />
+                                                </div>
+                                            )}
+                                            <div className={`flex items-center justify-center h-8 w-8 rounded-full ${curAction === "finalized" ? "bg-gray-600" : "bg-cyan-500"
+                                                }`}>
+                                                <FontAwesomeIcon icon={faCheckCircle} className="text-white" />
+                                            </div>
+                                        </div>
+                                    </button>
                                 </div>
                             </div>
                         )}

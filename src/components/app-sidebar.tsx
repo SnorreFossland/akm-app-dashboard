@@ -24,20 +24,12 @@ import {
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
-import { NavProjects } from "@/components/nav-projects"
-import { NavSecondary } from "@/components/nav-secondary"
-import { NavUser } from "@/components/nav-user"
-import { StorageCard } from "@/components/storage-card"
+// import { NavProjects } from "@/components/nav-projects"
+// import { NavSecondary } from "@/components/nav-secondary"
+// import { NavUser } from "@/components/nav-user"
+// import { StorageCard } from "@/components/storage-card"
 import { TeamSwitcher } from "@/components/team-switcher"
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarHeader,
-  SidebarItem,
-  SidebarLabel,
-} from "@/components/ui/sidebar"
-import { ModeToggle } from '@/components/mode-toggle'
+import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarTrigger } from "@/components/ui/sidebar"
 
 const data = {
   teams: [
@@ -70,31 +62,31 @@ const data = {
       isActive: true,
       items: [
         {
-          title: "1 Prepare Domain Prompt",
+          title: "1 Prompt builder",
           url: "/prompt-builder",
           icon: Star,
           description: "Prompt Builder",
         },
         {
-          title: "2 Domain Scope def.",
+          title: "2 Domain Builder",
           url: "/domain-builder",
           icon: Star,
           description: "Domain Builder",
         },
         {
-          title: "3 Domain Ontology def.",
+          title: "3 Ontology Builder.",
           url: "/concept-builder",
           icon: Star,
           description: "Concept Knowledge Modelling",
         },
         {
-          title: "4 POPS Model Obj gen.",
+          title: "4 POPS Model Builder.",
           url: "/streaming",
           icon: Star,
           description: "Product, Organisation, Process, System (POPS) Modelling",
         },
         {
-          title: "4 IRTV Model gen.",
+          title: "4 IRTV Model Builder",
           url: "/model-builder",
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",
@@ -156,29 +148,29 @@ const data = {
     //     },
     //   ],
     // },
-    // {
-    //   title: "Documentation",
-    //   url: "#",
-    //   icon: BookOpen,
-    //   items: [
-    //     {
-    //       title: "Introduction",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Get Started",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Tutorials",
-    //       url: "#",
-    //     },
-    //     {
-    //       title: "Changelog",
-    //       url: "#",
-    //     },
-    //   ],
-    // },
+    {
+      title: "Documentation",
+      url: "#",
+      icon: BookOpen,
+      items: [
+        {
+          title: "Introduction",
+          url: "#",
+        },
+        {
+          title: "Get Started",
+          url: "#",
+        },
+        {
+          title: "Tutorials",
+          url: "#",
+        },
+        {
+          title: "Changelog",
+          url: "#",
+        },
+      ],
+    },
     // {
     //   title: "API",
     //   url: "#",
@@ -243,21 +235,21 @@ const data = {
     },
   ],
   projects: [
-    // {
-    //   name: "Design Engineering",
-    //   url: "#",
-    //   icon: Frame,
-    // },
-    // {
-    //   name: "Sales & Marketing",
-    //   url: "#",
-    //   icon: PieChart,
-    // },
-    // {
-    //   name: "Travel",
-    //   url: "#",
-    //   icon: Map,
-    // },
+    {
+      name: "Design Engineering",
+      url: "#",
+      icon: Frame,
+    },
+    {
+      name: "Sales & Marketing",
+      url: "#",
+      icon: PieChart,
+    },
+    {
+      name: "Travel",
+      url: "#",
+      icon: Map,
+    },
   ],
   searchResults: [
     {
@@ -293,42 +285,100 @@ const data = {
   ],
 }
 
-export function AppSidebar() {
+export function AppSidebar({ ...props }) {
+  console.log("291 AppSidebar", props)
   return (
-    <Sidebar>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
-      <ModeToggle />
+    <Sidebar collapsible="icon" {...props}>
+      <SidebarHeader className="sidebar-header mt-3">
+        <div className="flex w-full justify-between items-center">
+          <TeamSwitcher teams={data.teams} />
+        </div>
       </SidebarHeader>
-      <SidebarContent>
-        <div style={{ marginLeft: '20px' }}>
-          <Link href="/">
-            Home
-          </Link>
-        </div>
-        <div style={{ marginLeft: '20px' }}>
-          <Link href="/modelling">
-            AKM Modeller
-          </Link>
-        </div>
-        <SidebarItem>
-          <SidebarLabel>Platform</SidebarLabel>
+      <SidebarContent className="sidebar-content">
+        <SidebarGroup className="sidebar-group">
+          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+          <div className="space-y-1">
+            <Link
+              href="/"
+              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
+              title="Home"
+            >
+              <Frame className="h-4 w-4 flex-shrink-0" />
+              <span className="text-sm sidebar-item-content">Home</span>
+            </Link>
+            <Link
+              href="/modelling"
+              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
+              title="AKM Modeller"
+            >
+              <Atom className="h-4 w-4 flex-shrink-0" />
+              <span className="text-sm sidebar-item-content">AKM Modeller</span>
+            </Link>
+          </div>
+        </SidebarGroup>
+        <SidebarGroup className="sidebar-group">
+          <SidebarGroupLabel>Platform</SidebarGroupLabel>
           <NavMain items={data.navMain} searchResults={data.searchResults} />
-        </SidebarItem>
-        <SidebarItem>
-          <SidebarLabel>Projects</SidebarLabel>
-          <NavProjects projects={data.projects} />
-        </SidebarItem>
-        <SidebarItem className="mt-auto">
-          <SidebarLabel>Help</SidebarLabel>
-          <NavSecondary items={data.navSecondary} />
-        </SidebarItem>
-        <SidebarItem>
-          <StorageCard />
-        </SidebarItem>
+        </SidebarGroup>
       </SidebarContent>
-      <SidebarFooter>
-        <NavUser user={data.user} />
+      <SidebarFooter className="sidebar-footer">
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center space-x-2">
+            <Image
+              src={data.user.avatar}
+              alt="User Avatar"
+              width={40}
+              height={40}
+              className="rounded-full"
+            />
+            <div className="flex flex-col">
+              <span className="text-sm font-semibold">{data.user.name}</span>
+              <span className="text-xs text-muted-foreground">
+                {data.user.email}
+              </span>
+            </div>
+          </div>
+          {/* <div className="flex flex-col">
+            <span className="text-sm font-semibold">Projects</span>
+            <div className="flex flex-col space-y-2">
+              {data.projects.map((project) => (
+                <Link
+                  key={project.name}
+                  href={project.url}
+                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent"
+                >
+                  <project.icon className="h-4 w-4" />
+                  <span className="text-sm">{project.name}</span>
+                </Link>
+              ))}
+            </div>
+          </div> */}
+          {/* <div className="flex flex-col">
+            <span className="text-sm font-semibold">Storage</span>
+            <div className="flex flex-col space-y-2">
+              <StorageCard
+                title="AKM Storage"
+                description="Your active knowledge modelling storage."
+                icon={BookOpen}
+              />
+            </div>
+          </div> */}
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">Secondary</span>
+            <div className="flex flex-col space-y-2">
+              {data.navSecondary.map((item) => (
+                <Link
+                  key={item.title}
+                  href={item.url}
+                  className="flex items-center space-x-2 p-2 rounded-md hover:bg-accent"
+                >
+                  <item.icon className="h-4 w-4" />
+                  <span className="text-sm">{item.title}</span>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
       </SidebarFooter>
     </Sidebar>
   )

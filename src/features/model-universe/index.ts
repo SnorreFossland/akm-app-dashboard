@@ -1,4 +1,2 @@
-export { default as FeatureAComponent } from './components/ModelComponent';
-export { default as featureAReducer } from './modelSlice';
-export * from './modelSlice';
-export * from './modelAPI';
+// If you have an index file that re-exports actions, add:
+export { clearStore } from './modelSlice';

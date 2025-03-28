@@ -56,7 +56,7 @@ export async function POST(req: Request) {
     try {
       // Generate response from the selected API
       const text = await generateText({
-        model: modelProvider,
+        model: modelProvider as any, // Type assertion to bypass incompatible types
         prompt,
       });
 

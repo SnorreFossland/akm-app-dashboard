@@ -3,7 +3,9 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ReduxProvider } from './providers/ReduxProvider';
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarLayout, SidebarTrigger } from "@/components/ui/sidebar";
+import { SidebarTrigger, SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { ModeToggle } from '@/components/mode-toggle'
+import { PanelLeft } from 'lucide-react';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -11,7 +13,7 @@ const inter = Inter({
 })
 
 import { ThemeProvider } from "@/components/theme-provider"
-// import { ModeToggle } from '@/components/mode-toggle'
+import { ActiveThemeProvider } from "@/components/active-theme";
 import { cookies } from 'next/headers';
 
 import "./globals.css";
@@ -42,19 +44,22 @@ export default async function RootLayout({
             defaultTheme="system"
             enableSystem
           >
-            <SidebarLayout
-              defaultOpen={sidebarState?.value === "true"}
-            >
-              <SidebarTrigger className="fixed z-1 text-gray-500 pr-3" />
-              {/* <ModeToggle className="fixed z-1 text-gray-500" /> */}
-              <AppSidebar />
-              <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
-                <div className="h-full rounded-md border-2 p-0">
-                {/* <div className="h-full rounded-md border-2 border-dashed p-0"> */}
-                  {children}
-                </div>
-              </main>
-            </SidebarLayout>
+            <SidebarProvider defaultOpen={sidebarState?.value === "true"}>
+              <div className="fixed left-2 z-50 flex items-center gap-2">
+                <SidebarTrigger>
+                  <PanelLeft className="h-4 w-4" />
+                </SidebarTrigger>
+                <ModeToggle />
+              </div>
+              {/* <AppSidebar variant="inset" />
+              <SidebarInset> */}
+                <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
+                  <div className="h-full rounded-md p-0">
+                    {children}
+                  </div>
+                </main>
+              {/* </SidebarInset> */}
+            </SidebarProvider>
           </ThemeProvider>
         </ReduxProvider>
       </body>
