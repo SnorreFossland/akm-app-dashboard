@@ -30,6 +30,7 @@ import { NavMain } from "@/components/nav-main"
 // import { StorageCard } from "@/components/storage-card"
 import { TeamSwitcher } from "@/components/team-switcher"
 import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarTrigger } from "@/components/ui/sidebar"
+import { ModeToggle } from '@/components/mode-toggle'
 
 const data = {
   teams: [
@@ -289,7 +290,7 @@ export function AppSidebar({ ...props }) {
   console.log("291 AppSidebar", props)
   return (
     <Sidebar collapsible="icon" {...props}>
-      <SidebarHeader className="sidebar-header mt-3">
+      <SidebarHeader className="sidebar-header mt-1">
         <div className="flex w-full justify-between items-center">
           <TeamSwitcher teams={data.teams} />
         </div>
@@ -363,6 +364,7 @@ export function AppSidebar({ ...props }) {
               />
             </div>
           </div> */}
+          <ModeToggle />
           <div className="flex flex-col">
             <span className="text-sm font-semibold">Secondary</span>
             <div className="flex flex-col space-y-2">
