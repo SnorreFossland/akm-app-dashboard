@@ -321,24 +321,9 @@ export function AppSidebar({ ...props }) {
           <SidebarGroupLabel>Platform</SidebarGroupLabel>
           <NavMain items={data.navMain} searchResults={data.searchResults} />
         </SidebarGroup>
-      </SidebarContent>
-      <SidebarFooter className="sidebar-footer">
+
         <div className="flex flex-col gap-4">
-          <div className="flex items-center space-x-2">
-            <Image
-              src={data.user.avatar}
-              alt="User Avatar"
-              width={40}
-              height={40}
-              className="rounded-full"
-            />
-            <div className="flex flex-col">
-              <span className="text-sm font-semibold">{data.user.name}</span>
-              <span className="text-xs text-muted-foreground">
-                {data.user.email}
-              </span>
-            </div>
-          </div>
+
           {/* <div className="flex flex-col">
             <span className="text-sm font-semibold">Projects</span>
             <div className="flex flex-col space-y-2">
@@ -379,6 +364,23 @@ export function AppSidebar({ ...props }) {
                 </Link>
               ))}
             </div>
+          </div>
+        </div>
+      </SidebarContent>
+      <SidebarFooter className="sidebar-footer">
+        <div className="flex items-center space-x-2">
+          <Image
+            src={data.user.avatar}
+            alt="User Avatar"
+            width={40}
+            height={40}
+            className="rounded-full"
+          />
+          <div className="flex flex-col">
+            <span className="text-sm font-semibold">{data.user.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {data.user.email}
+            </span>
           </div>
         </div>
       </SidebarFooter>

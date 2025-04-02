@@ -238,12 +238,9 @@ Looking ahead, we can expect...`
             prompt: editingPrompt ? promptText : (data?.phData?.domain?.prompt || ""),
             additionalContext: data?.phData?.domain?.additionalContext || ""
         };
-
         setDispatchDone(false);
         dispatch(setDomainData(domainData));
         setDispatchDone(true);
-
-        // If we were editing the prompt, exit edit mode
         if (editingPrompt) {
             setEditingPrompt(false);
         }
@@ -274,29 +271,6 @@ Looking ahead, we can expect...`
                 <div className="p-1 border-solid rounded border-4 border-green-900 flex flex-col h-full" style={{ width: `${dividerPosition}%` }}>
                     <div className="h-full w-full overflow-y-auto">
                         <div className="p-2 mb-4">
-                            {/* <h3 className="text-lg font-semibold text-green-400 mb-2">Domain Definition</h3>
-
-                            <div className="mb-3">
-                                <label className="block text-sm font-medium text-gray-300 mb-1">Domain Name</label>
-                                <Input
-                                    value={domainName}
-                                    onChange={(e) => setDomainName(e.target.value)}
-                                    placeholder="Enter domain name"
-                                    className="bg-gray-800 text-white border-gray-600"
-                                />
-                            </div>
-
-                            <div className="mb-3">
-                                <label className="block text-sm font-medium text-gray-300 mb-1">Domain Description</label>
-                                <Textarea
-                                    value={domainDescription}
-                                    onChange={(e) => setDomainDescription(e.target.value)}
-                                    placeholder="Describe the domain in detail"
-                                    className="bg-gray-800 text-white border-gray-600"
-                                    rows={5}
-                                />
-                            </div> */}
-
                             <div className="mb-3">
                                 <div className="flex justify-between items-center mb-1">
                                     <h4 className="text-sm font-medium text-gray-300">Current Prompt</h4>
@@ -318,14 +292,25 @@ Looking ahead, we can expect...`
                                         rows={8}
                                     />
                                 ) : (
-                                    <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[200px] overflow-y-auto">
-                                        <ReactMarkdown className="prose prose-sm text-gray-300">
+                                    <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
+                                        <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden" 
+                                                      components={{
+                                                        // Force any pre/code blocks to wrap and stay within container
+                                                        pre: ({node, ...props}) => (
+                                                          <pre style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%'}} {...props} />
+                                                        ),
+                                                        code: ({node, ...props}) => (
+                                                          <code style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%'}} {...props} />
+                                                        ),
+                                                        p: ({node, ...props}) => (
+                                                          <p style={{maxWidth: '100%', overflowWrap: 'break-word'}} {...props} />
+                                                        )
+                                                      }}>
                                             {data?.phData?.domain?.prompt || "No prompt defined yet. Edit here or create one in the Prompt Builder."}
                                         </ReactMarkdown>
                                     </div>
                                 )}
                             </div>
-
                             <div className="flex justify-between mt-4">
                                 <Button
                                     onClick={generateDomainPresentation}
@@ -344,7 +329,6 @@ Looking ahead, we can expect...`
                                             : "Generate Definition"
                                     }
                                 </Button>
-
                                 <Button
                                     onClick={saveDomainData}
                                     className={`${data?.phData?.domain?.prompt?.trim()
@@ -381,8 +365,20 @@ Looking ahead, we can expect...`
                                         rows={14}
                                     />
                                 ) : (
-                                    <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[300px] overflow-y-auto">
-                                        <ReactMarkdown className="prose prose-sm text-gray-300">
+                                        <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
+                                            <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden"
+                                                components={{
+                                                    // Force any pre/code blocks to wrap and stay within container
+                                                    pre: ({ node, ...props }) => (
+                                                        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                    ),
+                                                    code: ({ node, ...props }) => (
+                                                        <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                    ),
+                                                    p: ({ node, ...props }) => (
+                                                        <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
+                                                    )
+                                                }}>
                                             {domainPresentation}
                                         </ReactMarkdown>
                                     </div>
@@ -416,8 +412,8 @@ Looking ahead, we can expect...`
                                 </TabsTrigger>
                             </TabsList>
 
-                            <TabsContent value="instructions" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="m-2 p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
+                            <TabsContent value="instructions" className="m-0 px-1 py-2 rounded bg-background ">
+                                <div className="h-full p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
                                     <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Domain Builder</h2>
 
                                     <p className="text-white mb-3">
@@ -427,12 +423,12 @@ Looking ahead, we can expect...`
 
                                     <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
 
-                                    <ol className="text-white list-decimal ml-5 space-y-2">
+                                    <ol className="text-white list-decimal ml-5 space-y-2"> 
                                         <li><span className="font-bold">Define your domain:</span> Provide a name and detailed description.</li>
                                         <li><span className="font-bold">Use existing prompt:</span> Your domain will use the prompt created in the Prompt Builder.</li>
                                         <li><span className="font-bold">Generate definition:</span> Let AI create a comprehensive domain presentation.</li>
                                         <li><span className="font-bold">Edit and refine:</span> Customize the generated content to your needs.</li>
-                                        <li><span className="font-bold">Save to store:</span> Save your domain definition for use in knowledge models.</li>
+                                        <li><span className="font-bold">Keep:</span> Save your domain definition for use in knowledge models.</li>
                                     </ol>
 
                                     <div className="mt-6 p-3 border border-green-700 rounded bg-gray-800">
@@ -448,10 +444,25 @@ Looking ahead, we can expect...`
                             </TabsContent>
 
                             <TabsContent value="presentation" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
-                                    <ReactMarkdown className="prose prose-sm prose-invert max-w-none">
-                                        {domainPresentation || "No presentation generated yet. Fill in the domain information and click 'Generate Definition'."}
-                                    </ReactMarkdown>
+                                <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full h-full">
+                                    <div className="p-2 bg-gray-800 rounded border border-gray-700 w-full h-full overflow-y-auto">
+                                        <ReactMarkdown 
+                                            className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full"
+                                            components={{
+                                                // Force any pre/code blocks to wrap and stay within container
+                                                pre: ({ node, ...props }) => (
+                                                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                ),
+                                                code: ({ node, ...props }) => (
+                                                    <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                ),
+                                                p: ({ node, ...props }) => (
+                                                    <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
+                                                )
+                                            }}>
+                                            {domainPresentation || "No presentation generated yet. Fill in the domain information and click 'Generate Definition'."}
+                                        </ReactMarkdown>
+                                    </div>
                                 </div>
                             </TabsContent>
 

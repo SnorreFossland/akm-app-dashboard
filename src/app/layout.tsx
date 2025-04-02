@@ -43,20 +43,19 @@ export default async function RootLayout({
             defaultTheme="system"
             enableSystem
             >
-            <SidebarProvider defaultOpen={sidebarState?.value === "true"}>
+            {/* Set defaultOpen to true if no cookie is found */}
+            <SidebarProvider defaultOpen={sidebarState?.value !== "false"}>
               <AppSidebar variant="inset"/>
-              {/* <SidebarInset> */}
-                <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
-                  <div className="fixed left-2 z-50 flex items-top gap-2 m-0 p-0">
-                    <SidebarTrigger>
-                      <PanelLeft className="h-4 w-2" />
-                    </SidebarTrigger>
-                  </div>
-                  <div className="h-full rounded-md p-0">
-                    {children}
-                  </div>
-                </main>
-              {/* </SidebarInset> */}
+              <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
+                <div className="fixed left-2 z-50 flex items-top gap-2 m-0 p-0">
+                  <SidebarTrigger>
+                    <PanelLeft className="h-4 w-2" />
+                  </SidebarTrigger>
+                </div>
+                <div className="h-full rounded-md p-0">
+                  {children}
+                </div>
+              </main>
             </SidebarProvider>
           </ThemeProvider>
         </ReduxProvider>

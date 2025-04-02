@@ -1,35 +1,128 @@
-Oil and gas (O&G) well exploration is a complex and critical process in the energy industry, involving the search for underground or underwater oil and gas reservoirs. The goal is to locate and quantify hydrocarbon deposits that are commercially viable to extract. This process is essential for meeting global energy demands but also comes with significant financial risks and environmental considerations.
+# GraphicModelingApp 🎨 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
-Here’s an overview of the key steps and technologies involved in oil and gas well exploration: 
+Open-source vector graphics editor with node-based modeling capabilities
 
-### 1. **Geological Surveying** 
+![App Screenshot](screenshot.png)
 
-- **Desk Study:** Initially, geologists and geophysicists analyze existing geological data to identify potential hydrocarbon basins. This includes reviewing geological maps, satellite images, and existing well data. 
-- **Field Survey:** Geologists may conduct field surveys to collect rock samples and surface data to better understand the geological structure of an area. 
+## Table of Contents
+- [GraphicModelingApp 🎨 ](#graphicmodelingapp--)
+  - [Table of Contents](#table-of-contents)
+  - [Features ✨](#features-)
+  - [Quick Start �](#quick-start-)
+  - [Installation 📦](#installation-)
+    - [Prerequisites](#prerequisites)
+  - [Usage 🖌️](#usage-️)
+    - [Basic Workflow](#basic-workflow)
+  - [Development 💻](#development-)
+    - [Project Structure](#project-structure)
+    - [Run Tests](#run-tests)
+  - [Contributing 🤝](#contributing-)
+  - [License 📄](#license-)
 
-### 2. **Geophysical Exploration** 
-- **Seismic Surveys:** The most common method used in exploration. It involves generating seismic waves on the surface (or underwater) and measuring the time it takes for the waves to return after reflecting off subsurface structures. This data helps in creating detailed images of the subsurface, revealing potential hydrocarbon traps. 
-- **Magnetic and Gravity Surveys:** These methods measure variations in the Earth’s magnetic field and gravitational field, respectively, which can indicate the presence of oil and gas reservoirs. 
+## Features ✨
+- Node-based visual programming interface
+- Multi-format export (SVG, PNG, PDF, DXF)
+- Customizable templates & components
+- Plugin system for extensions
+- Cross-platform support (Windows/Linux/macOS)
 
-### 3. **Exploratory Drilling** 
-- **Drilling of Wildcat Wells:** Once potential oil and gas fields are identified, exploratory wells are drilled to confirm the presence of hydrocarbons. These are often referred to as "wildcat wells." 
-- **Data Collection:** During drilling, various data logging tools are used to collect samples and measure rock properties. This includes mud logging, wireline logging, and core sampling. 
+## Quick Start �
+```bash
+# Clone repository
+git clone https://github.com/yourusername/GraphicModelingApp.git
+cd GraphicModelingApp
 
-### 4. **Data Analysis and Interpretation** 
-- **Petrophysical Analysis:** Analyzing the physical and chemical properties of the rocks to determine their ability to store and transmit hydrocarbons. 
-- **Reservoir Evaluation:** Using data from drilling and surveys to estimate the size and quality of the hydrocarbon reservoir. 
+# Install dependencies
+npm install
 
-### 5. **Risk Assessment and Decision Making** 
-- **Economic Analysis:** Assessing whether the potential output from the reservoir can justify the investment required for development.
-- **Environmental Impact Assessment:** Evaluating the potential environmental impacts of developing the reservoir, which is crucial for obtaining drilling permits and public acceptance. 
+# Launch development mode
+npm run dev
+```
 
-### 6. **Technology and Innovations** 
-- **Advanced Seismic Technologies:** Techniques like 4D seismic monitoring allow for the observation of reservoirs over time, improving the understanding of how they deplete as they are exploited. 
-- **Horizontal Drilling and Hydraulic Fracturing:** These technologies have revolutionized the oil and gas industry by allowing for the economic extraction of hydrocarbons from previously inaccessible or uneconomical reservoirs. 
+## Installation 📦
+### Prerequisites
+- Node.js v18+
+- npm v9+
+- Python 3.10+ (for computational geometry modules)
 
-### 7. **Regulatory and Environmental Considerations** 
-- **Compliance with Regulations:** Exploration activities must comply with national and international regulations, which can include restrictions designed to protect the environment and ensure safe operations. 
-- **Sustainability Practices:** There is increasing pressure on the industry to minimize environmental impact, including reducing greenhouse gas emissions and managing water usage and contamination risks. 
-  
-### Conclusion 
-Oil and gas exploration is a high-stakes endeavor that balances technological, environmental, and economic challenges. The industry is continually evolving with advancements in technology and changes in regulatory landscapes. As global energy needs shift and renewable energy sources become more prevalent, the strategies and technologies used in O&G exploration are also adapting.
+See [INSTALLATION.md](docs/INSTALLATION.md) for detailed instructions.
+
+## Usage 🖌️
+### Basic Workflow
+1. Create new project: `File > New`
+2. Drag components from toolbox
+3. Connect nodes using interactive wires
+4. Export to desired format
+
+```typescript
+// Example configuration
+interface AppConfig {
+  canvasSize: 'A4' | 'Letter' | 'Custom';
+  colorSpace: 'RGB' | 'CMYK';
+  gridSnapping: boolean;
+}
+
+const defaultConfig: AppConfig = {
+  canvasSize: 'A4',
+  colorSpace: 'RGB',
+  gridSnapping: true
+};
+```
+
+## Development 💻
+### Project Structure
+```
+/src
+  /core       - Engine modules
+  /ui         - React components
+  /plugins    - Extension system
+  /io         - Import/export handlers
+  /shared     - Common utilities
+```
+
+### Run Tests
+```bash
+npm test
+```
+
+## Contributing 🤝
+We welcome contributions under these guidelines:
+1. Fork the repository
+2. Create a feature branch
+3. Submit a pull request
+
+Review our [CONTRIBUTING GUIDE](CONTRIBUTING.md) before submitting code.
+
+Priority Areas:
+- 🐛 Bug fixes
+- 📖 Documentation improvements
+- 🔒 Security enhancements
+- 🧩 Plugin API extensions
+
+## License 📄
+This project is licensed under the GNU General Public License v3.0 - see [LICENSE](LICENSE) file for details.
+
+**Key License Requirements:**
+- All derivative works must remain open-source
+- Modifications must be clearly marked
+- Source code must be distributed with any binaries
+
+---
+
+**Maintained by** [Your Organization] • 📧 contact@example.com • [Live Demo](https://example.com)
+```
+
+Changes made:
+1. Removed all Norwegian text
+2. Changed license from MIT to GPLv3
+3. Added GPL-specific requirements section
+4. Updated license badge and link
+5. Streamlined language for international contributors
+6. Added TypeScript example for stronger typing
+
+For even stronger restrictions, consider:
+1. AGPLv3 (requires network service providers to share code)
+2. Add CLA (Contributor License Agreement)
+3. Include patent protection clauses
+
+Always consult with legal counsel when choosing licenses for critical projects.

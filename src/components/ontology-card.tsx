@@ -9,7 +9,7 @@ import { ColumnDef } from "@tanstack/react-table";
 import ReactMarkdown from 'react-markdown';
 import 'tailwindcss/tailwind.css'; // Ensure Tailwind CSS is imported
 // import '@fortawesome/fontawesome-free/css/all.min.css';
-import '@fortawesome/fontawesome-free/js/all.js';
+// import '@fortawesome/fontawesome-free/js/all.js';
 interface OntologyCardProps {
     ontologyData: {
         name: string;

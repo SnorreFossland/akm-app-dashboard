@@ -151,7 +151,7 @@ export default function VercelAiPage() {
                     }`}
             >
                 <div className={`flex justify-between items-center flex-grow ${dispatchDone ? "text-green-600" : "text-green-200"}`}>
-                    Save Final Prompt to Store
+                    Keep Final Prompt
                     <div className="flex items-center ml-auto">
                         {!dispatchDone ? (
                             <div style={{ marginLeft: 8, marginRight: 8 }}>
@@ -463,7 +463,7 @@ The assistant will provide structured responses with:
                 </div>
             </CardTitle>
             <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden" ref={containerRef}>
-                <div className="p-1 border-solid rounded border-4 border-green-900 flex flex-col h-full" style={{ width: `${dividerPosition}%` }}>
+                <div className="p-1 border-solid rounded border-4 border-green-900 flex flex-col h-full max-w-3/4 self-start" style={{ width: `${dividerPosition}%` }}>
                     {/* <h2 className="font-bold mb-2">Generate Perfect Domain Prompt:</h2> */}
                     <div className="h-full w-full overflow-y-hidden">
                         {(phase === "initial") && (
@@ -471,7 +471,7 @@ The assistant will provide structured responses with:
                                 <div className="flex flex-col h-full w-full">
                                     {/* Chat welcome message */}
                                     <div className="flex-grow overflow-y-auto p- flex flex-col">
-                                        <div className="bg-gray-800 rounded-lg px-4 max-w-3/4 self-start">
+                                        <div className="bg-gray-800 rounded-lg px-4">
                                             <div className="flex items-center mb-1">
                                                 <FontAwesomeIcon icon={faRobot} className="mr-1 text-green-500 text-xs" />
                                                 <span className="font-medium text-green-400 text-sm">AI Assistant</span>
@@ -480,16 +480,16 @@ The assistant will provide structured responses with:
                                             <p className="text-gray-400 text-sm mt-2">You start with Domain name or keywords for you domain, and the AI Assistant will ask you for more data input. The final Prompt will be used in next step to create this definition.</p>
                                         </div>
                                         {/* Chat input area */}
-                                        <div className="border-t border-gray-700 px-3 rounded-lg mt-auto">
+                                        <div className="border-t border-gray-700 rounded-lg mt-2 mb-auto py-2">
                                             <div className="flex justify-between items-center mb-1">
                                                 <h4 className="text-sm font-medium text-gray-300">
                                                     <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
                                                     Enter a Domain/Topic/Theme:
                                                 </h4>
                                             </div>
-                                            <div className="flex items-center relative">
+                                            <div className=" items-center relative">
                                                 <Textarea
-                                                    className="flex-grow bg-gray-800 text-white border-gray-600 hover:border-b-green-500 focus:border-b-green-400 transition-colors duration-200 rounded-l-lg pr-10"
+                                                    className="w-full bg-gray-800 text-white border-gray-600 hover:border-b-green-500 focus:border-b-green-400 transition-colors duration-200 rounded-lg pr-10"
                                                     value={domainInput}
                                                     onChange={(e) => setDomainInput(e.target.value)}
                                                     onKeyDown={(e) => {
@@ -497,7 +497,7 @@ The assistant will provide structured responses with:
                                                             handleAskForClarification();
                                                         }
                                                     }}
-                                                    rows={1}
+                                                    rows={Math.max(3, Math.min(7, Math.floor(window.innerHeight / 10)))}
                                                     placeholder="Ask AI"
                                                     ref={(input) => {
                                                         if (input && phase === "initial") {
@@ -507,22 +507,25 @@ The assistant will provide structured responses with:
                                                     autoFocus
                                                 />
                                                 {domainInput.trim() && (
-                                                    <div className="absolute right-14 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                                                    <div className="absolute right-2 bottom-14 pointer-events-none">
                                                         <span className="text-green-400 text-lg font-bold animate-pulse">...</span>
                                                     </div>
                                                 )}
+                                                
                                                 <Button
                                                     onClick={handleAskForClarification}
                                                     disabled={!domainInput.trim() || isLoading}
-                                                    className={`ml-1 h-full ${!domainInput.trim() ? 'bg-gray-600 hover:bg-gray-600 cursor-not-allowed' : isLoading ? 'bg-green-800 animate-pulse' : 'bg-green-700 hover:bg-green-600'} text-white rounded-r-lg`}
+                                                    className={`mt-2 w-1/3 ${!domainInput.trim() ? 'bg-gray-600 cursor-not-allowed' : isLoading ? 'bg-gray-700 cursor-not-allowed' : 'bg-gradient-to-r from-green-800 to-green-600 hover:from-green-700 hover:to-green-500'} text-white rounded-lg`}
                                                 >
                                                     {isLoading ? (
-                                                        <div className="flex items-center justify-center gap-2">
-                                                            <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                                                            {/* <span className="inline-block">...</span> */}
+                                                        <div className="flex items-center justify-center">
+                                                            <div className="h-5 w-5 border-2 border-t-transparent border-green-400 rounded-full animate-spin"></div>
                                                         </div>
                                                     ) : (
-                                                        <FontAwesomeIcon icon={faPaperPlane} />
+                                                        <div className="flex items-center justify-center gap-2">
+                                                            <FontAwesomeIcon icon={faRobot} />
+                                                            <span>Generate</span>
+                                                        </div>
                                                     )}
                                                 </Button>
                                             </div>
@@ -636,7 +639,7 @@ The assistant will provide structured responses with:
                                                 }
                                             }
                                         }}
-                                        rows={1}
+                                        rows={Math.max(3, Math.min(7, Math.floor(window.innerHeight / 200)))}
                                         placeholder={`For each question above, write your answer on a new line or bullet point.`}
                                         ref={(input) => {
                                             if (input && phase === "clarification") {
@@ -774,7 +777,7 @@ The assistant will provide structured responses with:
                                         <li><span className="font-bold">Start with a Subject :</span> Enter a domain, topic, or theme you want to create a prompt for.</li>
                                         <li><span className="font-bold">Answer Clarifying Questions:</span> The AI will ask questions to refine your requirements.</li>
                                         <li><span className="font-bold">Review & Edit:</span> Examine the suggested prompt and make any necessary edits.</li>
-                                        <li><span className="font-bold">Save to Store:</span> When satisfied, save your prompt to use with your knowledge models. </li>
+                                        <li><span className="font-bold">Keep:</span> When satisfied, save your prompt to use with your knowledge models. </li>
                                     </ol>
                                     <div className="text-sm font-bold mt-4 mb-2">
                                         <span className="text-green-400">Note: </span> You can run the prompt in next step

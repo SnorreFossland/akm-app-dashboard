@@ -421,7 +421,7 @@ const ConceptBuilder = () => {
                             <div
                                 className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
                             >
-                                Save to current Store
+                                Keep
                                 <div className="flex items-center ml-auto">
                                     {!dispatchDone && step === 2 ? (
                                         <div style={{ marginLeft: 8, marginRight: 8 }}>

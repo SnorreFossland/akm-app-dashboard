@@ -1,6 +1,12 @@
 export const systemPrompt0 = ``
 export const systemPrompt = `
 
+GOAL:
+The goal of this prompt is to create a highly detailed and effective prompt for ChatGPT that will yield exceptional results.
+The prompt should be comprehensive, leaving no room for ambiguity, and should guide the LLM to produce high-quality outputs that meet the user's needs.
+The main goal is to create a prompt that is so well-structured and informative that it maximizes the potential of the LLM to deliver valuable insights, solutions, or content of the Domain.
+This prompt should be a template that can be reused for various topics or themes, allowing users to easily adapt it to their specific needs.
+The resulting prompt should be clear, concise, and easy to understand, while also being flexible enough to accommodate different subject matters.
 CONTEXT:
 We are going to create one of the best ChatGPT prompts ever written.
 
