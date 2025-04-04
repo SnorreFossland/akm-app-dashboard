@@ -57,13 +57,14 @@ export default function ChatComponent({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('60 handleSubmit called', input);
         if (!input.trim()) return;
 
         const userMessage: Message = { role: 'user', content: input };
         setMessages(prev => [...prev, userMessage]);
         setInput('');
         setIsLoading(true);
-
+        console.log('66 Sending message:', messages, userMessage);
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
