@@ -21,13 +21,13 @@ export function useTemplateManager() {
 export default function AIChatPage() {
     const [selectedModel, setSelectedModel] = useState('deepseek-coder');
     const [showPanel, setShowPanel] = useState(true);
-    const [currentPrompt, setCurrentPrompt] = useState('');
     const [lastResponse, setLastResponse] = useState('');
     const [activeTab, setActiveTab] = useState<'templates' | 'markdown'>('templates');
     const [chatInput, setChatInput] = useState('');
     const [panelWidth, setPanelWidth] = useState(33); // Percentage width of the right panel
 
     const handleApplyTemplate = (content: string) => {
+        console.log('31 Template content inserted:', content);
         setChatInput(content); // Update the chat input field
     };
 
@@ -70,10 +70,11 @@ export default function AIChatPage() {
                     </div>
                 </div>
 
-                <ChatComponent 
+                <ChatComponent
                     selectedModel={selectedModel}
                     onResponseChange={handleResponseChange}
                     onViewInMarkdown={handleViewInMarkdown}
+                    chatInput={chatInput} // Pass the updated chat input
                 />
             </div>
 
