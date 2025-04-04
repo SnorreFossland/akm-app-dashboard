@@ -41,7 +41,30 @@ export default function AIChatPage() {
     };
 
     const handleViewInMarkdown = (content: string) => {
-        setMarkdownContent(content); // Store the Markdown content in state
+        // Filter out comment-like text (e.g., starting with "Certainly!")
+        const filteredContent = content
+            .split('\n') // Split content into lines
+            .filter((line, index, array) => {
+                const prevLine = index > 0 ? array[index - 1].trim() : '';
+                const nextLine = index < array.length - 1 ? array[index + 1].trim() : '';
+                
+                // Exclude lines starting with "Certainly!"
+                if (line.trim().startsWith('Certainly!')) return false;
+                
+                // Exclude divider lines
+                if (line.trim() === '---') return false;
+                
+                // For blank lines, only keep them if they're not adjacent to dividers
+                if (line.trim() === '') {
+                    return prevLine !== '---' && nextLine !== '---';
+                }
+                
+                // Exclude lines starting with "This outline provides"
+                return !line.trim().startsWith('This outline provides');
+            })
+            .join('\n'); // Join the filtered lines back
+
+        setMarkdownContent(filteredContent); // Store the filtered Markdown content in state
         setActiveTab('markdown'); // Switch to the Markdown tab
     };
 
@@ -113,39 +136,37 @@ export default function AIChatPage() {
                                 : 'bg-gray-700 mr-auto max-w-[80%] text-gray-100'
                                 } ${message.role === 'assistant' ? 'relative' : ''}`}
                         >
-                            {message.content}
                             {message.role === 'assistant' && (
                                 <>
-                                    <button
-                                        onClick={() => handleCopyMessage(message.content, index)}
-                                        className="absolute top-2 right-2 p-1 text-xs bg-gray-600 hover:bg-gray-500 rounded opacity-70 hover:opacity-100"
-                                        aria-label="Copy response"
-                                    >
-                                        {copiedIndex === index ? (
-                                            <span className="text-green-300">Copied!</span>
-                                        ) : (
-                                            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1-2 2v1"></path>
+                                    <div className="absolute top-0 right-0 flex space-x-1 p-1">
+                                        <button
+                                            onClick={() => handleCopyMessage(message.content, index)}
+                                            className="p-1 text-xs bg-gray-600 hover:bg-gray-500 rounded opacity-70 hover:opacity-100"
+                                            aria-label="Copy response"
+                                            title="Copy response"
+                                        >
+                                            {copiedIndex === index ? (
+                                                <span className="text-green-300">Copied!</span>
+                                            ) : (
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1-2 2v1"></path>
+                                                </svg>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => handleViewInMarkdown(message.content)}
+                                            className="p-1 text-xs bg-gray-600 hover:bg-gray-500 rounded opacity-70 hover:opacity-100"
+                                            aria-label="View in Markdown"
+                                            title="View in Markdown"
+                                        >
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <path d="M5 17C5 5 10 7 17 7" />
+                                                <path d="M16 3l4 4-4 4" />
                                             </svg>
-                                        )}
-                                    </button>
-                                    <button
-                                        onClick={() => handleViewInMarkdown(message.content)} // Pass the assistant message content
-                                        className="absolute top-2 right-10 p-1 text-xs bg-blue-700 hover:bg-blue-600 rounded opacity-70 hover:opacity-100"
-                                        aria-label="View in Markdown"
-                                        title="View in Markdown"
-                                    >
-                                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                            <path d="M12 2L2 7v5c0 5.25 3.75 10 10 10s10-4.75 10-10V7l-10-5z"></path>
-                                            <path d="M12 12l4 4-4 4-4-4 4-4z"></path>
-                                            <path d="M12 2v10"></path>
-                                            <path d="M2 7l10 5 10-5"></path>
-                                            <path d="M2 12l10 5 10-5"></path>
-                                            <path d="M2 17l10 5 10-5"></path>
-                                            <path d="M2 7v5c0 5.25 3.75 10 10 10s10-4.75 10-10V7"></path>
-                                        </svg>
-                                    </button>
+                                        </button>
+                                    </div>
+                                    <div className="pt-6">{message.content}</div>
                                 </>
                             )}
                         </div>
@@ -183,19 +204,59 @@ export default function AIChatPage() {
                 <div className="w-1/3 bg-gray-800 border-l border-gray-700 overflow-y-auto">
                     <div className="p-4">
                         {/* Tab Navigation */}
-                        <div className="flex space-x-4 mb-4">
-                            <button
+                        <div className="flex border-b border-gray-700 mb-4">
+                            <div
                                 onClick={() => setActiveTab('templates')}
-                                className={`px-4 py-2 rounded-md ${activeTab === 'templates' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}`}
+                                className={`cursor-pointer px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                                    activeTab === 'templates'
+                                        ? 'text-blue-400 border-b-2 border-blue-400'
+                                        : 'text-gray-400 hover:text-gray-200'
+                                }`}
                             >
-                                Templates
-                            </button>
-                            <button
+                                <div className="flex items-center gap-2">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M4 6h16M4 12h8m-8 6h16"
+                                        />
+                                    </svg>
+                                    Templates
+                                </div>
+                            </div>
+                            <div
                                 onClick={() => setActiveTab('markdown')}
-                                className={`px-4 py-2 rounded-md ${activeTab === 'markdown' ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}`}
+                                className={`cursor-pointer px-4 py-2 text-sm font-medium transition-all duration-200 ${
+                                    activeTab === 'markdown'
+                                        ? 'text-blue-400 border-b-2 border-blue-400'
+                                        : 'text-gray-400 hover:text-gray-200'
+                                }`}
                             >
-                                Markdown Preview
-                            </button>
+                                <div className="flex items-center gap-2">
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        className="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            d="M9 12h6m-6 4h6m-6-8h6m-7 12h8a2 2 0 002-2V6a2 2 0 00-2-2H7a2 2 0 00-2 2v12a2 2 0 002 2z"
+                                        />
+                                    </svg>
+                                    Markdown Preview
+                                </div>
+                            </div>
                         </div>
 
                         {/* Tab Content */}

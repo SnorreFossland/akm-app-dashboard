@@ -11,10 +11,16 @@ export default function TemplatesPanel({ onApplyTemplate}: TemplatesPanelProps) 
     const [customTemplate, setCustomTemplate] = useState('');
 
     const PROMPT_TEMPLATES = [
-        { title: "Meeting Notes", content: "Summarize the following meeting notes into key points:\n\n[Paste meeting notes here]" },
-        { title: "Email Draft", content: "Draft a professional email for the following purpose:\n\n[Describe purpose here]" },
-        { title: "Report Summary", content: "Summarize the following report into a concise overview:\n\n[Paste report content here]" },
-        { title: "Proposal Outline", content: "Create an outline for a proposal on the following topic:\n\n[Describe topic here]" },
+        { title: "Meeting Notes", 
+            content: "Summarize the following meeting notes into key points:\n\n[Paste meeting notes here]" },
+        { title: "Email Draft", 
+            content: "Draft a professional email for the following purpose:\n\n[Describe purpose here]" },
+        { title: "Report Summary", 
+            content: "Summarize the following report into a concise overview:\n\n[Paste report content here]" },
+        { title: "Proposal Outline", 
+            content: "Create an outline for a proposal on the following topic:\n\n[Describe topic here]" },
+        { title: "Domain/Topic Scoping", 
+            content: "Help me define and scope the following domain/topic:\n\n1. Domain/Topic name: [Insert name]\n2. Primary objectives: [Describe main goals]\n3. Key stakeholders: [List stakeholders]\n4. Current limitations/boundaries: [Describe constraints]\n5. Success criteria: [Define what success looks like]" },
         { title: "Custom", content: "" },
     ];
 
@@ -48,11 +54,31 @@ export default function TemplatesPanel({ onApplyTemplate}: TemplatesPanelProps) 
                             : PROMPT_TEMPLATES[selectedTemplate].title}
                     </h3>
                     <textarea
-                        value={selectedTemplate === PROMPT_TEMPLATES.length - 1 ? customTemplate : PROMPT_TEMPLATES[selectedTemplate].content}
-                        onChange={(e) => setCustomTemplate(e.target.value)}
+                        value={
+                            selectedTemplate === PROMPT_TEMPLATES.length - 1
+                                ? customTemplate
+                                : PROMPT_TEMPLATES[selectedTemplate!].content
+                        }
+                        onChange={(e) => {
+                            if (selectedTemplate === PROMPT_TEMPLATES.length - 1) {
+                                setCustomTemplate(e.target.value);
+                            } else {
+                                // Create a new version of the selected template with updated content
+                                const updatedTemplates = [...PROMPT_TEMPLATES];
+                                updatedTemplates[selectedTemplate!] = {
+                                    ...updatedTemplates[selectedTemplate!],
+                                    content: e.target.value
+                                };
+                                // Update the PROMPT_TEMPLATES array
+                                PROMPT_TEMPLATES.splice(0, PROMPT_TEMPLATES.length, ...updatedTemplates);
+                            }
+                        }}
                         className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100"
-                        rows={5}
-                        disabled={selectedTemplate !== PROMPT_TEMPLATES.length - 1}
+                        rows={
+                            selectedTemplate === PROMPT_TEMPLATES.length - 1
+                                ? Math.max(5, (customTemplate.match(/\n/g) || []).length + 2)
+                                : Math.max(5, (PROMPT_TEMPLATES[selectedTemplate!].content.match(/\n/g) || []).length + 2)
+                        }
                     />
                     <button
                         onClick={handleInsertTemplate}
