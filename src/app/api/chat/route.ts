@@ -6,16 +6,16 @@ export async function POST(request: Request) {
     const { messages, model } = body;
 
     // Extract the latest user message
-    const userMessage = messages[messages.length - 1]?.content || '';
+    // const userMessage = messages[messages.length - 1]?.content || '';
 
-    // Check if the input is vague
-    if (isInputVague(userMessage)) {
-      const clarificationResponse = {
-        role: 'assistant',
-        content: 'Could you please provide more details or clarify your request?'
-      };
-      return NextResponse.json({ message: clarificationResponse }, { status: 200 });
-    }
+    // // Check if the input is vague
+    // if (isInputVague(userMessage)) {
+    //   const clarificationResponse = {
+    //     role: 'assistant',
+    //     content: 'Could you please provide more details or clarify your request?'
+    //   };
+    //   return NextResponse.json({ message: clarificationResponse }, { status: 200 });
+    // }
 
     // Define system and assistant prompts
     const systemPrompt = {
@@ -219,8 +219,8 @@ async function callDeepseek(messages, model) {
   return data.choices[0].message.content;
 }
 
-// Helper function to check if input is vague
-function isInputVague(input) {
-  const vagueKeywords = ['help', 'assist', 'support', 'info', 'information'];
-  return vagueKeywords.some(keyword => input.toLowerCase().includes(keyword));
-}
+// // Helper function to check if input is vague
+// function isInputVague(input) {
+//   const vagueKeywords = ['help', 'assist', 'support', 'info', 'information'];
+//   return vagueKeywords.some(keyword => input.toLowerCase().includes(keyword));
+// }

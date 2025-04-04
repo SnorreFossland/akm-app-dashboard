@@ -9,12 +9,14 @@ interface Message {
 
 interface ChatComponentProps {
     selectedModel: string;
-    onResponseChange?: (response: string) => void;
-    onViewInMarkdown?: (response: string) => void; // Add this prop for the button
+    onResponseChange: (response: string) => void;
+    onViewInMarkdown: (response: string) => void;
+    chatInput?: string;
 }
 
 export default function ChatComponent({
     selectedModel,
+    chatInput,
     onResponseChange,
     onViewInMarkdown
 }: ChatComponentProps) {
@@ -57,12 +59,11 @@ export default function ChatComponent({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        console.log('60 handleSubmit called', input);
-        if (!input.trim()) return;
+        if (!chatInput?.trim()) return;
 
-        const userMessage: Message = { role: 'user', content: input };
+        const userMessage: Message = { role: 'user', content: chatInput };
         setMessages(prev => [...prev, userMessage]);
-        setInput('');
+        onResponseChange(''); // Clear the parent chatInput state
         setIsLoading(true);
         console.log('66 Sending message:', messages, userMessage);
         try {
@@ -101,7 +102,7 @@ export default function ChatComponent({
                         key={index}
                         className={`mb-4 p-3 rounded-lg ${message.role === 'user'
                             ? 'bg-blue-900 ml-auto max-w-[80%] text-right text-blue-100'
-                            : 'bg-gray-700 mr-auto max-w-[80%] text-gray-100'
+                            : 'bg-gray-700 pt-5 mr-auto max-w-[80%] text-gray-100'
                             } ${message.role === 'assistant' ? 'relative' : ''}`}
                     >
                         {message.content}
@@ -147,11 +148,11 @@ export default function ChatComponent({
 
             <form onSubmit={handleSubmit} className="flex gap-2">
                 <textarea
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
+                    value={chatInput} // Use the chatInput prop
+                    onChange={(e) => onResponseChange(e.target.value)} // Update the parent state
                     placeholder="Type a message..."
                     className="flex-1 p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={input.trim() ? Math.min(5, input.split('\n').length + 1) : 1} // Adjust rows dynamically
+                    rows={chatInput?.trim() ? Math.min(5, chatInput.split('\n').length + 1) : 2} // Adjust rows dynamically
                     disabled={isLoading}
                 />
                 <button
@@ -166,36 +167,36 @@ export default function ChatComponent({
     );
 }
 
-// Add this for external access to setPrompt
-export interface ChatComponentRef {
-    setPrompt: (promptText: string) => void;
-}
+// // Add this for external access to setPrompt
+// export interface ChatComponentRef {
+//     setPrompt: (promptText: string) => void;
+// }
 
-interface TemplatesPanelProps {
-    onApplyTemplate?: () => void;
-    onViewInMarkdown?: () => void;
-}
+// interface TemplatesPanelProps {
+//     onApplyTemplate?: () => void;
+//     onViewInMarkdown?: () => void;
+// }
 
-export function TemplatesPanel({ onApplyTemplate, onViewInMarkdown }: TemplatesPanelProps) {
-    return (
-        <div className="p-4">
-            <h2 className="text-lg font-bold mb-4">Templates</h2>
-            <div className="space-y-2">
-                {/* Render templates */}
-            </div>
+// export function TemplatesPanel({ onApplyTemplate, onViewInMarkdown }: TemplatesPanelProps) {
+//     return (
+//         <div className="p-4">
+//             <h2 className="text-lg font-bold mb-4">Templates</h2>
+//             <div className="space-y-2">
+//                 {/* Render templates */}
+//             </div>
 
-            {/* Markdown Tab */}
-            {onViewInMarkdown && (
-                <div className="mt-4">
-                    <h3 className="text-md font-semibold mb-2">Markdown Preview</h3>
-                    <button
-                        onClick={onViewInMarkdown}
-                        className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700"
-                    >
-                        View in Markdown
-                    </button>
-                </div>
-            )}
-        </div>
-    );
-}
+//             {/* Markdown Tab */}
+//             {onViewInMarkdown && (
+//                 <div className="mt-4">
+//                     <h3 className="text-md font-semibold mb-2">Markdown Preview</h3>
+//                     <button
+//                         onClick={onViewInMarkdown}
+//                         className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700"
+//                     >
+//                         View in Markdown
+//                     </button>
+//                 </div>
+//             )}
+//         </div>
+//     );
+// }

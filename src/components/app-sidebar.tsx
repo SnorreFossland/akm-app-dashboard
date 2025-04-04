@@ -63,6 +63,12 @@ const data = {
       isActive: true,
       items: [
         {
+          title: "0 AI chat basis",
+          url: "/aichat-basis",
+          icon: Star,
+          description: "Prompt Builder",
+        },
+        {
           title: "1 Prompt builder",
           url: "/prompt-builder",
           icon: Star,
