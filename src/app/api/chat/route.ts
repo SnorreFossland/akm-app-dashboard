@@ -4,30 +4,50 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const { messages, model } = body;
-    
+
+    // Extract the latest user message
+    const userMessage = messages[messages.length - 1]?.content || '';
+
+    // Check if the input is vague
+    if (isInputVague(userMessage)) {
+      const clarificationResponse = {
+        role: 'assistant',
+        content: 'Could you please provide more details or clarify your request?'
+      };
+      return NextResponse.json({ message: clarificationResponse }, { status: 200 });
+    }
+
+    // Define system and assistant prompts
+    const systemPrompt = {
+      role: 'system',
+      content: 'You are a helpful assistant. Please provide concise and accurate responses.'
+    };
+
+    const assistantPrompt = {
+      role: 'assistant',
+      content: 'Hello! How can I assist you today?'
+    };
+
+    // Prepend the prompts to the messages array
+    const updatedMessages = [systemPrompt, assistantPrompt, ...messages];
+
     // Choose the appropriate API based on the model
     let response;
-    
+
     if (model.startsWith('gpt')) {
-      // Handle OpenAI models
-      response = await callOpenAI(messages, model);
+      response = await callOpenAI(updatedMessages, model);
     } else if (model.startsWith('claude')) {
-      // Handle Anthropic models
-      response = await callClaude(messages, model);
+      response = await callClaude(updatedMessages, model);
     } else if (model.startsWith('mistral')) {
-      // Handle Mistral models
-      response = await callMistral(messages, model);
+      response = await callMistral(updatedMessages, model);
     } else if (model.startsWith('gemini')) {
-      // Handle Google models
-      response = await callGemini(messages, model);
+      response = await callGemini(updatedMessages, model);
     } else if (model.startsWith('deepseek')) {
-      // Handle Deepseek models
-      response = await callDeepseek(messages, model);
+      response = await callDeepseek(updatedMessages, model);
     } else {
-      // Default fallback
       throw new Error(`Unsupported model: ${model}`);
     }
-    
+
     return NextResponse.json({ message: response }, { status: 200 });
   } catch (error) {
     console.error('Error in chat API:', error);
@@ -197,4 +217,10 @@ async function callDeepseek(messages, model) {
 
   const data = await response.json();
   return data.choices[0].message.content;
+}
+
+// Helper function to check if input is vague
+function isInputVague(input) {
+  const vagueKeywords = ['help', 'assist', 'support', 'info', 'information'];
+  return vagueKeywords.some(keyword => input.toLowerCase().includes(keyword));
 }
