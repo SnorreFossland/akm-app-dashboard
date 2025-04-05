@@ -132,8 +132,8 @@ export default function AIChatPage() {
                         )}
 
                         {activeTab === 'markdown' && (
-                            <div className="bg-gray-900 p-4 rounded-md max-h-96 overflow-auto">
-                                <pre className="whitespace-pre-wrap">{lastResponse}</pre>
+                            <div className="bg-gray-900 p-4 rounded-md overflow-auto" style={{ height: "calc(100vh - 160px)" }}>
+                                <pre className="whitespace-pre-wrap text-sm">{lastResponse}</pre>
                             </div>
                         )}
                     </div>
