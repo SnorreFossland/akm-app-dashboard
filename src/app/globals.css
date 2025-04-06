@@ -166,6 +166,15 @@
     max-width: 100%;
     /* Ensure it doesn't exceed the container's width */
 }
+.markdown-preview h1,
+.markdown-preview h2,
+.markdown-preview h3,
+.markdown-preview h4,
+.markdown-preview h5,
+.markdown-preview h6 {
+    margin-top: 1.5em;
+    /* Add space above headings */
+}
 
 .bg-active-item {
     background-color: #eed8c210;

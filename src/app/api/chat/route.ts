@@ -20,17 +20,47 @@ export async function POST(request: Request) {
     // Define system and assistant prompts
     const systemPrompt = {
       role: 'system',
-      content: 'You are a helpful assistant. Please provide concise and accurate responses.'
+      content: 'You are a helpful assistant and expert on the given topic. Please provide concise and accurate responses.'
+    };
+
+    const assistantStartPrompt = {
+      role: 'assistant',
+      content: `Hello! How can I assist you today?
+      You can ask me anything related to the topic at hand.\n\n
+      Please provide as much detail as possible for the best results.\n\n
+      If you're unsure where to start, here are some suggestions:\n\n
+      - Ask for a summary of a specific topic.\n\n
+      - Request a list of resources or references.\n\n
+      - Inquire about best practices or tips.\n\n
+      - Seek clarification on a concept or term.\n\n
+      - Ask for examples or case studies.\n\n
+      If you have a specific question or task, feel free to ask!\n\n
+      .\n
+      You can also select a template from the list in the right panel to get started.`
     };
 
     const assistantPrompt = {
       role: 'assistant',
-      content: 'Hello! How can I assist you today?'
+      content: 'Please provide a detailed response to the user\'s query.'
     };
+    // Extract the latest user message
+    const userMessage = messages[messages.length - 1]?.content || '';
+
+    // Check if the input is vague or empty
+    if (!userMessage.trim() || isInputVague(userMessage)) {
+      return NextResponse.json({ message: assistantStartPrompt.content }, { status: 200 });
+    }
 
     // Prepend the prompts to the messages array
     const updatedMessages = [systemPrompt, assistantPrompt, ...messages];
 
+    // Helper function to check if input is vague
+    function isInputVague(input) {
+      const vagueKeywords = ['help'];
+      return vagueKeywords.some(keyword => input.toLowerCase().includes(keyword));
+    }
+    
+    console.log('34 Updated messages:', updatedMessages);
     // Choose the appropriate API based on the model
     let response;
 

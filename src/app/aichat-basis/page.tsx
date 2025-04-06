@@ -4,6 +4,9 @@ import { useState } from 'react';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
+import ReactMarkdown from 'react-markdown';
+import rehypeHighlight from 'rehype-highlight';
+import 'highlight.js/styles/github-dark.css';
 
 export function useTemplateManager() {
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
@@ -25,6 +28,7 @@ export default function AIChatPage() {
     const [activeTab, setActiveTab] = useState<'templates' | 'markdown'>('templates');
     const [chatInput, setChatInput] = useState('');
     const [panelWidth, setPanelWidth] = useState(33); // Percentage width of the right panel
+    const [mdPreview, setMdPreview] = useState<string>(''); // State for Markdown preview
 
     const handleApplyTemplate = (content: string) => {
         console.log('31 Template content inserted:', content);
@@ -36,7 +40,19 @@ export default function AIChatPage() {
     };
 
     const handleViewInMarkdown = (response: string) => {
-        setLastResponse(response);
+        // Logic to remove common AI message patterns before displaying in markdown
+        const cleanResponse = (response: string) => {
+            // Remove common prefixes
+            let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
+            
+            // Remove common suffixes
+            cleaned = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
+            
+            return cleaned;
+        };
+
+        const cleanedResponse = cleanResponse(response);
+        setMdPreview(cleanedResponse);
         setActiveTab('markdown');
     };
 
@@ -56,9 +72,9 @@ export default function AIChatPage() {
                     <h1 className="text-2xl font-bold text-blue-400">AI Chat</h1>
 
                     <div className="flex items-center space-x-4">
-                        <ModelSelector 
-                            selectedModel={selectedModel} 
-                            onModelChange={setSelectedModel} 
+                        <ModelSelector
+                            selectedModel={selectedModel}
+                            onModelChange={setSelectedModel}
                         />
 
                         <button
@@ -80,7 +96,7 @@ export default function AIChatPage() {
 
             {/* Drag Handle */}
             {showPanel && (
-                <div 
+                <div
                     className="relative w-2 bg-gray-700 cursor-col-resize hover:bg-gray-600"
                     onMouseDown={(e) => {
                         e.preventDefault();
@@ -105,21 +121,19 @@ export default function AIChatPage() {
                         <div className="flex mb-4 border-b border-gray-600">
                             <button
                                 onClick={() => setActiveTab('templates')}
-                                className={`px-4 py-2 text-sm font-medium ${
-                                    activeTab === 'templates'
-                                        ? 'text-blue-400 border-b-2 border-blue-400'
-                                        : 'text-gray-400 hover:text-gray-200'
-                                }`}
+                                className={`px-4 py-2 text-sm font-medium ${activeTab === 'templates'
+                                    ? 'text-blue-400 border-b-2 border-blue-400'
+                                    : 'text-gray-400 hover:text-gray-200'
+                                    }`}
                             >
                                 Templates
                             </button>
                             <button
                                 onClick={() => setActiveTab('markdown')}
-                                className={`px-4 py-2 text-sm font-medium ${
-                                    activeTab === 'markdown'
-                                        ? 'text-blue-400 border-b-2 border-blue-400'
-                                        : 'text-gray-400 hover:text-gray-200'
-                                }`}
+                                className={`px-4 py-2 text-sm font-medium ${activeTab === 'markdown'
+                                    ? 'text-blue-400 border-b-2 border-blue-400'
+                                    : 'text-gray-400 hover:text-gray-200'
+                                    }`}
                             >
                                 Markdown Preview
                             </button>
@@ -132,8 +146,15 @@ export default function AIChatPage() {
                         )}
 
                         {activeTab === 'markdown' && (
+                            // <div className="bg-gray-900 p-4 rounded-md overflow-auto" style={{ height: "calc(100vh - 160px)" }}>
+                            //     <pre className="whitespace-pre-wrap text-sm">{lastResponse}</pre>
+                            // </div>
                             <div className="bg-gray-900 p-4 rounded-md overflow-auto" style={{ height: "calc(100vh - 160px)" }}>
-                                <pre className="whitespace-pre-wrap text-sm">{lastResponse}</pre>
+                                <div className="prose prose-invert max-w-none custom-markdown markdown-preview">
+                                    <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+                                        {mdPreview}
+                                    </ReactMarkdown>
+                                </div>
                             </div>
                         )}
                     </div>

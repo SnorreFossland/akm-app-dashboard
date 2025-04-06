@@ -24,6 +24,7 @@ export default function ChatComponent({
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [input, setInput] = useState<string | undefined>(chatInput);
 
     // Auto-scroll to bottom when messages update
     useEffect(() => {
@@ -37,6 +38,13 @@ export default function ChatComponent({
             onResponseChange(lastMessage.content);
         }
     }, [messages, onResponseChange]);
+
+    // Synchronize `input` with `chatInput` when `chatInput` changes
+    useEffect(() => {
+        if (chatInput !== undefined) {
+            setInput(chatInput);
+        }
+    }, [chatInput]);
 
     const handleCopyMessage = (content: string, index: number) => {
         navigator.clipboard.writeText(content)
@@ -58,13 +66,14 @@ export default function ChatComponent({
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
-        if (!chatInput?.trim()) return;
+        if (!input?.trim()) return;
 
-        const userMessage: Message = { role: 'user', content: chatInput };
+        const userMessage: Message = { role: 'user', content: input };
         setMessages(prev => [...prev, userMessage]);
+        setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear the parent chatInput state
         setIsLoading(true);
-        console.log('66 Sending message:', messages, userMessage);
+
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
@@ -100,11 +109,11 @@ export default function ChatComponent({
                     <div
                         key={index}
                         className={`mb-4 p-3 rounded-lg flex items-start gap-2 ${message.role === 'user'
-                            ? 'bg-blue-900 ml-auto max-w-[80%] text-right text-blue-100 flex-row-reverse'
+                            ? 'bg-blue-900 ml-auto max-w-[80%] text-blue-100 flex-col'
                             : 'bg-gray-700 mr-auto max-w-[80%] text-gray-100 flex-col'
                             }`}
                     >
-                        <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center justify-between gap-2 w-full">
                             {/* Icon for User or AI */}
                             <div className="flex-shrink-0 ">
                                 {message.role === 'user' ? (
@@ -140,11 +149,11 @@ export default function ChatComponent({
                                 )}
                             </div>
                             {/* Role label - for clarity */}
-                            <div className="text-xs text-gray-400 mr-1">
+                            <div className="text-xs text-gray-400">
                                 {message.role === 'user' ? 'You' : 'Assistant'}
                             </div>
 
-                            <div className="flex items-right gap-2 mr-auto ml-5">
+                            <div className="flex items-center gap-2 ml-auto">
                                 {/* Copy Button */}
                                 <button
                                     onClick={() => handleCopyMessage(message.content, index)}
@@ -177,8 +186,29 @@ export default function ChatComponent({
                         </div>
 
                         {/* Message Content */}
-                        <div className="flex-1 w-full text-gray-100">
-                            {message.content}
+                        <div className="flex-1 w-full text-gray-100 whitespace-pre-wrap break-words">
+                            {message.content.split('```').map((block, i) => {
+                                // Even indexes are normal text, odd indexes are code blocks
+                                if (i % 2 === 0) {
+                                    return (
+                                        <div key={i} className="mb-2">
+                                            {block.split('\n').map((line, j) => (
+                                                <div key={j}>{line}</div>
+                                            ))}
+                                        </div>
+                                    );
+                                } else {
+                                    // This is a code block
+                                    const [language, ...codeLines] = block.split('\n');
+                                    return (
+                                        <pre key={i} className="bg-gray-900 p-3 rounded my-2 overflow-x-auto">
+                                            <code className={`language-${language.trim() || 'text'}`}>
+                                                {codeLines.join('\n')}
+                                            </code>
+                                        </pre>
+                                    );
+                                }
+                            })}
                         </div>
                     </div>
                 ))}
@@ -191,17 +221,64 @@ export default function ChatComponent({
             </div>
             <form onSubmit={handleSubmit} className="flex gap-2">
                 <textarea
-                    value={chatInput} // Use the chatInput prop
-                    onChange={(e) => onResponseChange(e.target.value)} // Update the parent state
-                    placeholder="Type a message..."
+                    value={input || ""}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type a message or type 'Help' or use a template (Ctrl+Shift+T)"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && e.shiftKey) {
+                            e.preventDefault();
+                            setInput((prev) => (prev ? prev + '\n' : ''));
+                        } else if (e.key === 'Enter' && !e.shiftKey) {
+                            const now = Date.now();
+                            const lastEnterTime = (e.target as HTMLTextAreaElement).dataset.lastEnterTime
+                                ? parseInt((e.target as HTMLTextAreaElement).dataset.lastEnterTime!)
+                                : 0;
+                                
+                            if (now - lastEnterTime < 1000) { // Double Enter within 500ms
+                                e.preventDefault();
+                                handleSubmit(e);
+                                (e.target as HTMLTextAreaElement).dataset.lastEnterTime = "0";
+                            } else {
+                                e.preventDefault();
+                                (e.target as HTMLTextAreaElement).dataset.lastEnterTime = now.toString();
+                            }
+                        }
+                    }}
+                    autoFocus
+                    onFocus={() => setCopiedIndex(null)}
+                    onBlur={() => setCopiedIndex(null)}
+                    onKeyUp={(e) => {
+                        if (e.key === 'Escape') {
+                            setInput('');
+                        }
+                    }}
+                    onPaste={(e) => {
+                        const pastedText = e.clipboardData.getData('text/plain');
+                        setInput((prev) => (prev ? prev + pastedText : pastedText));
+                        e.preventDefault();
+                    }}
+                    onCopy={(e) => {
+                        const selectedText = window.getSelection()?.toString();
+                        if (selectedText) {
+                            navigator.clipboard.writeText(selectedText)
+                                .then(() => {
+                                    setCopiedIndex(messages.length);
+                                    setTimeout(() => setCopiedIndex(null), 2000);
+                                })
+                                .catch(err => {
+                                    console.error('Failed to copy text: ', err);
+                                });
+                            e.preventDefault();
+                        }
+                    }}
                     className="flex-1 p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={chatInput?.trim() ? Math.min(5, chatInput.split('\n').length + 1) : 2} // Adjust rows dynamically
+                    rows={input?.trim() ? Math.min(5, input.split('\n').length + 1) : 2}
                     disabled={isLoading}
                 />
                 <button
                     type="submit"
                     className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
-                    disabled={isLoading}
+                    disabled={isLoading || !input?.trim()}
                 >
                     Send
                 </button>
