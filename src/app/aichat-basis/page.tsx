@@ -61,7 +61,7 @@ export default function AIChatPage() {
 
     const handleDocumentMouseMove = (e: MouseEvent) => {
         const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
-        setPanelWidth(Math.min(Math.max(newWidth, 20), 50)); // Restrict width between 20% and 50%
+        setPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // Restrict width between 20% and 50%
     };
 
     return (
@@ -69,7 +69,7 @@ export default function AIChatPage() {
             {/* Main Chat Area */}
             <div
                 className="flex flex-col p-4 overflow-hidden"
-                style={{ width: `${100 - panelWidth}%` }}
+                style={{ width: `${100 - panelWidth}%`, maxWidth: '80%' }} // Set max width to 50%
             >
                 <div className="flex justify-between items-center mb-4">
                     <h1 className="text-2xl font-bold text-blue-400">AI Chat</h1>
@@ -113,12 +113,11 @@ export default function AIChatPage() {
                     <div className="absolute top-1/2 left-0 transform -translate-y-1/2 w-full h-8 bg-gray-400 rounded"></div>
                 </div>
             )}
-
             {/* Right Panel with Tabs */}
             {showPanel && (
                 <div
                     className="bg-gray-800"
-                    style={{ width: `${panelWidth}%` }}
+                    style={{ width: `${panelWidth}%`, maxWidth: '80%' }} // Set max width to 50%
                 >
                     <div className="mt-4 pt-4 p-4">
                         <div className="flex mb-4 border-b border-gray-600">
@@ -144,7 +143,7 @@ export default function AIChatPage() {
 
                         {activeTab === 'templates' && (
                             <div className="bg-gray-900 p-4 rounded-md">
-                                <TemplatesPanel onApplyTemplate={handleApplyTemplate} />
+                                <TemplatesPanel onApplyTemplate={handleApplyTemplate} selectedModel={selectedModel} />
                             </div>
                         )}
 

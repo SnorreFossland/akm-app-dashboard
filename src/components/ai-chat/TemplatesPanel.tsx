@@ -23,7 +23,8 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
     const PROMPT_TEMPLATES = [
         {
             category: "Planning", title: "Domain/Topic Scoping", content:
-                `Help me define and scope the following domain/topic:
+`
+Help me define and scope the following domain/topic:
 Domain name: [Insert name]
 Domain description: [Insert description]
 Domain scope: [Insert scope]
@@ -31,11 +32,12 @@ Domain concepts: [List of terms, concepts, types and keywords]
 Primary objectives: [Describe main goals]
 Key stakeholders: [List stakeholders]
 Current limitations/boundaries: [Describe constraints]
-Success criteria: [Define what success looks like]`
+Success criteria: [Define what success looks like]
+`
         },
         { category: "Help", title: "Help", content: "Help" },
         { category: "Planning", title: "Project Plan", content: 
-            `Make a project plan for the following project:\n\n
+`Make a project plan for the following project:
 [Describe project here]
 Include the following sections:
 1. Project Overview
@@ -265,7 +267,7 @@ Now, refine the following user input into an exceptional prompt:
 
     return (
         <div className="px-3 h-[90vh] flex flex-col gap-4 overflow-hidden bg-gray-900 text-gray-100 shadow-lg">
-            <h2 className="text-lg font-bold">Templates</h2>
+            <h2 className="text-lg font-bold">Prompt Templates</h2>
             <div className="">
                 <label htmlFor="category" className="block text-sm font-medium mb-2">Filter by Category:</label>
                 <select
@@ -295,26 +297,29 @@ Now, refine the following user input into an exceptional prompt:
                     </button>
                 ))}
             </div>
-            {selectedTemplate !== null && (
+            { (
                 <div className="mt-4">
                     <h3 className="text-md font-semibold mb-2">
-                        {selectedTemplate === PROMPT_TEMPLATES.length - 1
-                            ? 'Custom Template'
-                            : filteredTemplates[selectedTemplate].title}
+                        {selectedTemplate === null
+                            ? 'Select a template'
+                            : selectedTemplate === PROMPT_TEMPLATES.length - 1
+                                ? 'Custom Template'
+                                : 'Prompt for: '+filteredTemplates[selectedTemplate]?.title}
                     </h3>
                     <textarea
                         value={editableContent}
                         onChange={(e) => setEditableContent(e.target.value)}
-                        className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100"
-                        rows={Math.max(5, (editableContent.match(/\n/g) || []).length + 2)}
+                        className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 overflow-y-auto"
+                        rows={Math.min(10, Math.max(22, (editableContent.match(/\n/g) || []).length + 2))}
                         placeholder="Edit the content here before inserting..."
+                        style={{ maxHeight: '30vh' }}
                     />
                     <div className="flex gap-4 mt-4">
                         <button
                             onClick={handleInsertTemplate}
                             className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700"
                         >
-                            Insert into Chat Field
+                            ← Insert into Chat 
                         </button>
                         {/* <button
                             onClick={handleRefinePrompt}
@@ -328,7 +333,7 @@ Now, refine the following user input into an exceptional prompt:
                             className={`bg-purple-600 text-gray-100 px-4 py-2 rounded-md hover:bg-purple-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
                             disabled={isRefining}
                         >
-                            {isRefining ? 'Generating...' : 'Generate Prompt'}
+                            {isRefining ? 'Generating...' : 'Enhance Prompt'}
                         </button>
                     </div>
                 </div>
