@@ -38,7 +38,7 @@ export default function DomainBuilder() {
     const containerRef = useRef(null);
 
     // Model selection state
-    const [selectedModel, setSelectedModel] = useState<string>("deepseek-coder");
+    const [selectedModel, setSelectedModel] = useState<string>("gpt-4");
 
     // Handle dragging functionality
     const startDragging = (e) => {

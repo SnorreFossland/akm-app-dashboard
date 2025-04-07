@@ -1,16 +1,24 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useEffect, useState } from 'react';
+
 
 interface TemplatesPanelProps {
     onApplyTemplate: (content: string) => void;
+    selectedModel: string; // Add selectedModel to props
+}
+interface Message {
+    role: 'user' | 'assistant';
+    content: string;
 }
 
-export default function TemplatesPanel({ onApplyTemplate }: TemplatesPanelProps) {
+export default function TemplatesPanel({ onApplyTemplate, selectedModel }: TemplatesPanelProps) {
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
     const [customTemplate, setCustomTemplate] = useState('');
     const [editableContent, setEditableContent] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('All'); // State for selected category
+    const [isRefining, setIsRefining] = useState(false); // Loading state for refining
+    const [messages, setMessages] = useState<Array<{role: string, content: string}>>([]);
 
     const PROMPT_TEMPLATES = [
         { category: "Planning", title: "Domain/Topic Scoping", content: "Help me define and scope the following domain/topic:\n\n1. Domain/Topic name: [Insert name]\n2. Primary objectives: [Describe main goals]\n3. Key stakeholders: [List stakeholders]\n4. Current limitations/boundaries: [Describe constraints]\n5. Success criteria: [Define what success looks like]" },
@@ -50,12 +58,21 @@ export default function TemplatesPanel({ onApplyTemplate }: TemplatesPanelProps)
         { category: "Code Review", title: "Code Review", content: "Please review the following code and provide feedback:\n\n[Paste code here]" },
         { category: "Custom", title: "Custom", content: "" },
     ];
+    const isMounted = useRef(true);
 
     const CATEGORIES = ["All", "Planning", "Brainstorming", "Summarization", "Learning", "Feedback", "Task Management", "Meetings", "Content Creation", "Marketing", "User Research", "Analysis", "Documentation", "Case Studies", "Proposals", "Research", "Communication", "Code Review", "Custom"];
 
     const filteredTemplates = selectedCategory === 'All'
         ? PROMPT_TEMPLATES
         : PROMPT_TEMPLATES.filter(template => template.category === selectedCategory);
+
+
+    useEffect(() => {
+        isMounted.current = true;
+        return () => {
+            isMounted.current = false;
+        };
+    }, []);
 
     const handleTemplateSelect = (index: number) => {
         setSelectedTemplate(index);
@@ -69,6 +86,80 @@ export default function TemplatesPanel({ onApplyTemplate }: TemplatesPanelProps)
     const handleInsertTemplate = () => {
         console.log('Inserting content:', editableContent);
         onApplyTemplate(editableContent);
+    };
+
+    const handleRefinePrompt = async () => {
+        setIsRefining(true); // Set loading state
+        
+        try {
+            // In a real implementation, you would call an API to refine the prompt
+            // For now, we're simulating a refined result after a delay
+            const systemPrompt = "You are a prompt expert and you will refine the user prompt. If placeholders are present, please replace them with the most relevant information.";
+            
+            // This is where you would call your API
+            // const refinedContent = await yourApiCall(editableContent);
+            
+            // For demonstration, just adding a prefix after a simulated delay
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const refinedContent = `${systemPrompt} \n\n${editableContent}`;
+            
+            // Update the field directly
+            setEditableContent(refinedContent);
+        } catch (error) {
+            console.error("Error refining prompt:", error);
+        } finally {
+            setIsRefining(false); // Reset loading state
+        }
+    };
+
+    const handleGeneratePrompt = async () => {
+        setIsRefining(true); // Set loading state
+        const systemPrompt: Message = { role: 'assistant', content: "You are a prompt expert and will generate the best complete prompt possible, not only an outline plan for the following. If placeholders are present, please replace them with the most relevant information. **Only create the best prompt ever made. The Prompt will be run in next step. Please state that the final output has to be in **Markdown**" };
+        const userMessage: Message = { role: 'user', content: editableContent };
+        const model = selectedModel || 'gpt-4'; // Default to 'gpt-4' if no model is selected
+
+        try {
+            if (!editableContent || typeof editableContent !== 'string') {
+                throw new Error('Invalid editableContent');
+            }
+
+            console.log("Generating prompt with content:", editableContent);
+
+            const response = await fetch('/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    messages: [systemPrompt, userMessage],
+                    model: model
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json().catch(() => ({}));
+                if (errorData.error && errorData.error.code === 'model_not_found') {
+                    alert('The selected AI model is not available. Please choose a different model.');
+                }
+                throw new Error(errorData.error || 'Network response was not ok');
+            }
+
+            const data = await response.json();
+
+            console.log("Response from server:", data.message);
+
+            if (data && data.message) {
+                if (isMounted.current) {
+                    setEditableContent(data.message);
+                }
+            } else {
+                throw new Error('Invalid response from server');
+            }
+        } catch (error) {
+            console.error("Error generating prompt:", error);
+        } finally {
+            if (isMounted.current) {
+                setIsRefining(false); // Reset loading state
+            }
+        }
     };
 
     return (
@@ -117,12 +208,28 @@ export default function TemplatesPanel({ onApplyTemplate }: TemplatesPanelProps)
                         rows={Math.max(5, (editableContent.match(/\n/g) || []).length + 2)}
                         placeholder="Edit the content here before inserting..."
                     />
-                    <button
-                        onClick={handleInsertTemplate}
-                        className="mt-4 bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700"
-                    >
-                        Insert into Chat Field
-                    </button>
+                    <div className="flex gap-4 mt-4">
+                        <button
+                            onClick={handleInsertTemplate}
+                            className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700"
+                        >
+                            Insert into Chat Field
+                        </button>
+                        <button
+                            onClick={handleRefinePrompt}
+                            className={`bg-green-600 text-gray-100 px-4 py-2 rounded-md hover:bg-green-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={isRefining}
+                        >
+                            {isRefining ? 'Refining...' : 'Refine with AI'}
+                        </button>
+                        <button
+                            onClick={handleGeneratePrompt}
+                            className={`bg-purple-600 text-gray-100 px-4 py-2 rounded-md hover:bg-purple-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            disabled={isRefining}
+                        >
+                            {isRefining ? 'Generating...' : 'Generate Prompt'}
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

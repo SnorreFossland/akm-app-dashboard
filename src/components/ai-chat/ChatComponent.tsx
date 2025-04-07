@@ -95,7 +95,11 @@ export default function ChatComponent({
             console.error('Error:', error);
             setMessages(prev => [...prev, {
                 role: 'assistant',
-                content: 'Sorry, I encountered an error. Please try again.'
+                content: `Sorry, I encountered an error with AI model:
+
+${selectedModel}
+
+Please try another model or try again.`
             }]);
         } finally {
             setIsLoading(false);

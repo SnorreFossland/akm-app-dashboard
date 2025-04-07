@@ -6,6 +6,7 @@ import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
 import ReactMarkdown from 'react-markdown';
 import rehypeHighlight from 'rehype-highlight';
+import remarkGfm from 'remark-gfm';
 import 'highlight.js/styles/github-dark.css';
 
 export function useTemplateManager() {
@@ -22,7 +23,7 @@ export function useTemplateManager() {
 }
 
 export default function AIChatPage() {
-    const [selectedModel, setSelectedModel] = useState('deepseek-coder');
+    const [selectedModel, setSelectedModel] = useState('gpt-4');
     const [showPanel, setShowPanel] = useState(true);
     const [lastResponse, setLastResponse] = useState('');
     const [activeTab, setActiveTab] = useState<'templates' | 'markdown'>('templates');
@@ -150,8 +151,32 @@ export default function AIChatPage() {
                             //     <pre className="whitespace-pre-wrap text-sm">{lastResponse}</pre>
                             // </div>
                             <div className="bg-gray-900 p-4 rounded-md overflow-auto" style={{ height: "calc(100vh - 160px)" }}>
-                                <div className="prose prose-invert max-w-none custom-markdown markdown-preview">
-                                    <ReactMarkdown rehypePlugins={[rehypeHighlight]}>
+                                <div 
+                                    className="prose prose-invert max-w-none custom-markdown markdown-preview"
+                                    style={{
+                                        /* Add custom styles for tables */
+                                        // "--tw-prose-th-borders": "rgb(75, 85, 99)",
+                                        "--tw-prose-td-borders": "rgb(55, 65, 81)"
+                                    } as React.CSSProperties}
+                                >
+                                    <style jsx>{`
+                                        .markdown-preview table {
+                                            border-collapse: collapse;
+                                            margin: 1em 0;
+                                        }
+                                        .markdown-preview th, 
+                                        .markdown-preview td {
+                                            border: 1px solid #4b5563;
+                                            padding: 8px 12px;
+                                        }
+                                        .markdown-preview thead {
+                                            background-color: #374151;
+                                        }
+                                    `}</style>
+                                    <ReactMarkdown
+                                        rehypePlugins={[rehypeHighlight]}
+                                        remarkPlugins={[remarkGfm]}
+                                    >
                                         {mdPreview}
                                     </ReactMarkdown>
                                 </div>

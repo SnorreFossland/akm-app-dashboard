@@ -48,7 +48,7 @@ export default function VercelAiPage() {
     // State to track the last time Enter was pressed
     const [lastEnterPress, setLastEnterPress] = useState<number>(0);
     // State for selected model
-    const [selectedModel, setSelectedModel] = useState<string>("deepseek-coder");
+    const [selectedModel, setSelectedModel] = useState<string>("gpt-4");
     const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef(null);

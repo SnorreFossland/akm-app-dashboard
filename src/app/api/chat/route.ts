@@ -1,121 +1,47 @@
 import { NextResponse } from 'next/server';
 
 export async function POST(request: Request) {
-  try {
-    const body = await request.json();
-    const { messages, model } = body;
+    try {
+        const { messages, model } = await request.json();
 
-    // Extract the latest user message
-    // const userMessage = messages[messages.length - 1]?.content || '';
+        // Validate input
+        if (!Array.isArray(messages) || messages.length === 0) {
+            throw new Error('Invalid messages array');
+        }
 
-    // // Check if the input is vague
-    // if (isInputVague(userMessage)) {
-    //   const clarificationResponse = {
-    //     role: 'assistant',
-    //     content: 'Could you please provide more details or clarify your request?'
-    //   };
-    //   return NextResponse.json({ message: clarificationResponse }, { status: 200 });
-    // }
+        const apiKey = process.env.OPENAI_API_KEY;
+        if (!apiKey) {
+            throw new Error('OPENAI_API_KEY is not set in environment variables');
+        }
 
-    // Define system and assistant prompts
-    const systemPrompt = {
-      role: 'system',
-      content: 'You are a helpful assistant and expert on the given topic. Please provide concise and accurate responses.'
-    };
+        // Call OpenAI API
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${apiKey}`
+            },
+            body: JSON.stringify({
+                model: model || 'gpt-4', // Default to GPT-4 if no model is provided
+                messages: messages,
+                temperature: 0.7,
+                max_tokens: 800
+            })
+        });
 
-    const assistantStartPrompt = {
-      role: 'assistant',
-      content: `Hello! How can I assist you today?
-      You can ask me anything related to the topic at hand.\n\n
-      Please provide as much detail as possible for the best results.\n\n
-      If you're unsure where to start, here are some suggestions:\n\n
-      - Ask for a summary of a specific topic.\n\n
-      - Request a list of resources or references.\n\n
-      - Inquire about best practices or tips.\n\n
-      - Seek clarification on a concept or term.\n\n
-      - Ask for examples or case studies.\n\n
-      If you have a specific question or task, feel free to ask!\n\n
-      .\n
-      You can also select a template from the list in the right panel to get started.`
-    };
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(`OpenAI API error: ${JSON.stringify(error)}`);
+        }
 
-    const assistantPrompt = {
-      role: 'assistant',
-      content: 'Please provide a detailed response to the user\'s query.'
-    };
-    // Extract the latest user message
-    const userMessage = messages[messages.length - 1]?.content || '';
+        const data = await response.json();
+        const aiMessage = data.choices[0]?.message?.content || 'No response from AI';
 
-    // Check if the input is vague or empty
-    if (!userMessage.trim() || isInputVague(userMessage)) {
-      return NextResponse.json({ message: assistantStartPrompt.content }, { status: 200 });
+        return NextResponse.json({ message: aiMessage });
+    } catch (error) {
+        console.error('Error processing request:', error);
+        return NextResponse.json({ error: 'Failed to process your request' }, { status: 500 });
     }
-
-    // Prepend the prompts to the messages array
-    const updatedMessages = [systemPrompt, assistantPrompt, ...messages];
-
-    // Helper function to check if input is vague
-    function isInputVague(input) {
-      const vagueKeywords = ['help'];
-      return vagueKeywords.some(keyword => input.toLowerCase().includes(keyword));
-    }
-    
-    console.log('34 Updated messages:', updatedMessages);
-    // Choose the appropriate API based on the model
-    let response;
-
-    if (model.startsWith('gpt')) {
-      response = await callOpenAI(updatedMessages, model);
-    } else if (model.startsWith('claude')) {
-      response = await callClaude(updatedMessages, model);
-    } else if (model.startsWith('mistral')) {
-      response = await callMistral(updatedMessages, model);
-    } else if (model.startsWith('gemini')) {
-      response = await callGemini(updatedMessages, model);
-    } else if (model.startsWith('deepseek')) {
-      response = await callDeepseek(updatedMessages, model);
-    } else {
-      throw new Error(`Unsupported model: ${model}`);
-    }
-
-    return NextResponse.json({ message: response }, { status: 200 });
-  } catch (error) {
-    console.error('Error in chat API:', error);
-    return NextResponse.json(
-      { error: 'Failed to process your request: ' + error.message },
-      { status: 500 }
-    );
-  }
-}
-
-// OpenAI API implementation
-async function callOpenAI(messages, model) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY is not set in environment variables');
-  }
-
-  const response = await fetch('https://api.openai.com/v1/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify({
-      model: model,
-      messages: messages,
-      temperature: 0.7,
-      max_tokens: 800
-    })
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(`OpenAI API error: ${JSON.stringify(error)}`);
-  }
-
-  const data = await response.json();
-  return data.choices[0].message.content;
 }
 
 // Claude API implementation
@@ -248,9 +174,3 @@ async function callDeepseek(messages, model) {
   const data = await response.json();
   return data.choices[0].message.content;
 }
-
-// // Helper function to check if input is vague
-// function isInputVague(input) {
-//   const vagueKeywords = ['help', 'assist', 'support', 'info', 'information'];
-//   return vagueKeywords.some(keyword => input.toLowerCase().includes(keyword));
-// }

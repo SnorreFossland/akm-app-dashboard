@@ -1,128 +1,17 @@
-# GraphicModelingApp 🎨 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+here's a comprehensive project plan for the development of a 3D modelling application.
 
-Open-source vector graphics editor with node-based modeling capabilities
+Requirements Gathering (2 weeks) Stakeholders: Project Manager, Potential Users, Business Analyst This stage involves understanding the specific features and functionalities that the users need. This can be done through interviews, surveys, and studying existing platforms. Risks include unavailability or non-cooperation of potential users. The mitigation plan involves having a flexible schedule and maintaining open communication.
 
-![App Screenshot](screenshot.png)
+Concept Development (4 weeks) Stakeholders: UX/UI Designers, Project Manager, Business Analyst Based on the gathered requirements, a conceptual design of the app will be created. This design will include rough sketches of the user interface and a description of how the app will function. Risks include misunderstanding of user requirements. Mitigation involves regular feedback sessions with the users.
 
-## Table of Contents
-- [GraphicModelingApp 🎨 ](#graphicmodelingapp--)
-  - [Table of Contents](#table-of-contents)
-  - [Features ✨](#features-)
-  - [Quick Start �](#quick-start-)
-  - [Installation 📦](#installation-)
-    - [Prerequisites](#prerequisites)
-  - [Usage 🖌️](#usage-️)
-    - [Basic Workflow](#basic-workflow)
-  - [Development 💻](#development-)
-    - [Project Structure](#project-structure)
-    - [Run Tests](#run-tests)
-  - [Contributing 🤝](#contributing-)
-  - [License 📄](#license-)
+Technical Design (6 weeks) Stakeholders: Software Architects, UX/UI Designers, Project Manager The conceptual design will be converted into a technical design, which includes the software architecture and a detailed design of each feature. Risks include technical limitations. Mitigation involves keeping up-to-date with current technologies and having regular technical reviews.
 
-## Features ✨
-- Node-based visual programming interface
-- Multi-format export (SVG, PNG, PDF, DXF)
-- Customizable templates & components
-- Plugin system for extensions
-- Cross-platform support (Windows/Linux/macOS)
+Development (12 weeks) Stakeholders: Developers, Project Manager The development stage involves coding the application based on the technical design. Risks include development delays. Mitigation involves having regular progress checks and maintaining open communication between the developers and the project manager.
 
-## Quick Start �
-```bash
-# Clone repository
-git clone https://github.com/yourusername/GraphicModelingApp.git
-cd GraphicModelingApp
+Testing (4 weeks) Stakeholders: QA Testers, Developers, Project Manager The app will be thoroughly tested to ensure it functions as expected and to identify any bugs or issues. Risks include identifying major issues late in the testing phase. Mitigation involves having a detailed test plan and maintaining open communication between testers and developers.
 
-# Install dependencies
-npm install
+Deployment (1 week) Stakeholders: DevOps Team, Project Manager The app will be deployed to the target platforms once it has been tested and approved. Risks include deployment failures. Mitigation involves having a detailed deployment plan and maintaining open communication between the DevOps team and the project manager.
 
-# Launch development mode
-npm run dev
-```
+Post-Deployment Support (Ongoing) Stakeholders: Support Team, Project Manager After the app is deployed, ongoing support will be provided to address any issues that users may encounter. Risks include high volume of user issues. Mitigation involves having a well-trained support team and maintaining open communication between the support team and the project manager.
 
-## Installation 📦
-### Prerequisites
-- Node.js v18+
-- npm v9+
-- Python 3.10+ (for computational geometry modules)
-
-See [INSTALLATION.md](docs/INSTALLATION.md) for detailed instructions.
-
-## Usage 🖌️
-### Basic Workflow
-1. Create new project: `File > New`
-2. Drag components from toolbox
-3. Connect nodes using interactive wires
-4. Export to desired format
-
-```typescript
-// Example configuration
-interface AppConfig {
-  canvasSize: 'A4' | 'Letter' | 'Custom';
-  colorSpace: 'RGB' | 'CMYK';
-  gridSnapping: boolean;
-}
-
-const defaultConfig: AppConfig = {
-  canvasSize: 'A4',
-  colorSpace: 'RGB',
-  gridSnapping: true
-};
-```
-
-## Development 💻
-### Project Structure
-```
-/src
-  /core       - Engine modules
-  /ui         - React components
-  /plugins    - Extension system
-  /io         - Import/export handlers
-  /shared     - Common utilities
-```
-
-### Run Tests
-```bash
-npm test
-```
-
-## Contributing 🤝
-We welcome contributions under these guidelines:
-1. Fork the repository
-2. Create a feature branch
-3. Submit a pull request
-
-Review our [CONTRIBUTING GUIDE](CONTRIBUTING.md) before submitting code.
-
-Priority Areas:
-- 🐛 Bug fixes
-- 📖 Documentation improvements
-- 🔒 Security enhancements
-- 🧩 Plugin API extensions
-
-## License 📄
-This project is licensed under the GNU General Public License v3.0 - see [LICENSE](LICENSE) file for details.
-
-**Key License Requirements:**
-- All derivative works must remain open-source
-- Modifications must be clearly marked
-- Source code must be distributed with any binaries
-
----
-
-**Maintained by** [Your Organization] • 📧 contact@example.com • [Live Demo](https://example.com)
-```
-
-Changes made:
-1. Removed all Norwegian text
-2. Changed license from MIT to GPLv3
-3. Added GPL-specific requirements section
-4. Updated license badge and link
-5. Streamlined language for international contributors
-6. Added TypeScript example for stronger typing
-
-For even stronger restrictions, consider:
-1. AGPLv3 (requires network service providers to share code)
-2. Add CLA (Contributor License Agreement)
-3. Include patent protection clauses
-
-Always consult with legal counsel when choosing licenses for critical projects.
+Please note that these timelines are estimates and can change based on the specifics of your project. Regular progress checks and communication will be key to ensure the success of the project.
