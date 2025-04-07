@@ -3,12 +3,12 @@
 // Define available models
 const AI_MODELS = [
     { id: 'gpt-4', name: 'GPT-4' },
-    { id: 'deepseek-coder', name: 'Deepseek-Coder' },
+    { id: 'deepseek-chat', name: 'Deepseek-Chat' },
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
+    { id: 'mistral-small-latest', name: 'Mistral Small Latest' },
+    { id: 'mistral-large', name: 'Mistral Large' },
     { id: 'claude-3-opus', name: 'Claude 3 Opus' },
     { id: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
-    { id: 'mistral-large', name: 'Mistral Large' },
-    { id: 'mistral-medium', name: 'Mistral Medium' },
     { id: 'gemini-pro', name: 'Gemini Pro' },
     { id: 'gemini-ultra', name: 'Gemini Ultra' },
 ];

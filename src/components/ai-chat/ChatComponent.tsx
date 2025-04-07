@@ -67,7 +67,7 @@ export default function ChatComponent({
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input?.trim()) return;
-
+        console.log('70 User input:', input, selectedModel);
         const userMessage: Message = { role: 'user', content: input };
         setMessages(prev => [...prev, userMessage]);
         setInput(''); // Clear the input field after submission
@@ -96,9 +96,7 @@ export default function ChatComponent({
             setMessages(prev => [...prev, {
                 role: 'assistant',
                 content: `Sorry, I encountered an error with AI model:
-
 ${selectedModel}
-
 Please try another model or try again.`
             }]);
         } finally {

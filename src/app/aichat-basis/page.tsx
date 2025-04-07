@@ -1,10 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
+import mermaid from 'mermaid';
 import ReactMarkdown from 'react-markdown';
+import { CodeProps } from 'react-markdown/lib/ast-to-react';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import 'highlight.js/styles/github-dark.css';
@@ -175,7 +177,35 @@ export default function AIChatPage() {
                                     `}</style>
                                     <ReactMarkdown
                                         rehypePlugins={[rehypeHighlight]}
-                                        remarkPlugins={[remarkGfm]}
+                                        components={{
+                                            code: ({ inline, className, children, ...props }: CodeProps) => {
+                                                const match = /language-(\w+)/.exec(className || '');
+                                                const mermaidRegex = /```mermaid([\s\S]*?)```/;
+                                                const mermaidMatch = mermaidRegex.exec(String(children));
+                                                const isMermaid = mermaidMatch && mermaidMatch[1];                                   
+                                                if (!inline && match && match[1] === 'mermaid') {
+                                                    useEffect(() => {
+                                                        mermaid.initialize({
+                                                            theme: 'dark',
+                                                            securityLevel: 'loose'
+                                                        });
+                                                        mermaid.run();
+                                                    }, []);
+                                                    
+                                                    return (
+                                                        <div className="mermaid my-4">
+                                                            {String(children).replace(/\n$/, '')}
+                                                        </div>
+                                                    );
+                                                }
+                                                
+                                                return (
+                                                    <code className={className} {...props}>
+                                                        {children}
+                                                    </code>
+                                                );
+                                            }
+                                        }}
                                     >
                                         {mdPreview}
                                     </ReactMarkdown>

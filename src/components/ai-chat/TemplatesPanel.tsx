@@ -18,13 +18,92 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
     const [editableContent, setEditableContent] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('All'); // State for selected category
     const [isRefining, setIsRefining] = useState(false); // Loading state for refining
-    const [messages, setMessages] = useState<Array<{role: string, content: string}>>([]);
+    const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
 
     const PROMPT_TEMPLATES = [
-        { category: "Planning", title: "Domain/Topic Scoping", content: "Help me define and scope the following domain/topic:\n\n1. Domain/Topic name: [Insert name]\n2. Primary objectives: [Describe main goals]\n3. Key stakeholders: [List stakeholders]\n4. Current limitations/boundaries: [Describe constraints]\n5. Success criteria: [Define what success looks like]" },
+        {
+            category: "Planning", title: "Domain/Topic Scoping", content:
+                `Help me define and scope the following domain/topic:
+Domain name: [Insert name]
+Domain description: [Insert description]
+Domain scope: [Insert scope]
+Domain concepts: [List of terms, concepts, types and keywords]
+Primary objectives: [Describe main goals]
+Key stakeholders: [List stakeholders]
+Current limitations/boundaries: [Describe constraints]
+Success criteria: [Define what success looks like]`
+        },
         { category: "Help", title: "Help", content: "Help" },
-        { category: "Planning", title: "Project Plan", content: "Outline a project plan for the following project:\n\n[Describe project here]" },
-        { category: "Planning", title: "Product Roadmap", content: "Create a product roadmap for the following product:\n\n[Describe product here]" },
+        { category: "Planning", title: "Project Plan", content: 
+            `Make a project plan for the following project:\n\n
+[Describe project here]
+Include the following sections:
+1. Project Overview
+2. Scope Domain
+3. Key Stakeholders
+4. Objectives
+5. Timeline (phases and milestones as Mermaid diagram)
+6. Resources
+7. Risks and Mitigation Strategies
+8. Success Criteria
+9. Budget
+10. Communication Plan
+11. Evaluation and Reporting
+12. Conclusion
+13. Appendix
+14. References
+15. Glossary of Terms
+16. Acknowledgments
+17. Additional Notes
+
+Make the Mermaid diagram in the following format:
+
+\`\`\`mermaid
+gantt
+    title Product Roadmap
+    dateFormat  YYYY-MM-DD
+    section Phase 1
+    Task 1 :a1, 2023-10-01, 30d
+    Task 2 :after a1, 20d
+    section Phase 2
+    Task 3 :2023-11-01, 12d
+\`\`\`
+
+        `},
+        { category: "Planning", title: "Product Roadmap", content: 
+            `Create a product roadmap for the following product:
+[Describe product here]
+Include the following sections:
+1. Product Vision
+2. Goals and Objectives
+3. Target Audience
+4. Key Features
+5. Timeline (phases and milestones as Mermaid diagram)
+6. Milestones
+7. Dependencies
+8. Risks and Mitigation Strategies
+9. Success Metrics
+10. Communication Plan
+11. Evaluation and Reporting
+12. Conclusion
+13. Appendix
+14. References
+15. Glossary of Terms
+16. Acknowledgments
+17. Additional Notes
+
+Make the Mermaid diagram in the following format:
+\`\`\`mermaid
+gantt
+    title Product Roadmap
+    dateFormat  YYYY-MM-DD
+    section Phase 1
+    Task 1 :a1, 2023-10-01, 30d
+    Task 2 :after a1, 20d
+    section Phase 2
+    Task 3 :2023-11-01, 12d
+\`\`\`
+            ` },
         { category: "Brainstorming", title: "Brainstorming Ideas", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
         { category: "Learning", title: "Learning Plan", content: "Create a learning plan for the following topic:\n\n[Describe topic here]" },
         { category: "Feedback", title: "Feedback Request", content: "Request feedback on the following topic:\n\n[Describe topic here]" },
@@ -60,7 +139,7 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
     ];
     const isMounted = useRef(true);
 
-    const CATEGORIES = ["All", "Planning", "Brainstorming", "Summarization", "Learning", "Feedback", "Task Management", "Meetings", "Content Creation", "Marketing", "User Research", "Analysis", "Documentation", "Case Studies", "Proposals", "Research", "Communication", "Code Review", "Custom"];
+    const CATEGORIES = ["All", "Help", "Planning", "Brainstorming", "Summarization", "Learning", "Feedback", "Task Management", "Meetings", "Content Creation", "Marketing", "User Research", "Analysis", "Documentation", "Case Studies", "Proposals", "Research", "Communication", "Code Review", "Custom"];
 
     const filteredTemplates = selectedCategory === 'All'
         ? PROMPT_TEMPLATES
@@ -85,36 +164,58 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
 
     const handleInsertTemplate = () => {
         console.log('Inserting content:', editableContent);
-        onApplyTemplate(editableContent);
+        const trimmedContent = `
+You are a domain expert in the following area: ${editableContent.trim()} 
+Make the output in Markdown.
+`;
+        onApplyTemplate(trimmedContent);
     };
 
-    const handleRefinePrompt = async () => {
-        setIsRefining(true); // Set loading state
-        
-        try {
-            // In a real implementation, you would call an API to refine the prompt
-            // For now, we're simulating a refined result after a delay
-            const systemPrompt = "You are a prompt expert and you will refine the user prompt. If placeholders are present, please replace them with the most relevant information.";
-            
-            // This is where you would call your API
-            // const refinedContent = await yourApiCall(editableContent);
-            
-            // For demonstration, just adding a prefix after a simulated delay
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            const refinedContent = `${systemPrompt} \n\n${editableContent}`;
-            
-            // Update the field directly
-            setEditableContent(refinedContent);
-        } catch (error) {
-            console.error("Error refining prompt:", error);
-        } finally {
-            setIsRefining(false); // Reset loading state
-        }
-    };
+    // const handleRefinePrompt = async () => {
+    //     setIsRefining(true); // Set loading state
+
+    //     try {
+    //         // In a real implementation, you would call an API to refine the prompt
+    //         // For now, we're simulating a refined result after a delay
+    //         const systemPrompt = "You are a prompt expert and you will refine the user prompt. If placeholders are present, please replace them with the most relevant information.";
+
+    //         // This is where you would call your API
+    //         // const refinedContent = await yourApiCall(editableContent);
+
+    //         // For demonstration, just adding a prefix after a simulated delay
+    //         await new Promise(resolve => setTimeout(resolve, 1000));
+    //         const refinedContent = `${systemPrompt} \n\n${editableContent}`;
+
+    //         // Update the field directly
+    //         setEditableContent(refinedContent);
+    //     } catch (error) {
+    //         console.error("Error refining prompt:", error);
+    //     } finally {
+    //         setIsRefining(false); // Reset loading state
+    //     }
+    // };
 
     const handleGeneratePrompt = async () => {
         setIsRefining(true); // Set loading state
-        const systemPrompt: Message = { role: 'assistant', content: "You are a prompt expert and will generate the best complete prompt possible, not only an outline plan for the following. If placeholders are present, please replace them with the most relevant information. **Only create the best prompt ever made. The Prompt will be run in next step. Please state that the final output has to be in **Markdown**" };
+        const systemPrompt: Message = {
+            role: 'assistant',
+            content: `
+You are a prompt refinement expert. Your task is to take the user's input and transform it into the most effective and complete prompt possible for an AI system. 
+Your output must strictly be a refined prompt, not a response or result to the user's input.
+
+# Instructions:
+1. Analyze the user's input to understand the context, objectives, and requirements.
+2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.
+3. Ensure the refined prompt is clear, concise, and actionable.
+4. Use Markdown formatting for the output.
+
+# Example:
+**User Input:** "Help me write a blog post about AI."
+**Refined Prompt:** "Write a detailed blog post about the advancements in artificial intelligence, focusing on recent breakthroughs, applications in various industries, and potential future trends. Include examples and references to credible sources."
+
+Now, refine the following user input into an exceptional prompt:
+`
+        };
         const userMessage: Message = { role: 'user', content: editableContent };
         const model = selectedModel || 'gpt-4'; // Default to 'gpt-4' if no model is selected
 
@@ -186,8 +287,8 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
                         key={index}
                         onClick={() => handleTemplateSelect(index)}
                         className={`w-full text-left p-2 rounded-md ${selectedTemplate === index
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-gray-700 text-gray-100'
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-700 text-gray-100'
                             }`}
                     >
                         {template.title}
@@ -215,13 +316,13 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
                         >
                             Insert into Chat Field
                         </button>
-                        <button
+                        {/* <button
                             onClick={handleRefinePrompt}
                             className={`bg-green-600 text-gray-100 px-4 py-2 rounded-md hover:bg-green-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
                             disabled={isRefining}
                         >
                             {isRefining ? 'Refining...' : 'Refine with AI'}
-                        </button>
+                        </button> */}
                         <button
                             onClick={handleGeneratePrompt}
                             className={`bg-purple-600 text-gray-100 px-4 py-2 rounded-md hover:bg-purple-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
