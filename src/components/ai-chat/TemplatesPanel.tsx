@@ -65,10 +65,10 @@ gantt
     title Product Roadmap
     dateFormat  YYYY-MM-DD
     section Phase 1
-    Task 1 :a1, 2023-10-01, 30d
+    Task 1 :a1, 2025-01-01, 30d
     Task 2 :after a1, 20d
     section Phase 2
-    Task 3 :2023-11-01, 12d
+    Task 3 :2025-11-01, 12d
 \`\`\`
 
         `},
@@ -105,6 +105,7 @@ gantt
     section Phase 2
     Task 3 :2023-11-01, 12d
 \`\`\`
+Make sur to include the backticks in the output.
             ` },
         { category: "Brainstorming", title: "Brainstorming Ideas", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
         { category: "Learning", title: "Learning Plan", content: "Create a learning plan for the following topic:\n\n[Describe topic here]" },

@@ -26,15 +26,41 @@ export function useTemplateManager() {
 
 export default function AIChatPage() {
     const [selectedModel, setSelectedModel] = useState('gpt-4');
-    const [showPanel, setShowPanel] = useState(true);
     const [lastResponse, setLastResponse] = useState('');
-    const [activeTab, setActiveTab] = useState<'templates' | 'markdown'>('templates');
     const [chatInput, setChatInput] = useState('');
-    const [panelWidth, setPanelWidth] = useState(33); // Percentage width of the right panel
     const [mdPreview, setMdPreview] = useState<string>(''); // State for Markdown preview
+    const [isEditing, setIsEditing] = useState(false); // State to toggle between edit and preview modes
+    const [showLeftPanel, setShowLeftPanel] = useState(true); // State to toggle left panel visibility
+    const [showRightPanel, setShowRightPanel] = useState(true); // State to toggle right panel visibility
+    const [leftPanelWidth, setLeftPanelWidth] = useState(400); // Width of the left panel
+    const [rightPanelWidth, setRightPanelWidth] = useState(400); // Width of the right panel
+
+    const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
+        const startX = e.clientX;
+        const startLeftWidth = leftPanelWidth;
+        const startRightWidth = rightPanelWidth;
+
+        const onMouseMove = (event: MouseEvent) => {
+            const deltaX = event.clientX - startX;
+
+            if (panel === 'left') {
+                setLeftPanelWidth(Math.max(200, startLeftWidth + deltaX)); // Minimum width of 200px
+            } else if (panel === 'right') {
+                setRightPanelWidth(Math.max(200, startRightWidth - deltaX)); // Minimum width of 200px
+            }
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    };
 
     const handleApplyTemplate = (content: string) => {
-        console.log('31 Template content inserted:', content);
+        console.log('Template content inserted:', content);
         setChatInput(content); // Update the chat input field
     };
 
@@ -43,175 +69,152 @@ export default function AIChatPage() {
     };
 
     const handleViewInMarkdown = (response: string) => {
-        // Logic to remove common AI message patterns before displaying in markdown
         const cleanResponse = (response: string) => {
-            // Remove common prefixes
             let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
-            
-            // Remove common suffixes
             cleaned = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
-            
             return cleaned;
         };
 
         const cleanedResponse = cleanResponse(response);
         setMdPreview(cleanedResponse);
-        setActiveTab('markdown');
-    };
-
-    const handleDocumentMouseMove = (e: MouseEvent) => {
-        const newWidth = ((window.innerWidth - e.clientX) / window.innerWidth) * 100;
-        setPanelWidth(Math.min(Math.max(newWidth, 20), 80)); // Restrict width between 20% and 50%
     };
 
     return (
-        <div className="flex h-screen bg-gray-900 text-gray-100">
-            {/* Main Chat Area */}
+        <div className="flex h-screen bg-gray-900 text-gray-100 w-full">
+            {/* Left Panel: Templates */}
+            {showLeftPanel && (
+                <div
+                    className="flex-shrink-0 p-4"
+                    style={{ width: `${leftPanelWidth}px`, minWidth: '200px' }}
+                >
+                    <div className="flex justify-between items-center mb-4 ms-2">
+                        <h2 className="text-xl font-bold text-blue-400">Templates</h2>
+                    </div>
+                    <TemplatesPanel onApplyTemplate={handleApplyTemplate} selectedModel={selectedModel} />
+                </div>
+            )}
+
+            {/* Draggable Bar for Left Panel */}
+            {showLeftPanel && (
+                <div
+                    className="w-2 bg-gray-700 cursor-col-resize relative"
+                    onMouseDown={(e) => handleMouseDown(e, 'left')}
+                >
+                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
+                </div>
+            )}
+
+            {/* Middle Panel: AI Chat */}
             <div
-                className="flex flex-col p-4 overflow-hidden"
-                style={{ width: `${100 - panelWidth}%`, maxWidth: '80%' }} // Set max width to 50%
+                className={`flex flex-col p-4 overflow-hidden w-full ${showLeftPanel && showRightPanel
+                        ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
+                        : showLeftPanel
+                            ? `w-[calc(100%-${leftPanelWidth}px)]`
+                            : showRightPanel
+                                ? `w-[calc(100%-${rightPanelWidth}px)]`
+                                : 'w-full'
+                    }`}
             >
                 <div className="flex justify-between items-center mb-4">
+                    <button
+                        onClick={() => setShowLeftPanel(!showLeftPanel)}
+                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                        title={showLeftPanel ? 'Hide Templates' : 'Show Templates'}
+                    >
+                        {showLeftPanel ? '←' : '→'}
+                        <span className="ml-1">{showLeftPanel ? 'Hide' : 'Show'} Templates</span>
+                    </button>
+
                     <h1 className="text-2xl font-bold text-blue-400">AI Chat</h1>
 
-                    <div className="flex items-center space-x-4">
-                        <ModelSelector
-                            selectedModel={selectedModel}
-                            onModelChange={setSelectedModel}
-                        />
-
-                        <button
-                            onClick={() => setShowPanel(!showPanel)}
-                            className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-md text-sm flex items-center"
-                        >
-                            {showPanel ? 'Hide' : 'Show'} Panel
-                        </button>
-                    </div>
+                    <button
+                        onClick={() => setShowRightPanel(!showRightPanel)}
+                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                        title={showRightPanel ? 'Hide Markdown' : 'Show Markdown'}
+                    >
+                        {showRightPanel ? '→' : '←'}
+                        <span className="ml-1">{showRightPanel ? 'Hide' : 'Show'} Markdown</span>
+                    </button>
                 </div>
 
                 <ChatComponent
                     selectedModel={selectedModel}
                     onResponseChange={handleResponseChange}
                     onViewInMarkdown={handleViewInMarkdown}
-                    chatInput={chatInput} // Pass the updated chat input
+                    chatInput={chatInput}
                 />
             </div>
 
-            {/* Drag Handle */}
-            {showPanel && (
+            {/* Draggable Bar for Right Panel */}
+            {showRightPanel && (
                 <div
-                    className="relative w-2 bg-gray-700 cursor-col-resize hover:bg-gray-600"
-                    onMouseDown={(e) => {
-                        e.preventDefault();
-                        document.addEventListener('mousemove', handleDocumentMouseMove);
-                        document.addEventListener('mouseup', () => {
-                            document.removeEventListener('mousemove', handleDocumentMouseMove);
-                        });
-                    }}
+                    className="w-2 bg-gray-700 cursor-col-resize relative"
+                    onMouseDown={(e) => handleMouseDown(e, 'right')}
                 >
-                    {/* Lighter part in the middle */}
-                    <div className="absolute top-1/2 left-0 transform -translate-y-1/2 w-full h-8 bg-gray-400 rounded"></div>
+                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
                 </div>
             )}
-            {/* Right Panel with Tabs */}
-            {showPanel && (
+
+            {/* Right Panel: Markdown Preview */}
+            {showRightPanel && (
                 <div
-                    className="bg-gray-800"
-                    style={{ width: `${panelWidth}%`, maxWidth: '80%' }} // Set max width to 50%
+                    className="flex-shrink-0 p-4"
+                    style={{ width: `${rightPanelWidth}px`, minWidth: '200px' }}
                 >
-                    <div className="mt-4 pt-4 p-4">
-                        <div className="flex mb-4 border-b border-gray-600">
-                            <button
-                                onClick={() => setActiveTab('templates')}
-                                className={`px-4 py-2 text-sm font-medium ${activeTab === 'templates'
-                                    ? 'text-blue-400 border-b-2 border-blue-400'
-                                    : 'text-gray-400 hover:text-gray-200'
-                                    }`}
-                            >
-                                Templates
-                            </button>
-                            <button
-                                onClick={() => setActiveTab('markdown')}
-                                className={`px-4 py-2 text-sm font-medium ${activeTab === 'markdown'
-                                    ? 'text-blue-400 border-b-2 border-blue-400'
-                                    : 'text-gray-400 hover:text-gray-200'
-                                    }`}
-                            >
-                                Markdown Preview
-                            </button>
-                        </div>
-
-                        {activeTab === 'templates' && (
-                            <div className="bg-gray-900 p-4 rounded-md">
-                                <TemplatesPanel onApplyTemplate={handleApplyTemplate} selectedModel={selectedModel} />
-                            </div>
-                        )}
-
-                        {activeTab === 'markdown' && (
-                            // <div className="bg-gray-900 p-4 rounded-md overflow-auto" style={{ height: "calc(100vh - 160px)" }}>
-                            //     <pre className="whitespace-pre-wrap text-sm">{lastResponse}</pre>
-                            // </div>
-                            <div className="bg-gray-900 p-4 rounded-md overflow-auto" style={{ height: "calc(100vh - 160px)" }}>
-                                <div 
-                                    className="prose prose-invert max-w-none custom-markdown markdown-preview"
-                                    style={{
-                                        /* Add custom styles for tables */
-                                        // "--tw-prose-th-borders": "rgb(75, 85, 99)",
-                                        "--tw-prose-td-borders": "rgb(55, 65, 81)"
-                                    } as React.CSSProperties}
-                                >
-                                    <style jsx>{`
-                                        .markdown-preview table {
-                                            border-collapse: collapse;
-                                            margin: 1em 0;
-                                        }
-                                        .markdown-preview th, 
-                                        .markdown-preview td {
-                                            border: 1px solid #4b5563;
-                                            padding: 8px 12px;
-                                        }
-                                        .markdown-preview thead {
-                                            background-color: #374151;
-                                        }
-                                    `}</style>
-                                    <ReactMarkdown
-                                        rehypePlugins={[rehypeHighlight]}
-                                        components={{
-                                            code: ({ inline, className, children, ...props }: CodeProps) => {
-                                                const match = /language-(\w+)/.exec(className || '');
-                                                const mermaidRegex = /```mermaid([\s\S]*?)```/;
-                                                const mermaidMatch = mermaidRegex.exec(String(children));
-                                                const isMermaid = mermaidMatch && mermaidMatch[1];                                   
-                                                if (!inline && match && match[1] === 'mermaid') {
-                                                    useEffect(() => {
-                                                        mermaid.initialize({
-                                                            theme: 'dark',
-                                                            securityLevel: 'loose'
-                                                        });
-                                                        mermaid.run();
-                                                    }, []);
-                                                    
-                                                    return (
-                                                        <div className="mermaid my-4">
-                                                            {String(children).replace(/\n$/, '')}
-                                                        </div>
-                                                    );
-                                                }
-                                                
-                                                return (
-                                                    <code className={className} {...props}>
-                                                        {children}
-                                                    </code>
-                                                );
-                                            }
-                                        }}
-                                    >
-                                        {mdPreview}
-                                    </ReactMarkdown>
-                                </div>
-                            </div>
-                        )}
+                    <div className="flex justify-between items-center mb-5">
+                        <h2 className="text-xl font-bold text-blue-400">Markdown Preview</h2>
                     </div>
+                    {isEditing ? (
+                        <textarea
+                            value={mdPreview}
+                            onChange={(e) => setMdPreview(e.target.value)}
+                            className="w-full h-full bg-gray-900 text-gray-100 p-2 rounded-md resize-none"
+                            style={{ height: "calc(100vh - 100px)" }}
+                        />
+                    ) : (
+                        <div
+                            className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto"
+                            style={{
+                                height: "calc(100vh - 80px)",
+                                "--tw-prose-td-borders": "rgb(55, 65, 81)"
+                            } as React.CSSProperties}
+                        >
+                            <ReactMarkdown
+                                rehypePlugins={[rehypeHighlight]}
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                    code: ({ inline, className, children, ...props }: CodeProps) => {
+                                        const match = /language-(\w+)/.exec(className || '');
+                                        const mermaidRegex = /```mermaid([\s\S]*?)```/;
+                                        const mermaidMatch = mermaidRegex.exec(String(children));
+                                        if (!inline && match && match[1] === 'mermaid') {
+                                            useEffect(() => {
+                                                mermaid.initialize({
+                                                    theme: 'dark',
+                                                    securityLevel: 'loose'
+                                                });
+                                                mermaid.run();
+                                            }, []);
+
+                                            return (
+                                                <div className="mermaid my-4">
+                                                    {String(children).replace(/\n$/, '')}
+                                                </div>
+                                            );
+                                        }
+
+                                        return (
+                                            <code className={className} {...props}>
+                                                {children}
+                                            </code>
+                                        );
+                                    }
+                                }}
+                            >
+                                {mdPreview || '...'}
+                            </ReactMarkdown>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
