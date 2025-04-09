@@ -22,22 +22,43 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
 
     const PROMPT_TEMPLATES = [
         {
-            category: "Planning", title: "Domain/Topic Scoping", content:
-`
+            category: "Planning", 
+            title: "Domain/Topic Scoping", 
+            usage: "Business",
+            content:
+                `
 Help me define and scope the following domain/topic:
-Domain name: [Insert name]
-Domain description: [Insert description]
-Domain scope: [Insert scope]
-Domain concepts: [List of terms, concepts, types and keywords]
-Primary objectives: [Describe main goals]
-Key stakeholders: [List stakeholders]
-Current limitations/boundaries: [Describe constraints]
-Success criteria: [Define what success looks like]
+Domain Identification:
+	•	Domain Name: [Insert concise and specific name]
+	•	Domain Description: [Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
+Domain scope: 
+	•	In-Scope: [Explicitly list the elements, activities, or areas included within the domain.]
+	•	Out-of-Scope: [Clearly specify what aspects are explicitly excluded from the domain.]
+Key Domain Concepts and Terms
+	•	Core Concepts: [List critical concepts fundamental to understanding the domain.]
+	•	Relevant Keywords: [Provide key terminologies, acronyms, and types relevant to the domain.]
+Primary objectives: [Clearly define the main goals or outcomes this domain aims to achieve]
+Key stakeholders:
+Identify and categorize stakeholders by their roles or involvement:
+	•	Primary Stakeholders: [Directly involved individuals or groups]
+	•	Secondary Stakeholders: [Indirectly impacted individuals or groups]
+Current limitations and Boundaries:
+Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+    •	Constraint/Boundary 1
+	•	Constraint/Boundary 2
+Success criteria: 
+Define clear, measurable, and achievable indicators of success:
+	•	[Success Criterion 1] (Measurable)
+	•	[Success Criterion 2] (Measurable)
 `
         },
-        { category: "Help", title: "Help", content: "Help" },
-        { category: "Planning", title: "Project Plan", content: 
-`Make a project plan for the following project:
+        { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
+        {
+            category: "Planning", 
+            title: "Project Plan", 
+            usage: "Business",
+            content:
+                `Make a project plan for the following project:
 [Describe project here]
 Include the following sections:
 1. Project Overview
@@ -60,9 +81,11 @@ Include the following sections:
 
 Make the Mermaid diagram in the following format:
 
+## Example:
+
 \`\`\`mermaid
 gantt
-    title Product Roadmap
+    title Product Plan
     dateFormat  YYYY-MM-DD
     section Phase 1
     Task 1 :a1, 2025-01-01, 30d
@@ -72,8 +95,12 @@ gantt
 \`\`\`
 
         `},
-        { category: "Planning", title: "Product Roadmap", content: 
-            `Create a product roadmap for the following product:
+        {
+            category: "Planning", 
+            title: "Product Roadmap", 
+            usage: "Business",
+            content:
+                `Create a product roadmap for the following product:
 [Describe product here]
 Include the following sections:
 1. Product Vision
@@ -94,55 +121,57 @@ Include the following sections:
 16. Acknowledgments
 17. Additional Notes
 
+
 Make the Mermaid diagram in the following format:
+## Example:
+
 \`\`\`mermaid
 gantt
     title Product Roadmap
     dateFormat  YYYY-MM-DD
     section Phase 1
-    Task 1 :a1, 2023-10-01, 30d
+    Task 1 :a1, 2025-01-01, 30d
     Task 2 :after a1, 20d
     section Phase 2
-    Task 3 :2023-11-01, 12d
+    Task 3 :2025-11-01, 12d
 \`\`\`
 Make sur to include the backticks in the output.
             ` },
-        { category: "Brainstorming", title: "Brainstorming Ideas", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
-        { category: "Learning", title: "Learning Plan", content: "Create a learning plan for the following topic:\n\n[Describe topic here]" },
-        { category: "Feedback", title: "Feedback Request", content: "Request feedback on the following topic:\n\n[Describe topic here]" },
-        { category: "Task Management", title: "Task List", content: "Create a task list for the following project:\n\n[Describe project here]" },
-        { category: "Meetings", title: "Meeting Agenda", content: "Create an agenda for the following meeting:\n\n[Describe meeting here]" },
-        { category: "Meetings", title: "Meeting Summary", content: "Summarize the following meeting:\n\n[Describe meeting here]" },
-        { category: "Meetings", title: "Meeting Notes", content: "Summarize the following meeting notes into key points:\n\n[Paste meeting notes here]" },
-        { category: "Content Creation", title: "Content Outline", content: "Create an outline for the following content:\n\n[Describe content here]" },
-        { category: "Content Creation", title: "Presentation Slides", content: "Create a slide deck for the following topic:\n\n[Describe topic here]" },
-        { category: "Content Creation", title: "Social Media Post", content: "Create a social media post for the following topic:\n\n[Describe topic here]" },
-        { category: "Content Creation", title: "Blog Post", content: "Write a blog post on the following topic:\n\n[Describe topic here]" },
-        { category: "Marketing", title: "Marketing Strategy", content: "Outline a marketing strategy for the following product:\n\n[Describe product here]" },
-        { category: "Marketing", title: "Press Release", content: "Draft a press release for the following event:\n\n[Describe event here]" },
-        { category: "User Research", title: "User Persona", content: "Create a user persona for the following target audience:\n\n[Describe target audience here]" },
-        { category: "User Research", title: "User Journey Map", content: "Create a user journey map for the following user experience:\n\n[Describe user experience here]" },
-        { category: "Analysis", title: "SWOT Analysis", content: "Conduct a SWOT analysis for the following business:\n\n[Describe business here]" },
-        { category: "Analysis", title: "Competitive Analysis", content: "Conduct a competitive analysis for the following market:\n\n[Describe market here]" },
-        { category: "Feedback", title: "Customer Feedback", content: "Summarize the following customer feedback:\n\n[Paste customer feedback here]" },
-        { category: "Communication", title: "Email Response", content: "Draft a response to the following email:\n\n[Paste email here]" },
-        { category: "Communication", title: "Email Draft", content: "Draft a professional email for the following purpose:\n\n[Describe purpose here]" },
-        { category: "Summarization", title: "Research Summary", content: "Summarize the following research findings:\n\n[Paste research findings here]" },
-        { category: "Summarization", title: "Report Summary", content: "Summarize the following report into a concise overview:\n\n[Paste report content here]" },
-        { category: "Documentation", title: "Technical Documentation", content: "Create technical documentation for the following software:\n\n[Describe software here]" },
-        { category: "Documentation", title: "User Guide", content: "Create a user guide for the following product:\n\n[Describe product here]" },
-        { category: "Documentation", title: "FAQ Section", content: "Create a FAQ section for the following product:\n\n[Describe product here]" },
-        { category: "Case Studies", title: "Case Study", content: "Create a case study for the following project:\n\n[Describe project here]" },
-        { category: "Proposals", title: "Business Proposal", content: "Draft a business proposal for the following project:\n\n[Describe project here]" },
-        { category: "Proposals", title: "Grant Application", content: "Draft a grant application for the following project:\n\n[Describe project here]" },
-        { category: "Proposals", title: "Proposal Outline", content: "Create an outline for a proposal on the following topic:\n\n[Describe topic here]" },
-        { category: "Research", title: "Research Paper", content: "Outline a research paper on the following topic:\n\n[Describe topic here]" },
-        { category: "Code Review", title: "Code Review", content: "Please review the following code and provide feedback:\n\n[Paste code here]" },
-        { category: "Custom", title: "Custom", content: "" },
+        { category: "Learning", title: "Learning Plan", usage: "Personal", content: "Create a learning plan for the following topic:\n\n[Describe topic here]" },
+        { category: "Feedback", title: "Feedback Request", usage: "Business", content: "Request feedback on the following topic:\n\n[Describe topic here]" },
+        { category: "Task Management", title: "Task List", usage: "Personal", content: "Create a task list for the following project:\n\n[Describe project here]" },
+        { category: "Meetings", title: "Meeting Agenda", usage: "Business", content: "Create an agenda for the following meeting:\n\n[Describe meeting here]" },
+        { category: "Meetings", title: "Meeting Summary", usage: "Business", content: "Summarize the following meeting:\n\n[Describe meeting here]" },
+        { category: "Meetings", title: "Meeting Notes", usage: "Business", content: "Summarize the following meeting notes into key points:\n\n[Paste meeting notes here]" },
+        { category: "Content Creation", title: "Content Outline", usage: "Business", content: "Create an outline for the following content:\n\n[Describe content here]" },
+        { category: "Content Creation", title: "Presentation Slides", usage: "Business", content: "Create a slide deck for the following topic:\n\n[Describe topic here]" },
+        { category: "Content Creation", title: "Social Media Post", usage: "Personal", content: "Create a social media post for the following topic:\n\n[Describe topic here]" },
+        { category: "Content Creation", title: "Blog Post", usage: "Personal", content: "Write a blog post on the following topic:\n\n[Describe topic here]" },
+        { category: "Marketing", title: "Marketing Strategy", usage: "Business", content: "Outline a marketing strategy for the following product:\n\n[Describe product here]" },
+        { category: "Marketing", title: "Press Release", usage: "Business", content: "Draft a press release for the following event:\n\n[Describe event here]" },
+        { category: "User Research", title: "User Persona", usage: "Business", content: "Create a user persona for the following target audience:\n\n[Describe target audience here]" },
+        { category: "User Research", title: "User Journey Map", usage: "Business", content: "Create a user journey map for the following user experience:\n\n[Describe user experience here]" },
+        { category: "Analysis", title: "SWOT Analysis", usage: "Business", content: "Conduct a SWOT analysis for the following business:\n\n[Describe business here]" },
+        { category: "Analysis", title: "Competitive Analysis", usage: "Business", content: "Conduct a competitive analysis for the following market:\n\n[Describe market here]" },
+        { category: "Feedback", title: "Customer Feedback", usage: "Business", content: "Summarize the following customer feedback:\n\n[Paste customer feedback here]" },
+        { category: "Communication", title: "Email Response", usage: "Business", content: "Draft a response to the following email:\n\n[Paste email here]" },
+        { category: "Communication", title: "Email Draft", usage: "Business", content: "Draft a professional email for the following purpose:\n\n[Describe purpose here]" },
+        { category: "Summarization", title: "Research Summary", usage: "Business", content: "Summarize the following research findings:\n\n[Paste research findings here]" },
+        { category: "Summarization", title: "Report Summary", usage: "Business", content: "Summarize the following report into a concise overview:\n\n[Paste report content here]" },
+        { category: "Documentation", title: "Technical Documentation", usage: "Business", content: "Create technical documentation for the following software:\n\n[Describe software here]" },
+        { category: "Documentation", title: "User Guide", usage: "Business", content: "Create a user guide for the following product:\n\n[Describe product here]" },
+        { category: "Documentation", title: "FAQ Section", usage: "Business", content: "Create a FAQ section for the following product:\n\n[Describe product here]" },
+        { category: "Case Studies", title: "Case Study", usage: "Business", content: "Create a case study for the following project:\n\n[Describe project here]" },
+        { category: "Proposals", title: "Business Proposal", usage: "Business", content: "Draft a business proposal for the following project:\n\n[Describe project here]" },
+        { category: "Proposals", title: "Grant Application", usage: "Business", content: "Draft a grant application for the following project:\n\n[Describe project here]" },
+        { category: "Proposals", title: "Proposal Outline", usage: "Business", content: "Create an outline for a proposal on the following topic:\n\n[Describe topic here]" },
+        { category: "Research", title: "Research Paper", usage: "Business", content: "Outline a research paper on the following topic:\n\n[Describe topic here]" },
+        { category: "Code Review", title: "Code Review", usage: "Business", content: "Please review the following code and provide feedback:\n\n[Paste code here]" },
+        { category: "Custom", title: "Custom", usage: "Personal", content: "" },
     ];
     const isMounted = useRef(true);
 
-    const CATEGORIES = ["All", "Help", "Planning", "Brainstorming", "Summarization", "Learning", "Feedback", "Task Management", "Meetings", "Content Creation", "Marketing", "User Research", "Analysis", "Documentation", "Case Studies", "Proposals", "Research", "Communication", "Code Review", "Custom"];
+    const CATEGORIES = ["All", "Planning", "Brainstorming", "Summarization", "Learning", "Feedback", "Task Management", "Meetings", "Content Creation", "Marketing", "User Research", "Analysis", "Documentation", "Case Studies", "Proposals", "Research", "Communication", "Code Review", "Custom"];
 
     const filteredTemplates = selectedCategory === 'All'
         ? PROMPT_TEMPLATES
@@ -168,9 +197,15 @@ Make sur to include the backticks in the output.
     const handleInsertTemplate = () => {
         console.log('Inserting content:', editableContent);
         const trimmedContent = `
-You are a domain expert in the following area: ${editableContent.trim()} 
-Make the output in Markdown.
-`;
+You are an expert consultant specializing in the following domain. 
+Leverage your extensive knowledge to help comprehensively define and scope the domain clearly and precisely.
+If placeholders are present, please replace them with the most relevant information.
+
+${editableContent.trim()} 
+
+Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate
+Do not wrap your entire response in triple backticks.
+    `;
         onApplyTemplate(trimmedContent);
     };
 
@@ -267,7 +302,7 @@ Now, refine the following user input into an exceptional prompt:
     };
 
     return (
-        <div className="px-3 h-[90vh] flex flex-col gap-4 overflow-hidden bg-gray-900 text-gray-100 shadow-lg">
+        <div className="px-3 h-[92vh] flex flex-col gap-4 overflow-hidden bg-gray-900 text-gray-100 shadow-lg">
             <h2 className="text-lg font-bold">Prompt Templates</h2>
             <div className="">
                 <label htmlFor="category" className="block text-sm font-medium mb-2">Filter by Category:</label>
@@ -284,61 +319,90 @@ Now, refine the following user input into an exceptional prompt:
                     ))}
                 </select>
             </div>
-            <div className="grid grid-cols-2 gap-4 h-100 overflow-y-auto">
-                {filteredTemplates.map((template, index) => (
-                    <button
-                        key={index}
-                        onClick={() => handleTemplateSelect(index)}
-                        className={`w-full text-left p-2 rounded-md ${selectedTemplate === index
-                            ? 'bg-blue-600 text-white'
-                            : 'bg-gray-700 text-gray-100'
-                            }`}
-                    >
-                        {template.title}
-                    </button>
-                ))}
-            </div>
-            { (
-                <div className="mt-4">
-                    <h3 className="text-md font-semibold mb-2">
-                        {selectedTemplate === null
-                            ? 'Select a template'
-                            : selectedTemplate === PROMPT_TEMPLATES.length - 1
-                                ? 'Custom Template'
-                                : 'Prompt for: '+filteredTemplates[selectedTemplate]?.title}
-                    </h3>
-                    <textarea
-                        value={editableContent}
-                        onChange={(e) => setEditableContent(e.target.value)}
-                        className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 overflow-y-auto"
-                        rows={Math.min(10, Math.max(22, (editableContent.match(/\n/g) || []).length + 2))}
-                        placeholder="Edit the content here before inserting..."
-                        style={{ maxHeight: '30vh' }}
-                    />
-                    <div className="flex gap-4 mt-4">
-                        <button
-                            onClick={handleInsertTemplate}
-                            className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700"
-                        >
-                            ← Insert into Chat 
-                        </button>
-                        {/* <button
-                            onClick={handleRefinePrompt}
-                            className={`bg-green-600 text-gray-100 px-4 py-2 rounded-md hover:bg-green-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={isRefining}
-                        >
-                            {isRefining ? 'Refining...' : 'Refine with AI'}
-                        </button> */}
-                        <button
-                            onClick={handleGeneratePrompt}
-                            className={`bg-purple-600 text-gray-100 px-4 py-2 rounded-md hover:bg-purple-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            disabled={isRefining}
-                        >
-                            {isRefining ? 'Generating...' : 'Enhance Prompt'}
-                        </button>
+            <div className="flex h-100 overflow-y-auto">
+                {/* Business Templates Column */}
+                <div className="w-1/2 pr-2">
+                    <h3 className="text-sm font-semibold mb-2">Business</h3>
+                    <div className="flex flex-col gap-2">
+                        {filteredTemplates
+                            .filter(template => template.usage === "Business")
+                            .map((template, index) => {
+                                const actualIndex = filteredTemplates.findIndex(t => t === template);
+                                return (
+                                    <button
+                                        key={actualIndex}
+                                        onClick={() => handleTemplateSelect(actualIndex)}
+                                        className={`w-full text-left p-2 rounded-md ${
+                                            selectedTemplate === actualIndex
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-700 text-gray-100'
+                                        }`}
+                                    >
+                                        {template.title}
+                                    </button>
+                                );
+                            })}
                     </div>
                 </div>
-            )}
+                
+                {/* Personal Templates Column */}
+                <div className="w-1/2 pl-2">
+                    <h3 className="text-sm font-semibold mb-2">Personal</h3>
+                    <div className="flex flex-col gap-2">
+                        {filteredTemplates
+                            .filter(template => template.usage === "Personal")
+                            .map((template, index) => {
+                                const actualIndex = filteredTemplates.findIndex(t => t === template);
+                                return (
+                                    <button
+                                        key={actualIndex}
+                                        onClick={() => handleTemplateSelect(actualIndex)}
+                                        className={`w-full text-left p-2 rounded-md ${
+                                            selectedTemplate === actualIndex
+                                                ? 'bg-blue-600 text-white'
+                                                : 'bg-gray-700 text-gray-100'
+                                        }`}
+                                    >
+                                        {template.title}
+                                    </button>
+                                );
+                            })}
+                    </div>
+                </div>
+            </div>
+
+            <div className="mt-auto pt-4 bg-gray-900 border-t border-gray-700">
+                <h3 className="text-md font-semibold mb-2">
+                    {selectedTemplate === null
+                        ? 'Select a template'
+                        : selectedTemplate === PROMPT_TEMPLATES.length - 1
+                            ? 'Custom Template'
+                            : 'Prompt for: ' + filteredTemplates[selectedTemplate]?.title}
+                </h3>
+                <textarea
+                    value={editableContent}
+                    onChange={(e) => setEditableContent(e.target.value)}
+                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 overflow-y-auto"
+                    rows={9}
+                    placeholder="Edit the content here before inserting..."
+                />
+                <div className="flex gap-4 mt-auto">
+                    <button
+                        onClick={handleGeneratePrompt}
+                        className={`bg-gray-600 text-gray-100 px-4 py-2 rounded-md hover:bg-gray-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={isRefining}
+                    >
+                        {isRefining ? 'Generating...' : 'Refine Prompt'}
+                    </button>
+                    <button
+                        onClick={handleInsertTemplate}
+                        className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700"
+                    >
+                        Insert into Chat →
+                    </button>
+                </div>
+            </div>
+
         </div>
     );
 }

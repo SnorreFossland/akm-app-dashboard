@@ -18,7 +18,7 @@ export default function ChatComponent({
     selectedModel,
     chatInput,
     onResponseChange,
-    onViewInMarkdown
+    onViewInMarkdown,
 }: ChatComponentProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -33,7 +33,7 @@ export default function ChatComponent({
 
     // Notify parent component about the last response
     useEffect(() => {
-        const lastMessage = messages.findLast(m => m.role === 'assistant');
+        const lastMessage = messages.findLast((m) => m.role === 'assistant');
         if (lastMessage && onResponseChange) {
             onResponseChange(lastMessage.content);
         }
@@ -46,42 +46,17 @@ export default function ChatComponent({
         }
     }, [chatInput]);
 
-    const handleCopyMessage = (content: string, index: number) => {
-        navigator.clipboard.writeText(content)
-            .then(() => {
-                setCopiedIndex(index);
-                setTimeout(() => setCopiedIndex(null), 2000);
-            })
-            .catch(err => {
-                console.error('Failed to copy text: ', err);
-            });
-    };
-
-    // Function to handle "View in Markdown" button click
-    const handleViewInMarkdown = (content: string) => {
-        if (onViewInMarkdown) {
-            onViewInMarkdown(content);
-        }
-    };
-
-    const handleSubmit = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!input?.trim()) return;
-        console.log('70 User input:', input, selectedModel);
-        const userMessage: Message = { role: 'user', content: input };
-        setMessages(prev => [...prev, userMessage]);
-        setInput(''); // Clear the input field after submission
-        onResponseChange(''); // Clear the parent chatInput state
+    // Shared function to send a message to the API
+    const sendMessageToAPI = async (newMessages: Message[]) => {
         setIsLoading(true);
-
         try {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    messages: [...messages, userMessage],
-                    model: selectedModel
-                })
+                    messages: newMessages,
+                    model: selectedModel,
+                }),
             });
 
             if (!response.ok) {
@@ -90,17 +65,58 @@ export default function ChatComponent({
             }
 
             const data = await response.json();
-            setMessages(prev => [...prev, { role: 'assistant', content: data.message }]);
+            setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
         } catch (error) {
             console.error('Error:', error);
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: `Sorry, I encountered an error with AI model:
-${selectedModel}
-Please try another model or try again.`
-            }]);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    role: 'assistant',
+                    content: `Sorry, I encountered an error with AI model: ${selectedModel}. Please try again.`,
+                },
+            ]);
         } finally {
             setIsLoading(false);
+        }
+    };
+
+    // Resend last user message when the selected model changes
+    useEffect(() => {
+        if (selectedModel && messages.length > 0) {
+            const lastUserMessage = messages.findLast((m) => m.role === 'user');
+            if (lastUserMessage) {
+                sendMessageToAPI([...messages, lastUserMessage]);
+            }
+        }
+    }, [selectedModel]);
+
+    // Handle form submission
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!input?.trim()) return;
+
+        const userMessage: Message = { role: 'user', content: input };
+        setMessages((prev) => [...prev, userMessage]);
+        setInput(''); // Clear the input field after submission
+        onResponseChange(''); // Clear the parent chatInput state
+
+        await sendMessageToAPI([...messages, userMessage]);
+    };
+
+    const handleCopyMessage = (content: string, index: number) => {
+        navigator.clipboard.writeText(content)
+            .then(() => {
+                setCopiedIndex(index);
+                setTimeout(() => setCopiedIndex(null), 2000);
+            })
+            .catch((err) => {
+                console.error('Failed to copy text: ', err);
+            });
+    };
+
+    const handleViewInMarkdown = (content: string) => {
+        if (onViewInMarkdown) {
+            onViewInMarkdown(content);
         }
     };
 
@@ -111,13 +127,12 @@ Please try another model or try again.`
                     <div
                         key={index}
                         className={`mb-4 p-3 rounded-lg flex items-start gap-2 ${message.role === 'user'
-                            ? 'bg-blue-900 ml-auto max-w-[80%] text-blue-100 flex-col'
-                            : 'bg-gray-700 mr-auto max-w-[80%] text-gray-100 flex-col'
+                                ? 'bg-blue-900 ml-auto max-w-[80%] text-blue-100 flex-col'
+                                : 'bg-gray-700 mr-auto max-w-[80%] text-gray-100 flex-col'
                             }`}
                     >
                         <div className="flex items-center justify-between gap-2 w-full">
-                            {/* Icon for User or AI */}
-                            <div className="flex-shrink-0 ">
+                            <div className="flex-shrink-0">
                                 {message.role === 'user' ? (
                                     <svg
                                         xmlns="http://www.w3.org/2000/svg"
@@ -150,67 +165,45 @@ Please try another model or try again.`
                                     </svg>
                                 )}
                             </div>
-                            {/* Role label - for clarity */}
                             <div className="text-xs text-gray-400">
                                 {message.role === 'user' ? 'You' : 'Assistant'}
                             </div>
-
                             <div className="flex items-center gap-2 ml-auto">
-                                {/* Copy Button */}
                                 <button
                                     onClick={() => handleCopyMessage(message.content, index)}
                                     className="text-sm text-gray-400 hover:text-gray-200"
                                 >
                                     {copiedIndex === index ? 'Copied!' : 'Copy'}
                                 </button>
-
-                                {/* View in Markdown Button */}
                                 {message.role === 'assistant' && (
                                     <button
                                         onClick={() => handleViewInMarkdown(message.content)}
-                                        className="text-sm text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                        className="text-sm ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                     >
-                                        <svg 
-                                            xmlns="http://www.w3.org/2000/svg" 
-                                            width="18" 
-                                            height="18" 
-                                            viewBox="0 0 24 24" 
-                                            fill="none" 
-                                            stroke="currentColor" 
+                                        Markdown Preview
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="18"
+                                            height="18"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
                                             className="inline-block"
                                         >
-                                            <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round"/>
-                                            <path d="M8 7h9v9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                                            <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
+                                            <path
+                                                d="M8 7h9v9"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
                                         </svg>
                                     </button>
                                 )}
                             </div>
                         </div>
-
-                        {/* Message Content */}
                         <div className="flex-1 w-full text-gray-100 whitespace-pre-wrap break-words">
-                            {message.content.split('```').map((block, i) => {
-                                // Even indexes are normal text, odd indexes are code blocks
-                                if (i % 2 === 0) {
-                                    return (
-                                        <div key={i} className="mb-2">
-                                            {block.split('\n').map((line, j) => (
-                                                <div key={j}>{line}</div>
-                                            ))}
-                                        </div>
-                                    );
-                                } else {
-                                    // This is a code block
-                                    const [language, ...codeLines] = block.split('\n');
-                                    return (
-                                        <pre key={i} className="bg-gray-900 p-3 rounded my-2 overflow-x-auto">
-                                            <code className={`language-${language.trim() || 'text'}`}>
-                                                {codeLines.join('\n')}
-                                            </code>
-                                        </pre>
-                                    );
-                                }
-                            })}
+                            {message.content}
                         </div>
                     </div>
                 ))}
@@ -223,58 +216,11 @@ Please try another model or try again.`
             </div>
             <form onSubmit={handleSubmit} className="flex gap-2">
                 <textarea
-                    value={input || ""}
+                    value={input || ''}
                     onChange={(e) => setInput(e.target.value)}
-                    placeholder="Type a message or type 'Help' or use a template (Ctrl+Shift+T)"
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && e.shiftKey) {
-                            e.preventDefault();
-                            setInput((prev) => (prev ? prev + '\n' : ''));
-                        } else if (e.key === 'Enter' && !e.shiftKey) {
-                            const now = Date.now();
-                            const lastEnterTime = (e.target as HTMLTextAreaElement).dataset.lastEnterTime
-                                ? parseInt((e.target as HTMLTextAreaElement).dataset.lastEnterTime!)
-                                : 0;
-                                
-                            if (now - lastEnterTime < 1000) { // Double Enter within 500ms
-                                e.preventDefault();
-                                handleSubmit(e);
-                                (e.target as HTMLTextAreaElement).dataset.lastEnterTime = "0";
-                            } else {
-                                e.preventDefault();
-                                (e.target as HTMLTextAreaElement).dataset.lastEnterTime = now.toString();
-                            }
-                        }
-                    }}
-                    autoFocus
-                    onFocus={() => setCopiedIndex(null)}
-                    onBlur={() => setCopiedIndex(null)}
-                    onKeyUp={(e) => {
-                        if (e.key === 'Escape') {
-                            setInput('');
-                        }
-                    }}
-                    onPaste={(e) => {
-                        const pastedText = e.clipboardData.getData('text/plain');
-                        setInput((prev) => (prev ? prev + pastedText : pastedText));
-                        e.preventDefault();
-                    }}
-                    onCopy={(e) => {
-                        const selectedText = window.getSelection()?.toString();
-                        if (selectedText) {
-                            navigator.clipboard.writeText(selectedText)
-                                .then(() => {
-                                    setCopiedIndex(messages.length);
-                                    setTimeout(() => setCopiedIndex(null), 2000);
-                                })
-                                .catch(err => {
-                                    console.error('Failed to copy text: ', err);
-                                });
-                            e.preventDefault();
-                        }
-                    }}
+                    placeholder="Type a message or type 'Help' or use a template to start..."
                     className="flex-1 p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                    rows={input?.trim() ? Math.min(5, input.split('\n').length + 1) : 2}
+                    rows={input?.trim() ? Math.min(5, input.split('\n').length + 5) : 2}
                     disabled={isLoading}
                 />
                 <button
@@ -282,7 +228,20 @@ Please try another model or try again.`
                     className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
                     disabled={isLoading || !input?.trim()}
                 >
-                    Send
+                    <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        className="w-5 h-5"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                    >
+                        <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth="4"
+                            d="M5 10l7-7m0 0l7 7m-7-7v18"
+                        />
+                    </svg>
                 </button>
             </form>
         </div>

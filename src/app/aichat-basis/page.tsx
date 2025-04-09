@@ -9,6 +9,7 @@ import { CodeProps } from 'react-markdown/lib/ast-to-react';
 import rehypeHighlight from 'rehype-highlight';
 import remarkGfm from 'remark-gfm';
 import 'highlight.js/styles/github-dark.css';
+import ModelSelector from '@/components/ai-chat/ModelSelector';
 
 export function useTemplateManager() {
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
@@ -30,20 +31,38 @@ export default function AIChatPage() {
     const [showRightPanel, setShowRightPanel] = useState(true); // State to toggle right panel visibility
     const [leftPanelWidth, setLeftPanelWidth] = useState(400); // Width of the left panel
     const [rightPanelWidth, setRightPanelWidth] = useState(400); // Width of the right panel
-    const [selectedModel, setLastResponse] = useState(''); // Adding missing state variables
+    const [selectedModel, setSelectedModel] = useState('gpt-4');
     const [isEditing, setIsEditing] = useState(false); // Adding missing state variable
-    
+    const [lastResponse, setLastResponse] = useState<string>(''); // State for the last response
+
     // Initialize mermaid when component mounts
     useEffect(() => {
         mermaid.initialize({
             theme: 'dark',
             securityLevel: 'loose'
         });
+        mermaid.contentLoaded();
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'dark',
+            flowchart: {
+                curve: 'linear'
+            },
+            sequence: {
+                showSequenceNumbers: true
+            },
+            themeVariables: {
+                primaryColor: '#1e3a8a', // Custom primary color
+                edgeLabelBackground: '#334155', // Custom edge label background color
+                edgeLabelBorder: '#1e3a8a' // Custom edge label border color
+            }
+        });
+        setShowRightPanel(false); // Hide right panel on load
     }, []);
-    
+
     // Run mermaid whenever markdown preview changes
     useEffect(() => {
-        if (mdPreview) {
+        if (mdPreview && mdPreview.includes('mermaid') && !isEditing) {
             setTimeout(() => {
                 mermaid.run();
             }, 0);
@@ -61,7 +80,7 @@ export default function AIChatPage() {
             if (panel === 'left') {
                 setLeftPanelWidth(Math.max(200, startLeftWidth + deltaX)); // Minimum width of 200px
             } else if (panel === 'right') {
-                setRightPanelWidth(Math.max(200, startRightWidth - deltaX)); // Minimum width of 200px
+                setRightPanelWidth(Math.max(200, startRightWidth - deltaX)); // Reverse logic for right panel
             }
         };
 
@@ -92,6 +111,7 @@ export default function AIChatPage() {
 
         const cleanedResponse = cleanResponse(response);
         setMdPreview(cleanedResponse);
+        setShowRightPanel(true); // Ensure the right panel is shown
     };
 
     return (
@@ -100,7 +120,10 @@ export default function AIChatPage() {
             {showLeftPanel && (
                 <div
                     className="flex-shrink-0 p-4"
-                    style={{ width: `${leftPanelWidth}px`, minWidth: '200px' }}
+                    style={{ 
+                        width: showRightPanel ? `${leftPanelWidth}px` : `${leftPanelWidth + 200}px`, 
+                        minWidth: '200px' 
+                    }}
                 >
                     <div className="flex justify-between items-center mb-4 ms-2">
                         <h2 className="text-xl font-bold text-blue-400">Templates</h2>
@@ -110,7 +133,7 @@ export default function AIChatPage() {
             )}
 
             {/* Draggable Bar for Left Panel */}
-            {showLeftPanel && (
+            {showLeftPanel && mdPreview && (
                 <div
                     className="w-2 bg-gray-700 cursor-col-resize relative"
                     onMouseDown={(e) => handleMouseDown(e, 'left')}
@@ -121,16 +144,16 @@ export default function AIChatPage() {
 
             {/* Middle Panel: AI Chat */}
             <div
-                className={`flex flex-col p-4 overflow-hidden w-full ${showLeftPanel && showRightPanel
-                        ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
-                        : showLeftPanel
-                            ? `w-[calc(100%-${leftPanelWidth}px)]`
-                            : showRightPanel
-                                ? `w-[calc(100%-${rightPanelWidth}px)]`
-                                : 'w-full'
+                className={`flex flex-col p-4  bg-card overflow-hidden w-full ${showLeftPanel && showRightPanel
+                    ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
+                    : showLeftPanel
+                        ? `w-[calc(100%-${leftPanelWidth}px)]`
+                        : showRightPanel
+                            ? `w-[calc(100%-${rightPanelWidth}px)]`
+                            : 'w-full'
                     }`}
             >
-                <div className="flex justify-between items-center mb-4">
+                <div className="flex justify-between items-center mb-4 bg-primary-foreground p-2 rounded-md">
                     <button
                         onClick={() => setShowLeftPanel(!showLeftPanel)}
                         className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
@@ -141,11 +164,24 @@ export default function AIChatPage() {
                     </button>
 
                     <h1 className="text-2xl font-bold text-blue-400">AI Chat</h1>
+                    <div className="flex items-center space-x-4">
+                        <ModelSelector
+                            selectedModel={selectedModel}
+                            onModelChange={setSelectedModel}
+                        />
+
+                        {/* <button
+                            onClick={() => setShowPanel(!showPanel)}
+                            className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded-md text-sm flex items-center"
+                        >
+                            {showPanel ? 'Hide' : 'Show'} Panel
+                        </button> */}
+                    </div>
 
                     <button
                         onClick={() => setShowRightPanel(!showRightPanel)}
                         className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                        title={showRightPanel ? 'Hide Markdown' : 'Show Markdown'}
+                        title={showRightPanel ? 'Hide' : 'Show Markdown'}
                     >
                         {showRightPanel ? '→' : '←'}
                         <span className="ml-1">{showRightPanel ? 'Hide' : 'Show'} Markdown</span>
@@ -178,25 +214,33 @@ export default function AIChatPage() {
                 >
                     <div className="flex justify-between items-center mb-5">
                         <h2 className="text-xl font-bold text-blue-400">Markdown Preview</h2>
+                        <button
+                            onClick={() => setIsEditing(!isEditing)}
+                            className="text-sm bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                        >
+                            {isEditing ? 'Preview' : 'Edit'}
+                        </button>
                     </div>
                     {isEditing ? (
                         <textarea
                             value={mdPreview}
                             onChange={(e) => setMdPreview(e.target.value)}
-                            className="w-full h-full p-4 bg-gray-800 text-gray-100 rounded"
+                            className="w-full h-full p-4 bg-gray-800 text-gray-100 rounded max-h-[80vh] overflow-y-auto"
                         />
                     ) : (
-                        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto">
+                        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto max-h-[80vh]">
                             <ReactMarkdown
-                                remarkPlugins={[remarkGfm]}
-                                rehypePlugins={[rehypeHighlight]}
+                                remarkPlugins={[remarkGfm]} // Enables GitHub-flavored Markdown
+                                rehypePlugins={[rehypeHighlight]} // Enables syntax highlighting
                                 components={{
                                     code: ({ inline, className, children, ...props }: CodeProps) => {
                                         const match = /language-(\w+)/.exec(className || '');
-                                        // const mermaidRegex = /```mermaid([\s\S]*?)```/;
-                                        // Removed unused variable mermaidMatch
-                                        
+
                                         if (!inline && match && match[1] === 'mermaid') {
+                                            useEffect(() => {
+                                                mermaid.run(); // Re-run Mermaid after rendering
+                                            }, [children]);
+
                                             return (
                                                 <div className="mermaid my-4">
                                                     {String(children).replace(/\n$/, '')}
@@ -205,14 +249,17 @@ export default function AIChatPage() {
                                         }
 
                                         return (
-                                            <code className={className} {...props}>
+                                            <code
+                                                className={className || ''}
+                                                {...props}
+                                            >
                                                 {children}
                                             </code>
                                         );
                                     }
                                 }}
                             >
-                                {mdPreview || '...'}
+                                {mdPreview}
                             </ReactMarkdown>
                         </div>
                     )}

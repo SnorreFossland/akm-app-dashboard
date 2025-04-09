@@ -9,13 +9,13 @@ export async function POST(request: Request) {
     // Define system and assistant prompts
     const systemPrompt = {
       role: 'system',
-      content: 'You are a helpful assistant and expert on the topic given by the **user**.'
+      content: 'You are a helpful assistant and expert with several year of experience in the topic given by the user.'
     };
 
     const assistantStartPrompt = {
       role: 'assistant',
       content: `Hello! How can I assist you today?
-      You can ask me anything related to the topic at hand.\n\n
+      You can ask me anything related to a topic you choose.\n\n
       Please provide as much detail as possible for the best results.\n\n
       If you're unsure where to start, here are some suggestions:\n\n
       - Ask for a summary of a specific topic.\n\n
@@ -25,12 +25,12 @@ export async function POST(request: Request) {
       - Ask for examples or case studies.\n\n
       If you have a specific question or task, feel free to ask!\n\n
       .\n
-      You can also select a template from the list in the right panel to get started.`
+      You can also select a template from the list in the left panel to get started.`
     };
 
     const assistantPrompt = {
       role: 'assistant',
-      content: 'Please provide a detailed response to the user\'s query.'
+      content: 'Please provide as detailed response as possible to the user\'s query.'
     };
     // Extract the latest user message
     const userMessage = messages[messages.length - 1]?.content || '';
