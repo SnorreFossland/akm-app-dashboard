@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
-import ModelSelector from '@/components/ai-chat/ModelSelector';
 import mermaid from 'mermaid';
 import ReactMarkdown from 'react-markdown';
 import { CodeProps } from 'react-markdown/lib/ast-to-react';
@@ -25,15 +24,31 @@ export function useTemplateManager() {
 }
 
 export default function AIChatPage() {
-    const [selectedModel, setSelectedModel] = useState('gpt-4');
-    const [lastResponse, setLastResponse] = useState('');
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // State for Markdown preview
-    const [isEditing, setIsEditing] = useState(false); // State to toggle between edit and preview modes
     const [showLeftPanel, setShowLeftPanel] = useState(true); // State to toggle left panel visibility
     const [showRightPanel, setShowRightPanel] = useState(true); // State to toggle right panel visibility
     const [leftPanelWidth, setLeftPanelWidth] = useState(400); // Width of the left panel
     const [rightPanelWidth, setRightPanelWidth] = useState(400); // Width of the right panel
+    const [selectedModel, setLastResponse] = useState(''); // Adding missing state variables
+    const [isEditing, setIsEditing] = useState(false); // Adding missing state variable
+    
+    // Initialize mermaid when component mounts
+    useEffect(() => {
+        mermaid.initialize({
+            theme: 'dark',
+            securityLevel: 'loose'
+        });
+    }, []);
+    
+    // Run mermaid whenever markdown preview changes
+    useEffect(() => {
+        if (mdPreview) {
+            setTimeout(() => {
+                mermaid.run();
+            }, 0);
+        }
+    }, [mdPreview]);
 
     const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
         const startX = e.clientX;
@@ -168,34 +183,20 @@ export default function AIChatPage() {
                         <textarea
                             value={mdPreview}
                             onChange={(e) => setMdPreview(e.target.value)}
-                            className="w-full h-full bg-gray-900 text-gray-100 p-2 rounded-md resize-none"
-                            style={{ height: "calc(100vh - 100px)" }}
+                            className="w-full h-full p-4 bg-gray-800 text-gray-100 rounded"
                         />
                     ) : (
-                        <div
-                            className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto"
-                            style={{
-                                height: "calc(100vh - 80px)",
-                                "--tw-prose-td-borders": "rgb(55, 65, 81)"
-                            } as React.CSSProperties}
-                        >
+                        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto">
                             <ReactMarkdown
-                                rehypePlugins={[rehypeHighlight]}
                                 remarkPlugins={[remarkGfm]}
+                                rehypePlugins={[rehypeHighlight]}
                                 components={{
                                     code: ({ inline, className, children, ...props }: CodeProps) => {
                                         const match = /language-(\w+)/.exec(className || '');
-                                        const mermaidRegex = /```mermaid([\s\S]*?)```/;
-                                        const mermaidMatch = mermaidRegex.exec(String(children));
+                                        // const mermaidRegex = /```mermaid([\s\S]*?)```/;
+                                        // Removed unused variable mermaidMatch
+                                        
                                         if (!inline && match && match[1] === 'mermaid') {
-                                            useEffect(() => {
-                                                mermaid.initialize({
-                                                    theme: 'dark',
-                                                    securityLevel: 'loose'
-                                                });
-                                                mermaid.run();
-                                            }, []);
-
                                             return (
                                                 <div className="mermaid my-4">
                                                     {String(children).replace(/\n$/, '')}
