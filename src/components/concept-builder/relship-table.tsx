@@ -23,9 +23,10 @@ import { columns } from './relship-columns'; // Ensure this is correctly typed
 // Define the Relationship type based on your data structure
 interface Relationship {
     name: string;
+    nameFrom: string;
+    nameTo: string;
     description: string;
-    color?: string; // Optional color property
-    // Add other relevant fields if necessary
+    color?: string;
 }
 
 // Add a row number column
@@ -36,7 +37,7 @@ const rowNumberColumn: ColumnDef<Relationship> = {
 };
 
 // Ensure the row number column is included in the columns array
-const columnsWithRowNumber = [rowNumberColumn, ...columns];
+const columnsWithRowNumber: ColumnDef<Relationship, any>[] = [rowNumberColumn, ...columns as ColumnDef<Relationship, any>[]];
 
 interface RelshipTableProps {
     data: Relationship[];

@@ -10,7 +10,7 @@ export default function WhoAmIServerAction({
 
   useEffect(() => {
     onGetUserAction().then((user) => setUser(user));
-  }, []);
+  }, [ onGetUserAction ]);
 
   return <div className="mt-5">Who Am I (server action): {user}</div>;
 }

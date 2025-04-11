@@ -8,7 +8,7 @@ export const handleSaveToGithub = async (dispatch: AppDispatch, data: any,
   try {
     const prUrl = await dispatch(saveFeatureAData(data)).unwrap();
     setSaveStatus('idle');
-    setPullRequestUrl(prUrl);
+    setPullRequestUrl(prUrl.toString());
     alert('Pull request created successfully!');
   } catch (error) {
     setSaveStatus('failed');

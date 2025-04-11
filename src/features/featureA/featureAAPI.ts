@@ -18,7 +18,7 @@ export async function fetchFeatureADataFromGitHub(): Promise<DataType> {
     return data
 }
 
-export async function saveFeatureADataToGitHub(data: any): Promise<DataType> {
+export async function saveFeatureADataToGitHub(data: DataType): Promise<string> {
     const response = await fetch('/api/saveFeatureAData', {
         method: 'POST',
         headers: {

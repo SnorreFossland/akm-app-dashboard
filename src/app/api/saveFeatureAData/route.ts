@@ -125,8 +125,9 @@ export async function POST(request: NextRequest) {
             message: 'Pull request created successfully',
             pullRequestUrl: prData.html_url,
         });
-    } catch (error: any) {
+    } catch (error) {
         console.error(error);
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        return NextResponse.json({ error: errorMessage }, { status: 500 });
     }
 }

@@ -3,15 +3,15 @@ import { NextResponse } from 'next/server';
 export async function GET(request) {
     const { searchParams } = new URL(request.url);
     const domain = searchParams.get('domain');
-    const apiKey = process.env.BIOPORTAL_API_KEY;
+    // const apiKey = process.env.BIOPORTAL_API_KEY;
 
     if (!domain) {
         return NextResponse.json({ error: 'Domain is required' }, { status: 400 });
     }
 
     try {
-        const ontologyType = 'ONTOLOGY'; // Define ontologyType
-        const ontologies = 'ICD10CM' //'HP,DOID,NCIT,SNOMEDCT,LOINC,ICD10,ICD9CM,ICD9,ICD10CM'; // Define ontologies
+        // const ontologyType = 'ONTOLOGY'; // Define ontologyType
+        // const ontologies = 'ICD10CM' //'HP,DOID,NCIT,SNOMEDCT,LOINC,ICD10,ICD9CM,ICD9,ICD10CM'; // Define ontologies
 
         // const response = await fetch(
         //     `http://data.bioontology.org/ontologies?display_context=false&display_links=false&include=acronym,name&include=aronym,description&apikey=${apiKey}`

@@ -1,5 +1,5 @@
 'use client';
-import React, { useEffect, useRef } from 'react';
+import React, { useRef } from 'react';
 
 const ParentPage: React.FC = () => {
     const iframeRef = useRef<HTMLIFrameElement>(null);

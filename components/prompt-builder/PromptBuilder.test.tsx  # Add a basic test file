@@ -1,0 +1,9 @@
+import React from 'react';
+import { render, screen } from '@testing-library/react';
+import PromptBuilder from './PromptBuilder';
+
+test('renders PromptBuilder component', () => {
+  render(<PromptBuilder />);
+  const linkElement = screen.getByText(/prompt builder/i);
+  expect(linkElement).toBeInTheDocument();
+});

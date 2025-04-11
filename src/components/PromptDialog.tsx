@@ -3,7 +3,13 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import ReactMarkdown from 'react-markdown';
 import { Button } from "@/components/ui/button";
 
-const PromptDialog = ({ open, onOpenChange, prompts }) => (
+interface PromptDialogProps {
+    open: boolean;
+    onOpenChange: (open: boolean) => void;
+    prompts: Record<string, string>;
+}
+
+const PromptDialog = ({ open, onOpenChange, prompts }: PromptDialogProps) => (
     <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl">
             <DialogHeader>

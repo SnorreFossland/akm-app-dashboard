@@ -1,0 +1,4 @@
+export { default as FeatureAComponent } from './components/FeatureAComponent.tsx';
+export { default as featureAReducer } from './featureASlice.ts';
+export * from './featureASlice.ts';
+export * from './featureAAPI.ts';

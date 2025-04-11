@@ -293,7 +293,7 @@ const data = {
 }
 
 export function AppSidebar({ ...props }) {
-  console.log("291 AppSidebar", props)
+  // console.log("291 AppSidebar", props)
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader className="sidebar-header mt-1">

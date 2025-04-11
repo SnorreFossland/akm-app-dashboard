@@ -42,7 +42,7 @@ const rowNumberColumn: ColumnDef<Concept> = {
     cell: (info) => info.row.index + 1,
 };
 
-const columnsWithRowNumber = [rowNumberColumn, ...columns];
+const columnsWithRowNumber = [rowNumberColumn, ...columns] as ColumnDef<Concept, any>[];
 
 export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
     // Manage sorting state

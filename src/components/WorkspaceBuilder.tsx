@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
-const WorkspaceBuilder = ({ newModelview }) => (
+const WorkspaceBuilder = ({ newModelview }: { newModelview: any }) => (
     <Card>
         <CardHeader>
             <CardTitle>Workspace Builder:</CardTitle>

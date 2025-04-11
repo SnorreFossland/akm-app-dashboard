@@ -8,7 +8,16 @@ import { LoadingCircularProgress } from "@/components/loading";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot } from '@fortawesome/free-solid-svg-icons';
 
-const ConceptStep = ({ topicDescr, settopicDescr, isLoading, handleFirstStep, concepts, setStep }) => (
+interface ConceptStepProps {
+    topicDescr: string;
+    settopicDescr: (value: string) => void;
+    isLoading: boolean;
+    handleFirstStep: () => void;
+    concepts: any[];
+    setStep: (step: number) => void;
+}
+
+const ConceptStep = ({ topicDescr, settopicDescr, isLoading, handleFirstStep, concepts, setStep }: ConceptStepProps) => (
     <Card>
         <CardHeader>
             <CardTitle>Concept Builder:</CardTitle>

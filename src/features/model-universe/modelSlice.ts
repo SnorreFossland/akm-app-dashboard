@@ -54,6 +54,8 @@ export interface DataType {
     email: string;
   };
   phSource: string;
+  status: 'idle' | 'loading' | 'succeeded' | 'failed';
+  error?: string | null;
 };
 
 export interface Metis {
@@ -126,7 +128,7 @@ export interface Model {
   }[],
 }
 
-export const initialState: DataType = { phData: { metis: { name: '', description: '', models: [], metamodels: [] }, domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' }, ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] } }, phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } }, phUser: { id: '', name: '', email: '' }, phSource: '' };
+export const initialState: DataType = { phData: { metis: { name: '', description: '', models: [], metamodels: [] }, domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' }, ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] } }, phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } }, phUser: { id: '', name: '', email: '' }, phSource: '', status: 'idle', error: null };
 //   phData: {
 //     metis: {
 //       name: 'AKMM Blank',
@@ -258,20 +260,24 @@ export const fetchOntology = createAsyncThunk(
   }
 );
 
-// Thunk to fetch data from GitHub
-export const getmodelData = createAsyncThunk(
-  'model-universe/getmodelData',
-  async () => {
-    try {
-      const response = await fetchModelDataFromGitHub();
-      console.log('32 fetchmodelDataFromGitHub response', response);
-      return response;
-    } catch (error) {
-      console.error('Failed to fetch model data from GitHub:', error);
-      throw error;
-    }
-  }
-);
+// // Thunk to fetch data from GitHub
+// export const getmodelData = createAsyncThunk<
+//   Omit<DataType, 'status' | 'error'>,
+//   void,
+//   { rejectValue: string }
+// >(
+//   'model-universe/getmodelData',
+//   async (_, { rejectWithValue }) => {
+//     try {
+//       const response = await fetchModelDataFromGitHub();
+//       console.log('32 fetchmodelDataFromGitHub response', response);
+//       return response;
+//     } catch (error: any) {
+//       console.error('Failed to fetch model data from GitHub:', error);
+//       return rejectWithValue(error.message || 'An unknown error occurred');
+//     }
+//   }
+// );
 
 // Thunk to save data to GitHub
 export const savemodelData = createAsyncThunk(
@@ -406,12 +412,12 @@ const modelSlice = createSlice({
     },
     setOntologyData(state, action: PayloadAction<DataType>) {
       console.log('348 action.payload', action.payload, state);
-      const newConcepts = (action.payload.phData.ontology?.concepts || []).map((concept: any) => ({
+      const newConcepts = (action.payload.phData.ontology?.concepts || []).map((concept) => ({
         ...concept,
         color: 'lightgreen'
       }));
 
-      const newRelationships = (action.payload.phData.ontology?.relationships || []).map((relationship: any) => ({
+      const newRelationships = (action.payload.phData.ontology?.relationships || []).map((relationship) => ({
         ...relationship,
         color: 'lightgreen'
       }));
@@ -464,17 +470,6 @@ const modelSlice = createSlice({
   },
   extraReducers: (builder) => {
     builder
-      .addCase(getmodelData.pending, (state) => {
-        state.status = 'loading';
-      })
-      .addCase(getmodelData.fulfilled, (state, action: PayloadAction<DataType>) => {
-        state.status = 'succeeded';
-        state = action.payload;
-      })
-      .addCase(getmodelData.rejected, (state, action) => {
-        state.status = 'failed';
-        state.error = action.error.message || null;
-      })
       .addCase(savemodelData.pending, (state) => {
         state.status = 'loading';
       })

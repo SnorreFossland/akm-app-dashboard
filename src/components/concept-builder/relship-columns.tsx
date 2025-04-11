@@ -21,6 +21,11 @@ interface Relationship {
     nameTo: string;
     color?: string;
 }
+interface CellProps {
+    row: {
+        original: Relationship;
+    };
+}
 // NameCell Component
 const NameCell: React.FC<{ row: any }> = ({ row }) => {
     const dispatch = useDispatch();

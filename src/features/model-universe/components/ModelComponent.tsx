@@ -11,14 +11,26 @@ import { faRobot } from '@fortawesome/free-solid-svg-icons';
 
 // import { Button } from '@/components/ui/button';
 import { handleSaveToLocalFile } from './HandleSaveToLocalFile';
-import { handleGetFile } from './HandleGetFile';
+// import { handleGetFile } from './HandleGetFile.ts.bak';
 import { handleGetLocalFile } from './HandleGetLocalFile';
 // import { handleGetLocalFileClick } from './HandleGetLocalFileClick';
-import { handleSaveToGithub } from './HandleSaveToGithub';
+// import { handleSaveToGithub } from './HandleSaveToGithub.ts.bak';
 import { clearStore, clearModel } from '../modelSlice';
 import { handleGetDefaultFile } from './HandleGetDefaultFile';
 
 import Header from '@/components/Header'
+
+type ModelView = {
+  id: string;
+  name: string;
+};
+
+type Model = {
+  id: string;
+  name: string;
+  modelviews: ModelView[];
+  objects?: any[];
+};
 // import { set } from 'zod';
 // import { handleClearStore } from './HandleClearStore';
 
@@ -26,24 +38,23 @@ import Header from '@/components/Header'
 function ModelComponent() {
   const dispatch = useDispatch<AppDispatch>();
   const data = useSelector((state: RootState) => state.modelUniverse);
-  const status = useSelector((state: RootState) => state.modelUniverse.status as 'idle' | 'loading' | 'failed');
-  const error = useSelector((state: RootState) => state.modelUniverse.error);
+  const [currentModel, setCurrentModel] = useState<Model | null>(null);
+  const [currentModelview, setCurrentModelview] = useState<ModelView | null>(null);
 
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'failed'>('idle');
   const [pullRequestUrl, setPullRequestUrl] = useState<string | null>(null);
   const [fileStatus, setFileStatus] = useState<'idle' | 'loading' | 'failed'>('idle');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileContent, setFileContent] = useState<any>(null);
+  const [fileContent, setFileContent] = useState(null);
 
   const [metis, setMetis] = useState<any>(null);
 
-  const [currentModel, setCurrentModel] = useState<any>(null);
-  const [currentModelview, setCurrentModelview] = useState<any>(null);
-  const [focusModel, setFocusModel] = useState<any>(null);
-  const [focusModelview, setFocusModelview] = useState<any>(null);
-  const [focusObject, setFocusObject] = useState<any>(null);
-  const [focusObjectview, setFocusObjectview] = useState<any>(null);
+
+  const [focusModel, setFocusModel] = useState<{ id: string; name: string } | null>(null);
+  const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
+  const [focusObject, setFocusObject] = useState<{ id: string; name: string } | null>(null);
+  const [focusObjectview, setFocusObjectview] = useState<{ id: string; name: string } | null>(null);
   // const [focusRelationship, setFocusRelationship] = useState<any>(null);
   // const [focusRelationshipview, setFocusRelationshipview] = useState<any>(null);
 
@@ -54,38 +65,38 @@ function ModelComponent() {
     if (!data.phData) {
       handleGetDefaultFile({} as React.ChangeEvent<HTMLInputElement>, dispatch);
     }
-  }, []);
-  
+  }, [data.phData, dispatch]);
+
   useEffect(() => {
     if (data.phFocus) {
       setFocusModel(data.phFocus.focusModel);
       setFocusModelview(data.phFocus.focusModelview);
-      setFocusObject(data.phFocus.focusObject);
-      setFocusObjectview(data.phFocus.focusObjectview);
+      // setFocusObject(data.phFocus.focusObject);
+      // setFocusObjectview(data.phFocus.focusObjectview);
       // setFocusRelationship(data.phFocus.focusRelship);
       // setFocusRelationshipview(data.phFocus.focusRelshipview);
       // }
       // if (data.phData.metis) {
       setMetis(data.phData.metis);
-      setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id));
-      setCurrentModelview(currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id));
-      
+      setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
+      // setCurrentModelview(currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id));
+
     }
   }, [data.phFocus, data.phData.metis, focusModel?.id, focusModelview?.id, currentModel?.modelviews]);
 
   const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedModel = data.phData.metis.models.find(model => model.name === event.target.value);
-    setCurrentModel(selectedModel);
-    setFocusModel(selectedModel);
-    setFocusModelview(selectedModel?.modelviews[0]);
+    setCurrentModel(selectedModel || null);
+    setFocusModel(selectedModel || null);
+    setFocusModelview(selectedModel?.modelviews[0] || null);
     // if (selectedModel) {
     //   setCurrentModelview(selectedModel.modelviews[0]);
     // }
   };
 
   const handleModelviewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedModelview = currentModel.modelviews.find((mv: { name: string }) => mv.name === event.target.value);
-    setCurrentModelview(selectedModelview);
+    // const selectedModelview = currentModel.modelviews.find((mv: { name: string }) => mv.name === event.target.value);
+    // setCurrentModelview(selectedModelview);
   };
 
   // if (status === 'loading') return <div>Loading...</div>;
@@ -131,16 +142,16 @@ function ModelComponent() {
           <h3 className="flex mx-1 pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
         </div>
         <div className="flex bg-gray-800">
-          <button
+          {/* <button
             className="bg-gray-700 text-white rounded m-1 py-0.5 px-2 text-xs"
             onClick={() => handleGetFile(dispatch, setFileStatus, setFileContent)} disabled={fileStatus === 'loading'}>
             {fileStatus === 'loading' ? 'Loading...' : 'Load from GitHub'}
-          </button>
-          <button
+          </button> */}
+          {/* <button
             className="bg-gray-700 text-white rounded m-1 py-0.5 px-2 text-xs"
             onClick={() => handleSaveToGithub(dispatch, data, setSaveStatus, setPullRequestUrl)} disabled={saveStatus === 'saving'}>
             {saveStatus === 'saving' ? 'Saving...' : 'Save to GitHub'}
-          </button>
+          </button> */}
           <input
             type="file"
             ref={fileInputRef}

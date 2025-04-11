@@ -3,7 +3,7 @@ import mermaid from 'mermaid';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { columns } from "@/components/concept-builder/concept-columns";
-import { ConceptTable, ConceptTableProps } from "@/components/concept-builder/concept-table";
+import { ConceptTable } from "@/components/concept-builder/concept-table";
 import { RelshipTable } from "@/components/concept-builder/relship-table";
 import { ColumnDef } from "@tanstack/react-table";
 import ReactMarkdown from 'react-markdown';
@@ -112,7 +112,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
             setRegen(!regen);
             // Optional: reset zoom, or any other state changes
         }
-    }, [activeTab, generateMermaidDiagram]);
+    }, [activeTab, generateMermaidDiagram, regen]);
 
     useEffect(() => {
         generateMermaidDiagram(regen);

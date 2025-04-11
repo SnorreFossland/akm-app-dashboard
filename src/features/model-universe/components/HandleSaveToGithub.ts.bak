@@ -8,7 +8,7 @@ export const handleSaveToGithub = async (dispatch: AppDispatch, data: any,
   try {
     const prUrl = await dispatch(savemodelData(data)).unwrap();
     setSaveStatus('idle');
-    setPullRequestUrl(prUrl);
+    setPullRequestUrl(String(prUrl));
     alert('Pull request created successfully!');
   } catch (error) {
     setSaveStatus('failed');

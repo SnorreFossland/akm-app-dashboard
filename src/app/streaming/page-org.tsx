@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { RecipeCard } from "@/components/recipe-card";
 
 import { Loading } from "@/components/loading";
-import { RecipeSchema } from "@/src/recipeSchema";
+import { RecipeSchema } from "@/recipeSchema";
 
 export default function SyncPage() {
     const [prompt, setPrompt] = useState("chocolate brownies");

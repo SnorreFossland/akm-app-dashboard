@@ -1,9 +1,13 @@
-import { ObjTypeSchema } from "@/src/objTypeSchema";
+import { ObjTypeSchema } from "@/objTypeSchema"
 import { z } from "zod";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
 export function ObjTypeCard({ objType }: { objType?: z.infer<typeof ObjTypeSchema> }) {
   if (!objType) return null;
+
+  // Add a type assertion or optional chaining to safely handle attributes
+  const attributes = (objType as any).attributes || [];
+
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
@@ -16,11 +20,11 @@ export function ObjTypeCard({ objType }: { objType?: z.infer<typeof ObjTypeSchem
             <>{objType.description}</>
           </div>
         )}
-        {objType.attributes && objType.attributes.length > 0 && (
+        {attributes.length > 0 && (
           <div>
             <h3 className="text-lg font-semibold mb-2">Attributes</h3>
             <ul className="list-disc list-inside space-y-1">
-              {objType.attributes.map((attribute: { name: string; type: string }) => (
+              {attributes.map((attribute: { name: string; type: string }) => (
                 <li key={attribute.name}>
                   <strong>{attribute.name}:</strong> {attribute.type}
                 </li>

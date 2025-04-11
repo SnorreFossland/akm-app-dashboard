@@ -22,8 +22,8 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
 
     const PROMPT_TEMPLATES = [
         {
-            category: "Planning", 
-            title: "Domain/Topic Scoping", 
+            category: "Planning",
+            title: "Domain/Topic Scoping",
             usage: "Business",
             content:
                 `
@@ -54,8 +54,8 @@ Define clear, measurable, and achievable indicators of success:
         },
         { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
         {
-            category: "Planning", 
-            title: "Project Plan", 
+            category: "Planning",
+            title: "Project Plan",
             usage: "Business",
             content:
                 `Make a project plan for the following project:
@@ -96,8 +96,8 @@ gantt
 
         `},
         {
-            category: "Planning", 
-            title: "Product Roadmap", 
+            category: "Planning",
+            title: "Product Roadmap",
             usage: "Business",
             content:
                 `Create a product roadmap for the following product:
@@ -137,7 +137,7 @@ gantt
 \`\`\`
 Make sur to include the backticks in the output.
             ` },
-        { category: "Learning", title: "Learning Plan", usage: "Personal", content: "Create a learning plan for the following topic:\n\n[Describe topic here]" },
+        { category: "Learning", title: "Learning Plan", usage: "Personal", content: "Create a learning plan for the following topic:\n\n[Describe topic here]\n\n Add a mermaid gantt diagram." },
         { category: "Feedback", title: "Feedback Request", usage: "Business", content: "Request feedback on the following topic:\n\n[Describe topic here]" },
         { category: "Task Management", title: "Task List", usage: "Personal", content: "Create a task list for the following project:\n\n[Describe project here]" },
         { category: "Meetings", title: "Meeting Agenda", usage: "Business", content: "Create an agenda for the following meeting:\n\n[Describe meeting here]" },
@@ -319,7 +319,7 @@ Now, refine the following user input into an exceptional prompt:
                     ))}
                 </select>
             </div>
-            <div className="flex h-100 overflow-y-auto">
+            <div className="flex h-80 overflow-y-auto" id="templates-container">
                 {/* Business Templates Column */}
                 <div className="w-1/2 pr-2">
                     <h3 className="text-sm font-semibold mb-2">Business</h3>
@@ -332,11 +332,10 @@ Now, refine the following user input into an exceptional prompt:
                                     <button
                                         key={actualIndex}
                                         onClick={() => handleTemplateSelect(actualIndex)}
-                                        className={`w-full text-left p-2 rounded-md ${
-                                            selectedTemplate === actualIndex
+                                        className={`w-full text-left p-2 rounded-md ${selectedTemplate === actualIndex
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-gray-700 text-gray-100'
-                                        }`}
+                                            }`}
                                     >
                                         {template.title}
                                     </button>
@@ -344,7 +343,7 @@ Now, refine the following user input into an exceptional prompt:
                             })}
                     </div>
                 </div>
-                
+
                 {/* Personal Templates Column */}
                 <div className="w-1/2 pl-2">
                     <h3 className="text-sm font-semibold mb-2">Personal</h3>
@@ -357,11 +356,10 @@ Now, refine the following user input into an exceptional prompt:
                                     <button
                                         key={actualIndex}
                                         onClick={() => handleTemplateSelect(actualIndex)}
-                                        className={`w-full text-left p-2 rounded-md ${
-                                            selectedTemplate === actualIndex
+                                        className={`w-full text-left p-2 rounded-md ${selectedTemplate === actualIndex
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-gray-700 text-gray-100'
-                                        }`}
+                                            }`}
                                     >
                                         {template.title}
                                     </button>
@@ -370,8 +368,36 @@ Now, refine the following user input into an exceptional prompt:
                     </div>
                 </div>
             </div>
+            {/* Horizontal Draggable Bar */}
+            <div
+                className="h-2 bg-gray-700 cursor-row-resize relative my-2"
+                onMouseDown={(e) => {
+                    const startY = e.clientY;
+                    const startHeight = document.querySelector('.overflow-y-auto')?.clientHeight || 0;
 
-            <div className="mt-auto pt-4 bg-gray-900 border-t border-gray-700">
+                    const handleMouseMove = (moveEvent: MouseEvent) => {
+                        const deltaY = moveEvent.clientY - startY;
+                        const newHeight = Math.max(100, startHeight + deltaY);
+                        const container = document.querySelector('.overflow-y-auto') as HTMLElement;
+                        if (container) {
+                            container.style.height = `${newHeight}px`;
+                        }
+                    };
+
+                    const handleMouseUp = () => {
+                        document.removeEventListener('mousemove', handleMouseMove);
+                        document.removeEventListener('mouseup', handleMouseUp);
+                    };
+
+                    document.addEventListener('mousemove', handleMouseMove);
+                    document.addEventListener('mouseup', handleMouseUp);
+                }}
+            >
+                <div className="absolute left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-500"></div>
+            </div>
+            {/* Custom Template Section */}
+
+            <div className="flex-1 overflow-y-auto pt-4 bg-gray-900 border-t border-gray-700">
                 <h3 className="text-md font-semibold mb-2">
                     {selectedTemplate === null
                         ? 'Select a template'
@@ -383,10 +409,11 @@ Now, refine the following user input into an exceptional prompt:
                     value={editableContent}
                     onChange={(e) => setEditableContent(e.target.value)}
                     className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 overflow-y-auto"
-                    rows={9}
+                    style={{ height: 'calc(100% - 80px)', minHeight: '100px', transition: 'height 0.05s ease' }}
                     placeholder="Edit the content here before inserting..."
+                    id="editable-content-textarea"
                 />
-                <div className="flex gap-4 mt-auto">
+                <div className="flex gap-4 mt-2">
                     <button
                         onClick={handleGeneratePrompt}
                         className={`bg-gray-600 text-gray-100 px-4 py-2 rounded-md hover:bg-gray-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}

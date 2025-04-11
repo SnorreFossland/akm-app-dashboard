@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useDispatch } from "react-redux";
-import { setFileData, updateFileContent } from '@/features/model-universe/modelSlice';
+import { setFileData } from '@/features/model-universe/modelSlice';
+import updateFileContent from '@/features/model-universe/modelSlice';
 // import { AppDispatch } from '@/store/store';
 
 const LocalFile: React.FC = () => {
@@ -14,7 +15,12 @@ const LocalFile: React.FC = () => {
             reader.onload = (e) => {
                 const text = e.target?.result as string;
                 setFileContent(text);
-                dispatch(setFileData(text)); // Dispatch the action with the file content
+                try {
+                    const data = JSON.parse(text);
+                    dispatch(setFileData(data)); // Dispatch the action with the parsed JSON data
+                } catch (error) {
+                    console.error('Error parsing file content as JSON:', error);
+                }
             };
             reader.readAsText(file);
         }
@@ -37,7 +43,7 @@ const LocalFile: React.FC = () => {
                 value={fileContent}
                 onChange={(e) => {
                     setFileContent(e.target.value);
-                    dispatch(updateFileContent(e.target.value)); // Dispatch the action with the updated content
+                    // dispatch(updateFileContent({ content: e.target.value, other: "" })); // Dispatch the action with the updated content
                 }}
                 rows={10}
                 cols={50}

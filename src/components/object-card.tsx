@@ -111,12 +111,12 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         let diagram = (regen) ? 'graph TD;\n' : 'graph TD;\n\n';
         // Add objects
         model.objects.forEach((object) => {
-            const objColor = (obj: any) => {
+            const objColor = (obj: typeof model.objects[0]) => {
                 switch (obj.typeName) {
                     case 'role':
                         return 'fill: bg-blue-500, stroke: #333, stroke-width: 2px';
-                    case 'task': 'fill: bg-green-500, stroke: #333, stroke-width: 2px';
-                    case 'view': 'fill: bg-yellow-500, stroke: #333, stroke-width: 2px';
+                    case 'task': return 'fill: bg-green-500, stroke: #333, stroke-width: 2px';
+                    case 'view': return 'fill: bg-yellow-500, stroke: #333, stroke-width: 2px';
 
 
                 }

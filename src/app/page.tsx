@@ -4,8 +4,8 @@ import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useSelector } from "react-redux";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
+// import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+// import { Button } from "@/components/ui/button";
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import type { RootState } from "@/store";
 import { faRobot } from "@fortawesome/free-solid-svg-icons";
@@ -15,7 +15,7 @@ import Header from "@/components/Header";
 import DigitalRain from "@/utils/digital-rain";
 
 // import { FeatureAComponent } from '@/features';
-import { Card } from "@/components/ui/card";
+// import { Card } from "@/components/ui/card";
 // const components = [<ModelComponent key="model" />, <ConceptBuilder key="builder" />];
 
 
@@ -167,10 +167,10 @@ export default function Home() {
         <div className="text-sm text-gray-700 space-y-1">
           <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
             <span className="text-xs italic text-orange-500 mb-2">
-              As the Supercomputer "Deep Thought" in The "Hitchhiker’s Guide to the Galaxy" replied :<br />
-              «The Answer to the Ultimate Question of Life, the Universe, and Everything is » :
+              As the Supercomputer &quot;Deep Thought&quot; in The &quot;Hitchhiker&apos;s Guide to the Galaxy&quot; replied :<br />
+              &laquo;The Answer to the Ultimate Question of Life, the Universe, and Everything is &raquo; :
             </span>
-            <span className="text-xl font-bold animate-bounce"> "42"</span>
+            <span className="text-xl font-bold animate-bounce"> &quot;42&quot;</span>
             <hr className="my-2 bg-green-500" />
             <span className="text-xs italic text-orange-400 mb-4">
               But we are here, to create the best Question (Prompt), ever written.

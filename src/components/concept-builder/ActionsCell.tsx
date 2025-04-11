@@ -12,8 +12,15 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Button } from '@/components/ui/button';
 
+interface ConceptData {
+    id: string;
+    // Add other fields as needed
+}
+
 type ActionsCellProps = {
-    row: any;
+    row: {
+        original: ConceptData;
+    };
     onEdit: (id: string) => void;
 };
 

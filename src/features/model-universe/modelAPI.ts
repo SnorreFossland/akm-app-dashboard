@@ -1,10 +1,10 @@
 // src/features/model-universe/modelAPI.ts
 
 interface DataType {
-        phData: { metis: any }
-        phFocus: any
-        phUser: any
-        phSource: any
+        phData: object
+        phFocus: object
+        phUser: object
+        phSource: string
 }
 
 export async function fetchModelDataFromGitHub(): Promise<DataType> {

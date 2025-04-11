@@ -1,5 +1,6 @@
+//  Prompt Builder
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,13 +12,35 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
 import { LoadingCircularProgress } from "@/components/loading";
 import { deleteDomainPrompt, setDomainData } from "@/features/model-universe/modelSlice";
+import { RootState } from "@/store"; // Ensure you have the correct path to your store file
 
 import { systemPrompt, systemPromptExample } from '@/app/prompt-builder/prompts';
-import { json } from "stream/consumers";
+import { callbackify } from "util";
+// import { json } from "stream/consumers";
 // import { set } from "zod";
 
+interface IconButtonProps {
+    onClick: () => void;
+    icon: any;
+    className?: string;
+    iconWidth?: string;
+    iconSize?: SizeProp;
+}
+interface ActionCardTitleButtonProps {
+    title: string;
+    done: boolean;
+    onClick: () => void;
+    icon: any;
+}
+interface DispatchCardTitleProps {
+    dispatchDone: boolean;
+    handleDispatchFinalPrompt: () => void;
+    extraClassName?: string;
+}
+
 export default function VercelAiPage() {
-    const data = useSelector((state) => state.modelUniverse);
+
+    const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch();
 
     // Phase can be "initial", "clarification", or "final"
@@ -51,9 +74,9 @@ export default function VercelAiPage() {
     const [selectedModel, setSelectedModel] = useState<string>("gpt-4");
     const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
     const [isDragging, setIsDragging] = useState(false);
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement | null>(null);
 
-    const startDragging = (e) => {
+    const startDragging = (e: React.MouseEvent<HTMLDivElement, MouseEvent>) => {
         e.preventDefault();
         setIsDragging(true);
     };
@@ -62,7 +85,7 @@ export default function VercelAiPage() {
         setIsDragging(false);
     };
 
-    const onDrag = (e) => {
+    const onDrag = useCallback((e: MouseEvent) => {
         if (isDragging && containerRef.current) {
             const containerRect = containerRef.current.getBoundingClientRect();
             const containerWidth = containerRect.width;
@@ -75,7 +98,7 @@ export default function VercelAiPage() {
             const limitedPosition = Math.max(20, Math.min(80, newPosition));
             setDividerPosition(limitedPosition);
         }
-    };
+    }, [isDragging]);
 
     // Add these effects for handling mouse events
     useEffect(() => {
@@ -88,16 +111,10 @@ export default function VercelAiPage() {
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDragging);
         };
-    }, [isDragging]);
+    }, [isDragging, containerRef, onDrag]);
 
     // Reusable IconButton component
-    interface IconButtonProps {
-        onClick: () => void;
-        icon: any;
-        className?: string;
-        iconWidth?: string;
-        iconSize?: SizeProp;
-    }
+
 
     const IconButton: React.FC<IconButtonProps> = ({ onClick, icon, className = "", iconWidth = "26px", iconSize = "1x" as SizeProp }) => {
         return (
@@ -108,12 +125,7 @@ export default function VercelAiPage() {
     };
 
     // Reusable ActionCardTitleButton component
-    interface ActionCardTitleButtonProps {
-        title: string;
-        done: boolean;
-        onClick: () => void;
-        icon: any;
-    }
+
 
     const ActionCardTitleButton: React.FC<ActionCardTitleButtonProps> = ({ title, done, onClick, icon }) => {
         return (
@@ -138,11 +150,7 @@ export default function VercelAiPage() {
     };
 
     // Dispatch component updated to use the final prompt
-    interface DispatchCardTitleProps {
-        dispatchDone: boolean;
-        handleDispatchFinalPrompt: () => void;
-        extraClassName?: string;
-    }
+
 
     const DispatchCardTitle: React.FC<DispatchCardTitleProps> = ({ dispatchDone, handleDispatchFinalPrompt, extraClassName = "" }) => {
         return (
@@ -393,9 +401,11 @@ The assistant will provide structured responses with:
             };
         };
 
+        const domainInfo = extractDomainInfo(clarificationResponse);
+
         const completeData = {
-            name: extractDomainInfo.name || currentDomainData.name || "",
-            description: extractDomainInfo.overview+extractDomainInfo.keyAspects || currentDomainData.description || "",
+            name: domainInfo.name || currentDomainData.name || "",
+            description: (domainInfo.overview + " " + domainInfo.keyAspects.join(", ")) || currentDomainData.description || "",
             prompt: finalPrompt, // Update with the new prompt
             presentation: currentDomainData.presentation || "",
             // Add any additional context gathered during prompt building
@@ -476,9 +486,8 @@ The assistant will provide structured responses with:
                                                 <FontAwesomeIcon icon={faRobot} className="mr-1 text-green-500 text-xs" />
                                                 <span className="font-medium text-green-400 text-sm">AI Assistant</span>
                                             </div>
-                                            <p className="text-white">Welcome! I'm here to help you build the best prompt to ask for definition and description of a Subject or Domain. </p>
-                                            <p className="text-gray-400 text-sm mt-2">You start with Domain name or keywords for you domain, and the AI Assistant will ask you for more data input. The final Prompt will be used in next step to create this definition.</p>
-                                        </div>
+                                            <p className="text-white">Welcome! I&apos;m here to help you build the best prompt to ask for definition and description of a Subject or Domain. </p>
+                                            <p className="text-gray-400 text-sm mt-2">You start with Domain name or keywords for your domain, and the AI Assistant will ask you for more data input. The final Prompt will be used in next step to create this definition.</p></div>
                                         {/* Chat input area */}
                                         <div className="border-t border-gray-700 rounded-lg mt-2 mb-auto py-2">
                                             <div className="flex justify-between items-center mb-1">
@@ -541,7 +550,7 @@ The assistant will provide structured responses with:
                                     <div className="relative z-10 text-center">
                                         <div className="text-lg font-bold text-white m-1">
                                             <h2 className="text-lg font-bold text-white mt-2">
-                                                Socrates' Wisdom on Questions
+                                                Socrates&apos; Wisdom on Questions
                                             </h2>
 
                                             <span className="block text-xs italic text-cyan-300 mb-3 font-light">
@@ -565,14 +574,14 @@ The assistant will provide structured responses with:
                                         <div className="h-px bg-gradient-to-r from-transparent via-purple-400 to-transparent my-1 opacity-60"></div>
 
                                         <span className="block text- italic text-cyan-300 mb-3 font-light">
-                                            And in the " The Hitchhiker's Guide to the Galaxy ", after thinking in 7 mill years, the Supercomputer " Deep Thought " finally came up with an answer:
+                                            And in the &quot;The Hitchhiker&apos;s Guide to the Galaxy &quot;, after thinking in 7 mill years, the Supercomputer &quot; Deep Thought &quot; finally came up with an answer:
                                         </span>
                                         <div className="text-center mb-2">
                                             <span className="block text-sm text-emerald-300 font-medium">
                                                 «The Answer to the Ultimate Question of Life, the Universe, and Everything is»:
                                             </span>
                                             <span className="text-3xl font-bold text-emerald-400 tracking-wide inline-block animate-pulse mt-1">
-                                                "42"
+                                                &quot42&quot
                                             </span>
                                         </div>
                                         <div className="h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent mb-5 opacity-60">
@@ -580,7 +589,7 @@ The assistant will provide structured responses with:
                                                 <span className="text-xs italic text-cyan-300 font-light">
                                                     <div className="flex items-center justify-center gap-2">
                                                         <span className="text-xs italic text-cyan-300 font-light">
-                                                            So perhaps the real challenge isn't finding answers, but asking the right questions...
+                                                            So perhaps the real challenge isn&apos;t finding answers, but asking the right questions...
                                                         </span>
                                                         <span className="text-xl animate-bounce inline-block">💭</span>
                                                     </div>
@@ -787,7 +796,7 @@ The assistant will provide structured responses with:
                                         <ul className="text-white list-disc ml-5 space-y-1">
                                             <li>Be specific about your domain</li>
                                             <li>Provide detailed answers to the clarification questions</li>
-                                            <li>Don't hesitate to iterate through multiple rounds of refinement</li>
+                                            <li>Don&apos;t hesitate to iterate through multiple rounds of refinement</li>
                                             <li>Edit the final prompt to add any missing details</li>
                                         </ul>
                                     </div>

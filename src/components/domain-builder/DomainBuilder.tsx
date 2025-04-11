@@ -1,9 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
+// import { Input } from "@/components/ui/input";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faRobot, faCheckCircle, faPaperPlane, faEdit, faTrash, faLink, faBrain, faSave } from "@fortawesome/free-solid-svg-icons";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
@@ -14,7 +14,7 @@ import { LoadingCircularProgress } from "@/components/loading";
 import { setDomainData } from "@/features/model-universe/modelSlice";
 
 export default function DomainBuilder() {
-    const data = useSelector((state) => state.modelUniverse);
+    const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
     const dispatch = useDispatch();
 
     // UI State
@@ -35,13 +35,13 @@ export default function DomainBuilder() {
     // Draggable divider state
     const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
     const [isDragging, setIsDragging] = useState(false);
-    const containerRef = useRef(null);
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Model selection state
     const [selectedModel, setSelectedModel] = useState<string>("gpt-4");
 
     // Handle dragging functionality
-    const startDragging = (e) => {
+    const startDragging = (e: React.MouseEvent) => {
         e.preventDefault();
         setIsDragging(true);
     };
@@ -50,7 +50,7 @@ export default function DomainBuilder() {
         setIsDragging(false);
     };
 
-    const onDrag = (e) => {
+    const onDrag = useCallback((e: MouseEvent) => {
         if (isDragging && containerRef.current) {
             const containerRect = containerRef.current.getBoundingClientRect();
             const containerWidth = containerRect.width;
@@ -63,7 +63,7 @@ export default function DomainBuilder() {
             const limitedPosition = Math.max(20, Math.min(80, newPosition));
             setDividerPosition(limitedPosition);
         }
-    };
+    }, [isDragging]);
 
     // Add mouse event listeners
     useEffect(() => {
@@ -76,7 +76,7 @@ export default function DomainBuilder() {
             document.removeEventListener('mousemove', onDrag);
             document.removeEventListener('mouseup', stopDragging);
         };
-    }, [isDragging]);
+    }, [isDragging, containerRef, onDrag]);
 
     // Load existing domain data when component mounts
     useEffect(() => {

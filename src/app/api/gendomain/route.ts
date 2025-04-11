@@ -5,6 +5,8 @@ import { DomainSchema } from "@/domainSchema";
 import { ObjectSchema } from "@/objectSchema";
 import { OntologySchema } from "@/ontologySchema";
 import { ModelviewSchema } from "@/modelviewSchema";
+import { ChatCompletionMessageParam } from "openai/resources/chat/completions";
+
 
 // const aiModelName = "gpt-4o-2024-08-06";
 
@@ -32,7 +34,7 @@ export async function POST(req: Request) {
 
   console.log('27 route schema', schemaName);
   
-  const messages: { role: string; content: string }[] = [
+  const messages = [
     systemPrompt ? { role: 'system', content: systemPrompt } : null,
     systemBehaviorGuidelines ? { role: 'system', content: systemBehaviorGuidelines } : null,
     userPrompt ? { role: 'user', content: userPrompt } : null,
@@ -40,9 +42,7 @@ export async function POST(req: Request) {
     contextItems ? { role: 'assistant', content: contextItems } : null,
     contextOntology ? { role: 'assistant', content: contextOntology } : null,
     contextMetamodel ? { role: 'assistant', content: contextMetamodel } : null,
-  ].filter((message): message is { role: string; content: string } => message !== null);
-
-  // console.log('42 route messages', messages);
+  ].filter((message): message is NonNullable<typeof message> => message !== null) as ChatCompletionMessageParam[]; // Type assertion after filtering
 
   const response = await client.chat.completions.create({
     model: aiModelName,

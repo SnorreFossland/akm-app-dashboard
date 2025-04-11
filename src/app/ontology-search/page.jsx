@@ -80,7 +80,7 @@ export default function OntologySearch() {
             {terms.length > 0 && (
                 <div>
                     <h2 className="text-xl font-semibold mb-4">
-                        Ontologies related to "{domain}":
+                        Ontologies related to: {domain}:
                     </h2>
                     <Button onClick={handleCopyAllToClipboard} className="mb-4">
                         Copy All to Clipboard

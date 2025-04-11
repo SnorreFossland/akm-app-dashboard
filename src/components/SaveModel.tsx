@@ -1,7 +1,12 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 
-const SaveModel = ({ dispatchDone, handleDispatchIrtvData }) => (
+interface SaveModelProps {
+    dispatchDone: () => void;
+    handleDispatchIrtvData: () => void;
+}
+
+const SaveModel = ({ dispatchDone, handleDispatchIrtvData }: SaveModelProps) => (
     <Card>
         <CardHeader>
             <CardTitle>Save to current Model</CardTitle>

@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { editRelationship } from '@/features/model-universe/modelSlice';// Ensure this action exists
+
+// Define interface for relationship data
+interface Relationship {
+    id: string;
+    name: string;
+    nameFrom: string;
+    nameTo: string;
+    color?: string;
+}
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -84,10 +93,10 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
                 }}>
                     Double-Click on Name text to Edit
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                    console.log('Delete action clicked for:', row.original.id);
-                    dispatch(deleteRelationship(row.original.id));
-                }}>
+<DropdownMenuItem onClick={() => {
+    console.log('Delete action clicked for:', row.original.id);
+    dispatch(deleteRelationship(row.original.id));
+}}>
                     Delete
                 </DropdownMenuItem>
             </DropdownMenuContent>
@@ -95,7 +104,7 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
     );
 };
 
-export const columns: ColumnDef<string>[] = [
+export const columns: ColumnDef<Relationship>[] = [
     {
         accessorKey: "id",
         header: () => <span>Id</span>,

@@ -6,25 +6,22 @@ import { LoadingCircularProgress } from "@/components/loading";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot } from '@fortawesome/free-solid-svg-icons';
 
-const ModelStep = ({ model, isLoading, handleSecondStep }) => (
+
+
+const ModelStep: React.FC<{ model: { objects: any[] } | null; isLoading: boolean; handleSecondStep: () => void }> = ({ model, isLoading, handleSecondStep }) => (
     <Card>
         <CardHeader>
             <CardTitle>Model Builder:</CardTitle>
         </CardHeader>
         <CardContent>
-            {/* Additional fields and logic for model building can be added here */}
-        </CardContent>
-        <CardFooter>
-            <div className="flex justify-between">
                 <Button
                     onClick={handleSecondStep}
-                    className={`rounded text-xl ${(model?.objects?.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
+                    className={`rounded text-xl ${((model?.objects?.length ?? 0) > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
                 >
                     <FontAwesomeIcon icon={faRobot} size="1x" />
                 </Button>
                 {isLoading && <LoadingCircularProgress />}
-            </div>
-        </CardFooter>
+        </CardContent>
     </Card>
 );
 

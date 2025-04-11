@@ -1,9 +1,9 @@
-import Head from "next/head";
+// import Head from "next/head";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import { ReduxProvider } from './providers/ReduxProvider';
 import { AppSidebar } from "@/components/app-sidebar";
-import { SidebarTrigger, SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
+import { SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar";
 import { PanelLeft } from 'lucide-react';
 
 const inter = Inter({
@@ -12,7 +12,7 @@ const inter = Inter({
 })
 
 import { ThemeProvider } from "@/components/theme-provider"
-import { ActiveThemeProvider } from "@/components/active-theme";
+// import { ActiveThemeProvider } from "@/components/active-theme";
 import { cookies } from 'next/headers';
 
 import "./globals.css";

@@ -3,16 +3,17 @@
 import { useState, useEffect, useRef } from "react";
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
-import { set } from "zod";
+// import { set } from "zod";
 
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faSave, faCheckCircle, faPaperPlane } from '@fortawesome/free-solid-svg-icons';
 import ReactMarkdown from 'react-markdown';
 
-import { getFeatureAData } from '@/features/featureA/featureASlice';
+// import { getFeatureAData } from '@/features/featureA/featureASlice';
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Loading, LoadingBars, LoadingPulse, LoadingCircularProgress, LoadingDots } from "@/components/loading";
+// import { Loading, LoadingBars, LoadingPulse, LoadingCircularProgress, LoadingDots } from "@/components/loading";
+import { LoadingCircularProgress } from "@/components/loading";
 import { Button } from "@/components/ui/button";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "@/components/ui/dialog";
@@ -33,8 +34,8 @@ import { MetamodelPrompt } from './prompts/metamodel-irtv-prompt'; // default me
 
 import { handleSaveToLocalFile } from '@/features/featureA/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/featureA/components/HandleGetLocalFile';
-import { handleGetLocalFileClick } from '@/features/featureA/components/HandleGetLocalFileClick';
-import { relative } from "path";
+// import { handleGetLocalFileClick } from '@/features/featureA/components/HandleGetLocalFileClick';
+// import { relative } from "path";
 
 const debug = false;
 
@@ -43,33 +44,33 @@ const SyncPage = () => {
     const dispatch = useDispatch<AppDispatch>();
 
     const data = useSelector((state: RootState) => state.featureA.data);
-    const status = useSelector((state: RootState) => state.featureA.status);
-    const error = useSelector((state: RootState) => state.featureA.error);
+    // const status = useSelector((state: RootState) => state.featureA.status);
+    // const error = useSelector((state: RootState) => state.featureA.error);
 
     const [topicDescr, settopicDescr] = useState("");
     const [domainDesc, setDomainDesc] = useState("");
-    const [domain, setDomain] = useState({ concepts: [], relationships: [] });
-    const [model, setModel] = useState<any>(null);
+    // const [domain, setDomain] = useState({ concepts: [], relationships: [] });
+    const [model, setModel] = useState(null);
     const [suggestedConcepts, setSuggestedConcepts] = useState("");
     const [suggestedRoles, setSuggestedRoles] = useState("");
     const [suggestedTasks, setSuggestedTasks] = useState("");
     const [suggestedViews, setSuggestedViews] = useState("");
-    const [existingContext, setExistingContext] = useState("");
+    // const [existingContext, setExistingContext] = useState("");
     const [ontologyUrl, setOntologyUrl] = useState("https://community.opengroup.org/osdu/data/data-definitions/-/raw/master/E-R/DependenciesAndRelationships.json");
-    const [ontology, setOntology] = useState([]);
-    const [ontologyData, setOntologyData] = useState<any>(null);
+    // const [ontology, setOntology] = useState([]);
+    const [ontologyData, setOntologyData] = useState(null);
     const [ontologyString, setOntologyString] = useState("");
     const [concepts, setConcepts] = useState("");
-    const [selectedConcepts, setSelectedConcepts] = useState({ concepts: [], relationships: [] });
-    const [isContextVisible, setIsContextVisible] = useState(false);
-    const [isOntologyVisible, setIsOntologyVisible] = useState(false);
+    // const [selectedConcepts, setSelectedConcepts] = useState({ concepts: [], relationships: [] });
+    // const [isContextVisible, setIsContextVisible] = useState(false);
+    // const [isOntologyVisible, setIsOntologyVisible] = useState(false);
     const [step, setStep] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
     const [dispatchDone, setDispatchDone] = useState(false);
 
-    const [metis, setMetis] = useState<any>(null);
-    const [currentModel, setCurrentModel] = useState<any>(null);
-    const [newModelview, setNewModelview] = useState<any | null>(null);
+    const [metis, setMetis] = useState(null);
+    const [currentModel, setCurrentModel] = useState(null);
+    const [newModelview, setNewModelview] = useState(null);
 
     // const [systemPrompt, setSystemPrompt] = useState("");
     // const [userPrompt, setUserPrompt] = useState("");
@@ -82,7 +83,7 @@ const SyncPage = () => {
     const [conceptContextItems, setConceptContextItems] = useState("");
     const [conceptContextOntology, setConceptContextOntology] = useState("");
     const [conceptContextMetamodel, setConceptContextMetamodel] = useState("");
-    const [suggestedConceptData, setSuggestedConceptData] = useState<any | null>(null);
+    const [suggestedConceptData, setSuggestedConceptData] = useState(null);
 
     const [modelIrtvSystemPrompt, setModelIrtvSystemPrompt] = useState(SystemIrtvPrompt);
     const [modelUserPrompt, setModelUserPrompt] = useState("");
@@ -98,17 +99,17 @@ const SyncPage = () => {
     const [modelviewContextOntology, setModelviewContextOntology] = useState("");
     const [modelviewContextMetamodel, setModelviewContextMetamodel] = useState("");
 
-    const [userModelviewPrompt, setUserModelviewPrompt] = useState("");
+    // const [userModelviewPrompt, setUserModelviewPrompt] = useState("");
 
     const [existingConcepts, setExistingConcepts] = useState("");
 
     const [existingInfoObjects, setExistingInfoObjects] = useState<{ objects: [], relationships: [] }>({ objects: [], relationships: [] });
-    const [isExistingContext, setIsExistingContext] = useState(false);
-    const [showUserInput, setShowUserInput] = useState(true);
+    // const [isExistingContext, setIsExistingContext] = useState(false);
+    // const [showUserInput, setShowUserInput] = useState(true);
     const [activeTab, setActiveTab] = useState('current-knowledge');
     const [activeSubTab, setActiveSubTab] = useState('model-summary');
-    const [showConcepts, setshowConcepts] = useState(true);
-    const [showModel, setshowModel] = useState(true);
+    // const [showConcepts, setshowConcepts] = useState(true);
+    // const [showModel, setshowModel] = useState(true);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -136,18 +137,18 @@ const SyncPage = () => {
             if (!debug) console.log('89 data', data);
             const metis1 = data.project?.phData?.metis;
             const focus = data.project?.phFocus;
-            const user = data.project?.phUser;
+            // const user = data.project?.phUser;
             if (!metis1) { console.error('Data does not contain metis:', data); return };
             setMetis(metis1);
 
             if (metis?.metamodels) {
-                const metamodel = metis.metamodels.find((mmodel: { name: string }) => mmodel.name.includes('IRTV'));
-                const mmObjecttypeStrings = metamodel?.objecttypes.map((ot: any) =>
-                    `${ot.id} ${ot.name}`).join(', ');
-                const mmRelationtypeStrings = metamodel?.relshiptypes.map((rt: any) =>
-                    `${rt.id} ${rt.name}`).join(', ');
-                const mmObjecttypeviewStrings = metamodel?.objecttypeviews.map((otv: any) =>
-                    `${otv.id} ${otv.name}`).join(', ');
+                // const metamodel = metis.metamodels.find((mmodel: { name: string }) => mmodel.name.includes('IRTV'));
+                // const mmObjecttypeStrings = metamodel?.objecttypes.map((ot) =>
+                //     `${ot.id} ${ot.name}`).join(', ');
+                // const mmRelationtypeStrings = metamodel?.relshiptypes.map((rt) =>
+                //     `${rt.id} ${rt.name}`).join(', ');
+                // const mmObjecttypeviewStrings = metamodel?.objecttypeviews.map((otv) =>
+                //     `${otv.id} ${otv.name}`).join(', ');
 
                 //         const metamodelPrompt = `
                 // **Metamodel:**
@@ -163,41 +164,41 @@ const SyncPage = () => {
             // setMetamodelPrompt(`${MetamodelPrompt}`);
 
             const models = metis1.models;
-            const curmod = models?.find((model: any) => model.id === focus?.focusModel?.id) || models[0];
+            const curmod = models?.find((model) => model.id === focus?.focusModel?.id) || models[0];
             // if (!debug) console.log('95 currentModel', curmod, currentModel, metis?.models);
             setCurrentModel(curmod);
 
-            const filteredRelationships = curmod?.relships?.filter((rel: any) => {
-                const fromObject = curmod?.objects?.find((obj: any) => obj.id === rel.fromobjectRef);
-                const toObject = curmod?.objects?.find((obj: any) => obj.id === rel.toobjectRef);
+            const filteredRelationships = curmod?.relships?.filter((rel) => {
+                const fromObject = curmod?.objects?.find((obj) => obj.id === rel.fromobjectRef);
+                const toObject = curmod?.objects?.find((obj) => obj.id === rel.toobjectRef);
                 // if (!debug) console.log('127 fromObject', fromObject, 'toObject', toObject, 'rel', rel);
                 return fromObject?.typeName === 'Information' && toObject?.typeName === 'Information' && rel;
             }) || [];
 
             if (!debug) console.log('130 filteredRelationships', filteredRelationships);
 
-            const existingObjects = curmod?.objects?.map((obj: any) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName })) || [];
-            const existingRelationships = filteredRelationships?.map((rel: any) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo })) || [];
+            const existingObjects = curmod?.objects?.map((obj) => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName })) || [];
+            const existingRelationships = filteredRelationships?.map((rel) => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo })) || [];
 
             setExistingInfoObjects({
-                objects: existingObjects?.filter((obj: any) => obj && obj.typeName === 'Information') || [],
+                objects: existingObjects?.filter((obj) => obj && obj.typeName === 'Information') || [],
                 relationships: existingRelationships
             });
 
             const existInfoConcepts = ({
-                concepts: existingInfoObjects.objects.map((obj: any) => ({ name: obj.name, description: obj.description })),
-                relationships: existingInfoObjects.relationships.map((rel: any) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
+                concepts: existingInfoObjects.objects.map((obj) => ({ name: obj.name, description: obj.description })),
+                relationships: existingInfoObjects.relationships.map((rel) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
             });
 
             let conceptString = '';
             if (existInfoConcepts.concepts.length > 0) {
-                conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-                conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
+                conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
+                conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
             }
             setExistingConcepts(conceptString);      // if (!debug) console.log('101 existingContext', existingContext);
             // if (!debug) console.log('102 currentModel', currentModel?.name, data, metis, focus, user);
         }
-    }, [data]);
+    }, [data, existingInfoObjects.objects, existingInfoObjects.relationships, metis?.metamodels, currentModel]);
 
     // const handlePasteFromClipboard = async () => {
     //   try {
@@ -230,12 +231,12 @@ const SyncPage = () => {
             const data = await response.json();
             if (!debug) console.log('180 Fetched ontology data:', data);
             if (Array.isArray(data)) {
-                const filteredOntology = data.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
+                const filteredOntology = data.filter((item) => item.group === 'master-data' || item.group === 'work-product-component');
                 setOntology(filteredOntology);
             } else if (typeof data === 'object' && data !== null) {
                 const dataArr = Object.values(data);
                 if (!debug) console.log('186 dataArr', dataArr);
-                const filteredArr = dataArr.filter((item: any) => item.group === 'master-data' || item.group === 'work-product-component');
+                const filteredArr = dataArr.filter((item) => item.group === 'master-data' || item.group === 'work-product-component');
                 interface OntologyItem {
                     entity_name: string;
                     group: string;
@@ -247,10 +248,10 @@ const SyncPage = () => {
                 })).values());
 
                 if (!debug) console.log('189 dataOntology', dataOntology);
-                const filteredMaster = Object.values(data).filter((item: any) => item.group === 'master-data');
-                const filteredWP = Object.values(data).filter((item: any) => item.group === 'work-product-component');
-                const conceptsNamesMaster = Array.from(new Set(filteredMaster.map((item: any) => item.entity_name + ' ')));
-                const conceptsNamesWP = Array.from(new Set(filteredWP.map((item: any) => item.entity_name + ' ')));
+                const filteredMaster = Object.values(data).filter((item) => item.group === 'master-data');
+                const filteredWP = Object.values(data).filter((item) => item.group === 'work-product-component');
+                const conceptsNamesMaster = Array.from(new Set(filteredMaster.map((item) => item.entity_name + ' ')));
+                const conceptsNamesWP = Array.from(new Set(filteredWP.map((item) => item.entity_name + ' ')));
                 setOntologyString(`master-data:\n ${conceptsNamesMaster}, work-product-component:\n ${conceptsNamesWP}`);
                 const ontologyData = { name: "OSDU-EntityTypes", concepts: dataOntology, relationships: [] };
                 setOntologyData(ontologyData);
@@ -447,8 +448,8 @@ Please develop a detailed and engaging presentation on **[${topicDescr}]** that 
             if (parsed.ontologyData.concepts && Array.isArray(parsed.ontologyData.concepts)) {
                 setSelectedConcepts({ concepts: parsed.ontologyData.concepts, relationships: parsed.ontologyData.relationships });
                 setSuggestedConceptData(parsed.ontologyData);
-                const selectedconceptsString = parsed.ontologyData.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n');
-                const selectedRelationsString = parsed.ontologyData.relationships.map((rel: any) => `- ${rel.name} (from: ${rel.nameFrom} to: ${rel.nameTo})`).join('\n');
+                const selectedconceptsString = parsed.ontologyData.concepts.map((c) => `- ${c.name} - ${c.description}`).join('\n');
+                const selectedRelationsString = parsed.ontologyData.relationships.map((rel) => `- ${rel.name} (from: ${rel.nameFrom} to: ${rel.nameTo})`).join('\n');
                 setConcepts(`**Concepts**\n\n ${selectedconceptsString}\n\n **Relations:**\n\n${selectedRelationsString}\n\n`);
                 if (debug) console.log('408 concepts', parsed.ontologyData.concepts, 'selectedconceptsString', selectedconceptsString, 'selectedRelationsString', selectedRelationsString);
                 setStep(2);
@@ -516,8 +517,7 @@ Create Views including the following user suggested views:
     `;
         if (!debug) console.log('464 model', 'modelContextPrompt', modelContextItems);
 
-        const ontologyPrompt = ``;
-
+        // const ontologyPrompt = ``;
 
         setModelIrtvSystemPrompt(modelIrtvSystemPrompt);
         setModelUserPrompt(modelUserPrompt);
@@ -613,8 +613,8 @@ Make horizontal and vertical space between the objects to make the modelview loo
         const modelviewContextItems = `
 ## Context:
   **Objects and Relationships:**
-  ${model?.objects.map((obj: any) => `- ${obj.id} ${obj.name} ${obj.description}`).join('\n')} 
-  ${model?.relationships.map((rel: any) => `- ${rel.id} ${rel.name} ${rel.nameFrom} ${rel.nameTo}`).join('\n')}
+  ${model?.objects.map((obj) => `- ${obj.id} ${obj.name} ${obj.description}`).join('\n')} 
+  ${model?.relationships.map((rel) => `- ${rel.id} ${rel.name} ${rel.nameFrom} ${rel.nameTo}`).join('\n')}
     `;
 
         const modelviewContextOntology = ``;
@@ -1096,7 +1096,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                                                                 <div className="px-4 col text-left w-2/3">
                                                                     <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
                                                                     <div className="border border-gray-600 p-2">
-                                                                        {data.project.phData.metis.models.map((model: any, index) => (
+                                                                        {data.project.phData.metis.models.map((model, index) => (
                                                                             <div key={model.id} className="flex flex-col">
                                                                                 <h5 className="text-gray-400 font-bold">Name</h5>
                                                                                 <h4 className="bg-gray-800 p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>

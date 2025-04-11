@@ -1,6 +1,6 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
-export const GET = auth(async ({ auth }) => {
+export const GET = auth(async ({ auth }: { auth: { user?: { name?: string } } }) => {
   return NextResponse.json({ user: auth?.user?.name });
 });

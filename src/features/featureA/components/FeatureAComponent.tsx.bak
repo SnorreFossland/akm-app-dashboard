@@ -24,7 +24,7 @@ function FeatureAComponent() {
   const [fileStatus, setFileStatus] = useState<'idle' | 'loading' | 'failed'>('idle');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [fileContent, setFileContent] = useState<any>(null);
+  const [fileContent, setFileContent] = useState(null);
 
   if (status === 'loading') return <p>Loading...</p>;
   if (status === 'failed') return <p>Error: {error}</p>;
@@ -69,7 +69,7 @@ function FeatureAComponent() {
             <div className='text-left text-gray p-4 bg-gray-800'>
               <h5>Models: </h5>
               <ul>
-                {data?.phData?.metis?.models.map((model: any) => (
+                {data?.phData?.metis?.models.map((model) => (
                   <li key={model.name}>
                     {`${model.name} - ${model?.objects?.length} `}<br />
                   </li>
@@ -78,7 +78,7 @@ function FeatureAComponent() {
             </div>
             <div className='text-left text-gray p-4 bg-gray-800'>
               <h6>Metamodels: </h6>
-              {data?.phData?.metis?.metamodels.map((metamodel: any) => (
+              {data?.phData?.metis?.metamodels.map((metamodel) => (
                 <React.Fragment key={metamodel.name}>
                   - {metamodel.name} <br />
                 </React.Fragment>

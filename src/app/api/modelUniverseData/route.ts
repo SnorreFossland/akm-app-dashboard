@@ -1,10 +1,9 @@
-import { NextApiRequest, NextApiResponse } from 'next';
+import { NextResponse } from 'next/server';
 
+const url = "https://community.opengroup.org/osdu/data/data-definitions/-/raw/master/E-R/DependenciesAndRelationships.json";
 
-const url = "https://community.opengroup.org/osdu/data/data-definitions/-/raw/master/E-R/DependenciesAndRelationships.json"
-
-export default async (req: NextApiRequest, res: NextApiResponse) => {
+export async function GET() {
   const response = await fetch(url);
   const data = await response.json();
-  res.status(200).json(data);
-};
+  return NextResponse.json(data);
+}

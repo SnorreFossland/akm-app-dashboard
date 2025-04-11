@@ -1,9 +1,20 @@
-import NextAuth, { User, NextAuthConfig } from "next-auth";
+import NextAuth, { User } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
+
+// Option A: Use the correct type from the package
+import type { AuthOptions } from "next-auth";
+
+// OR Option B: Define your own type if needed
+// type NextAuthConfig = {
+//   providers: any[];
+//   basePath?: string;
+//   secret?: string;
+//   // Add other properties as needed
+// };
 
 export const BASE_PATH = "/api/auth";
 
-const authOptions: NextAuthConfig = {
+const authOptions: AuthOptions = {
   providers: [
     Credentials({
       name: "Credentials",
@@ -30,8 +41,8 @@ const authOptions: NextAuthConfig = {
         ];
         const user = users.find(
           (user) =>
-            user.userName === credentials.username &&
-            user.password === credentials.password
+            user.userName === credentials?.username &&
+            user.password === credentials?.password
         );
         return user
           ? { id: user.id, name: user.name, email: user.email }
@@ -39,8 +50,10 @@ const authOptions: NextAuthConfig = {
       },
     }),
   ],
-  basePath: BASE_PATH,
   secret: process.env.NEXTAUTH_SECRET,
 };
 
-export const { handlers, auth, signIn, signOut } = NextAuth(authOptions);
+export const { handlers, auth, signIn, signOut } = NextAuth({
+  ...authOptions,
+  basePath: BASE_PATH
+});

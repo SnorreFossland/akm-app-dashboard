@@ -5,9 +5,14 @@ import { handleSaveToLocalFile } from '@/features/model-universe/components/Hand
 import { handleGetLocalFile } from '@/features/model-universe/components/HandleGetLocalFile';
 import { handleGetLocalFileClick } from '@/features/model-universe/components/HandleGetLocalFileClick';
 
-const LocalFiles = ({ model, data }) => {
+interface LocalFilesProps {
+  model: any;
+  data: any;
+}
+
+const LocalFiles: React.FC<LocalFilesProps> = ({ model, data }) => {
   const dispatch = useDispatch();
-  const fileInputRef = useRef(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
     <div className="flex justify-between mx-2 px-4 text-white rounded ">

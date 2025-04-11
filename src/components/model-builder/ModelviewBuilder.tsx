@@ -11,11 +11,53 @@ import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { ModelviewSchema } from "@/modelviewSchema";
 // import { ModelviewCard } from '@/components/modelview-card';
 
+interface DataType {
+    phData: {
+        metis: {
+            models: Array<any>;
+        };
+    };
+}
+
 const ModelviewBuilder = () => {
-    const [data, setData] = useState(null);
+    const [data, setData] = useState<DataType | null>(null);
     const [curMetamodel, setCurMetamodel] = useState(null);
-    const [model, setModel] = useState(null);
-    const [modelview, setModelview] = useState(null);
+    const [model, setModel] = useState<{
+        id?: string;
+        name?: string;
+        objects: Array<{
+            id: string;
+            name: string;
+            description: string;
+            typeName?: string;
+        }>;
+        relships: Array<{
+            id: string;
+            name: string;
+            nameFrom: string;
+            nameTo: string;
+        }>;
+    } | null>(null);
+    const [modelview, setModelview] = useState<{
+        id: string;
+        name: string;
+        description: string;
+        objectviews: Array<{
+            id: string;
+            name: string;
+            description: string;
+            typeName: string;
+            loc: string;
+            objectRef: string;
+        }>;
+        relshipviews: Array<{
+            id: string;
+            name: string;
+            fromobjviewRef: string;
+            toobjviewRef: string;
+            points: number[];
+        }>;
+    } | null>(null);
     const [existingInfoObjects, setExistingInfoObjects] = useState({ objects: [], relships: [] });
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState(1);
@@ -24,19 +66,24 @@ const ModelviewBuilder = () => {
     const [activeSubTab, setActiveSubTab] = useState('model-summary');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [showModel, setShowModel] = useState(false);
+    const [printPromptsDiv, setPrintPromptsDiv] = useState<React.ReactNode | null>(null);
 
     useEffect(() => {
         if (data) {
+            const models = data?.phData?.metis?.models || [];
             const irtvmod = models?.find((model: any) => model.metamodelRef === curMetamodel || model.name.includes('IRTV')) || models[0];
 
+            const curmod = model || irtvmod;
             const filteredRelationships = curmod?.relships?.filter((rel: any) => {
+                const fromObject = curmod?.objects?.find((obj: any) => obj.id === rel.nameFrom);
+                const toObject = curmod?.objects?.find((obj: any) => obj.id === rel.nameTo);
                 return fromObject?.typeName === 'Information' && toObject?.typeName === 'Information' && rel;
             }) || [];
 
             setExistingInfoObjects({
-                objects: existingObjects?.filter((obj: any) => obj && obj.typeName === 'Information') || [],
-                relships: existingRelationships.filter((rel: any) => 
-                    existingObjects.some((obj: any) => obj.id === rel.nameFrom || obj.id === rel.nameTo)
+                objects: curmod?.objects?.filter((obj: any) => obj && obj.typeName === 'Information') || [],
+                relships: filteredRelationships.filter((rel: any) => 
+                    curmod?.objects?.some((obj: any) => obj.id === rel.nameFrom || obj.id === rel.nameTo)
                 ) || []
             });
 
@@ -46,7 +93,7 @@ const ModelviewBuilder = () => {
             });
 
         }
-    }, [data, curMetamodel]);
+    }, [data, curMetamodel, existingInfoObjects]);
 
     useEffect(() => {
         setPrintPromptsDiv(
@@ -55,6 +102,14 @@ const ModelviewBuilder = () => {
             </div>
         );
     }, [model]);
+
+    const handleOpenModal = () => {
+        setIsModalOpen(true);
+    };
+
+    const handleCloseModal = () => {
+        setIsModalOpen(false);
+    };
 
     const handleModelviewBuilder = async () => {
         setIsLoading(true);
@@ -94,6 +149,9 @@ const ModelviewBuilder = () => {
     ${model?.objects.map((obj: any) => `- ${obj.id} ${obj.name} ${obj.description}`).join('\n')} 
     ${model?.relships.map((rel: any) => `- ${rel.id} ${rel.name} ${rel.nameFrom} ${rel.nameTo}`).join('\n')}
       `;
+        
+        const modelviewContextOntology = "";
+        const modelviewContextMetamodel = "";
 
         try {
             const res = await fetch("/api/genmodel", {
@@ -105,14 +163,12 @@ const ModelviewBuilder = () => {
                     systemPrompt: modelviewSystemPrompt || "",
                     systemBehaviorGuidelines: "",
                     userPrompt: modelviewUserPrompt || "",
-                    userInput: modelviewUserInput || "",
+                    userInput: modelviewUserPrompt || "",
                     contextItems: modelviewContextItems || "",
                     contextOntology: modelviewContextOntology || "",
                     contextMetamodel: modelviewContextMetamodel || ""
                 })
             });
-
-            if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
 
             const reader = res.body?.getReader();
             if (!reader) throw new Error("No reader available");
@@ -127,7 +183,7 @@ const ModelviewBuilder = () => {
 
             const parsed = JSON.parse(data);
             const validatedData = ModelviewSchema.parse(parsed);
-            setNewModelview(validatedData);
+            setModelview(validatedData);
             setStep(4);
         } catch (e) {
             console.error("Validation failed:", e instanceof Error ? e.message : e);
@@ -157,7 +213,7 @@ const ModelviewBuilder = () => {
                 </CardTitle>
                 <div className="flex flex-wrap items-start m-1">
                     <CardTitle
-                        className={`flex justify-between items-center flex-grow ps-1 ${(modelview?.objectviews.length > 0) ? 'text-green-600' : 'text-green-200'}`}
+                        className={`flex justify-between items-center flex-grow ps-1 ${(modelview?.objectviews?.length ?? 0) > 0 ? 'text-green-600' : 'text-green-200'}`}
                     >
                         Workspace Builder (Create IRTV-Modelview):
                         <div className="flex items-center ml-auto">

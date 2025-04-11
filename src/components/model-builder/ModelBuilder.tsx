@@ -30,21 +30,21 @@ const Modelbuilder = () => {
     const [dispatchDone, setDispatchDone] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    const [suggestedConceptsData, setSuggestedConceptsData] = useState<string>("");
-    const [suggestedRoles, setSuggestedRoles] = useState("");
-    const [suggestedTasks, setSuggestedTasks] = useState("");
-    const [suggestedViews, setSuggestedViews] = useState("");
-    const [concepts, setConcepts] = useState("");
+    // const [suggestedConceptsData, setSuggestedConceptsData] = useState<string>("");
+    // const [suggestedRoles, setSuggestedRoles] = useState("");
+    // const [suggestedTasks, setSuggestedTasks] = useState("");
+    // const [suggestedViews, setSuggestedViews] = useState("");
+    // const [concepts, setConcepts] = useState("");
     const [step, setStep] = useState(0);
     const [activeTab, setActiveTab] = useState('current-knowledge');
     const [activeSubTab, setActiveSubTab] = useState('model-summary');
     const [showModel, setShowModel] = useState(true);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
-    const [metis, setMetis] = useState<Metis | null >(null);
-    const [model, setModel] = useState<Model | null>(null);
+    // const [metis, setMetis] = useState<Metis | null >(null);
+    const [model, setModel] = useState<{id?: string; name?: string; description?: string; objects?: any[]; relships?: any[]} | null>(null);
     const [curmod, setCurmod] = useState<Model | null>(null);
-    const [modelview, setModelview] = useState<Modelview | null>(null);
-    const [focusMod, setFocusMod] = useState<{ id: any; name: any; } | null>(null);
+    const [modelview, setModelview] = useState<{id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[]} | null>(null);
+    // const [focusMod, setFocusMod] = useState<{ id: any; name: any; } | null>(null);
     const [existingInfoObjects, setExistingInfoObjects] = useState<{ objects: { id: any; name: any; description: any; typeName: any; }[], relships: { id: any; name: any; nameFrom: any; nameTo: any; }[] }>({ objects: [], relships: [] });
     const [existingConcepts, setExistingConcepts] = useState("");
     const [systemPrompt, setSystemPrompt] = useState("");
@@ -55,12 +55,12 @@ const Modelbuilder = () => {
     const [contextOntology, setContextOntology] = useState("");
     const [contextMetamodel, setContextMetamodel] = useState("");
     const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
-    const [modelviewSystemPrompt, setNewModelviewSystemPrompt] = useState("");
-    const [modelviewUserPrompt, setNewModelviewUserPrompt] = useState("");
-    const [modelviewUserInput, setNewModelviewUserInput] = useState("");
-    const [modelviewContextItems, setNewModelviewContextItems] = useState("");
-    const [modelviewContextOntology, setNewModelviewContextOntology] = useState("");
-    const [modelviewContextMetamodel, setNewModelviewContextMetamodel] = useState("");
+    // const [modelviewSystemPrompt, setNewModelviewSystemPrompt] = useState("");
+    // const [modelviewUserPrompt, setNewModelviewUserPrompt] = useState("");
+    // const [modelviewUserInput, setNewModelviewUserInput] = useState("");
+    // const [modelviewContextItems, setNewModelviewContextItems] = useState("");
+    // const [modelviewContextOntology, setNewModelviewContextOntology] = useState("");
+    // const [modelviewContextMetamodel, setNewModelviewContextMetamodel] = useState("");
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
@@ -77,14 +77,25 @@ const Modelbuilder = () => {
         
         const newMod = {
             ...curmod,
-            ...model
+            ...(model || {})
         }
         console.log('82 NewMod:', newMod);
         setCurmod(newMod);
         dispatch(setNewModel(newMod));
 
         if (modelview) {
-            dispatch(setNewModelview([modelview]));
+            const completeModelview = {
+                ...modelview,
+                id: modelview.id || crypto.randomUUID(),
+                name: modelview.name || 'Default View',
+                description: modelview.description || '',
+                modelRef: curmod?.id || '',
+                modified: false,
+                markedAsDeleted: false,
+                objectviews: modelview.objectviews || [],
+                relshipviews: modelview.relshipviews || []
+            };
+            dispatch(setNewModelview([completeModelview]));
         }
         
         setDispatchDone(true);
@@ -99,7 +110,7 @@ const Modelbuilder = () => {
             }
 
             if (metis?.metamodels) {
-                const metamodel = metis.metamodels.find((mmodel) => mmodel.name.includes('IRTV'));
+                const metamodel = metis.metamodels.find((mmodel: { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }) => mmodel.name.includes('IRTV'));
                 if (metamodel) {
                     setCurMetamodel(metamodel);
                 }
@@ -137,7 +148,7 @@ const Modelbuilder = () => {
             const irtvmod = models?.find(model => curMetamodel && (model.metamodelRef === curMetamodel.id))//|| model.name.includes('IRTV')));
             if (irtvmod) {
                 setCurmod(irtvmod);
-                setFocusMod({ id: irtvmod.id, name: irtvmod.name });
+                dispatch(setFocusModel({ id: irtvmod.id, name: irtvmod.name }));
             }
             console.log('127 Curmod:', curmod, irtvmod, models);
 
@@ -167,7 +178,7 @@ const Modelbuilder = () => {
                 conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
                 conceptString += `**Relationships**\n\n${existInfoConcepts.relships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
             }
-            setExistingConcepts(conceptString);
+            // setExistingConcepts(conceptString);
             setSystemPrompt(SystemPrompt);
             setSystemBehaviorGuidelines(SystemBehaviorGuidelines);
             setContextOntology(ExistingOntology);
@@ -180,7 +191,7 @@ const Modelbuilder = () => {
         } else {
             console.error('Data does not contain data:', data);
         }
-    }, [data, curMetamodel]);
+    }, [data, curMetamodel, curmod, existingInfoObjects]);
 
     useEffect(() => {
         setPrintPromptsDiv(
@@ -201,7 +212,7 @@ const Modelbuilder = () => {
                 <ReactMarkdown>{contextMetamodel}</ReactMarkdown>
             </div>
         );
-    }, [model]);
+    }, [model, modelview, systemPrompt, systemBehaviorGuidelines, contextOntology, userPrompt, userInput, contextItems, contextMetamodel]);
 
     const handleModelBuilder = async () => {
         setIsLoading(true);
@@ -301,7 +312,7 @@ const Modelbuilder = () => {
                                         <LoadingCircularProgress />
                                     </div>
                                 ) : (
-                                    <div style={{ marginLeft: 8, marginRight: 8, color: model?.objects?.length > 0 ? 'green' : 'gray' }}>
+                                    <div style={{ marginLeft: 8, marginRight: 8, color: model?.objects && model.objects.length > 0 ? 'green' : 'gray' }}>
                                         <FontAwesomeIcon icon={faCheckCircle} size="2x" />
                                     </div>
                                 )}
@@ -309,7 +320,7 @@ const Modelbuilder = () => {
                                     await handleModelBuilder();
                                     setActiveTab('model');
                                 }}
-                                    className={`rounded text-xl p-4 ${(model?.objects?.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
+                                    className={`rounded text-xl p-4 ${((model?.objects?.length ?? 0) > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
                                 >
                                     <FontAwesomeIcon icon={faRobot} size="1x" />
                                 </Button>
@@ -409,24 +420,30 @@ const Modelbuilder = () => {
                                                                     <div className="col text-left">
                                                                         <h4 className="text-gray-400 font-bold">Project:</h4>
                                                                         <div className="border border-gray-600 p-2">
-                                                                            <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.id}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.projectNumber}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.name}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.org}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.repo}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.path}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.file}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.branch}</h5>
-                                                                            <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                                                            <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus?.focusProj?.username}</h5>
+                                                                            {data.phFocus && 'focusProj' in data.phFocus ? (
+                                                                                <>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">id</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.id}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.projectNumber}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">name</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.name}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">repo</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.org}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">repo</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.repo}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">path</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.path}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">file</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.file}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">branch</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.branch}</h5>
+                                                                                    <h5 className="text-gray-400 font-bold px-1">username</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.username}</h5>
+                                                                                </>
+                                                                            ) : (
+                                                                                <p className="text-gray-400">No project information available</p>
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -454,7 +471,23 @@ const Modelbuilder = () => {
                                             <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                             </div>
                                             {curmod && (
-                                                 <ObjectCard model={{ name: curmod?.name, description: curmod.description, objects: curmod.objects, relships: curmod.relships }} />
+                                                 <ObjectCard model={{ 
+                                                     id: curmod.id, 
+                                                     name: curmod.name, 
+                                                     description: curmod.description, 
+                                                     objects: curmod.objects?.map(obj => ({
+                                                         id: obj.id || '',
+                                                         name: obj.name || '',
+                                                         description: obj.description || '',
+                                                         proposedType: obj.proposedType || '',
+                                                         typeRef: obj.typeRef || '',
+                                                         typeName: obj.typeName || '',
+                                                         category: obj.category || ''
+                                                     })) || [],
+                                                     relships: curmod.relships || [],
+                                                     metamodelRef: curmod.metamodelRef,
+                                                     modelviews: curmod.modelviews
+                                                 }} />
                                             )}
                                         </TabsContent>
                                         {/* <TabsContent value="model-modelviews" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
@@ -483,16 +516,30 @@ const Modelbuilder = () => {
                                                             {printPromptsDiv}
                                                         </DialogDescription>
                                                     </DialogHeader>
-                                                    <DialogFooter>
-                                                        <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                            Close
-                                                        </Button>
-                                                    </DialogFooter>
+                                                <ObjectCard model={{ 
+                                                    id: model.id || crypto.randomUUID(),
+                                                    name: model.name || 'Generated Model',
+                                                    description: model.description || '',
+                                                    objects: model.objects?.map(obj => ({
+                                                        id: obj.id || crypto.randomUUID(),
+                                                        name: obj.name || '',
+                                                        description: obj.description || '',
+                                                        proposedType: obj.proposedType || '',
+                                                        typeRef: obj.typeRef || '',
+                                                        typeName: obj.typeName || '',
+                                                        category: obj.category || ''
+                                                    })) || [],
+                                                    relships: model.relships || [],
+                                                    metamodelRef: curmod?.metamodelRef || '',
+                                                    modelviews: curmod?.modelviews || []
+                                                }} />
                                                 </DialogContent>
+                                                <DialogFooter>
+                                                    <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                                                        Close
+                                                    </Button>
+                                                </DialogFooter>
                                             </Dialog>
-                                            <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                <ObjectCard model={{ ...model, description: model.description || '' }} />
-                                            </div>
                                         </>
                                     )}
                                 </TabsContent>
@@ -518,7 +565,13 @@ const Modelbuilder = () => {
                                             </DialogContent>
                                         </Dialog>
                                         <div className="mx-1 ">
-                                            <ModelviewCard modelviews={[modelview]} />
+                                            {modelview && <ModelviewCard modelviews={[{
+                                                // Use type assertion to match what ModelviewCard expects
+                                                name: modelview.name || 'Default View',
+                                                description: modelview.description || '',
+                                                objectviews: modelview.objectviews || [],
+                                                relshipviews: modelview.relshipviews || []
+                                            } as any]} />}
                                         </div>
                                     </>
                                 </TabsContent>

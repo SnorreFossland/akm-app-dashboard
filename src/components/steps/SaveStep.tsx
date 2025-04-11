@@ -1,8 +1,10 @@
 // src/components/steps/SaveStep.tsx
 import React from 'react';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
+import { useDispatch } from 'react-redux';
 
-const SaveStep = ({ dispatchDone, handleDispatchIrtvData }) => (
+const SaveStep: React.FC<{ dispatchDone: any; handleDispatchIrtvData: any }> = ({ dispatchDone, handleDispatchIrtvData }) => (
     <Card>
         <CardHeader>
             <CardTitle>Save to Current Model:</CardTitle>

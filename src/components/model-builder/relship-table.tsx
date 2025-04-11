@@ -26,6 +26,8 @@ interface Relationship {
     name: string;
     description: string;
     color?: string; // Optional color property
+    nameFrom?: string;
+    nameTo?: string;
     // Add other relevant fields if necessary
 }
 
@@ -35,9 +37,8 @@ const rowNumberColumn: ColumnDef<Relationship> = {
     header: '#',
     cell: (info) => info.row.index + 1,
 };
-
 // Ensure the row number column is included in the columns array
-const columnsWithRowNumber = [rowNumberColumn, ...columns];
+const columnsWithRowNumber: ColumnDef<Relationship, any>[] = [rowNumberColumn, ...columns as ColumnDef<Relationship, any>[]];
 
 interface RelshipTableProps {
     data: Relationship[];

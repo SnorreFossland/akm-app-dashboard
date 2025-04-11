@@ -33,7 +33,7 @@ export default function SyncPage() {
       const data = await response.json();
       setRecipe(data);
     } catch (err) {
-      setError(err.message);
+      setError(err instanceof Error ? err.message : 'An unknown error occurred');
     } finally {
       setIsLoading(false);
     }

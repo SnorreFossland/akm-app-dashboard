@@ -21,6 +21,13 @@ type Concept = {
     color?: string; // Optional color property
 };
 
+// More type-safe alternative
+interface CellProps {
+    row: {
+        original: Concept
+    }
+}
+
 const NameCell: React.FC<{ row: any }> = ({ row }) => {
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
