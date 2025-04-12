@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+// import DraggableDivider from '@/comDraggableDivider';
 
 interface Message {
     role: 'user' | 'assistant';
@@ -29,6 +30,8 @@ export default function ChatComponent({
     const [input, setInput] = useState<string | undefined>(chatInput);
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [errorMsg, setErrorMsg] = useState(''); // <-- error state
+    
+
 
     // Use a ref to prevent multiple concurrent retries
     const retryInProgress = useRef(false);
@@ -124,7 +127,7 @@ export default function ChatComponent({
 
     const handleViewInMarkdown = (content: string) => {
         if (onViewInMarkdown) {
-            onViewInMarkdown(content);
+            onViewInMarkdown(content);   
         }
     };
 
@@ -135,7 +138,7 @@ export default function ChatComponent({
                     {errorMsg}
                 </div>
             )}
-            <div className="flex-1 overflow-y-auto mb-4 border border-gray-700 rounded-md p-4 bg-gray-900 w-full">
+            <div className="flex-1 overflow-auto mb-4 border border-gray-700 rounded-md p-4 bg-gray-900 w-full">
                 {messages.map((message, index) => (
                     <div key={index} className={`mb-4 p-3 rounded-lg flex items-start gap-2 ${message.role === 'user'
                         ? 'bg-blue-900 ml-auto max-w-[80%] text-blue-100 flex-col border-blue-800'
@@ -213,7 +216,7 @@ export default function ChatComponent({
                                 )}
                             </div>
                         </div>
-                        <div className="flex-1 w-full text-gray-100 whitespace-pre-wrap break-words">
+                        <div className="flex-1 w-full text-gray-100 whitespace-pre-wrap break-words overflow-auto">
                             {message.content}
                         </div>
                     </div>
@@ -225,6 +228,11 @@ export default function ChatComponent({
                 )}
                 <div ref={messagesEndRef} />
             </div>
+            {/* <DraggableDivider
+                direction="vertical"
+                initialPosition={leftPanelWidth}
+                onResize={setLeftPanelWidth}
+            /> */}
             <form onSubmit={handleSubmit} className="flex gap-2">
                 <textarea
                     value={input || ''}

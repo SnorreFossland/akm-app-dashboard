@@ -107,122 +107,123 @@ const AIChatPage = () => {
     };
 
     return (
-        <div className="flex h-screen bg-gray-900 text-gray-100 w-full">
+        <div className="flex h-screen bg-gray-900 text-gray-100 w-full max-w-full overflow-hidden">
             {/* Left Panel: Templates */}
             {showLeftPanel && (
-                <div
-                    className="flex-shrink-0 p-2"
-                    style={{
-                        width: showRightPanel ? `${leftPanelWidth}px` : `${leftPanelWidth + 200}px`,
-                        minWidth: '200px'
-                    }}
-                >
-                    <div className="flex justify-between items-center mb-4 ms-2">
-                        <h2 className="text-xl font-bold text-blue-400">Templates</h2>
-                    </div>
-                    <TemplatesPanel onApplyTemplate={(content) => {
-                        console.log('Template content inserted:', content);
-                        setChatInput(content);
-                    }} selectedModel={selectedModel} />
+            <div
+                className="flex-shrink-0 p-2"
+                style={{
+                width: showRightPanel ? `${leftPanelWidth}px` : `${leftPanelWidth + 200}px`,
+                minWidth: '200px'
+                }}
+            >
+                <div className="flex justify-between items-center mb-4 ms-2">
+                <h2 className="text-xl font-bold text-blue-400">Templates</h2>
                 </div>
+                <TemplatesPanel onApplyTemplate={(content) => {
+                console.log('Template content inserted:', content);
+                setChatInput(content);
+                }} selectedModel={selectedModel} />
+            </div>
             )}
             {/* Draggable Bar for Left Panel */}
-            {showLeftPanel && mdPreview && (
-                <div
-                    className="w-3 bg-gray-700 cursor-col-resize relative"
-                    onMouseDown={(e) => handleMouseDown(e, 'left')}
-                >
-                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
-                </div>
+            {showLeftPanel && (
+            <div
+                className="w-3 bg-gray-700 cursor-col-resize relative"
+                onMouseDown={(e) => handleMouseDown(e, 'left')}
+            >
+                <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
+            </div>
             )}
             {/* Middle Panel: AI Chat */}
             <div
-                className={`flex flex-col p-2 bg-card overflow-hidden w-full ${showLeftPanel && showRightPanel
-                    ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
-                    : showLeftPanel
-                        ? `w-[calc(100%-${leftPanelWidth}px)]`
-                        : showRightPanel
-                            ? `w-[calc(100%-${rightPanelWidth}px)]`
-                            : 'w-full'
-                    }`}
+            className={`flex flex-col p-2 bg-card overflow-hidden w-full ${showLeftPanel && showRightPanel
+                ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
+                : showLeftPanel
+                ? `w-[calc(100%-${leftPanelWidth}px)]`
+                : showRightPanel
+                    ? `w-[calc(100%-${rightPanelWidth}px)]`
+                    : 'w-full'
+                }`}
             >
-                <div className="flex justify-between items-center mb-4 bg-primary-foreground p-2 rounded-md">
-                    <button
-                        onClick={() => setShowLeftPanel(!showLeftPanel)}
-                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                        title={showLeftPanel ? 'Hide Templates' : 'Show Templates'}
-                    >
-                        {showLeftPanel ? '←' : '→'}
-                        <span className="ml-1">{showLeftPanel ? 'Hide' : 'Show'} Templates</span>
-                    </button>
+            <div className="flex justify-between items-center mb-4 bg-primary-foreground p-2 rounded-md">
+                <button
+                onClick={() => setShowLeftPanel(!showLeftPanel)}
+                className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                title={showLeftPanel ? 'Hide Templates' : 'Show Templates'}
+                >
+                {showLeftPanel ? '←' : '→'}
+                <span className="ml-1">{showLeftPanel ? 'Hide' : 'Show'} Templates</span>
+                </button>
 
-                    <h1 className="text-2xl font-bold text-blue-400">AI Chat</h1>
-                    <div className="flex items-center space-x-4">
-                        <ModelSelector
-                            selectedModel={selectedModel}
-                            onModelChange={(newModel) => {
-                                if (window.confirm(`Are you sure you want to change the model to ${newModel}?`)) {
-                                    setSelectedModel(newModel);
-                                }
-                            }}
-                        />
-                    </div>
-
-                    <button
-                        onClick={() => setShowRightPanel(!showRightPanel)}
-                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                        title={showRightPanel ? 'Hide' : 'Show Markdown'}
-                    >
-                        <span className="mr-1">{showRightPanel ? 'Hide' : 'Show'} Markdown</span>
-                        {showRightPanel ? '→' : '←'}
-                    </button>
+                <h1 className="text-2xl font-bold text-blue-400">AI Chat</h1>
+                <div className="flex items-center space-x-4">
+                <ModelSelector
+                    selectedModel={selectedModel}
+                    onModelChange={(newModel) => {
+                    if (window.confirm(`Are you sure you want to change the model to ${newModel}?`)) {
+                        setSelectedModel(newModel);
+                    }
+                    }}
+                />
                 </div>
 
-                <ChatComponent
-                    selectedModel={selectedModel}
-                    onResponseChange={handleResponseChange}
-                    onViewInMarkdown={handleViewInMarkdown}
-                    chatInput={chatInput}
-                />
+                <button
+                onClick={() => setShowRightPanel(!showRightPanel)}
+                className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                title={showRightPanel ? 'Hide' : 'Show Markdown'}
+                >
+                <span className="mr-1">{showRightPanel ? 'Hide' : 'Show'} Markdown</span>
+                {showRightPanel ? '→' : '←'}
+                </button>
+            </div>
+
+            <ChatComponent
+                selectedModel={selectedModel}
+                onResponseChange={handleResponseChange}
+                onViewInMarkdown={handleViewInMarkdown}
+                chatInput={chatInput}
+            />
             </div>
 
             {/* Draggable Bar for Right Panel */}
             {showRightPanel && (
-                <div
-                    className="w-3 bg-gray-700 cursor-col-resize relative"
-                    onMouseDown={(e) => handleMouseDown(e, 'right')}
-                >
-                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
-                </div>
+            <div
+                className="w-3 bg-gray-700 cursor-col-resize relative"
+                onMouseDown={(e) => handleMouseDown(e, 'right')}
+            >
+                <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
+            </div>
             )}
 
             {/* Right Panel: Markdown Preview */}
             {showRightPanel && (
-                <div
-                    className="flex-shrink-0 p-2"
-                    style={{ width: `${rightPanelWidth}px`, minWidth: '200px' }}
+            <div
+                className="flex-shrink-0 p-2"
+                style={{ width: `${rightPanelWidth}px`, minWidth: '200px' }}
+            >
+                <div className="flex justify-between items-center mb-5">
+                <h2 className="text-xl font-bold text-blue-400">Markdown Preview</h2>
+                <button
+                    onClick={() => setIsEditing(!isEditing)}
+                    className="text-sm bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                 >
-                    <div className="flex justify-between items-center mb-5">
-                        <h2 className="text-xl font-bold text-blue-400">Markdown Preview</h2>
-                        <button
-                            onClick={() => setIsEditing(!isEditing)}
-                            className="text-sm bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                        >
-                            {isEditing ? 'Preview' : 'Edit'}
-                        </button>
-                    </div>
-                    {/* Either render a textarea or a preview */}                    {isEditing ? (
-                        <textarea
-                            value={mdPreview}
-                            onChange={(e) => setMdPreview(e.target.value)}
-                            className="w-full h-full p-4 bg-gray-800 text-gray-100 rounded max-h-[80vh] overflow-y-auto"
-                        />
-                    ) : (
-                        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto max-h-[80vh]">
-                            <MarkdownPreview mdPreview={mdPreview} />
-                        </div>
-                    )}
+                    {isEditing ? 'Preview' : 'Edit'}
+                </button>
                 </div>
+                {/* Either render a textarea or a preview */}
+                {isEditing ? (
+                <textarea
+                    value={mdPreview}
+                    onChange={(e) => setMdPreview(e.target.value)}
+                    className="w-full h-full p-4 bg-gray-800 text-gray-100 rounded max-h-[80vh] overflow-y-auto"
+                />
+                ) : (
+                <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto max-h-[80vh]">
+                    <MarkdownPreview mdPreview={mdPreview} />
+                </div>
+                )}
+            </div>
             )}
         </div>
     );

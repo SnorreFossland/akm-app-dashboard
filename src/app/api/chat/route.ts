@@ -1,13 +1,4 @@
 import { NextResponse } from 'next/server';
-import { OpenAI } from 'ai';
-import { generateText } from 'ai';
-import { callMistral } from '@ai-sdk/mistral';
-import { callDeepseek } from '@ai-sdk/deepseek';
-import { callOpenAI } from '@ai-sdk/openai';
-import { callGemini } from '@ai-sdk/gemini';
-import { callClaude } from '@ai-sdk/claude';
-import { callAnthropic } from '@ai-sdk/anthropic';
-
 
 
 interface Message {
@@ -114,7 +105,7 @@ export async function POST(request: Request) {
     }
     // Create an AbortController to timeout the fetch request
     const controller = new AbortController();
-    const timeout = 10000; // timeout in milliseconds (e.g. 10 seconds)
+    const timeout = 100000; // timeout in milliseconds (e.g. 10 seconds)
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
@@ -128,7 +119,7 @@ export async function POST(request: Request) {
           model: model,
           messages: messages,
           temperature: 0.7,
-          max_tokens: 800
+          max_tokens: 100
         }),
         signal: controller.signal
       });
@@ -158,7 +149,7 @@ export async function POST(request: Request) {
     }
     // Use an AbortController to set a timeout
     const controller = new AbortController();
-    const timeout = 200000; // 120 seconds timeout
+    const timeout = 20000; // 120 seconds timeout
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {

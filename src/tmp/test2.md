@@ -1,213 +1,96 @@
-# GraphicModelingApp 🎨
+# Domain Definition and Scoping: **Urban Micro-Mobility Solutions**  
 
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
-![TypeScript](https://img.shields.io/badge/TypeScript-4.0+-3178C6?logo=typescript)
-![Next.js](https://img.shields.io/badge/Next.js-13.0+-000000?logo=next.js)
-
-![GoJS Diagram Example](https://i.imgur.com/sample-diagram.png)
-
-> Advanced node-based vector graphics editor built with modern web technologies
-
-## Table of Contents
-- [Tech Stack](#-tech-stack)
-- [Features](#-features)
-- [Development Setup](#-development-setup)
-- [Architecture](#-architecture)
-- [State Management](#-state-management)
-- [Diagram Engine](#-diagram-engine)
-- [Contributing](#-contributing)
-
-## 🏗️ Tech Stack
-- **Frontend Framework**: Next.js 13 (App Router)
-- **Language**: TypeScript 5+
-- **Diagram Library**: GoJS 3.0
-- **State Management**: Redux Toolkit
-- **Rendering**: React 18 (Server Components)
-- **Build System**: Turborepo
-- **Styling**: Tailwind CSS + CSS Modules
-
-## ✨ Features
-- **📐 GoJS-Powered Node Editor**
-  - Hierarchical node diagrams with custom palettes
-  - Advanced link routing and automatic layout
-  - Undo/redo history with transaction management
-- **Next.js Optimized Rendering**
-  - Hybrid SSR/CSR for complex diagrams
-  - Dynamic component loading with React Suspense
-- **Redux State Syncing**
-  - Real-time collaboration through state synchronization
-  - Time-travel debugging capabilities
-- **Type-Safe Development**
-  - Strict TypeScript configuration
-  - Generated API types from OpenAPI spec
-
-## 🛠️ Development Setup
-### Core Dependencies
-```bash
-# Install with yarn
-yarn add next react react-dom @reduxjs/toolkit gojs
-```
-
-### Recommended VSCode Extensions
-
-- TypeScript Importer
-- Redux DevTools
-- GoJS Diagramming Tools
-
-### Environment Configuration
-
-```typescript
-// next.config.js
-const withTM = require('next-transpile-modules')(['gojs']);
-
-module.exports = withTM({
-  reactStrictMode: true,
-  experimental: {
-    serverComponentsExternalPackages: ['gojs'],
-  },
-});
-```
-
-## 🏛️ Architecture
-
-### Component Structure
-
-```tsx
-// Example node component
-import { Diagram, Node, Link } from 'gojs';
-
-export default function NodeCanvas() {
-  const dispatch = useAppDispatch();
-  const nodes = useAppSelector(selectAllNodes);
-
-  const handleDiagramChange = useCallback((e: DiagramEvent) => {
-    dispatch(updateDiagramState(e.diagram.toJSON()));
-  }, [dispatch]);
-
-  return (
-    <Diagram
-      initDiagram={initializeDiagram}
-      modelData={nodes}
-      onModelChange={handleDiagramChange}
-    />
-  );
-}
-```
-
-## 🧩 State Management
-
-### Redux Store Structure
-
-```typescript
-// store/diagramSlice.ts
-import { createSlice } from '@reduxjs/toolkit';
-
-interface DiagramState {
-  nodes: NodeData[];
-  connections: ConnectionData[];
-  history: DiagramHistory[];
-}
-
-const initialState: DiagramState = {
-  nodes: [],
-  connections: [],
-  history: [],
-};
-
-export const diagramSlice = createSlice({
-  name: 'diagram',
-  initialState,
-  reducers: {
-    addNode: (state, action: PayloadAction<NodeData>) => {
-      state.nodes.push(action.payload);
-      state.history.push(/* ... */);
-    },
-    // Additional reducers...
-  },
-});
-```
-
-## 📐 Diagram Engine
-
-### GoJS Configuration
-
-```typescript
-// lib/gojsConfig.ts
-import * as go from 'gojs';
-
-export function initializeDiagram(): go.Diagram {
-  const $ = go.GraphObject.make;
-  
-  return $(go.Diagram, {
-    'undoManager.isEnabled': true,
-    layout: $(go.ForceDirectedLayout),
-    model: $(go.GraphLinksModel, {
-      linkKeyProperty: 'key'
-    })
-  });
-}
-
-// Custom node template
-export const nodeTemplate = (
-  <Node
-    locationSpot={go.Spot.Center}
-    selectionAdorned={true}
-  >
-    <Shape 
-      figure="Rectangle" 
-      fill="#2F80ED" 
-      strokeWidth={0}
-    />
-    <TextBlock 
-      text="{name}" 
-      margin={8} 
-      stroke="white"
-    />
-  </Node>
-);
-```
-
-## 🤝 Contributing
-
-### TypeScript Guidelines
-
-- Strict null checks enabled
-- All components must have PropTypes or TypeScript interfaces
-- Redux actions should use RTK Query where possible
-
-### Diagram Development
-
-1. Create new node types in `/lib/gojsTemplates`
-2. Add corresponding Redux actions
-3. Write integration tests in Cypress
-
-### Running Storybook
-
-```bash
-yarn storybook
-```
-
-Explore component library at `http://localhost:6006`
+## **Domain Identification**  
+- **Domain Name:** Urban Micro-Mobility Solutions  
+- **Domain Description:**  
+  Focuses on shared, short-distance transportation systems (e.g., bike/scooter rentals) in urban areas. Aims to reduce traffic congestion and carbon emissions by providing affordable, on-demand alternatives to cars. Combines technology, logistics, and sustainability to transform urban transit.  
 
 ---
 
-[![Powered by GoJS](https://gojs.net/images/gojs-logo.svg)](https://gojs.net)
-[![Next.js Reference](https://img.shields.io/badge/docs-next.js-000000?logo=next.js)](https://nextjs.org/docs)
+## **Domain Scope**  
 
-**License**: GNU GPLv3 (excluding GoJS commercial license)
+### **In-Scope**  
+- Shared bike/e-scooter rental services  
+- Dockless and station-based systems  
+- Mobile app-based booking/payment  
+- Fleet management (maintenance, redistribution)  
+- Partnerships with municipalities/corporations  
+- User safety and accessibility features  
 
-```
+### **Out-of-Scope**  
+- Long-term vehicle rentals (e.g., monthly car leases)  
+- Public transit operations (buses, trains)  
+- Private bike ownership models  
+- Infrastructure development (road construction)  
 
-Key integrations added:
-1. Added GoJS-specific configuration and examples
-2. Integrated Redux Toolkit state management patterns
-3. Included Next.js optimization techniques
-4. Added TypeScript-specific development guidelines
-5. Showcased architecture combining all four technologies
-6. Added environment configuration for GoJS+Next.js
-7. Included Redux-GoJS synchronization examples
-8. Added commercial license notice for GoJS
-9. Included component development guidelines with all libraries
-10. Added relevant badges and documentation links
+---
 
-This version provides a comprehensive view of how the different technologies interact while maintaining readability and developer focus.
+## **Key Domain Concepts and Terms**  
+
+### **Core Concepts**  
+1. **Last-Mile Connectivity:** Bridging gaps between transit hubs and destinations.  
+2. **Fleet Optimization:** AI-driven bike/scooter redistribution.  
+3. **Dockless Systems:** GPS-enabled free-floating vehicles.  
+4. **Dynamic Pricing:** Surge pricing based on demand/time.  
+
+### **Relevant Keywords**  
+- **Acronyms:** IoT (Internet of Things), GPS (Global Positioning System), SaaS (Software-as-a-Service)  
+- **Terminology:** Geofencing, ride-share compliance, carbon footprint, PMDs (Personal Mobility Devices)  
+
+---
+
+## **Primary Objectives**  
+1. **Reduce Urban Congestion:** Replace short car trips with micro-mobility options.  
+2. **Enhance Accessibility:** Affordable transit for low-income commuters.  
+3. **Sustainability:** Lower CO₂ emissions via zero-carbon transport.  
+4. **Profitability:** Scalable unit economics via rentals/ads/partnerships.  
+
+---
+
+## **Key Stakeholders**  
+
+### **Primary Stakeholders**  
+- **Users:** Tourists, daily commuters, students  
+- **Operators:** Fleet managers, app developers, maintenance crews  
+- **Investors:** Venture capitalists, municipal funds  
+
+### **Secondary Stakeholders**  
+- **Local Governments:** Permit issuers, urban planners  
+- **Businesses:** Retailers near docking stations  
+- **Environmental Groups:** Advocates for emission reduction  
+
+---
+
+## **Current Limitations and Boundaries**  
+
+### **Constraints**  
+1. **Regulatory:** City-specific bans on dockless systems.  
+2. **Technical:** GPS accuracy issues in dense urban areas.  
+3. **Financial:** High upfront costs for fleet/IoT infrastructure.  
+4. **Behavioral:** User reluctance to replace car commutes.  
+
+### **Boundaries**  
+- Limited to cities with population >500,000 (initial rollout).  
+- Excludes non-electric vehicles (focus on e-bikes/scooters).  
+
+---
+
+## **Success Criteria**  
+1. **Adoption Rate:** ≥15% of target population as active users within 12 months.  
+2. **Utilization Rate:** ≥5 rides/vehicle/day (industry benchmark).  
+3. **Sustainability:** 30% reduction in user-reported car trips.  
+4. **Profitability:** Break-even within 18 months (unit economics).  
+
+---
+
+### **Visual Summary**  
+```mermaid  
+pie  
+    title Key Focus Areas  
+    "Fleet Management" : 35  
+    "User Experience" : 25  
+    "Regulatory Compliance" : 20  
+    "Sustainability" : 20  
+```  
+
+*Note: Adapt scope/objectives based on target city size and funding stage (e.g., pilot vs. scale-up).*

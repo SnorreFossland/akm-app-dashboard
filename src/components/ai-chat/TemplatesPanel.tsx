@@ -52,6 +52,32 @@ Define clear, measurable, and achievable indicators of success:
 	•	[Success Criterion 2] (Measurable)
 `
         },
+        {
+            category: "Planning",
+            title: "Domain/Topic Scoping simplest",
+            usage: "Business",
+            content:`[Insert your definition of the domain/topic here]
+Help me define and scope the following domain/topic above.
+`
+        },
+        {
+            category: "Planning",
+            title: "Domain/Topic Scoping simple",
+            usage: "Business",
+            content:
+                `[Insert your definition of the domain/topic here]
+Help me define and scope the following domain/topic above.
+Domain Identification:[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
+Domain scope:[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]
+Key Domain Concepts and Terms
+Primary objectives
+Identify and categorize stakeholders by their roles or involvement
+Current limitations and Boundaries
+Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+Success criteria 
+Define clear, measurable, and achievable indicators of success
+`
+        },
         { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
         {
             category: "Planning",
@@ -209,47 +235,27 @@ Do not wrap your entire response in triple backticks.
         onApplyTemplate(trimmedContent);
     };
 
-    // const handleRefinePrompt = async () => {
-    //     setIsRefining(true); // Set loading state
 
-    //     try {
-    //         // In a real implementation, you would call an API to refine the prompt
-    //         // For now, we're simulating a refined result after a delay
-    //         const systemPrompt = "You are a prompt expert and you will refine the user prompt. If placeholders are present, please replace them with the most relevant information.";
-
-    //         // This is where you would call your API
-    //         // const refinedContent = await yourApiCall(editableContent);
-
-    //         // For demonstration, just adding a prefix after a simulated delay
-    //         await new Promise(resolve => setTimeout(resolve, 1000));
-    //         const refinedContent = `${systemPrompt} \n\n${editableContent}`;
-
-    //         // Update the field directly
-    //         setEditableContent(refinedContent);
-    //     } catch (error) {
-    //         console.error("Error refining prompt:", error);
-    //     } finally {
-    //         setIsRefining(false); // Reset loading state
-    //     }
-    // };
-
-    const handleGeneratePrompt = async () => {
+    const handleRefinePrompt = async () => {
         setIsRefining(true); // Set loading state
         const systemPrompt: Message = {
             role: 'assistant',
-            content: `
-You are a prompt refinement expert. Your task is to take the user's input and transform it into the most effective and complete prompt possible for an AI system. 
+            content: `You are a prompt refinement expert. Your task is to take the user's input and transform it into the most effective and complete prompt possible for an AI system. 
 Your output must strictly be a refined prompt, not a response or result to the user's input.
 
 # Instructions:
 1. Analyze the user's input to understand the context, objectives, and requirements.
 2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.
 3. Ensure the refined prompt is clear, concise, and actionable.
-4. Use Markdown formatting for the output.
+4. include specific instructions or guidelines for the AI to follow.
+5. Include a name and description of the core topic of the prompt.
+6. Use Markdown formatting for the output.
+7. User Mermaid syntax for any diagrams or visual representations.
 
 # Example:
 **User Input:** "Help me write a blog post about AI."
-**Refined Prompt:** "Write a detailed blog post about the advancements in artificial intelligence, focusing on recent breakthroughs, applications in various industries, and potential future trends. Include examples and references to credible sources."
+**Refined Prompt:** "Write a detailed blog post about the advancements in artificial intelligence, focusing on recent breakthroughs, applications in various industries, and potential future trends. 
+Include subject, description and examples and references to credible sources."
 
 Now, refine the following user input into an exceptional prompt:
 `
@@ -413,9 +419,9 @@ Now, refine the following user input into an exceptional prompt:
                     placeholder="Edit the content here before inserting..."
                     id="editable-content-textarea"
                 />
-                <div className="flex gap-4 mt-2">
+                <div className="flex gap-4 mx-2">
                     <button
-                        onClick={handleGeneratePrompt}
+                        onClick={handleRefinePrompt}
                         className={`bg-gray-600 text-gray-100 px-4 py-2 rounded-md hover:bg-gray-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
                         disabled={isRefining}
                     >
