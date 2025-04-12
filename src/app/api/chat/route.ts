@@ -1,4 +1,13 @@
 import { NextResponse } from 'next/server';
+import { OpenAI } from 'ai';
+import { generateText } from 'ai';
+import { callMistral } from '@ai-sdk/mistral';
+import { callDeepseek } from '@ai-sdk/deepseek';
+import { callOpenAI } from '@ai-sdk/openai';
+import { callGemini } from '@ai-sdk/gemini';
+import { callClaude } from '@ai-sdk/claude';
+import { callAnthropic } from '@ai-sdk/anthropic';
+
 
 
 interface Message {
@@ -149,7 +158,7 @@ export async function POST(request: Request) {
     }
     // Use an AbortController to set a timeout
     const controller = new AbortController();
-    const timeout = 120000; // 120 seconds timeout
+    const timeout = 200000; // 120 seconds timeout
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {

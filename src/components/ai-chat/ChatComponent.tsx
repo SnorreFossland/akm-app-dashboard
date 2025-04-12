@@ -28,6 +28,8 @@ export default function ChatComponent({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [input, setInput] = useState<string | undefined>(chatInput);
     const [modelRetryCount, setModelRetryCount] = useState(0);
+    const [errorMsg, setErrorMsg] = useState(''); // <-- error state
+
     // Use a ref to prevent multiple concurrent retries
     const retryInProgress = useRef(false);
 
@@ -55,20 +57,24 @@ export default function ChatComponent({
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: newMessages }),
+                body: JSON.stringify({ messages: newMessages, model: selectedModel }),
             });
-            if (!response.ok) {
-                const errorData = await response.json().catch(() => ({}));
-                throw new Error(errorData.error || 'Network response was not ok');
-            }
             const data = await response.json();
-            setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+            if (!response.ok) {
+                // Set error message if response fails
+                setErrorMsg(data.error || 'An error occurred');
+            } else {
+                // Clear any previous errors if successful
+                setErrorMsg('');
+                setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
+            }
         } catch (error) {
             console.error('Error:', error);
+            setErrorMsg('An unexpected error occurred.');
         } finally {
             setIsLoading(false);
         }
-    }, []);
+    }, [selectedModel]);
 
     // When selectedModel changes, retry sending the last non-retry user message
     useEffect(() => {
@@ -77,13 +83,13 @@ export default function ChatComponent({
         if (selectedModel && modelRetryCount < MAX_MODEL_RETRIES && !retryInProgress.current) {
             // Find the last non-retry user message.
             const lastUserMessage = messages.findLast(
-                (m) => m.role === 'user' && !m.content.startsWith('Retrying with model:')
+                (m) => m.role === 'user' && !m.content.startsWith('Retry with model:')
             );
             if (lastUserMessage) {
                 retryInProgress.current = true;
                 const modelChangeMessage: Message = {
                     role: 'user',
-                    content: `Retrying with model: ${selectedModel}`,
+                    content: `Retry with model: ${selectedModel}`,
                 };
                 setMessages((prev) => [...prev, modelChangeMessage]);
                 setModelRetryCount((prev) => prev + 1);
@@ -124,6 +130,11 @@ export default function ChatComponent({
 
     return (
         <div className="flex flex-col flex-1 overflow-hidden">
+            {errorMsg && (
+                <div className="p-2 mb-4 bg-red-600 text-white rounded">
+                    {errorMsg}
+                </div>
+            )}
             <div className="flex-1 overflow-y-auto mb-4 border border-gray-700 rounded-md p-4 bg-gray-900 w-full">
                 {messages.map((message, index) => (
                     <div key={index} className={`mb-4 p-3 rounded-lg flex items-start gap-2 ${message.role === 'user'
@@ -208,8 +219,8 @@ export default function ChatComponent({
                     </div>
                 ))}
                 {isLoading && (
-                    <div className="bg-gray-700 p-3 rounded-lg mr-auto max-w-[80%]">
-                        <span className="animate-pulse">Thinking...</span>
+                    <div>
+                        {isLoading ? <p>Thinking...</p> : /* render messages */ null}
                     </div>
                 )}
                 <div ref={messagesEndRef} />

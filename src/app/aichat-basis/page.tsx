@@ -5,8 +5,8 @@ import ChatComponent from '@/components/ai-chat/ChatComponent';
 import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import mermaid from 'mermaid';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
-// Note: If MarkdownPreview is not used directly in this file, you may remove it
-// import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+
 
 function useTemplateManager() {
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
@@ -29,7 +29,8 @@ const AIChatPage = () => {
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(600);
     const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
-    // Removed lastResponse and setIsEditing if not used
+    const [lastResponse, setLastResponse] = useState<string>(''); // Properly initialize the state
+    const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
 
     // Initialize mermaid when component mounts
     useEffect(() => {
@@ -52,17 +53,58 @@ const AIChatPage = () => {
         setShowRightPanel(false);
     }, []);
 
-    // Run mermaid whenever markdown preview changes
     useEffect(() => {
-        if (mdPreview && mdPreview.includes('mermaid')) {
+        if (mdPreview && mdPreview.includes('mermaid') && !isEditing) {
             setTimeout(() => {
                 mermaid.run();
             }, 0);
         }
-    }, [mdPreview]);
+    }, [mdPreview, isEditing]); // Add 'isEditing' to the dependency array
 
-    // Example mouse handlers and other effects…
-    // (Keep these if you actually use them)
+    const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
+        const startX = e.clientX;
+        const startLeftWidth = leftPanelWidth;
+        const startRightWidth = rightPanelWidth;
+
+        const onMouseMove = (event: MouseEvent) => {
+            const deltaX = event.clientX - startX;
+
+            if (panel === 'left') {
+                setLeftPanelWidth(Math.max(200, startLeftWidth + deltaX)); // Minimum width of 200px
+            } else if (panel === 'right') {
+                setRightPanelWidth(Math.max(200, startRightWidth - deltaX)); // Reverse logic for right panel
+            }
+        };
+
+        const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+        };
+
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+    };
+
+    const handleApplyTemplate = (content: string) => {
+        console.log('93 Template content inserted:', content);
+        setChatInput(content); // Update the chat input field
+    };
+
+    const handleResponseChange = (response: string) => {
+        setLastResponse(response);
+    };
+
+    const handleViewInMarkdown = (response: string) => {
+        const cleanResponse = (response: string) => {
+            let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
+            cleaned = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
+            return cleaned;
+        };
+
+        const cleanedResponse = cleanResponse(response);
+        setMdPreview(cleanedResponse);
+        setShowRightPanel(true); // Ensure the right panel is shown
+    };
 
     return (
         <div className="flex h-screen bg-gray-900 text-gray-100 w-full">
@@ -84,19 +126,15 @@ const AIChatPage = () => {
                     }} selectedModel={selectedModel} />
                 </div>
             )}
-
             {/* Draggable Bar for Left Panel */}
             {showLeftPanel && mdPreview && (
                 <div
-                    className="w-2 bg-gray-700 cursor-col-resize relative"
-                    onMouseDown={(e) => {
-                        // Your onMouseDown implementation…
-                    }}
+                    className="w-3 bg-gray-700 cursor-col-resize relative"
+                    onMouseDown={(e) => handleMouseDown(e, 'left')}
                 >
-                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>
+                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
                 </div>
             )}
-
             {/* Middle Panel: AI Chat */}
             <div
                 className={`flex flex-col p-2 bg-card overflow-hidden w-full ${showLeftPanel && showRightPanel
@@ -142,12 +180,8 @@ const AIChatPage = () => {
 
                 <ChatComponent
                     selectedModel={selectedModel}
-                    onResponseChange={(response) => {
-                        // You might use this response somewhere or remove it if not needed.
-                    }}
-                    onViewInMarkdown={(response) => {
-                        // Show markdown preview or process it as needed.
-                    }}
+                    onResponseChange={handleResponseChange}
+                    onViewInMarkdown={handleViewInMarkdown}
                     chatInput={chatInput}
                 />
             </div>
@@ -155,12 +189,10 @@ const AIChatPage = () => {
             {/* Draggable Bar for Right Panel */}
             {showRightPanel && (
                 <div
-                    className="w-2 bg-gray-700 cursor-col-resize relative"
-                    onMouseDown={(e) => {
-                        // Your onMouseDown implementation…
-                    }}
+                    className="w-3 bg-gray-700 cursor-col-resize relative"
+                    onMouseDown={(e) => handleMouseDown(e, 'right')}
                 >
-                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>
+                    <div className="absolute top-1/2 -translate-y-1/2 h-12 bg-gray-500 w-1 mx-auto"></div>{/* Lighter part */}
                 </div>
             )}
 
@@ -173,15 +205,23 @@ const AIChatPage = () => {
                     <div className="flex justify-between items-center mb-5">
                         <h2 className="text-xl font-bold text-blue-400">Markdown Preview</h2>
                         <button
-                            onClick={() => {
-                                // Toggle edit mode if needed (if not used, remove setIsEditing)
-                            }}
+                            onClick={() => setIsEditing(!isEditing)}
                             className="text-sm bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                         >
-                            Preview
+                            {isEditing ? 'Preview' : 'Edit'}
                         </button>
                     </div>
-                    {/* Either render a textarea or a preview */}
+                    {/* Either render a textarea or a preview */}                    {isEditing ? (
+                        <textarea
+                            value={mdPreview}
+                            onChange={(e) => setMdPreview(e.target.value)}
+                            className="w-full h-full p-4 bg-gray-800 text-gray-100 rounded max-h-[80vh] overflow-y-auto"
+                        />
+                    ) : (
+                        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto max-h-[80vh]">
+                            <MarkdownPreview mdPreview={mdPreview} />
+                        </div>
+                    )}
                 </div>
             )}
         </div>
