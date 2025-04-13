@@ -6,20 +6,23 @@ import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import mermaid from 'mermaid';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import { useDispatch } from 'react-redux';
+import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 
 
-function useTemplateManager() {
-    const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
-    const [customTemplate, setCustomTemplate] = useState('');
+// function useTemplateManager() {
+//     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+//     const [customTemplate, setCustomTemplate] = useState('');
 
-    const applyTemplate = (index: number, templates: { content: string }[], setInput: (content: string) => void) => {
-        setSelectedTemplate(index);
-        const content = index === templates.length - 1 ? customTemplate : templates[index].content;
-        setInput(content);
-    };
 
-    return { selectedTemplate, setSelectedTemplate, customTemplate, setCustomTemplate, applyTemplate };
-}
+//     const applyTemplate = (index: number, templates: { content: string }[], setInput: (content: string) => void) => {
+//         setSelectedTemplate(index);
+//         const content = index === templates.length - 1 ? customTemplate : templates[index].content;
+//         setInput(content);
+//     };
+
+//     return { selectedTemplate, setSelectedTemplate, customTemplate, setCustomTemplate, applyTemplate };
+// }
 
 const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
@@ -32,6 +35,8 @@ const AIChatPage = () => {
     // const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
     const [lastResponse, setLastResponse] = useState<string>(''); // Properly initialize the state
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
+    const [docName, setDocName] = useState('');
+    const dispatch = useDispatch();
 
     // Initialize mermaid when component mounts
     useEffect(() => {
@@ -61,6 +66,20 @@ const AIChatPage = () => {
             }, 0);
         }
     }, [mdPreview, isEditing]); // Add 'isEditing' to the dependency array
+
+    const handleSaveToRedux = () => {
+        if (!docName.trim()) return;
+
+        dispatch(saveMarkdownDocument({
+            id: Date.now().toString(),
+            name: docName,
+            content: mdPreview,
+            createdAt: new Date().toISOString()
+        }));
+
+        // Show success notification
+        alert('Document saved to library');
+    };
 
     const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
         const startX = e.clientX;
@@ -230,6 +249,27 @@ const AIChatPage = () => {
                             </button>
                         </div>
                     </div>
+
+                    {/* New top bar for saving to Redux */}
+                    <div className="flex items-center justify-between bg-gray-700 p-2 rounded mb-2">
+                        <div className="flex items-center">
+                            <input
+                                type="text"
+                                placeholder="Document name"
+                                className="text-sm bg-gray-800 text-white px-2 py-1 rounded mr-2 border border-gray-600"
+                                value={docName}
+                                onChange={(e) => setDocName(e.target.value)}
+                            />
+                        </div>
+                        <button
+                            onClick={handleSaveToRedux}
+                            className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded flex items-center"
+                            disabled={!docName.trim()}
+                        >
+                            <span>Save to Library</span>
+                        </button>
+                    </div>
+
                     {/* Either render a textarea or a preview */}
                     {isEditing ? (
                         <textarea
