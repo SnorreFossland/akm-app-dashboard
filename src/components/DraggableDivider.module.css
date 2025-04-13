@@ -1,0 +1,67 @@
+.divider {
+    background-color: #e0e0e0;
+    border: 1px solid #ccc;
+    z-index: 1000;
+    position: relative;
+    user-select: none;
+    touch-action: none;
+}
+
+.vertical {
+    cursor: col-resize;
+    width: 12px;
+    height: 100%;
+}
+
+.horizontal {
+    cursor: row-resize;
+    width: 100%;
+    height: 12px;
+}
+
+.indicator {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vertical .indicator {
+    top: 50%;
+    left: 0;
+    transform: translateY(-50%);
+    width: 100%;
+    height: 30px;
+}
+
+.horizontal .indicator {
+    top: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 30px;
+    height: 100%;
+}
+
+.handle {
+    background-color: #888;
+    border-radius: 2px;
+}
+
+.vertical .handle {
+    width: 4px;
+    height: 30px;
+}
+
+.horizontal .handle {
+    width: 30px;
+    height: 4px;
+}
+
+.resizing {
+    cursor: row-resize;
+    user-select: none;
+}
+
+.resizing * {
+    user-select: none !important;
+}

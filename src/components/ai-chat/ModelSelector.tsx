@@ -23,6 +23,7 @@ const AI_MODELS = [
     // { id: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
     // { id: 'gemini-pro', name: 'Gemini Pro' },
     // { id: 'gemini-ultra', name: 'Gemini Ultra' },
+    {  id: 'dummy', name: 'Dummy' },
 ];
 
 const validModels = AI_MODELS.map((model) => model.id);

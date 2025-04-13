@@ -21,67 +21,19 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
     const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
 
     const PROMPT_TEMPLATES = [
+
         {
+            title: "Domain/Topic Scoping ",
             category: "Planning",
-            title: "Domain/Topic Scoping",
-            usage: "Business",
-            content:
-                `
-Help me define and scope the following domain/topic:
-Domain Identification:
-	•	Domain Name: [Insert concise and specific name]
-	•	Domain Description: [Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
-Domain scope: 
-	•	In-Scope: [Explicitly list the elements, activities, or areas included within the domain.]
-	•	Out-of-Scope: [Clearly specify what aspects are explicitly excluded from the domain.]
-Key Domain Concepts and Terms
-	•	Core Concepts: [List critical concepts fundamental to understanding the domain.]
-	•	Relevant Keywords: [Provide key terminologies, acronyms, and types relevant to the domain.]
-Primary objectives: [Clearly define the main goals or outcomes this domain aims to achieve]
-Key stakeholders:
-Identify and categorize stakeholders by their roles or involvement:
-	•	Primary Stakeholders: [Directly involved individuals or groups]
-	•	Secondary Stakeholders: [Indirectly impacted individuals or groups]
-Current limitations and Boundaries:
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-    •	Constraint/Boundary 1
-	•	Constraint/Boundary 2
-Success criteria: 
-Define clear, measurable, and achievable indicators of success:
-	•	[Success Criterion 1] (Measurable)
-	•	[Success Criterion 2] (Measurable)
-`
-        },
-        {
-            category: "Planning",
-            title: "Domain/Topic Scoping simplest",
             usage: "Business",
             content:`[Insert your definition of the domain/topic here]
 Help me define and scope the following domain/topic above.
 `
         },
-        {
-            category: "Planning",
-            title: "Domain/Topic Scoping simple",
-            usage: "Business",
-            content:
-                `[Insert your definition of the domain/topic here]
-Help me define and scope the following domain/topic above.
-Domain Identification:[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
-Domain scope:[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]
-Key Domain Concepts and Terms
-Primary objectives
-Identify and categorize stakeholders by their roles or involvement
-Current limitations and Boundaries
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-Success criteria 
-Define clear, measurable, and achievable indicators of success
-`
-        },
         { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
         {
-            category: "Planning",
             title: "Project Plan",
+            category: "Planning",
             usage: "Business",
             content:
                 `Make a project plan for the following project:
@@ -122,8 +74,8 @@ gantt
 
         `},
         {
-            category: "Planning",
             title: "Product Roadmap",
+            category: "Planning",
             usage: "Business",
             content:
                 `Create a product roadmap for the following product:
@@ -194,6 +146,55 @@ Make sur to include the backticks in the output.
         { category: "Research", title: "Research Paper", usage: "Business", content: "Outline a research paper on the following topic:\n\n[Describe topic here]" },
         { category: "Code Review", title: "Code Review", usage: "Business", content: "Please review the following code and provide feedback:\n\n[Paste code here]" },
         { category: "Custom", title: "Custom", usage: "Personal", content: "" },
+        {
+            category: "Planning",
+            title: "Domain/Topic Scoping",
+            usage: "Business",
+            content:
+                `
+Help me define and scope the following domain/topic:
+Domain Identification:
+	•	Domain Name: [Insert concise and specific name]
+	•	Domain Description: [Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
+Domain scope: 
+	•	In-Scope: [Explicitly list the elements, activities, or areas included within the domain.]
+	•	Out-of-Scope: [Clearly specify what aspects are explicitly excluded from the domain.]
+Key Domain Concepts and Terms
+	•	Core Concepts: [List critical concepts fundamental to understanding the domain.]
+	•	Relevant Keywords: [Provide key terminologies, acronyms, and types relevant to the domain.]
+Primary objectives: [Clearly define the main goals or outcomes this domain aims to achieve]
+Key stakeholders:
+Identify and categorize stakeholders by their roles or involvement:
+	•	Primary Stakeholders: [Directly involved individuals or groups]
+	•	Secondary Stakeholders: [Indirectly impacted individuals or groups]
+Current limitations and Boundaries:
+Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+    •	Constraint/Boundary 1
+	•	Constraint/Boundary 2
+Success criteria: 
+Define clear, measurable, and achievable indicators of success:
+	•	[Success Criterion 1] (Measurable)
+	•	[Success Criterion 2] (Measurable)
+`
+        },
+        {
+            title: "Domain/Topic Scoping simple",
+            category: "Planning",
+            usage: "Business",
+            content:
+                `[Insert your definition of the domain/topic here]
+Help me define and scope the following domain/topic above.
+Domain Identification:[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
+Domain scope:[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]
+Key Domain Concepts and Terms
+Primary objectives
+Identify and categorize stakeholders by their roles or involvement
+Current limitations and Boundaries
+Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+Success criteria 
+Define clear, measurable, and achievable indicators of success
+`
+        },
     ];
     const isMounted = useRef(true);
 
@@ -216,7 +217,7 @@ Make sur to include the backticks in the output.
         if (index === PROMPT_TEMPLATES.length - 1) {
             setEditableContent(customTemplate);
         } else {
-            setEditableContent(filteredTemplates[index].content);
+            setEditableContent(`${filteredTemplates[index].content}\n##**${filteredTemplates[index].title}**:\n`);
         }
     };
 
@@ -235,15 +236,16 @@ Do not wrap your entire response in triple backticks.
         onApplyTemplate(trimmedContent);
     };
 
-
     const handleRefinePrompt = async () => {
         setIsRefining(true); // Set loading state
         const systemPrompt: Message = {
             role: 'assistant',
             content: `You are a prompt refinement expert. Your task is to take the user's input and transform it into the most effective and complete prompt possible for an AI system. 
+The generated prompt must be about what the user wants to achieve, create or write, and it should be clear, concise, and actionable.
 Your output must strictly be a refined prompt, not a response or result to the user's input.
 
 # Instructions:
+
 1. Analyze the user's input to understand the context, objectives, and requirements.
 2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.
 3. Ensure the refined prompt is clear, concise, and actionable.
@@ -308,15 +310,15 @@ Now, refine the following user input into an exceptional prompt:
     };
 
     return (
-        <div className="px-3 h-[92vh] flex flex-col gap-4 overflow-hidden bg-gray-900 text-gray-100 shadow-lg">
-            <h2 className="text-lg font-bold">Prompt Templates</h2>
-            <div className="">
+        <div className="p-3 h-[92vh] flex flex-col gap-4 overflow-hidden bg-secondary text-gray-100 shadow-lg">
+            <h2 className="text-secondary-foreground text-lg font-bold">Prompt Templates </h2>
+            <div className="bg-secondary text-secondary-foreground px-2 rounded-md mb-4">
                 <label htmlFor="category" className="block text-sm font-medium mb-2">Filter by Category:</label>
                 <select
                     id="category"
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100"
+                    className="w-full p-2 border border-gray-600 rounded-md bg-secondary text-secondary-foreground"
                 >
                     {CATEGORIES.map((category, index) => (
                         <option key={index} value={category}>
@@ -327,8 +329,8 @@ Now, refine the following user input into an exceptional prompt:
             </div>
             <div className="flex h-80 overflow-y-auto" id="templates-container">
                 {/* Business Templates Column */}
-                <div className="w-1/2 pr-2">
-                    <h3 className="text-sm font-semibold mb-2">Business</h3>
+                <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground ">
+                    <h3 className="text-sm font-semibold">Business</h3>
                     <div className="flex flex-col gap-2">
                         {filteredTemplates
                             .filter(template => template.usage === "Business")
@@ -338,7 +340,7 @@ Now, refine the following user input into an exceptional prompt:
                                     <button
                                         key={actualIndex}
                                         onClick={() => handleTemplateSelect(actualIndex)}
-                                        className={`w-full text-left p-2 rounded-md ${selectedTemplate === actualIndex
+                                        className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex 
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-gray-700 text-gray-100'
                                             }`}
@@ -351,7 +353,7 @@ Now, refine the following user input into an exceptional prompt:
                 </div>
 
                 {/* Personal Templates Column */}
-                <div className="w-1/2 pl-2">
+                <div className="w-1/2 pl-2 bg-secondary text-secondary-foreground ">
                     <h3 className="text-sm font-semibold mb-2">Personal</h3>
                     <div className="flex flex-col gap-2">
                         {filteredTemplates
@@ -362,7 +364,7 @@ Now, refine the following user input into an exceptional prompt:
                                     <button
                                         key={actualIndex}
                                         onClick={() => handleTemplateSelect(actualIndex)}
-                                        className={`w-full text-left p-2 rounded-md ${selectedTemplate === actualIndex
+                                        className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
                                                 ? 'bg-blue-600 text-white'
                                                 : 'bg-gray-700 text-gray-100'
                                             }`}
@@ -403,8 +405,8 @@ Now, refine the following user input into an exceptional prompt:
             </div>
             {/* Custom Template Section */}
 
-            <div className="flex-1 overflow-y-auto pt-4 bg-gray-900 border-t border-gray-700">
-                <h3 className="text-md font-semibold mb-2">
+            <div className="flex-1 overflow-y-auto pt-4 border-t border-gray-700">
+                <h3 className="text-md font-semibold mb-2 bg-secondary text-secondary-foreground">
                     {selectedTemplate === null
                         ? 'Select a template'
                         : selectedTemplate === PROMPT_TEMPLATES.length - 1
@@ -414,7 +416,7 @@ Now, refine the following user input into an exceptional prompt:
                 <textarea
                     value={editableContent}
                     onChange={(e) => setEditableContent(e.target.value)}
-                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 overflow-y-auto"
+                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 overflow-y-auto bg-popover text-secondary-foreground"
                     style={{ height: 'calc(100% - 80px)', minHeight: '100px', transition: 'height 0.05s ease' }}
                     placeholder="Edit the content here before inserting..."
                     id="editable-content-textarea"
@@ -422,7 +424,7 @@ Now, refine the following user input into an exceptional prompt:
                 <div className="flex gap-4 mx-2">
                     <button
                         onClick={handleRefinePrompt}
-                        className={`bg-gray-600 text-gray-100 px-4 py-2 rounded-md hover:bg-gray-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        className={`bg-card text-gray-100 px-4 py-2 rounded-md hover:bg-gray-700 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
                         disabled={isRefining}
                     >
                         {isRefining ? 'Generating...' : 'Refine Prompt'}

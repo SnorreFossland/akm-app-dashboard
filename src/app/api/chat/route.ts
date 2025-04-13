@@ -77,6 +77,8 @@ export async function POST(request: Request) {
       response = await callGemini(updatedMessages, effectiveModel);
     } else if (effectiveModel.startsWith('deepseek')) {
       response = await callDeepseek(updatedMessages, effectiveModel);
+    } else if (effectiveModel.startsWith('dummy')) {
+      response = await callDummyModel(updatedMessages, effectiveModel);
     } else {
       throw new Error(`Unsupported model: ${effectiveModel}`);
     }
@@ -142,7 +144,7 @@ export async function POST(request: Request) {
 
   // Deepseek API implementation - fixed the duplicate return statement
   async function callDeepseek(messages: Message[], model: string): Promise<string> {
-    console.log('Deepseek API called with messages:', messages, model);
+    // console.log('Deepseek API called with messages:', messages, model);
     const apiKey = process.env.DEEPSEEK_API_KEY;
     if (!apiKey) {
       throw new Error('DEEPSEEK_API_KEY is not set in environment variables');
@@ -295,5 +297,34 @@ export async function POST(request: Request) {
     const data = await response.json();
     return data.candidates[0].content.parts[0].text;
   }
+}
+
+// Dummy model implementation for UI testing
+async function callDummyModel(messages: Message[], model: string): Promise<string> {
+  // Simulate network delay
+  await new Promise(resolve => setTimeout(resolve, 1000));
+
+  // Get the last user message to customize the response
+  const userMessage = messages.find(msg => msg.role === 'user')?.content || '';
+
+  // Generate a sample response based on the user's message
+  return `[DUMMY MODEL] This is a test response from the dummy model (${model}).
+    
+I received your message: "${userMessage.substring(0, 50)}${userMessage.length > 50 ? '...' : ''}"
+
+This is a simulated response for UI testing purposes. No actual AI model was called.
+
+Some sample formatted text:
+- Point 1: Test data
+- Point 2: More test data
+
+\`\`\`
+Sample code block
+function test() {
+  return "Hello world";
+}
+\`\`\`
+
+The current timestamp is: ${new Date().toISOString()}`;
 }
 

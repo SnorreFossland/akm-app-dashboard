@@ -1,0 +1,18 @@
+.container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.topPanel {
+    overflow: auto;
+    background-color: #f5f5f5;
+    /* height is set dynamically via inline style */
+}
+
+.bottomPanel {
+    flex: 1;
+    overflow: auto;
+    background-color: #e8e8e8;
+}
