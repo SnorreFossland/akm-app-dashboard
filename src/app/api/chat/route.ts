@@ -144,8 +144,9 @@ export async function POST(request: Request) {
 
   // Deepseek API implementation - fixed the duplicate return statement
   async function callDeepseek(messages: Message[], model: string): Promise<string> {
-    // console.log('Deepseek API called with messages:', messages, model);
+    console.log('Deepseek API called with messages:', messages, model);
     const apiKey = process.env.DEEPSEEK_API_KEY;
+    console.log('api key', Process.env.DEEPSEEK_API_KEY)
     if (!apiKey) {
       throw new Error('DEEPSEEK_API_KEY is not set in environment variables');
     }

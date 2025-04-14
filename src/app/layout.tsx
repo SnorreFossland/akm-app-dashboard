@@ -34,7 +34,9 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <head>
         {/* This helps Next.js better understand how to handle the preloaded resources */}
-        <meta name="next-size-adjust" content="true" />
+        {/* <meta name="next-size-adjust" content="true" /> */}
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+
       </head>
       <body className={`${inter.className}`}>
         <ReduxProvider>
