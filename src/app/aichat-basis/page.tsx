@@ -210,7 +210,7 @@ const AIChatPage = () => {
                                 className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                                 title='Show Markdown'
                             >
-                                <span className="mr-1">← Show Markdown</span>
+                            <span className="mr-1">Show Markdown ←</span>
                             </button>
                             : <div className="flex"></div>
                         }
