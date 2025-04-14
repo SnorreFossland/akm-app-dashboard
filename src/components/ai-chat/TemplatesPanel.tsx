@@ -1,7 +1,5 @@
 'use client';
-
 import { useRef, useEffect, useState } from 'react';
-
 
 interface TemplatesPanelProps {
     onApplyTemplate: (content: string) => void;
@@ -408,7 +406,7 @@ Now, refine the following user input into an exceptional prompt:
             <div className="flex-1 overflow-y-auto pt-4 border-t border-gray-700">
                 <h3 className="text-md font-semibold mb-2 bg-secondary text-secondary-foreground">
                     {selectedTemplate === null
-                        ? 'Select a template'
+                        ? 'Select a template above'
                         : selectedTemplate === PROMPT_TEMPLATES.length - 1
                             ? 'Custom Template'
                             : 'Prompt for: ' + filteredTemplates[selectedTemplate]?.title}

@@ -166,7 +166,7 @@ export default function ChatComponent({
                     <div className="flex-1 overflow-auto mb-4 p-4 rounded-lg w-full ">
                         {messages.map((message, index) => (
                             <div key={index} className={`mb-4 p-3 rounded-lg flex items-start gap-2 ${message.role === 'user'
-                                ? 'bg-card ml-auto max-w-[80%] text-blue-100 flex-col border-blue-800'
+                                ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border-blue-800'
                                 : 'bg-background mr-auto max-w-[100%] text-card-foreground flex-col border-4 border-secondary'
                                 }`}
                             >
@@ -269,7 +269,7 @@ export default function ChatComponent({
                                 value={input || ''}
                                 onChange={(e) => setInput(e.target.value)}
                                 placeholder="Type a message..."
-                                className="flex-1 p-2 border border-gray-600 rounded-md bg-card text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 "
+                                className="flex-1 p-2 border border-gray-600 rounded-md bg-card text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 "
                                 minRows={12}
                                 maxRows={30}
                                 disabled={isLoading}
