@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { deleteMarkdownDocument } from '@/redux/features/markdownSlice';
@@ -9,9 +9,9 @@ interface MarkdownLibraryProps {
 
 const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
   const dispatch = useDispatch();
-  // Fix the selector path to match your actual Redux state structure
   const documents = useSelector((state: RootState) => state.markdown.documents);
   const [searchTerm, setSearchTerm] = useState('');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const filteredDocuments = documents.filter(doc =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -25,16 +25,72 @@ const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
     }
   };
 
+  // Function to export document to local file
+  const handleExportToFile = (content: string, filename: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const blob = new Blob([content], { type: 'text/markdown' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${filename}.md`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  // Function to import document from local file
+  const handleImportFile = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Process the file once selected
+  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      // Extract filename without extension for the document name
+      const fileName = file.name.replace(/\.[^/.]+$/, "");
+      onSelect(content, fileName);
+    };
+    reader.readAsText(file);
+
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   return (
     <div className="flex flex-col gap-4">
       <div className="sticky top-0 bg-gray-800 p-2 z-10">
-        <input
-          type="text"
-          placeholder="Search documents..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="w-full p-2 bg-gray-700 text-white rounded border border-gray-600"
-        />
+        <div className="flex gap-2 mb-2">
+          <input
+            type="text"
+            placeholder="Search documents..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="flex-1 p-2 bg-gray-700 text-white rounded border border-gray-600"
+          />
+          <button
+            onClick={handleImportFile}
+            className="bg-blue-700 hover:bg-blue-600 text-white px-3 py-2 rounded whitespace-nowrap"
+          >
+            Import File
+          </button>
+          <input
+            type="file"
+            ref={fileInputRef}
+            onChange={handleFileSelection}
+            accept=".md,.markdown,.txt"
+            className="hidden"
+          />
+        </div>
       </div>
 
       {filteredDocuments.length === 0 ? (
@@ -55,6 +111,12 @@ const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
                   <span className="text-xs text-gray-400">
                     {new Date(doc.createdAt).toLocaleDateString()}
                   </span>
+                  <button
+                    onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
+                    className="text-xs bg-green-800 hover:bg-green-700 text-white px-2 py-1 rounded"
+                  >
+                    Export
+                  </button>
                   <button
                     onClick={(e) => handleDelete(doc.id, e)}
                     className="text-xs bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded"

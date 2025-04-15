@@ -243,38 +243,18 @@ const AIChatPage = () => {
                             minWidth: '200px'
                         }}
                     >
-                        <div className="flex justify-between items-center m-2">
+                        <div className="flex items-center justify-between m-2">
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
                                 className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
-                                title='Show Markdown'
+                                title='Hide Markdown'
                             >
                                 {showRightPanel && '→ Hide Markdown'}
                             </button>
-                            <h2 className="text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">Markdown Preview</h2>
-                            <div className="flex items-center space-x-2">
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(mdPreview);
-                                        // You could show a temporary "Copied!" tooltip here
-                                        const button = document.activeElement as HTMLButtonElement;
-                                        const originalText = button.textContent;
-                                        button.textContent = "Copied!";
-                                        setTimeout(() => {
-                                            button.textContent = originalText;
-                                        }, 2000);
-                                    }}
-                                    className="text-sm bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                >
-                                    Copy
-                                </button>
-                                <button
-                                    onClick={() => setIsEditing(!isEditing)}
-                                    className="text-sm bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                >
-                                    {isEditing ? 'Preview' : 'Edit'}
-                                </button>
-                            </div>
+                            <h2 className="text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
+                                Markdown Preview
+                            </h2>
+                            <div className="w-[100px]"></div> {/* Empty div for balancing layout */}
                         </div>
 
                         {/* New top bar for saving to Redux */}
@@ -321,6 +301,29 @@ const AIChatPage = () => {
                                 </div>
                             </div>
                         )}
+                        <div className="flex items-center justify-end space-x-2">
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(mdPreview);
+                                    // You could show a temporary "Copied!" tooltip here
+                                    const button = document.activeElement as HTMLButtonElement;
+                                    const originalText = button.textContent;
+                                    button.textContent = "Copied!";
+                                    setTimeout(() => {
+                                        button.textContent = originalText;
+                                    }, 2000);
+                                }}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            >
+                                Copy
+                            </button>
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            >
+                                {isEditing ? 'Preview' : 'Edit'}
+                            </button>
+                        </div>
                         {/* Either render a textarea or a preview */}
                         {isEditing ? (
                             <textarea

@@ -107,7 +107,7 @@ export async function POST(request: Request) {
     }
     // Create an AbortController to timeout the fetch request
     const controller = new AbortController();
-    const timeout = 100000; // timeout in milliseconds (e.g. 10 seconds)
+    const timeout = 10000; // timeout in milliseconds (e.g. 10 seconds)
     const timeoutId = setTimeout(() => controller.abort(), timeout);
 
     try {
@@ -165,7 +165,8 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           model: model,
           messages: messages,
-          temperature: 0.7
+          temperature: 0.7,
+          max_tokens: 1000
         }),
         signal: controller.signal   // Use the same controller
       });
