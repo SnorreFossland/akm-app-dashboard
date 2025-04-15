@@ -8,21 +8,8 @@ import ModelSelector from '@/components/ai-chat/ModelSelector';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { useDispatch } from 'react-redux';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
+import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 
-
-// function useTemplateManager() {
-//     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
-//     const [customTemplate, setCustomTemplate] = useState('');
-
-
-//     const applyTemplate = (index: number, templates: { content: string }[], setInput: (content: string) => void) => {
-//         setSelectedTemplate(index);
-//         const content = index === templates.length - 1 ? customTemplate : templates[index].content;
-//         setInput(content);
-//     };
-
-//     return { selectedTemplate, setSelectedTemplate, customTemplate, setCustomTemplate, applyTemplate };
-// }
 
 const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
@@ -32,10 +19,10 @@ const AIChatPage = () => {
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
     const [selectedModel, setSelectedModel] = useState('dummy'); // Default model
-    // const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
     const [lastResponse, setLastResponse] = useState<string>(''); // Properly initialize the state
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
+    const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const dispatch = useDispatch();
 
     // Initialize mermaid when component mounts
@@ -79,6 +66,12 @@ const AIChatPage = () => {
 
         // Show success notification
         alert('Document saved to library');
+    };
+
+    const handleSelectFromLibrary = (content: string, name: string) => {
+        setMdPreview(content);
+        setDocName(name);
+        setIsLibraryOpen(false);
     };
 
     const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
@@ -172,13 +165,13 @@ const AIChatPage = () => {
 
             {/* Middle Panel: AI Chat */}
             <div
-                className={`flex flex-col p-2 bg-card overflow-hidden h-full w-full ${showLeftPanel && showRightPanel
-                    ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
-                    : showLeftPanel
-                        ? `w-[calc(100%-${leftPanelWidth}px)]`
-                        : showRightPanel
-                            ? `w-[calc(100%-${rightPanelWidth}px)]`
-                            : 'w-full'
+                className={`flex flex-col p-2 bg-card overflow-hidden h-full ${showLeftPanel && showRightPanel
+                        ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
+                        : showLeftPanel
+                            ? `w-[calc(100%-${leftPanelWidth}px)]`
+                            : showRightPanel
+                                ? `w-1/2` // Changed to 50% when only right panel is visible
+                                : 'w-full'
                     }`}
             >
                 <div className="flex justify-between items-center mb-4 bg-primary-foreground p-2 rounded-md gap-1">
@@ -204,22 +197,23 @@ const AIChatPage = () => {
                             }}
                         />
                     </div>
-                        {!showRightPanel ?
-                            <button
-                                onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                title='Show Markdown'
-                            >
+                    {!showRightPanel ?
+                        <button
+                            onClick={() => setShowRightPanel(!showRightPanel)}
+                            className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            title='Show Markdown'
+                        >
                             <span className="mr-1">Show Markdown ←</span>
-                            </button>
-                            : <div className="flex"></div>
-                        }
+                        </button>
+                        : <div className="flex"></div>
+                    }
 
                 </div>
                 <ChatComponent
                     selectedModel={selectedModel}
                     onResponseChange={handleResponseChange}
                     onViewInMarkdown={handleViewInMarkdown}
+                    setShowLeftPanel={setShowLeftPanel}
                     chatInput={chatInput}
                 />
             </div>
@@ -243,7 +237,10 @@ const AIChatPage = () => {
                 showRightPanel && (
                     <div
                         className="flex-shrink-0 p-2"
-                        style={{ width: `${rightPanelWidth}px`, minWidth: '200px' }}
+                        style={{
+                            width: showLeftPanel ? `${rightPanelWidth}px` : '50%',
+                            minWidth: '200px'
+                        }}
                     >
                         <div className="flex justify-between items-center m-2">
                             <button
@@ -251,7 +248,7 @@ const AIChatPage = () => {
                                 className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
                                 title='Show Markdown'
                             >
-                                {showRightPanel && '← Hide Markdown'}
+                                {showRightPanel && '→ Hide Markdown'}
                             </button>
                             <h2 className="text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">Markdown Preview</h2>
                             <div className="flex items-center space-x-2">
@@ -290,15 +287,39 @@ const AIChatPage = () => {
                                     onChange={(e) => setDocName(e.target.value)}
                                 />
                             </div>
-                            <button
-                                onClick={handleSaveToRedux}
-                                className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded flex items-center"
-                                disabled={!docName.trim()}
-                            >
-                                <span>Save to Library</span>
-                            </button>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={() => setIsLibraryOpen(true)}
+                                    className="text-sm bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded flex items-center"
+                                >
+                                    <span>Open from Library</span>
+                                </button>
+                                <button
+                                    onClick={handleSaveToRedux}
+                                    className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded flex items-center"
+                                    disabled={!docName.trim()}
+                                >
+                                    <span>Save to Library</span>
+                                </button>
+                            </div>
                         </div>
-
+                        {/* Library Modal */}
+                        {isLibraryOpen && (
+                            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                                <div className="bg-gray-800 rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto">
+                                    <div className="flex justify-between items-center mb-4">
+                                        <h3 className="text-xl font-bold text-blue-400">Markdown Library</h3>
+                                        <button
+                                            onClick={() => setIsLibraryOpen(false)}
+                                            className="text-sm bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                    <MarkdownLibrary onSelect={handleSelectFromLibrary} />
+                                </div>
+                            </div>
+                        )}
                         {/* Either render a textarea or a preview */}
                         {isEditing ? (
                             <textarea

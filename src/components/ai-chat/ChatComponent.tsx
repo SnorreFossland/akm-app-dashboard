@@ -17,6 +17,7 @@ interface ChatComponentProps {
     selectedModel: string;
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (response: string) => void;
+    setShowLeftPanel: (show: boolean) => void;
     chatInput?: string;
 }
 
@@ -39,6 +40,7 @@ export default function ChatComponent({
     chatInput,
     onResponseChange,
     onViewInMarkdown,
+    setShowLeftPanel,
 }: ChatComponentProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -49,7 +51,7 @@ export default function ChatComponent({
     const [errorMsg, setErrorMsg] = useState(''); // <-- error state
 
     const [topHeight, setTopHeight] = useState<number>(() =>
-        typeof window !== 'undefined' ? window.innerHeight - 480 : 550
+        typeof window !== 'undefined' ? window.innerHeight - 480 : 650
     );
 
     const [showDigitalRain, setShowDigitalRain] = useState(false);
@@ -65,8 +67,29 @@ export default function ChatComponent({
 
         inactivityTimerRef.current = setTimeout(() => {
             setShowDigitalRain(true);
-        }, 60000); // 1 minute
+        }, 10000); // 10 seconds
     }, []);
+
+    useEffect(() => {
+        const handleResize = () => {
+            // Get window height
+            const windowHeight = window.innerHeight;
+            // Ensure bottom section has at least 200px
+            const maxTopHeight = windowHeight;
+
+            // If current topHeight exceeds the max, adjust it
+            if (topHeight > maxTopHeight) {
+                setTopHeight(maxTopHeight - 250);
+            }
+        };
+
+        // Call once on messages change
+        handleResize();
+
+        // Also handle window resizing
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [messages, topHeight]);
 
     // Auto-scroll to bottom when messages update
     useEffect(() => {
@@ -170,6 +193,7 @@ export default function ChatComponent({
         setMessages((prev) => [...prev, userMessage]);
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed
+        setShowDigitalRain(false); // Turn OFF digital rain when sending a message
         await sendMessageToAPI([...messages, userMessage]);
     };
 
@@ -187,6 +211,7 @@ export default function ChatComponent({
     const handleViewInMarkdown = (content: string) => {
         if (onViewInMarkdown) {
             onViewInMarkdown(content);
+            setShowLeftPanel(false);
         }
     };
 
@@ -198,53 +223,53 @@ export default function ChatComponent({
                     {errorMsg}
                 </div>
             )}
-            <div className="flex flex-col bg-background rounded-m">
-                <div
-                    className="bg-transparent overflow-auto relative"
-                    style={{ height: `${topHeight}px` }}
-                >
-                    {/* <div className="p-4"> */}
-                    {/* Digital Rain overlay */}
-                    {showDigitalRain && messages.length < 1 ? (
-                        <div className=" ">
-                            <div className="absolute inset-0 z-10">
-                                <DigitalRain
-                                    onInteraction={() => setShowDigitalRain(false)}
-                                    speed={3} // Slower speed (0.5 is half the default speed)
-                                    backgroundColor="rgba(10, 20, 10, 0.03)" // Lighter background with slight green tint
-                                />
-                            </div>
-                            <div className="absolute inset-0 z-20 flex items-center justify-center">
-                                <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
-                                    <AnimatedAICircle className="absolute inset-0 z-0" />
+            <div className="flex flex-col bg-background rounded-m overflow-hidden"
+                style={{ height: `${topHeight}px` }}>
+                {messages.length < 1 ? (
+                    <div className="bg-transparent overflow-auto relative h-full">
+                        {/* Digital Rain overlay */}
+                        {showDigitalRain ? (
+                            <div className=" ">
+                                <div className="absolute inset-0 z-20">
+                                    <DigitalRain
+                                        onInteraction={() => setShowDigitalRain(false)}
+                                        speed={3}
+                                        backgroundColor="rgba(10, 20, 10, 0.03)"
+                                    />
+                                </div>
+                                <div className="absolute inset-0 z-20 flex items-center justify-center">
+                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
+                                        <AnimatedAICircle className="absolute inset-0 z-0" />
+                                    </div>
+                                </div>
+                                <div className="z-20 m-5 text-green-400 text-xl font-mono text-center">
+                                    Click to start typing...
                                 </div>
                             </div>
+                        ) : (
+                            <div className="absolute inset-0 z-10 ">
 
-                        </div>
-                    ) : (
-                        <div className="absolute inset-0 z-20 ">
-                            <div className="z-10 m-5 text-green-400 text-xl font-mono text-center">
-                                Click to start typing...
-                            </div>
-                            <div className="absolute inset-0 z-20 flex items-center justify-center">
-                                <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
-                                    <AnimatedAICircle className="absolute inset-0 z-0" />
+                                <div className="absolute inset-0 z-10 flex items-center justify-center">
+                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
+                                        <AnimatedAICircle className="absolute inset-0 z-0" />
+                                    </div>
+                                </div>
+                                <div className="mt-100 z-10 text-green-400 text-xl font-mono text-center">
+                                    Select a prompt template or start typing below ...
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-                <div className="text-green-400 text-xl font-mono text-center">
-                    Select a prompt template or start typing below ...
-                </div>
-                <div className="flex-1 overflow-auto mb-4 p-4 rounded-lg w-full ">
+                        )
+                        }
+                    </div>
+                ) : <>{messages.length} messages</>}
+                <div className="flex-1 overflow-auto mb-4 p-4 rounded-lg w-full bg-background">
                     {messages.map((message, index) => (
                         <div key={index} className={`mb-4 p-3 rounded-lg flex items-start gap-2 ${message.role === 'user'
                             ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border-blue-800'
-                            : 'bg-background mr-auto max-w-[100%] text-card-foreground flex-col border-4 border-secondary'
+                            : 'bg-background mr-auto max-w-[90%] text-card-foreground flex-col border-4 border-secondary'
                             }`}
                         >
-                            <div className="flex items-center justify-between gap-3 ps-1 w-full">
+                            <div className="flex items-center justify-between gap-3 ps-1">
                                 <div className="flex-shrink-0">
                                     {message.role === 'user' ? (
                                         <svg
@@ -334,7 +359,7 @@ export default function ChatComponent({
                 currentSize={topHeight}
                 onResize={setTopHeight}
             />
-            <div className="flex-1 bg-transparent rounded-md overflow-auto h-full">
+            <div className="flex-1 bg-transparent rounded-md overflow-auto">
                 {/* <div className="p-4"> */}
                 <div className="relative flex-1 rounded-md overflow-auto h-full">
                     {/* <div className="relative bottom-0 top-10 p-4 bg-blue-900 h-full"> */}
