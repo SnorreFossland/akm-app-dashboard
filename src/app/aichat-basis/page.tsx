@@ -18,8 +18,11 @@ const AIChatPage = () => {
     const [showRightPanel, setShowRightPanel] = useState(true);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
+
     const [selectedModel, setSelectedModel] = useState('dummy'); // Default model
+    const [resetConversationOnModelChange, setResetConversationOnModelChange] = useState(false);
     const [lastResponse, setLastResponse] = useState<string>(''); // Properly initialize the state
+    
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -189,14 +192,30 @@ const AIChatPage = () => {
 
                     <h1 className="text-2xl font-bold text-blue-400 px-2">AIChat</h1>
                     <div className="flex items-center space-x-4">
-                        <ModelSelector
-                            selectedModel={selectedModel}
-                            onModelChange={(newModel) => {
-                                if (window.confirm(`Are you sure you want to change the model to ${newModel}?`)) {
+                        <div className="flex items-center gap-2">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
                                     setSelectedModel(newModel);
-                                }
-                            }}
-                        />
+                                    // Only reset if the checkbox is checked
+                                    if (resetConversationOnModelChange) {
+                                        // Logic to reset conversation would be handled in ChatComponent
+                                    }
+                                }}
+                            />
+                            <div className="flex items-center gap-1 text-sm">
+                                <input
+                                    type="checkbox"
+                                    id="resetConversation"
+                                    checked={resetConversationOnModelChange}
+                                    onChange={(e) => setResetConversationOnModelChange(e.target.checked)}
+                                    className="h-4 w-4 accent-blue-500"
+                                />
+                                <label htmlFor="resetConversation" className="text-gray-300">
+                                    Reset conversation on model change
+                                </label>
+                            </div>
+                        </div>
                     </div>
                     {!showRightPanel ?
                         <button
