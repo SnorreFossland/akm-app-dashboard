@@ -164,16 +164,17 @@ const AIChatPage = () => {
             </div>
 
             {/* Middle Panel: AI Chat */}
-            <div
-                className={`flex flex-col p-2 bg-card overflow-hidden h-full ${showLeftPanel && showRightPanel
-                        ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
-                        : showLeftPanel
-                            ? `w-[calc(100%-${leftPanelWidth}px)]`
-                            : showRightPanel
-                                ? `w-1/2` // Changed to 50% when only right panel is visible
-                                : 'w-full'
-                    }`}
-            >
+            <div className="flex flex-col p-2 bg-card overflow-hidden h-full w-full">
+            {/* // <div
+            //     className={`flex flex-col p-2 bg-card overflow-hidden h-full ${showLeftPanel && showRightPanel>
+            //             ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
+            //             : showLeftPanel
+            //                 ? `w-[calc(100%-${leftPanelWidth}px)]`
+            //                 : showRightPanel
+            //                     ? `w-1/2` // Changed to 50% when only right panel is visible
+            //                     : 'w-full'
+            //         }`}
+            // > */}
                 <div className="flex justify-between items-center mb-4 bg-primary-foreground p-2 rounded-md gap-1">
                     {!showLeftPanel ?
                         <button

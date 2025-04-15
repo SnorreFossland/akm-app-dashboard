@@ -50,13 +50,14 @@ export default function ChatComponent({
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [errorMsg, setErrorMsg] = useState(''); // <-- error state
 
-    const [topHeight, setTopHeight] = useState<number>(() =>
-        typeof window !== 'undefined' ? window.innerHeight - 480 : 650
-    );
+    const [topHeight, setTopHeight] = useState<number>(700); // 
 
     const [showDigitalRain, setShowDigitalRain] = useState(false);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
     const retryInProgress = useRef(false);
+
+    const isInitialRender = useRef(true);
+    const previousModelRef = useRef<string | null>(null);
 
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
@@ -70,30 +71,51 @@ export default function ChatComponent({
         }, 10000); // 10 seconds
     }, []);
 
+    // Add this effect to update height on client only
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const minInputHeight = 300;
+            const calculatedHeight = Math.min(
+                window.innerHeight - minInputHeight,
+                window.innerHeight * 0.6
+            );
+            setTopHeight(calculatedHeight);
+        }
+    }, []); // Empty dependency array - run once after mount
+
     useEffect(() => {
         const handleResize = () => {
-            // Get window height
             const windowHeight = window.innerHeight;
-            // Ensure bottom section has at least 200px
-            const maxTopHeight = windowHeight;
+            // Always reserve space for input area (at least 300px)
+            const minInputHeight = 100;
+            const maxTopHeight = windowHeight - minInputHeight;
 
-            // If current topHeight exceeds the max, adjust it
+            // Adjust topHeight if it doesn't leave enough space for input
             if (topHeight > maxTopHeight) {
-                setTopHeight(maxTopHeight - 250);
+                setTopHeight(maxTopHeight);
             }
         };
 
-        // Call once on messages change
+        // Call handler when component mounts and on window resize
         handleResize();
-
-        // Also handle window resizing
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [messages, topHeight]);
+    }, [topHeight]); // Keep topHeight in dependencies to ensure proper updates
 
-    // Auto-scroll to bottom when messages update
+    // Auto-scroll to top of last message when messages update
     useEffect(() => {
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start', // Aligns the top of the element with the top of the viewport
+            });
+
+            // Add a small offset from the top if desired
+            const parentContainer = document.querySelector('.flex-1.overflow-auto.mb-4.p-4');
+            if (parentContainer) {
+                parentContainer.scrollTop -= 16; // Adjust this value for desired spacing
+            }
+        }
     }, [messages]);
 
     useEffect(() => {
@@ -163,13 +185,26 @@ export default function ChatComponent({
 
     // When selectedModel changes, retry sending the last non-retry user message
     useEffect(() => {
-        // Only trigger if selectedModel is defined, we haven't exceeded our retry limit,
-        // and no retry is already in progress.
-        if (selectedModel && modelRetryCount < MAX_MODEL_RETRIES && !retryInProgress.current) {
-            // Find the last non-retry user message.
+        // Skip on first render
+        if (isInitialRender.current) {
+            isInitialRender.current = false;
+            previousModelRef.current = selectedModel;
+            return;
+        }
+
+        // Only trigger if model changed and we have messages
+        if (
+            selectedModel &&
+            previousModelRef.current !== selectedModel &&
+            modelRetryCount < MAX_MODEL_RETRIES &&
+            !retryInProgress.current &&
+            messages.length > 0
+        ) {
+            // Find the last non-retry user message
             const lastUserMessage = messages.findLast(
                 (m) => m.role === 'user' && !m.content.startsWith('Retry with model:')
             );
+
             if (lastUserMessage) {
                 retryInProgress.current = true;
                 const modelChangeMessage: Message = {
@@ -183,7 +218,10 @@ export default function ChatComponent({
                 });
             }
         }
-    }, [selectedModel, sendMessageToAPI, modelRetryCount]);
+
+        // Update for next comparison
+        previousModelRef.current = selectedModel;
+    }, [selectedModel, sendMessageToAPI, modelRetryCount, messages]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -216,7 +254,7 @@ export default function ChatComponent({
     };
 
     return (
-        <div className="flex flex-col flex-1 bg-background overflow-hidden">
+        <div className="flex-1 overflow-auto mb-4 p-4 rounded-lg w-full bg-background" id="messages-container">
             {/* Rest of your component remains unchanged */}
             {errorMsg && (
                 <div className="p-2 mb-4 bg-gray-600 text-white rounded">
@@ -264,10 +302,12 @@ export default function ChatComponent({
                 ) : <>{messages.length} messages</>}
                 <div className="flex-1 overflow-auto mb-4 p-4 rounded-lg w-full bg-background">
                     {messages.map((message, index) => (
-                        <div key={index} className={`mb-4 p-3 rounded-lg flex items-start gap-2 ${message.role === 'user'
-                            ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border-blue-800'
-                            : 'bg-background mr-auto max-w-[90%] text-card-foreground flex-col border-4 border-secondary'
-                            }`}
+                        <div key={index}
+                            ref={index === messages.length - 1 ? messagesEndRef : undefined}
+                            className={`mb-4 p-3 rounded-lg flex items-between gap-2 ${message.role === 'user'
+                                ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border-blue-800'
+                                : 'bg-background mr-auto max-w-[90%] text-card-foreground flex-col border-4 border-secondary'
+                                }`}
                         >
                             <div className="flex items-center justify-between gap-3 ps-1">
                                 <div className="flex-shrink-0">
@@ -309,7 +349,7 @@ export default function ChatComponent({
                                 <div className="flex items-center gap-2 ml-auto rounded-md p-2">
                                     <button
                                         onClick={() => handleCopyMessage(message.content, index)}
-                                        className="text-sm text-gray-400 hover:text-gray-200"
+                                        className="text-xs text-gray-400 hover:text-gray-200"
                                     >
                                         {copiedIndex === index ? 'Copied!' : 'Copy'}
                                     </button>
@@ -318,7 +358,7 @@ export default function ChatComponent({
                                             onClick={() => {
                                                 handleViewInMarkdown(message.content);
                                             }}
-                                            className="text-sm ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                            className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                         >
                                             Markdown Preview
                                             <svg
@@ -342,7 +382,10 @@ export default function ChatComponent({
                                     )}
                                 </div>
                             </div>
-                            <div className="flex-1 w-full p-1 whitespace-pre-wrap break-words overflow-auto">
+                            <div
+                                className="flex-1 w-full p-1 whitespace-pre-wrap break-words overflow-auto"
+                            // ref={index === messages.length - 1 ? messagesEndRef : undefined}
+                            >
                                 {message.content}
                             </div>
                         </div>
@@ -352,7 +395,7 @@ export default function ChatComponent({
                             {isLoading ? <p>Thinking...</p> : null}
                         </div>
                     )}
-                    <div ref={messagesEndRef} />
+                    {/* <div ref={messagesEndRef} /> */}
                 </div>
             </div>
             <SimpleDivider
@@ -369,7 +412,7 @@ export default function ChatComponent({
                             onChange={(e) => setInput(e.target.value)}
                             placeholder="Type a message..."
                             className="flex-1 p-2 border border-gray-600 rounded-md bg-card text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 "
-                            minRows={12}
+                            minRows={10}
                             maxRows={30}
                             disabled={isLoading}
                         />
