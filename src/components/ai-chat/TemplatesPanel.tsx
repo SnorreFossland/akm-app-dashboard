@@ -19,7 +19,7 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
     const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
 
     const PROMPT_TEMPLATES = [
-
+        { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n[Publish a AI chat with Prompt templates and possibility to enhance previous ideas]" },
         {
             title: "Domain/Topic Scoping ",
             category: "Planning",

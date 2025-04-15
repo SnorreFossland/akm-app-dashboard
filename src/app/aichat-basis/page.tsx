@@ -21,7 +21,10 @@ const AIChatPage = () => {
 
     const [selectedModel, setSelectedModel] = useState('dummy'); // Default model
     const [resetConversationOnModelChange, setResetConversationOnModelChange] = useState(false);
-    const [lastResponse, setLastResponse] = useState<string>(''); // Properly initialize the state
+    const [lastResponse, setLastResponse] = useState<string>('');
+
+    const [resetTrigger, setResetTrigger] = useState(0);
+
     
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
@@ -199,7 +202,8 @@ const AIChatPage = () => {
                                     setSelectedModel(newModel);
                                     // Only reset if the checkbox is checked
                                     if (resetConversationOnModelChange) {
-                                        // Logic to reset conversation would be handled in ChatComponent
+                                        // Increment reset trigger to cause ChatComponent to reset conversation
+                                        setResetTrigger(prev => prev + 1);
                                     }
                                 }}
                             />
@@ -212,7 +216,7 @@ const AIChatPage = () => {
                                     className="h-4 w-4 accent-blue-500"
                                 />
                                 <label htmlFor="resetConversation" className="text-gray-300">
-                                    Reset conversation on model change
+                                    Reset 
                                 </label>
                             </div>
                         </div>
@@ -231,6 +235,7 @@ const AIChatPage = () => {
                 </div>
                 <ChatComponent
                     selectedModel={selectedModel}
+                    resetTrigger={resetTrigger}
                     onResponseChange={handleResponseChange}
                     onViewInMarkdown={handleViewInMarkdown}
                     setShowLeftPanel={setShowLeftPanel}

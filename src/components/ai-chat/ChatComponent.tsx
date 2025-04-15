@@ -18,6 +18,8 @@ interface ChatComponentProps {
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (response: string) => void;
     setShowLeftPanel: (show: boolean) => void;
+    resetTrigger: number; // Added resetTrigger prop
+    error?: string; // Optional error prop
     chatInput?: string;
 }
 
@@ -41,6 +43,7 @@ export default function ChatComponent({
     onResponseChange,
     onViewInMarkdown,
     setShowLeftPanel,
+    resetTrigger, // Add this prop to the destructured list
 }: ChatComponentProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +73,18 @@ export default function ChatComponent({
             setShowDigitalRain(true);
         }, 10000); // 10 seconds
     }, []);
+
+    useEffect(() => {
+        if (resetTrigger > 0) {
+            // Reset conversation state
+            setMessages([]);
+            // Reset any other related state
+            setIsLoading(false);
+            setErrorMsg(''); // Fix: use setErrorMsg instead of setError
+            // You might want to clear the input as well
+            setInput('');
+        }
+    }, [resetTrigger]);
 
     // Add this effect to update height on client only
     useEffect(() => {
