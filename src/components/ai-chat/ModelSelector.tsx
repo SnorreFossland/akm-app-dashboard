@@ -18,7 +18,7 @@ const AI_MODELS = [
     { id: 'gpt-4', name: 'GPT-4' },
     { id: 'gpt-3.5-turbo', name: 'GPT-3.5 Turbo' },
     { id: 'mistral-small-latest', name: 'Mistral Small Latest' },
-    // { id: 'mistral-large', name: 'Mistral Large' },
+    { id: 'mistral-large', name: 'Mistral Large' },
     // { id: 'claude-3-opus', name: 'Claude 3 Opus' },
     // { id: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
     // { id: 'gemini-pro', name: 'Gemini Pro' },
@@ -34,7 +34,7 @@ interface ModelSelectorProps {
 }
 
 export default function ModelSelector({ selectedModel, onModelChange }: ModelSelectorProps) {
-    const model = validModels.includes(selectedModel) ? selectedModel : 'deepseek-chat'; // Fallback to 'gpt-4'
+    const model = validModels.includes(selectedModel) ? selectedModel : 'mistral-small-latest'; // Fallback to 'gpt-4'
 
     return (
         <div className="flex items-center">

@@ -1,14 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '@/store';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import mermaid from 'mermaid';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
-import { useDispatch } from 'react-redux';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
-import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
+import MarkdownDocumentManager from '@/components/ai-chat/MarkdownDocumentManager';
 
 
 const AIChatPage = () => {
@@ -22,14 +23,18 @@ const AIChatPage = () => {
     const [selectedModel, setSelectedModel] = useState('dummy'); // Default model
     const [resetConversationOnModelChange, setResetConversationOnModelChange] = useState(false);
     const [lastResponse, setLastResponse] = useState<string>('');
+        const documents = useSelector((state: RootState) => state.markdown.documents);
 
     const [resetTrigger, setResetTrigger] = useState(0);
 
-    
+    const openLibraryButtonRef = useRef<HTMLButtonElement>(null);
+
+
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const dispatch = useDispatch();
+
 
     // Initialize mermaid when component mounts
     useEffect(() => {
@@ -63,6 +68,12 @@ const AIChatPage = () => {
     const handleSaveToRedux = () => {
         if (!docName.trim()) return;
 
+        console.log('Saving to Redux:', {
+            id: Date.now().toString(),
+            name: docName,
+            content: mdPreview
+        });
+
         dispatch(saveMarkdownDocument({
             id: Date.now().toString(),
             name: docName,
@@ -72,12 +83,15 @@ const AIChatPage = () => {
 
         // Show success notification
         alert('Document saved to library');
+
+        // Add this to check if documents are updated after dispatch
+        console.log('Documents after save:', documents);
     };
 
     const handleSelectFromLibrary = (content: string, name: string) => {
         setMdPreview(content);
         setDocName(name);
-        setIsLibraryOpen(false);
+        // setIsLibraryOpen(false);
     };
 
     const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
@@ -171,7 +185,7 @@ const AIChatPage = () => {
 
             {/* Middle Panel: AI Chat */}
             <div className="flex flex-col p-2 bg-card overflow-hidden h-full w-full">
-            {/* // <div
+                {/* // <div
             //     className={`flex flex-col p-2 bg-card overflow-hidden h-full ${showLeftPanel && showRightPanel>
             //             ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
             //             : showLeftPanel
@@ -216,7 +230,7 @@ const AIChatPage = () => {
                                     className="h-4 w-4 accent-blue-500"
                                 />
                                 <label htmlFor="resetConversation" className="text-gray-300">
-                                    Reset 
+                                    Reset
                                 </label>
                             </div>
                         </div>
@@ -278,54 +292,45 @@ const AIChatPage = () => {
                             <h2 className="text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
                                 Markdown Preview
                             </h2>
-                            <div className="w-[100px]"></div> {/* Empty div for balancing layout */}
+                            <div className="w-[100px]">
+                                <div className="markdown-preview-header">
+                                    <button
+                                        ref={openLibraryButtonRef}
+                                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                    >
+                                        <span>Open Library</span>
+                                    </button>
+                                </div>
+                            </div> {/* Empty div for balancing layout */}
                         </div>
+                        {/*  Markdown Document Manager */}
+                        <MarkdownDocumentManager
+                            docName={docName}
+                            setDocName={setDocName}
+                            markdownContent={mdPreview} // Change markdownContent to mdPreview
+                            onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
+                            openLibraryButtonRef={openLibraryButtonRef}
+                        />
 
-                        {/* New top bar for saving to Redux */}
-                        <div className="flex items-center justify-between bg-gray-700 p-2 rounded mb-2">
-                            <div className="flex items-center">
+                        <div className="flex items-center justify-end space-x-2">
+                            <div className="flex space-x-2 items-center">
                                 <input
                                     type="text"
-                                    placeholder="Document name"
-                                    className="text-sm bg-gray-800 text-white px-2 py-1 rounded mr-2 border border-gray-600"
-                                    value={docName}
-                                    onChange={(e) => setDocName(e.target.value)}
+                                    value={docName || mdPreview.split('\n')[0] || ''}
+                                    onChange={(e) =>
+                                        setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, ''))
+                                    }
+                                    placeholder="Document Name"
+                                    className="text-xs bg-gray-800 border border-gray-600 text-white px-2 py-1 rounded"
                                 />
-                            </div>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={() => setIsLibraryOpen(true)}
-                                    className="text-sm bg-green-600 hover:bg-green-500 text-white px-3 py-1 rounded flex items-center"
-                                >
-                                    <span>Open from Library</span>
-                                </button>
                                 <button
                                     onClick={handleSaveToRedux}
-                                    className="text-sm bg-blue-600 hover:bg-blue-500 text-white px-3 py-1 rounded flex items-center"
-                                    disabled={!docName.trim()}
+                                    className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                    disabled={!(docName || mdPreview.split('\n')[0]).trim()}
                                 >
-                                    <span>Save to Library</span>
+                                    <span>Save Current</span>
                                 </button>
                             </div>
-                        </div>
-                        {/* Library Modal */}
-                        {isLibraryOpen && (
-                            <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
-                                <div className="bg-gray-800 rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto">
-                                    <div className="flex justify-between items-center mb-4">
-                                        <h3 className="text-xl font-bold text-blue-400">Markdown Library</h3>
-                                        <button
-                                            onClick={() => setIsLibraryOpen(false)}
-                                            className="text-sm bg-red-600 hover:bg-red-500 text-white px-2 py-1 rounded"
-                                        >
-                                            Close
-                                        </button>
-                                    </div>
-                                    <MarkdownLibrary onSelect={handleSelectFromLibrary} />
-                                </div>
-                            </div>
-                        )}
-                        <div className="flex items-center justify-end space-x-2">
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(mdPreview);

@@ -165,25 +165,12 @@ export async function POST(request: Request) {
         body: JSON.stringify({
           model: model,
           messages: messages,
-          temperature: 0.7,
-          max_tokens: 1000
+          temperature: 0.7
         }),
         signal: controller.signal   // Use the same controller
       });
       clearTimeout(timeoutId);
 
-      if (response.status === 429) {
-        throw new Error('Rate limit exceeded. Please try again later.');
-      }
-      if (response.status === 500) {
-        throw new Error('Internal server error. Please try again later.');
-      }
-      if (response.status === 503) {
-        throw new Error('Service unavailable. Please try again later.');
-      }
-      if (response.status === 504) {
-        throw new Error('Gateway timeout. Please try again later.');
-      }
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(`Deepseek API error: ${JSON.stringify(errorData)}`);

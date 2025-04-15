@@ -2,12 +2,14 @@ import React, { useState, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { deleteMarkdownDocument } from '@/redux/features/markdownSlice';
+import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 
 interface MarkdownLibraryProps {
   onSelect: (content: string, name: string) => void;
+  hideExportLibraryButton?: boolean;
 }
-
-const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
+const MarkdownLibrary = ({ onSelect, hideExportLibraryButton }: MarkdownLibraryProps) => {
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const dispatch = useDispatch();
   const documents = useSelector((state: RootState) => state.markdown.documents);
   const [searchTerm, setSearchTerm] = useState('');
@@ -25,6 +27,8 @@ const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
     }
   };
 
+
+
   // Function to export document to local file
   const handleExportToFile = (content: string, filename: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -40,11 +44,16 @@ const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
   };
 
   // Function to import document from local file
-  const handleImportFile = () => {
+  const handleImportFile = (e: React.MouseEvent) => {
+    e.preventDefault(); // Try preventing default behavior
+    e.stopPropagation(); // Ensure event doesn't propagate
+
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
   };
+
+
 
   // Process the file once selected
   const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -53,14 +62,44 @@ const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      const content = event.target?.result as string;
-      // Extract filename without extension for the document name
-      const fileName = file.name.replace(/\.[^/.]+$/, "");
-      onSelect(content, fileName);
+      try {
+        const content = event.target?.result as string;
+        // Extract filename without extension for the document name
+        const fileName = file.name.replace(/\.[^/.]+$/, "");
+
+        // Create a unique ID with timestamp + random string to avoid collisions
+        const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+
+        // Save to Redux store
+        dispatch(saveMarkdownDocument({
+          id: uniqueId,
+          name: fileName,
+          content: content,
+          createdAt: new Date().toISOString()
+        }));
+
+        // Ensure the library stays open
+        setIsLibraryOpen(true);
+        
+        // Set the search term to empty to make sure all documents are visible
+        setSearchTerm('');
+
+        // Also select it for editing (optional - remove if you just want to show in the list)
+        onSelect(content, fileName);
+
+        console.log(`File "${fileName}" successfully imported`);
+      } catch (error) {
+        console.error("Error importing file:", error);
+      }
     };
+
+    reader.onerror = () => {
+      console.error("Error reading file");
+    };
+
     reader.readAsText(file);
 
-    // Reset the input so the same file can be selected again
+    // Reset the input
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -68,28 +107,23 @@ const MarkdownLibrary = ({ onSelect }: MarkdownLibraryProps) => {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="sticky top-0 bg-gray-800 p-2 z-10">
-        <div className="flex gap-2 mb-2">
-          <input
-            type="text"
-            placeholder="Search documents..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="flex-1 p-2 bg-gray-700 text-white rounded border border-gray-600"
-          />
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileSelection}
+        accept=".md,.txt,.markdown"
+        style={{ display: 'none' }}
+      />
+
+      <div className=" bg-gray-700  rounded">
+        <div className="flex items-center justify-between gap-2 p-1">
+          <div className="ps-2 text-xs">Import from local file </div>
           <button
             onClick={handleImportFile}
             className="bg-blue-700 hover:bg-blue-600 text-white px-3 py-2 rounded whitespace-nowrap"
           >
             Import File
           </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileSelection}
-            accept=".md,.markdown,.txt"
-            className="hidden"
-          />
         </div>
       </div>
 
