@@ -31,7 +31,7 @@ const SimpleDivider: React.FC<SimpleDividerProps> = ({ onResize, currentSize }) 
         const newSize = startSizeRef.current + delta;
 
         // Update the size
-        onResize(Math.max(100, Math.min(800, newSize)));
+        onResize(Math.max(100, Math.min(1200, newSize)));
         console.log('Dragging to', e.clientY, 'new size:', newSize);
     };
 

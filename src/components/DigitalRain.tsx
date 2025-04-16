@@ -12,8 +12,8 @@ interface DigitalRainProps {
 const DigitalRain = ({ 
   onInteraction, 
   containerStyle = {},
-  speed = 1, // Default speed (lower = slower)
-  backgroundColor = 'rgba(0, 0, 0, 0.05)' // Default background
+  speed = 5, // Default speed (lower = slower)
+  backgroundColor = 'rgba(3, 3, 3, 0.05)' // Default background
 }: DigitalRainProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -38,7 +38,11 @@ const DigitalRain = ({
 
     // Matrix digital rain
     const characters = 'アイウエオカキクケコサシスセソタチツテトナニヌネハヒフヘホマミムメモヤユヨラリルレロワヲン0123456789';
-    const fontSize = 16;
+    // const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ012356789';
+    // const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+    // const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+[]{}|;:,.<>?';
+
+    const fontSize = 10;
     const columns = Math.floor(canvas.width / fontSize);
     
     const drops: number[] = Array(columns).fill(1);
@@ -52,7 +56,7 @@ const DigitalRain = ({
       ctx.fillStyle = backgroundColor;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
       
-      ctx.fillStyle = '#0F0'; // Green text
+      ctx.fillStyle = '#0A0'; // Green text
       ctx.font = `${fontSize}px monospace`;
       
       frameCount++;
@@ -69,7 +73,7 @@ const DigitalRain = ({
           if (drops[i] * fontSize > canvas.height && Math.random() > 0.975) {
             drops[i] = 0;
           }
-          drops[i] += 0.5 * speed; // Slower increment
+          drops[i] += 0.3 * speed; // Slower increment
         }
       }
     };

@@ -3,7 +3,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import MarkdownLibrary from './MarkdownLibrary';
-
 interface MarkdownDocumentManagerProps {
     docName: string;
     setDocName: (name: string) => void;
@@ -11,7 +10,6 @@ interface MarkdownDocumentManagerProps {
     onDocumentSelect: (content: string, name: string) => void;
     openLibraryButtonRef?: React.RefObject<HTMLButtonElement>; // Make it optional with ?
 }
-
 
 const MarkdownDocumentManager = ({
     docName,
@@ -25,7 +23,7 @@ const MarkdownDocumentManager = ({
     const dispatch = useDispatch();
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-        // Expose this function to parent components
+    // Expose this function to parent components
     const openLibrary = () => setIsLibraryOpen(true);
     
     // Add effect to sync ref with the openLibrary function
@@ -34,7 +32,6 @@ const MarkdownDocumentManager = ({
             openLibraryButtonRef.current.onclick = () => openLibrary();
         }
     }, [openLibraryButtonRef]);
-
 
     const handleExportLibrary = () => {
         // Create a JSON object with all documents

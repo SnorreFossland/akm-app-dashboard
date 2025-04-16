@@ -1,5 +1,8 @@
 'use client';
 import { useRef, useEffect, useState } from 'react';
+import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
+import TextareaAutosize from 'react-textarea-autosize';
+
 
 interface TemplatesPanelProps {
     onApplyTemplate: (content: string) => void;
@@ -17,187 +20,18 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
     const [selectedCategory, setSelectedCategory] = useState<string>('All'); // State for selected category
     const [isRefining, setIsRefining] = useState(false); // Loading state for refining
     const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
+    // Add state to track placeholders
+    const [placeholders, setPlaceholders] = useState<{ start: number, end: number, text: string }[]>([]);
+    const [importedFile, setImportedFile] = useState<string>('');
+    const [importedFileName, setImportedFileName] = useState<string>('');
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-    const PROMPT_TEMPLATES = [
-        { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n[Publish a AI chat with Prompt templates and possibility to enhance previous ideas]" },
-        {
-            title: "Domain/Topic Scoping ",
-            category: "Planning",
-            usage: "Business",
-            content:`[Insert your definition of the domain/topic here]
-Help me define and scope the following domain/topic above.
-`
-        },
-        { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n[Describe topic here]" },
-        {
-            title: "Project Plan",
-            category: "Planning",
-            usage: "Business",
-            content:
-                `Make a project plan for the following project:
-[Describe project here]
-Include the following sections:
-1. Project Overview
-2. Scope Domain
-3. Key Stakeholders
-4. Objectives
-5. Timeline (phases and milestones as Mermaid diagram)
-6. Resources
-7. Risks and Mitigation Strategies
-8. Success Criteria
-9. Budget
-10. Communication Plan
-11. Evaluation and Reporting
-12. Conclusion
-13. Appendix
-14. References
-15. Glossary of Terms
-16. Acknowledgments
-17. Additional Notes
-
-Make the Mermaid diagram in the following format:
-
-## Example:
-
-\`\`\`mermaid
-gantt
-    title Product Plan
-    dateFormat  YYYY-MM-DD
-    section Phase 1
-    Task 1 :a1, 2025-01-01, 30d
-    Task 2 :after a1, 20d
-    section Phase 2
-    Task 3 :2025-11-01, 12d
-\`\`\`
-
-        `},
-        {
-            title: "Product Roadmap",
-            category: "Planning",
-            usage: "Business",
-            content:
-                `Create a product roadmap for the following product:
-[Describe product here]
-Include the following sections:
-1. Product Vision
-2. Goals and Objectives
-3. Target Audience
-4. Key Features
-5. Timeline (phases and milestones as Mermaid diagram)
-6. Milestones
-7. Dependencies
-8. Risks and Mitigation Strategies
-9. Success Metrics
-10. Communication Plan
-11. Evaluation and Reporting
-12. Conclusion
-13. Appendix
-14. References
-15. Glossary of Terms
-16. Acknowledgments
-17. Additional Notes
-
-
-Make the Mermaid diagram in the following format:
-## Example:
-
-\`\`\`mermaid
-gantt
-    title Product Roadmap
-    dateFormat  YYYY-MM-DD
-    section Phase 1
-    Task 1 :a1, 2025-01-01, 30d
-    Task 2 :after a1, 20d
-    section Phase 2
-    Task 3 :2025-11-01, 12d
-\`\`\`
-Make sur to include the backticks in the output.
-            ` },
-        { category: "Learning", title: "Learning Plan", usage: "Personal", content: "Create a learning plan for the following topic:\n\n[Describe topic here]\n\n Add a mermaid gantt diagram." },
-        { category: "Feedback", title: "Feedback Request", usage: "Business", content: "Request feedback on the following topic:\n\n[Describe topic here]" },
-        { category: "Task Management", title: "Task List", usage: "Personal", content: "Create a task list for the following project:\n\n[Describe project here]" },
-        { category: "Meetings", title: "Meeting Agenda", usage: "Business", content: "Create an agenda for the following meeting:\n\n[Describe meeting here]" },
-        { category: "Meetings", title: "Meeting Summary", usage: "Business", content: "Summarize the following meeting:\n\n[Describe meeting here]" },
-        { category: "Meetings", title: "Meeting Notes", usage: "Business", content: "Summarize the following meeting notes into key points:\n\n[Paste meeting notes here]" },
-        { category: "Content Creation", title: "Content Outline", usage: "Business", content: "Create an outline for the following content:\n\n[Describe content here]" },
-        { category: "Content Creation", title: "Presentation Slides", usage: "Business", content: "Create a slide deck for the following topic:\n\n[Describe topic here]" },
-        { category: "Content Creation", title: "Social Media Post", usage: "Personal", content: "Create a social media post for the following topic:\n\n[Describe topic here]" },
-        { category: "Content Creation", title: "Blog Post", usage: "Personal", content: "Write a blog post on the following topic:\n\n[Describe topic here]" },
-        { category: "Marketing", title: "Marketing Strategy", usage: "Business", content: "Outline a marketing strategy for the following product:\n\n[Describe product here]" },
-        { category: "Marketing", title: "Press Release", usage: "Business", content: "Draft a press release for the following event:\n\n[Describe event here]" },
-        { category: "User Research", title: "User Persona", usage: "Business", content: "Create a user persona for the following target audience:\n\n[Describe target audience here]" },
-        { category: "User Research", title: "User Journey Map", usage: "Business", content: "Create a user journey map for the following user experience:\n\n[Describe user experience here]" },
-        { category: "Analysis", title: "SWOT Analysis", usage: "Business", content: "Conduct a SWOT analysis for the following business:\n\n[Describe business here]" },
-        { category: "Analysis", title: "Competitive Analysis", usage: "Business", content: "Conduct a competitive analysis for the following market:\n\n[Describe market here]" },
-        { category: "Feedback", title: "Customer Feedback", usage: "Business", content: "Summarize the following customer feedback:\n\n[Paste customer feedback here]" },
-        { category: "Communication", title: "Email Response", usage: "Business", content: "Draft a response to the following email:\n\n[Paste email here]" },
-        { category: "Communication", title: "Email Draft", usage: "Business", content: "Draft a professional email for the following purpose:\n\n[Describe purpose here]" },
-        { category: "Summarization", title: "Research Summary", usage: "Business", content: "Summarize the following research findings:\n\n[Paste research findings here]" },
-        { category: "Summarization", title: "Report Summary", usage: "Business", content: "Summarize the following report into a concise overview:\n\n[Paste report content here]" },
-        { category: "Documentation", title: "Technical Documentation", usage: "Business", content: "Create technical documentation for the following software:\n\n[Describe software here]" },
-        { category: "Documentation", title: "User Guide", usage: "Business", content: "Create a user guide for the following product:\n\n[Describe product here]" },
-        { category: "Documentation", title: "FAQ Section", usage: "Business", content: "Create a FAQ section for the following product:\n\n[Describe product here]" },
-        { category: "Case Studies", title: "Case Study", usage: "Business", content: "Create a case study for the following project:\n\n[Describe project here]" },
-        { category: "Proposals", title: "Business Proposal", usage: "Business", content: "Draft a business proposal for the following project:\n\n[Describe project here]" },
-        { category: "Proposals", title: "Grant Application", usage: "Business", content: "Draft a grant application for the following project:\n\n[Describe project here]" },
-        { category: "Proposals", title: "Proposal Outline", usage: "Business", content: "Create an outline for a proposal on the following topic:\n\n[Describe topic here]" },
-        { category: "Research", title: "Research Paper", usage: "Business", content: "Outline a research paper on the following topic:\n\n[Describe topic here]" },
-        { category: "Code Review", title: "Code Review", usage: "Business", content: "Please review the following code and provide feedback:\n\n[Paste code here]" },
-        { category: "Custom", title: "Custom", usage: "Personal", content: "" },
-        {
-            category: "Planning",
-            title: "Domain/Topic Scoping",
-            usage: "Business",
-            content:
-                `
-Help me define and scope the following domain/topic:
-Domain Identification:
-	•	Domain Name: [Insert concise and specific name]
-	•	Domain Description: [Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
-Domain scope: 
-	•	In-Scope: [Explicitly list the elements, activities, or areas included within the domain.]
-	•	Out-of-Scope: [Clearly specify what aspects are explicitly excluded from the domain.]
-Key Domain Concepts and Terms
-	•	Core Concepts: [List critical concepts fundamental to understanding the domain.]
-	•	Relevant Keywords: [Provide key terminologies, acronyms, and types relevant to the domain.]
-Primary objectives: [Clearly define the main goals or outcomes this domain aims to achieve]
-Key stakeholders:
-Identify and categorize stakeholders by their roles or involvement:
-	•	Primary Stakeholders: [Directly involved individuals or groups]
-	•	Secondary Stakeholders: [Indirectly impacted individuals or groups]
-Current limitations and Boundaries:
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-    •	Constraint/Boundary 1
-	•	Constraint/Boundary 2
-Success criteria: 
-Define clear, measurable, and achievable indicators of success:
-	•	[Success Criterion 1] (Measurable)
-	•	[Success Criterion 2] (Measurable)
-`
-        },
-        {
-            title: "Domain/Topic Scoping simple",
-            category: "Planning",
-            usage: "Business",
-            content:
-                `[Insert your definition of the domain/topic here]
-Help me define and scope the following domain/topic above.
-Domain Identification:[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]
-Domain scope:[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]
-Key Domain Concepts and Terms
-Primary objectives
-Identify and categorize stakeholders by their roles or involvement
-Current limitations and Boundaries
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-Success criteria 
-Define clear, measurable, and achievable indicators of success
-`
-        },
-    ];
     const isMounted = useRef(true);
 
-    const CATEGORIES = ["All", "Planning", "Brainstorming", "Summarization", "Learning", "Feedback", "Task Management", "Meetings", "Content Creation", "Marketing", "User Research", "Analysis", "Documentation", "Case Studies", "Proposals", "Research", "Communication", "Code Review", "Custom"];
-
+    // Generate categories list dynamically from templates
+    const CATEGORIES = ["All", ...Array.from(
+        new Set(PROMPT_TEMPLATES.map(template => template.category))
+    ).sort()];
     const filteredTemplates = selectedCategory === 'All'
         ? PROMPT_TEMPLATES
         : PROMPT_TEMPLATES.filter(template => template.category === selectedCategory);
@@ -209,29 +43,175 @@ Define clear, measurable, and achievable indicators of success
             isMounted.current = false;
         };
     }, []);
+    // Find all placeholders when content changes, but exclude those within mermaid diagrams
+    useEffect(() => {
+        if (!editableContent) return;
+
+        // First identify all mermaid diagram blocks
+        const mermaidBlockRegex = /```mermaid[\s\S]*?```/g;
+        const mermaidBlocks: { start: number, end: number }[] = [];
+        let mermaidMatch;
+
+        while ((mermaidMatch = mermaidBlockRegex.exec(editableContent)) !== null) {
+            mermaidBlocks.push({
+                start: mermaidMatch.index,
+                end: mermaidMatch.index + mermaidMatch[0].length
+            });
+        }
+
+        // Then find placeholders but exclude those in mermaid blocks
+        const regex = /\[(.*?)\]/g;
+        const newPlaceholders = [];
+        let match: RegExpExecArray | null;
+
+        while ((match = regex.exec(editableContent)) !== null) {
+            // Check if this placeholder is inside any mermaid block
+            const isInMermaidBlock = mermaidBlocks.some(
+                block => match!.index >= block.start && match!.index < block.end
+            );
+
+            // Only add placeholders that are not in mermaid blocks
+            if (!isInMermaidBlock) {
+                newPlaceholders.push({
+                    start: match.index,
+                    end: match.index + match[0].length,
+                    text: match[0]
+                });
+            }
+        }
+
+        setPlaceholders(newPlaceholders);
+    }, [editableContent]);
+
+    // Add function to handle file import
+    const handleFileImport = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        // Check file size (limit to 1MB)
+        if (file.size > 1024 * 1024) {
+            alert('File size must be less than 1MB');
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            const content = event.target?.result as string;
+            setImportedFile(content);
+            setImportedFileName(file.name);
+        };
+        reader.readAsText(file);
+    };
+
+    // Function to remove imported file
+    const removeImportedFile = () => {
+        setImportedFile('');
+        setImportedFileName('');
+    };
+    // Function to select a placeholder
+    const selectPlaceholder = (index: number) => {
+        if (!textareaRef.current || index >= placeholders.length) return;
+
+        const placeholder = placeholders[index];
+        const textarea = textareaRef.current;
+
+        // Focus and select the placeholder text
+        textarea.focus();
+        textarea.setSelectionRange(placeholder.start, placeholder.end);
+
+        // Calculate the position of the selection
+        const text = textarea.value;
+        const lines = text.substr(0, placeholder.start).split('\n');
+        const lineHeight = 20; // Approximate line height in pixels
+        const linePosition = lines.length * lineHeight;
+
+        // Set scroll position to ensure placeholder is visible in the middle of the textarea
+        const textareaHeight = textarea.clientHeight;
+        textarea.scrollTop = Math.max(0, linePosition - (textareaHeight / 2));
+    };
+    // Function to handle tab key to jump between placeholders
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === 'Tab' && placeholders.length > 0) {
+            e.preventDefault();
+
+            const textarea = textareaRef.current;
+            if (!textarea) return;
+
+            const cursorPosition = textarea.selectionStart;
+
+            // Find the current or next placeholder
+            let nextIndex = 0;
+            for (let i = 0; i < placeholders.length; i++) {
+                if (cursorPosition < placeholders[i].start) {
+                    nextIndex = i;
+                    break;
+                }
+                if (i === placeholders.length - 1) {
+                    nextIndex = 0; // Loop back to first placeholder
+                } else {
+                    nextIndex = i + 1;
+                }
+            }
+
+            selectPlaceholder(nextIndex);
+        }
+    };
 
     const handleTemplateSelect = (index: number) => {
         setSelectedTemplate(index);
+
         if (index === PROMPT_TEMPLATES.length - 1) {
             setEditableContent(customTemplate);
         } else {
             setEditableContent(`${filteredTemplates[index].content}\n##**${filteredTemplates[index].title}**:\n`);
+
+            // Find and select first placeholder on next tick
+            setTimeout(() => {
+                if (placeholders.length > 0) {
+                    selectPlaceholder(0);
+                }
+            }, 50);
         }
     };
 
     const handleInsertTemplate = () => {
         console.log('Inserting content:', editableContent);
-        const trimmedContent = `
-You are an expert consultant specializing in the following domain. 
-Leverage your extensive knowledge to help comprehensively define and scope the domain clearly and precisely.
+        let finalContent = `You are an expert consultant specializing in the following domain. 
+Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.
 If placeholders are present, please replace them with the most relevant information.
 
-${editableContent.trim()} 
+#${editableContent.trim()} 
 
-Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate
-Do not wrap your entire response in triple backticks.
-    `;
-        onApplyTemplate(trimmedContent);
+Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate.
+
+For Mermaid diagrams, use today's date (${new Date().toISOString().split('T')[0]}) as the start date and follow this exact format:
+
+\`\`\`mermaid
+gantt
+    title Project Timeline
+    dateFormat YYYY-MM-DD
+    axisFormat %Y-%m-%d
+    Start : milestone, ${new Date().toISOString().split('T')[0]}, 1d
+    section Phase 1
+    Task 1 : 10d
+    Task 2 : 20d
+    Task 3 : 20d
+\`\`\`
+
+IMPORTANT: In Mermaid Gantt charts, do not use colons in task names. The only colon should be between the task and its date/dependency.
+
+If you include code snippets, wrap them in triple backticks and specify the language, e.g., \`\`\`javascript.
+For any diagrams, ensure you use proper markdown syntax with three backticks (not two).
+Also ensure to use the correct syntax for the diagram type you are using (e.g., mermaid, flowchart, etc.).`
+
+        //Add imported file context if it exists
+        if (importedFile) {
+            finalContent += `\n\n## CONTEXT FROM FILE: ${importedFileName}\n\`\`\`\n${importedFile}\n\`\`\`\n\nUse the above file content as additional context for your response.`;
+        }
+
+        finalContent += "\n\nDo not wrap your entire response in triple backticks.";
+
+        onApplyTemplate(finalContent);
     };
 
     const handleRefinePrompt = async () => {
@@ -325,10 +305,10 @@ Now, refine the following user input into an exceptional prompt:
                     ))}
                 </select>
             </div>
-            <div className="flex h-80 overflow-y-auto" id="templates-container">
+            <div className="flex h-[40vh] min-h-[10px] max-h-[120vh] overflow-y-auto" id="templates-container">
                 {/* Business Templates Column */}
-                <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground ">
-                    <h3 className="text-sm font-semibold">Business</h3>
+                <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground">
+                    <h3 className="text-sm font-semibold text-center">Business</h3>
                     <div className="flex flex-col gap-2">
                         {filteredTemplates
                             .filter(template => template.usage === "Business")
@@ -338,9 +318,9 @@ Now, refine the following user input into an exceptional prompt:
                                     <button
                                         key={actualIndex}
                                         onClick={() => handleTemplateSelect(actualIndex)}
-                                        className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex 
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-700 text-gray-100'
+                                        className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-700 text-gray-100'
                                             }`}
                                     >
                                         {template.title}
@@ -352,7 +332,7 @@ Now, refine the following user input into an exceptional prompt:
 
                 {/* Personal Templates Column */}
                 <div className="w-1/2 pl-2 bg-secondary text-secondary-foreground ">
-                    <h3 className="text-sm font-semibold mb-2">Personal</h3>
+                    <h3 className="text-sm font-semibold text-center">Personal</h3>
                     <div className="flex flex-col gap-2">
                         {filteredTemplates
                             .filter(template => template.usage === "Personal")
@@ -363,8 +343,8 @@ Now, refine the following user input into an exceptional prompt:
                                         key={actualIndex}
                                         onClick={() => handleTemplateSelect(actualIndex)}
                                         className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
-                                                ? 'bg-blue-600 text-white'
-                                                : 'bg-gray-700 text-gray-100'
+                                            ? 'bg-blue-600 text-white'
+                                            : 'bg-gray-700 text-gray-100'
                                             }`}
                                     >
                                         {template.title}
@@ -376,7 +356,7 @@ Now, refine the following user input into an exceptional prompt:
             </div>
             {/* Horizontal Draggable Bar */}
             <div
-                className="h-2 bg-gray-700 cursor-row-resize relative my-2"
+                className="h-2 bg-gray-700 cursor-row-resize relative"
                 onMouseDown={(e) => {
                     const startY = e.clientY;
                     const startHeight = document.querySelector('.overflow-y-auto')?.clientHeight || 0;
@@ -399,26 +379,77 @@ Now, refine the following user input into an exceptional prompt:
                     document.addEventListener('mouseup', handleMouseUp);
                 }}
             >
-                <div className="absolute left-1/2 -translate-x-1/2 w-12 h-1 bg-gray-500"></div>
+                <div className="absolute left-1/2 -translate-x-1/2 w-12 h-2 bg-gray-500"></div>
             </div>
             {/* Custom Template Section */}
 
-            <div className="flex-1 overflow-y-auto pt-4 border-t border-gray-700">
-                <h3 className="text-md font-semibold mb-2 bg-secondary text-secondary-foreground">
+            <div className="flex-1">
+                <h3 className="text-md font-semibold ml-1 bg-secondary text-secondary-foreground">
                     {selectedTemplate === null
                         ? 'Select a template above'
                         : selectedTemplate === PROMPT_TEMPLATES.length - 1
                             ? 'Custom Template'
                             : 'Prompt for: ' + filteredTemplates[selectedTemplate]?.title}
                 </h3>
-                <textarea
+                {/* Add placeholder jump buttons */}
+                {placeholders.length > 0 && (
+                    <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                        <span className="text-sm text-gray-400">Jump to ... </span>
+                        {placeholders.map((placeholder, idx) => (
+                            <button
+                                key={idx}
+                                onClick={() => selectPlaceholder(idx)}
+                                className="px-2 py-1 bg-blue-700 text-xs rounded-md hover:bg-blue-600"
+                            >
+                                {placeholder.text.length > 100
+                                    ? `${placeholder.text.substring(0, 99)}...`
+                                    : placeholder.text}
+                            </button>
+                        ))}
+                    </div>
+                )}
+                <TextareaAutosize
+                    ref={textareaRef}
                     value={editableContent}
                     onChange={(e) => setEditableContent(e.target.value)}
-                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 overflow-y-auto bg-popover text-secondary-foreground"
-                    style={{ height: 'calc(100% - 80px)', minHeight: '100px', transition: 'height 0.05s ease' }}
-                    placeholder="Edit the content here before inserting..."
+                    onKeyDown={handleKeyDown}
+                    minRows={7}
+                    maxRows={20}
+                    className="w-full p-2 border border-gray-600 rounded-md bg-gray-800 text-gray-100 bg-popover text-secondary-foreground"
+                    placeholder="You can edit the content here before inserting..."
                     id="editable-content-textarea"
                 />
+
+                {/* File Import Section */}
+                <div className="mt-3 mb-3 p-2 border border-gray-600 rounded-md bg-gray-800">
+                    <h4 className="text-sm font-medium text-gray-300 mb-2">Import Context File</h4>
+                    <div className="flex flex-col gap-2">
+                        {importedFile ? (
+                            <div className="flex items-center justify-between">
+                                <span className="text-sm text-gray-300 truncate">
+                                    {importedFileName} ({(importedFile.length / 1024).toFixed(1)} KB)
+                                </span>
+                                <button
+                                    onClick={removeImportedFile}
+                                    className="text-red-400 hover:text-red-300 text-sm"
+                                >
+                                    Remove
+                                </button>
+                            </div>
+                        ) : (
+                            <label className="flex items-center justify-center px-4 py-2 bg-gray-700 text-gray-300 rounded-md hover:bg-gray-600 cursor-pointer">
+                                <span>Select a file</span>
+                                <input
+                                    type="file"
+                                    className="hidden"
+                                    onChange={handleFileImport}
+                                    accept=".txt,.md,.json,.csv,.js,.jsx,.ts,.tsx,.html,.css"
+                                />
+                            </label>
+                        )}
+                    </div>
+                </div>
+
                 <div className="flex gap-4 mx-2">
                     <button
                         onClick={handleRefinePrompt}

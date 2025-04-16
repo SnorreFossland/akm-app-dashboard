@@ -20,10 +20,10 @@ const AIChatPage = () => {
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
 
-    const [selectedModel, setSelectedModel] = useState('dummy'); // Default model
+    const [selectedModel, setSelectedModel] = useState('mistral-small-latest'); // Default model
     const [resetConversationOnModelChange, setResetConversationOnModelChange] = useState(false);
     const [lastResponse, setLastResponse] = useState<string>('');
-        const documents = useSelector((state: RootState) => state.markdown.documents);
+    const documents = useSelector((state: RootState) => state.markdown.documents);
 
     const [resetTrigger, setResetTrigger] = useState(0);
 
@@ -56,7 +56,13 @@ const AIChatPage = () => {
         });
         setShowRightPanel(false);
     }, []);
-
+    // Add this useEffect to adjust right panel width when left panel visibility changes
+    useEffect(() => {
+        if (!showLeftPanel) {
+            // When left panel closes, make right panel wider
+            setRightPanelWidth(Math.min(800, window.innerWidth / 2));
+        }
+    }, [showLeftPanel]);
     useEffect(() => {
         if (mdPreview && mdPreview.includes('mermaid') && !isEditing) {
             setTimeout(() => {
@@ -64,6 +70,18 @@ const AIChatPage = () => {
             }, 0);
         }
     }, [mdPreview, isEditing]); // Add 'isEditing' to the dependency array
+
+    useEffect(() => {
+        // Only update the document name if it's currently empty and we have markdown content
+        if (!docName && mdPreview) {
+            const firstLine = mdPreview.split('\n')[0] || '';
+            // Get the first line and clean it up
+            const cleanName = firstLine.replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_').trim();
+            if (cleanName) {
+                setDocName(cleanName);
+            }
+        }
+    }, [mdPreview, docName]);
 
     const handleSaveToRedux = () => {
         if (!docName.trim()) return;
@@ -104,10 +122,10 @@ const AIChatPage = () => {
 
             if (panel === 'left') {
                 // setShowLeftPanel(!showLeftPanel);
-                setLeftPanelWidth(Math.max(10, startLeftWidth + deltaX)); // Minimum width of 200px
+                setLeftPanelWidth(Math.max(80, startLeftWidth + deltaX)); // Minimum width of 200px
             } else if (panel === 'right') {
                 // setShowRightPanel(!showRightPanel);
-                setRightPanelWidth(Math.max(10, startRightWidth - deltaX)); // Reverse logic for right panel
+                setRightPanelWidth(Math.max(80, startRightWidth - deltaX)); // Reverse logic for right panel
             }
         };
 
@@ -150,7 +168,7 @@ const AIChatPage = () => {
                     className="flex-shrink-0 px-2"
                     style={{
                         width: showRightPanel ? `${leftPanelWidth}px` : `${leftPanelWidth + 200}px`,
-                        minWidth: '200px'
+                        minWidth: '80px'
                     }}
                 >
                     <div className="flex justify-between items-center m-2 ms-2">
@@ -184,17 +202,8 @@ const AIChatPage = () => {
             </div>
 
             {/* Middle Panel: AI Chat */}
-            <div className="flex flex-col p-2 bg-card overflow-hidden h-full w-full">
-                {/* // <div
-            //     className={`flex flex-col p-2 bg-card overflow-hidden h-full ${showLeftPanel && showRightPanel>
-            //             ? `w-[calc(100%-${leftPanelWidth + rightPanelWidth}px)]`
-            //             : showLeftPanel
-            //                 ? `w-[calc(100%-${leftPanelWidth}px)]`
-            //                 : showRightPanel
-            //                     ? `w-1/2` // Changed to 50% when only right panel is visible
-            //                     : 'w-full'
-            //         }`}
-            // > */}
+            <div className="flex flex-col p-2 bg-card overflow-hidden h-full w-full"
+                style={{ minWidth: '80px' }}>
                 <div className="flex justify-between items-center mb-4 bg-primary-foreground p-2 rounded-md gap-1">
                     {!showLeftPanel ?
                         <button
@@ -277,8 +286,8 @@ const AIChatPage = () => {
                     <div
                         className="flex-shrink-0 p-2"
                         style={{
-                            width: showLeftPanel ? `${rightPanelWidth}px` : '50%',
-                            minWidth: '200px'
+                            width: `${rightPanelWidth}px`,
+                            minWidth: '80px'
                         }}
                     >
                         <div className="flex items-center justify-between m-2">
@@ -316,9 +325,9 @@ const AIChatPage = () => {
                             <div className="flex space-x-2 items-center">
                                 <input
                                     type="text"
-                                    value={docName || mdPreview.split('\n')[0] || ''}
+                                    value={(docName || mdPreview.split('\n')[0] || '').replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')}
                                     onChange={(e) =>
-                                        setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, ''))
+                                        setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, '_'))
                                     }
                                     placeholder="Document Name"
                                     className="text-xs bg-gray-800 border border-gray-600 text-white px-2 py-1 rounded"
@@ -326,7 +335,7 @@ const AIChatPage = () => {
                                 <button
                                     onClick={handleSaveToRedux}
                                     className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                    disabled={!(docName || mdPreview.split('\n')[0]).trim()}
+                                    disabled={!((docName || mdPreview.split('\n')[0]).replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')).trim()}
                                 >
                                     <span>Save Current</span>
                                 </button>

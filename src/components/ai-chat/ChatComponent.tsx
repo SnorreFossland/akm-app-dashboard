@@ -53,7 +53,7 @@ export default function ChatComponent({
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [errorMsg, setErrorMsg] = useState(''); // <-- error state
 
-    const [topHeight, setTopHeight] = useState<number>(700); // 
+    const [topHeight, setTopHeight] = useState<number>(800); // 
 
     const [showDigitalRain, setShowDigitalRain] = useState(false);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -62,6 +62,7 @@ export default function ChatComponent({
     const isInitialRender = useRef(true);
     const previousModelRef = useRef<string | null>(null);
 
+    const containerRef = useRef<HTMLDivElement>(null);
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
@@ -71,8 +72,36 @@ export default function ChatComponent({
 
         inactivityTimerRef.current = setTimeout(() => {
             setShowDigitalRain(true);
-        }, 10000); // 10 seconds
+        }, 100000); // 10 seconds
     }, []);
+
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    // Add this effect to adjust topHeight based on input size
+    useEffect(() => {
+        if (!textareaRef.current || !containerRef.current) return;
+
+        // Get current heights
+        const containerHeight = containerRef.current.offsetHeight;
+        const textareaHeight = textareaRef.current.scrollHeight;
+
+        // Define minimum space to keep for messages (adjust as needed)
+        const minMessagesSpace = 700;
+
+        // If textarea is larger than default, adjust topHeight
+        if (textareaHeight > 150) { // 150px is approximately 7 rows of text
+            // Calculate new topHeight that gives textarea enough room
+            const idealMessagesHeight = containerHeight - textareaHeight - 60; // 160px for padding/margins
+
+            // Make sure we don't shrink messages area too much
+            const newTopHeight = Math.max(minMessagesSpace, idealMessagesHeight);
+
+            // Only update if significantly different to avoid loops
+            if (Math.abs(newTopHeight - topHeight) > 30) {
+                setTopHeight(newTopHeight);
+            }
+        }
+    }, [input, containerRef.current?.offsetHeight]);
 
     useEffect(() => {
         if (resetTrigger > 0) {
@@ -86,36 +115,32 @@ export default function ChatComponent({
         }
     }, [resetTrigger]);
 
-    // Add this effect to update height on client only
+    // 2. Add a useEffect to set the initial height based on container size
     useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const minInputHeight = 300;
-            const calculatedHeight = Math.min(
-                window.innerHeight - minInputHeight,
-                window.innerHeight * 0.6
-            );
-            setTopHeight(calculatedHeight);
+        // This runs once after mount to set initial size
+        if (containerRef.current) {
+            const containerHeight = containerRef.current.offsetHeight;
+            // Set initial top panel to fill most of the container (minus space for input)
+            const initialTopHeight = Math.floor(containerHeight * 0.7);
+            setTopHeight(initialTopHeight);
         }
-    }, []); // Empty dependency array - run once after mount
+    }, []); // Empty dependency array = runs once on mount
 
     useEffect(() => {
         const handleResize = () => {
-            const windowHeight = window.innerHeight;
-            // Always reserve space for input area (at least 300px)
-            const minInputHeight = 100;
-            const maxTopHeight = windowHeight - minInputHeight;
-
-            // Adjust topHeight if it doesn't leave enough space for input
+            const container = containerRef.current;
+            const containerHeight = container ? container.offsetHeight : window.innerHeight;
+            const minInputHeight = 160;
+            const maxTopHeight = containerHeight - minInputHeight;
+            console.log('108 Container Height:', containerHeight, 'Top Height:', topHeight, 'Max Top Height:', maxTopHeight);
             if (topHeight > maxTopHeight) {
                 setTopHeight(maxTopHeight);
             }
         };
-
-        // Call handler when component mounts and on window resize
         handleResize();
         window.addEventListener('resize', handleResize);
         return () => window.removeEventListener('resize', handleResize);
-    }, [topHeight]); // Keep topHeight in dependencies to ensure proper updates
+    }, [topHeight]);
 
     // Auto-scroll to top of last message when messages update
     useEffect(() => {
@@ -269,14 +294,8 @@ export default function ChatComponent({
     };
 
     return (
-        <div className="flex-1 overflow-auto mb-4 p-4 rounded-lg w-full bg-background" id="messages-container">
-            {/* Rest of your component remains unchanged */}
-            {errorMsg && (
-                <div className="p-2 mb-4 bg-gray-600 text-white rounded">
-                    {errorMsg}
-                </div>
-            )}
-            <div className="flex flex-col bg-background rounded-m overflow-hidden"
+        <div ref={containerRef} className="mb-4 p-4 rounded-lg w-full h-full bg-background">
+            <div className="flex flex-col bg-background rounded-m overflow-y-auto h-full"
                 style={{ height: `${topHeight}px` }}>
                 {messages.length < 1 ? (
                     <div className="bg-transparent overflow-auto relative h-full">
@@ -286,7 +305,7 @@ export default function ChatComponent({
                                 <div className="absolute inset-0 z-20">
                                     <DigitalRain
                                         onInteraction={() => setShowDigitalRain(false)}
-                                        speed={3}
+                                        speed={4}
                                         backgroundColor="rgba(10, 20, 10, 0.03)"
                                     />
                                 </div>
@@ -315,7 +334,7 @@ export default function ChatComponent({
                         }
                     </div>
                 ) : <>{messages.length} messages</>}
-                <div className="flex-1 overflow-auto mb-4 p-4 rounded-lg w-full bg-background">
+                <div className="flex-1 mb-4 p-4 rounded-lg w-full bg-background">
                     {messages.map((message, index) => (
                         <div key={index}
                             ref={index === messages.length - 1 ? messagesEndRef : undefined}
@@ -415,32 +434,28 @@ export default function ChatComponent({
             </div>
             <SimpleDivider
                 currentSize={topHeight}
-                onResize={setTopHeight}
+                onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             />
-            <div className="flex-1 bg-transparent rounded-md overflow-auto">
-                {/* <div className="p-4"> */}
-                <div className="relative flex-1 rounded-md overflow-auto h-full">
-                    {/* <div className="relative bottom-0 top-10 p-4 bg-blue-900 h-full"> */}
-                    <form onSubmit={handleSubmit} className="flex gap-2 p-4 bg-transparent h-full">
-                        <TextareaAutosize
-                            value={input || ''}
-                            onChange={(e) => setInput(e.target.value)}
-                            placeholder="Type a message..."
-                            className="flex-1 p-2 border border-gray-600 rounded-md bg-card text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 "
-                            minRows={10}
-                            maxRows={30}
-                            disabled={isLoading}
-                        />
-                        <button
-                            type="submit"
-                            className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
-                            disabled={isLoading || !input?.trim()}
-                        >
-                            Send
-                        </button>
-                    </form>
-                    {/* </div> */}
-                </div>
+            <div className="mb-4 p- rounded-lg w-full bg-background">
+                <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent h-auto">
+                    <TextareaAutosize
+                        ref={textareaRef}
+                        value={input || ''}
+                        onChange={(e) => setInput(e.target.value)}
+                        placeholder="Type a message..."
+                        className="flex-1 p-2 border border-gray-600 rounded-md text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minRows={7}  // Reduced from 7 to give more space initially
+                        maxRows={12}
+                        disabled={isLoading}
+                    />
+                    <button
+                        type="submit"
+                        className="bg-blue-600 text-gray-100 px-4 py-2 rounded-md hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
+                        disabled={isLoading || !input?.trim()}
+                    >
+                        Send
+                    </button>
+                </form>
             </div>
         </div>
     )
