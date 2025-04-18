@@ -26,7 +26,7 @@ const ConceptStep = ({ topicDescr, settopicDescr, isLoading, handleFirstStep, co
             <label htmlFor="topicDescr" className="text-white">Topic</label>
             <Textarea
                 id="topicDescr"
-                className="flex-grow p-1 rounded bg-gray-800"
+                className="flex-grow p-1 rounded bg-background"
                 value={topicDescr}
                 disabled={isLoading}
                 onChange={(e) => settopicDescr(e.target.value)}

@@ -9,9 +9,27 @@ export interface PromptTemplate {
 // Export the templates array
 export const PROMPT_TEMPLATES: PromptTemplate[] = [
     {
-        title: "Domain/Topic Scoping ",
-        category: "Domain Definition",
+        title: "Domain",
+        category: "Planning",
         usage: "Business",
+        content:
+            `**[Insert your definition of the domain/topic here]**
+Help me define and scope the following domain/topic above.
+Domain Identification:**[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]**
+Domain scope:**[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]**
+Key Domain Concepts and Terms
+Primary objectives
+Identify and categorize stakeholders by their roles or involvement
+Current limitations and Boundaries
+Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+Success criteria 
+Define clear, measurable, and achievable indicators of success
+`
+    },
+    {
+        title: "Domain/Topic",
+        category: "Domain Definition",
+        usage: "Business / Personal",
         content: `Help me define describe and scope the following domain/topic:
 **[Insert your definition of the domain/topic here]**
 `
@@ -128,7 +146,7 @@ Include the following sections:
         title: "Blog Post",
         category: "Content Creation",
         usage: "Personal",
-        content: "Write a blog post on the following topic:\n\n**[Describe topic here]**"
+        content: "Write a blog post about the topic in the #context: \n\n Include a title, introduction, body, and conclusion.\n\n"
     },
     {
         title: "Marketing Strategy",
@@ -257,7 +275,7 @@ Include the following sections:
         content: ""
     },
     {
-        title: "Domain/Topic Scoping",
+        title: "Domain/Topic",
         category: "Planning",
         usage: "Business",
         content:
@@ -286,23 +304,5 @@ Define clear, measurable, and achievable indicators of success:
 	•	**[Success Criterion 1]** (Measurable)
 	•	**[Success Criterion 2]** (Measurable)
 `
-    },
-    {
-        title: "Domain/Topic Scoping simple",
-        category: "Planning",
-        usage: "Business",
-        content:
-            `**[Insert your definition of the domain/topic here]**
-Help me define and scope the following domain/topic above.
-Domain Identification:**[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]**
-Domain scope:**[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]**
-Key Domain Concepts and Terms
-Primary objectives
-Identify and categorize stakeholders by their roles or involvement
-Current limitations and Boundaries
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-Success criteria 
-Define clear, measurable, and achievable indicators of success
-`
-    },
+    }
 ];

@@ -712,7 +712,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
       </header>
       <div>
         <div className="flex justify-between mx-2 px-4 text-white rounded">
-          <div className="flex justify-between align-center bg-gray-800">
+          <div className="flex justify-between align-center bg-background">
             {/* <h3 className="mx-2 font-bold text-gray-400 inline-block"> Current Project: </h3> <div className="inline-block"> {metis?.name}</div> */}
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> Current Model: </h3> <span className="inline-block"> {currentModel?.name}</span>
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> No. of Objects: </h3> <span className="inline-block"> {currentModel?.objects.length}</span>
@@ -795,7 +795,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                 <label htmlFor="topicDescr" className="text-white">Topic</label>
                 <Textarea
                   id="topicDescr"
-                  className="flex-grow p-1 rounded bg-gray-800"
+                  className="flex-grow p-1 rounded bg-background"
                   value={topicDescr}
                   disabled={isLoading}
                   onChange={(e) => settopicDescr(e.target.value)}
@@ -808,7 +808,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                     <label htmlFor="suggestedConcepts" className="text-white mt-2">Domain name </label>
                     <Input
                       id="suggestedConcepts"
-                      className="flex-grow p-1 rounded bg-gray-800"
+                      className="flex-grow p-1 rounded bg-background"
                       value={domainDesc}
                       disabled={isLoading}
                       onChange={(e) => setDomainDesc(e.target.value)}
@@ -817,7 +817,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                     <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts you want to include separated by comma</label>
                     <Input
                       id="suggestedConcepts"
-                      className="flex-grow p-1 rounded bg-gray-800"
+                      className="flex-grow p-1 rounded bg-background"
                       value={suggestedConcepts}
                       disabled={isLoading}
                       onChange={(e) => setSuggestedConcepts(e.target.value)}
@@ -910,7 +910,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                 <label htmlFor="roles" className="text-white mt-1">Roles</label>
                 <Input
                   id="roles"
-                  className="flex-grow p-1 rounded bg-gray-800"
+                  className="flex-grow p-1 rounded bg-background"
                   value={suggestedRoles}
                   disabled={isLoading}
                   onChange={(e) => setSuggestedRoles(e.target.value)}
@@ -919,7 +919,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                 <label htmlFor="tasks" className="text-white mt-2">Tasks</label>
                 <Input
                   id="tasks"
-                  className="flex-grow p-1 rounded bg-gray-800"
+                  className="flex-grow p-1 rounded bg-background"
                   value={suggestedTasks}
                   disabled={isLoading}
                   onChange={(e) => setSuggestedTasks(e.target.value)}
@@ -928,7 +928,7 @@ Make horizontal and vertical space between the objects to make the modelview loo
                 <label htmlFor="views" className="text-white mt-2">Views</label>
                 <Input
                   id="views"
-                  className="flex-grow p-1 rounded bg-gray-800"
+                  className="flex-grow p-1 rounded bg-background"
                   value={suggestedViews}
                   disabled={isLoading}
                   onChange={(e) => setSuggestedViews(e.target.value)}
@@ -1042,8 +1042,8 @@ Make horizontal and vertical space between the objects to make the modelview loo
                     <TabsTrigger value="suggested-concepts" className='pb-2 mt-3'>GPT Suggested Concepts</TabsTrigger>
                     <TabsTrigger value="model" className='pb-2 mt-3'>GPT Suggested Model</TabsTrigger>
                     <TabsTrigger value="modelview" className='pb-2 mt-3'>GPT Suggested Modelview</TabsTrigger>
-                    {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Objects & Relationships</TabsTrigger>
-                    <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-gray-800 text-white'}>Preview Diagram</TabsTrigger> */}
+                    {/* <TabsTrigger value="objects" className={activeTab === 'objects' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-background text-white'}>Objects & Relationships</TabsTrigger>
+                    <TabsTrigger value="diagram" className={activeTab === 'diagram' ? 'active-tab bg-red-500 text-black' : 'inactive-tab bg-background text-white'}>Preview Diagram</TabsTrigger> */}
                   </TabsList>
                   <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background">
                     <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="bg-gray-700 mx-1 px-1 mt-0">
@@ -1066,31 +1066,31 @@ Make horizontal and vertical space between the objects to make the modelview loo
                                     <h4 className="text-gray-400 font-bold">Model Suite:</h4>
                                     <div className="border border-gray-600 p-2">
                                       <h5 className="text-gray-400 font-bold">Name</h5>
-                                      <h4 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phData.metis.name}</h4>
+                                      <h4 className="font-bold whitespace-nowrap bg-background p-1">{data.phData.metis.name}</h4>
                                       <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                      <h4 className=" bg-gray-800 p-1">{data.phData.metis.description}</h4>
+                                      <h4 className=" bg-background p-1">{data.phData.metis.description}</h4>
                                     </div>
                                     <div className="col text-left">
                                       <h4 className="text-gray-400 font-bold">Project:</h4>
                                       <div className="border border-gray-600 p-2">
                                         <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.id}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.id}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.projectNumber}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.projectNumber}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.name}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.name}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.org}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.org}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.repo}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.repo}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.path}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.path}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.file}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.file}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.branch}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.branch}</h5>
                                         <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                        <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phFocus.focusProj.username}</h5>
+                                        <h5 className="font-bold whitespace-nowrap bg-background p-1">{data.phFocus.focusProj.username}</h5>
                                       </div>
                                     </div>
                                   </div>
@@ -1100,9 +1100,9 @@ Make horizontal and vertical space between the objects to make the modelview loo
                                       {data.phData.metis.models.map((model, index) => (
                                         <div key={model.id} className="flex flex-col">
                                           <h5 className="text-gray-400 font-bold">Name</h5>
-                                          <h4 className="bg-gray-800 p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
+                                          <h4 className="bg-background p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
                                           <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                          <h4 className="bg-gray-800 p-2">{model.description}</h4>
+                                          <h4 className="bg-background p-2">{model.description}</h4>
                                           <hr className="my-1" />
                                         </div>
                                       ))}

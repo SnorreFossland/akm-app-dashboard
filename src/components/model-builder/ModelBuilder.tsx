@@ -12,7 +12,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, D
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import { LoadingCircularProgress } from '@/components/loading';
-import { ObjectSchema} from "@/objectSchema";
+import { ObjectSchema } from "@/objectSchema";
 import { ObjectCard } from '@/components/object-card';
 import { ModelviewSchema } from "@/modelviewSchema";
 import { ModelviewCard } from '@/components/modelview-card';
@@ -41,9 +41,9 @@ const Modelbuilder = () => {
     const [showModel, setShowModel] = useState(true);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
     // const [metis, setMetis] = useState<Metis | null >(null);
-    const [model, setModel] = useState<{id?: string; name?: string; description?: string; objects?: any[]; relships?: any[]} | null>(null);
+    const [model, setModel] = useState<{ id?: string; name?: string; description?: string; objects?: any[]; relships?: any[] } | null>(null);
     const [curmod, setCurmod] = useState<Model | null>(null);
-    const [modelview, setModelview] = useState<{id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[]} | null>(null);
+    const [modelview, setModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
     // const [focusMod, setFocusMod] = useState<{ id: any; name: any; } | null>(null);
     const [existingInfoObjects, setExistingInfoObjects] = useState<{ objects: { id: any; name: any; description: any; typeName: any; }[], relships: { id: any; name: any; nameFrom: any; nameTo: any; }[] }>({ objects: [], relships: [] });
     const [existingConcepts, setExistingConcepts] = useState("");
@@ -74,7 +74,7 @@ const Modelbuilder = () => {
         const metamodRef = curMetamodel?.id;
         const curmod = data.phData.metis.models[0];
         console.log('75 Curmod:', curmod, model);
-        
+
         const newMod = {
             ...curmod,
             ...(model || {})
@@ -97,7 +97,7 @@ const Modelbuilder = () => {
             };
             dispatch(setNewModelview([completeModelview]));
         }
-        
+
         setDispatchDone(true);
     };
 
@@ -271,9 +271,9 @@ const Modelbuilder = () => {
     return (
         <div className="flex flex-col h-[calc(100vh-9rem)] border-solid rounded border-4 border-green-700 w-full bg-transparent">
             <CardTitle className="flex justify-start text-gray-400 text-xl">
-                 <span className="text-active-item me-auto px-2">Model Builder (IRTV)</span>
-                 <span className="mx-auto text-center">AI Powered Active Knowledge Modelling Canvas</span>
-             </CardTitle>
+                <span className="text-active-item me-auto px-2">Model Builder (IRTV)</span>
+                <span className="mx-auto text-center">AI Powered Active Knowledge Modelling Canvas</span>
+            </CardTitle>
             <div className="flex  h-[calc(100vh-5rem)] w-full">
                 <div className="border-solid rounded border-4 border-green-700 w-1/4">
                     <div className="m-1 mb-5">
@@ -413,9 +413,9 @@ const Modelbuilder = () => {
                                                                     <h4 className="text-gray-400 font-bold">Model Suite:</h4>
                                                                     <div className="border border-gray-600 p-2">
                                                                         <h5 className="text-gray-400 font-bold">Name</h5>
-                                                                        <h4 className="font-bold whitespace-nowrap bg-gray-800 p-1">{data.phData.metis.name}</h4>
+                                                                        <h4 className="font-bold whitespace-nowrap bg-background p-1">{data.phData.metis.name}</h4>
                                                                         <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                                                        <h4 className=" bg-gray-800 p-1">{data.phData.metis.description}</h4>
+                                                                        <h4 className=" bg-background p-1">{data.phData.metis.description}</h4>
                                                                     </div>
                                                                     <div className="col text-left">
                                                                         <h4 className="text-gray-400 font-bold">Project:</h4>
@@ -423,23 +423,23 @@ const Modelbuilder = () => {
                                                                             {data.phFocus && 'focusProj' in data.phFocus ? (
                                                                                 <>
                                                                                     <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.id}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.id}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.projectNumber}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.projectNumber}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.name}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.name}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.org}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.org}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.repo}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.repo}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.path}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.path}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.file}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.file}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.branch}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.branch}</h5>
                                                                                     <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-gray-800 p-1">{(data.phFocus as any).focusProj?.username}</h5>
+                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.username}</h5>
                                                                                 </>
                                                                             ) : (
                                                                                 <p className="text-gray-400">No project information available</p>
@@ -453,9 +453,9 @@ const Modelbuilder = () => {
                                                                         {data.phData.metis.models.map((model: any, index) => (
                                                                             <div key={model.id} className="flex flex-col">
                                                                                 <h5 className="text-gray-400 font-bold">Name</h5>
-                                                                                <h4 className="bg-gray-800 p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
+                                                                                <h4 className="bg-background p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
                                                                                 <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                                                                <h4 className="bg-gray-800 p-2">{model.description}</h4>
+                                                                                <h4 className="bg-background p-2">{model.description}</h4>
                                                                                 <hr className="my-1" />
                                                                             </div>
                                                                         ))}
@@ -471,23 +471,23 @@ const Modelbuilder = () => {
                                             <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                             </div>
                                             {curmod && (
-                                                 <ObjectCard model={{ 
-                                                     id: curmod.id, 
-                                                     name: curmod.name, 
-                                                     description: curmod.description, 
-                                                     objects: curmod.objects?.map(obj => ({
-                                                         id: obj.id || '',
-                                                         name: obj.name || '',
-                                                         description: obj.description || '',
-                                                         proposedType: obj.proposedType || '',
-                                                         typeRef: obj.typeRef || '',
-                                                         typeName: obj.typeName || '',
-                                                         category: obj.category || ''
-                                                     })) || [],
-                                                     relships: curmod.relships || [],
-                                                     metamodelRef: curmod.metamodelRef,
-                                                     modelviews: curmod.modelviews
-                                                 }} />
+                                                <ObjectCard model={{
+                                                    id: curmod.id,
+                                                    name: curmod.name,
+                                                    description: curmod.description,
+                                                    objects: curmod.objects?.map(obj => ({
+                                                        id: obj.id || '',
+                                                        name: obj.name || '',
+                                                        description: obj.description || '',
+                                                        proposedType: obj.proposedType || '',
+                                                        typeRef: obj.typeRef || '',
+                                                        typeName: obj.typeName || '',
+                                                        category: obj.category || ''
+                                                    })) || [],
+                                                    relships: curmod.relships || [],
+                                                    metamodelRef: curmod.metamodelRef,
+                                                    modelviews: curmod.modelviews
+                                                }} />
                                             )}
                                         </TabsContent>
                                         {/* <TabsContent value="model-modelviews" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
@@ -516,23 +516,23 @@ const Modelbuilder = () => {
                                                             {printPromptsDiv}
                                                         </DialogDescription>
                                                     </DialogHeader>
-                                                <ObjectCard model={{ 
-                                                    id: model.id || crypto.randomUUID(),
-                                                    name: model.name || 'Generated Model',
-                                                    description: model.description || '',
-                                                    objects: model.objects?.map(obj => ({
-                                                        id: obj.id || crypto.randomUUID(),
-                                                        name: obj.name || '',
-                                                        description: obj.description || '',
-                                                        proposedType: obj.proposedType || '',
-                                                        typeRef: obj.typeRef || '',
-                                                        typeName: obj.typeName || '',
-                                                        category: obj.category || ''
-                                                    })) || [],
-                                                    relships: model.relships || [],
-                                                    metamodelRef: curmod?.metamodelRef || '',
-                                                    modelviews: curmod?.modelviews || []
-                                                }} />
+                                                    <ObjectCard model={{
+                                                        id: model.id || crypto.randomUUID(),
+                                                        name: model.name || 'Generated Model',
+                                                        description: model.description || '',
+                                                        objects: model.objects?.map(obj => ({
+                                                            id: obj.id || crypto.randomUUID(),
+                                                            name: obj.name || '',
+                                                            description: obj.description || '',
+                                                            proposedType: obj.proposedType || '',
+                                                            typeRef: obj.typeRef || '',
+                                                            typeName: obj.typeName || '',
+                                                            category: obj.category || ''
+                                                        })) || [],
+                                                        relships: model.relships || [],
+                                                        metamodelRef: curmod?.metamodelRef || '',
+                                                        modelviews: curmod?.modelviews || []
+                                                    }} />
                                                 </DialogContent>
                                                 <DialogFooter>
                                                     <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">

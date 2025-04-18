@@ -256,7 +256,7 @@ Looking ahead, we can expect...`
                     <select
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
-                        className="bg-gray-800 text-white text-xs rounded p-1 border border-gray-700"
+                        className="bg-background text-white text-xs rounded p-1 border border-gray-700"
                     >
                         <option value="deepseek-coder">Deepseek Coder</option>
                         <option value="gpt-4-turbo">GPT-4 Turbo</option>
@@ -288,24 +288,24 @@ Looking ahead, we can expect...`
                                     <Textarea
                                         value={promptText}
                                         onChange={(e) => setPromptText(e.target.value)}
-                                        className="bg-gray-800 text-white border-gray-600"
+                                        className="bg-background text-white border-gray-600"
                                         rows={8}
                                     />
                                 ) : (
-                                    <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
-                                        <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden" 
-                                                      components={{
-                                                        // Force any pre/code blocks to wrap and stay within container
-                                                        pre: ({node, ...props}) => (
-                                                          <pre style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%'}} {...props} />
-                                                        ),
-                                                        code: ({node, ...props}) => (
-                                                          <code style={{whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%'}} {...props} />
-                                                        ),
-                                                        p: ({node, ...props}) => (
-                                                          <p style={{maxWidth: '100%', overflowWrap: 'break-word'}} {...props} />
-                                                        )
-                                                      }}>
+                                    <div className="p-2 bg-background rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
+                                        <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden"
+                                            components={{
+                                                // Force any pre/code blocks to wrap and stay within container
+                                                pre: ({ node, ...props }) => (
+                                                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                ),
+                                                code: ({ node, ...props }) => (
+                                                    <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                ),
+                                                p: ({ node, ...props }) => (
+                                                    <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
+                                                )
+                                            }}>
                                             {data?.phData?.domain?.prompt || "No prompt defined yet. Edit here or create one in the Prompt Builder."}
                                         </ReactMarkdown>
                                     </div>
@@ -317,7 +317,7 @@ Looking ahead, we can expect...`
                                     className={`${(!promptText.trim() && !data?.phData?.domain?.prompt?.trim())
                                         ? "bg-gray-500 hover:bg-gray-500 cursor-not-allowed"
                                         : (domainPresentation) ? "bg-gray-500 hover:bg-gray-500" :
-                                        "bg-green-700 hover:bg-green-600"
+                                            "bg-green-700 hover:bg-green-600"
                                         } text-white`}
                                     disabled={isLoading || (!promptText.trim() && !data?.phData?.domain?.prompt?.trim())}
                                 >
@@ -332,8 +332,8 @@ Looking ahead, we can expect...`
                                 <Button
                                     onClick={saveDomainData}
                                     className={`${data?.phData?.domain?.prompt?.trim()
-                                            ? "bg-gray-500 hover:bg-gray-500"
-                                            : "bg-blue-700 hover:bg-blue-600"
+                                        ? "bg-gray-500 hover:bg-gray-500"
+                                        : "bg-blue-700 hover:bg-blue-600"
                                         } text-white`}
                                     disabled={!domainPresentation.trim()}
                                 >
@@ -361,24 +361,24 @@ Looking ahead, we can expect...`
                                     <Textarea
                                         value={domainPresentation}
                                         onChange={(e) => setDomainPresentationState(e.target.value)}
-                                        className="bg-gray-800 text-white border-gray-600"
+                                        className="bg-background text-white border-gray-600"
                                         rows={14}
                                     />
                                 ) : (
-                                        <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
-                                            <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden"
-                                                components={{
-                                                    // Force any pre/code blocks to wrap and stay within container
-                                                    pre: ({ node, ...props }) => (
-                                                        <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                    ),
-                                                    code: ({ node, ...props }) => (
-                                                        <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                    ),
-                                                    p: ({ node, ...props }) => (
-                                                        <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
-                                                    )
-                                                }}>
+                                    <div className="p-2 bg-background rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
+                                        <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden"
+                                            components={{
+                                                // Force any pre/code blocks to wrap and stay within container
+                                                pre: ({ node, ...props }) => (
+                                                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                ),
+                                                code: ({ node, ...props }) => (
+                                                    <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
+                                                ),
+                                                p: ({ node, ...props }) => (
+                                                    <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
+                                                )
+                                            }}>
                                             {domainPresentation}
                                         </ReactMarkdown>
                                     </div>
@@ -423,7 +423,7 @@ Looking ahead, we can expect...`
 
                                     <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
 
-                                    <ol className="text-white list-decimal ml-5 space-y-2"> 
+                                    <ol className="text-white list-decimal ml-5 space-y-2">
                                         <li><span className="font-bold">Define your domain:</span> Provide a name and detailed description.</li>
                                         <li><span className="font-bold">Use existing prompt:</span> Your domain will use the prompt created in the Prompt Builder.</li>
                                         <li><span className="font-bold">Generate definition:</span> Let AI create a comprehensive domain presentation.</li>
@@ -431,7 +431,7 @@ Looking ahead, we can expect...`
                                         <li><span className="font-bold">Keep:</span> Save your domain definition for use in knowledge models.</li>
                                     </ol>
 
-                                    <div className="mt-6 p-3 border border-green-700 rounded bg-gray-800">
+                                    <div className="mt-6 p-3 border border-green-700 rounded bg-background">
                                         <h4 className="text-green-400 font-bold mb-2">Tips for best results:</h4>
                                         <ul className="text-white list-disc ml-5 space-y-1">
                                             <li>Be specific in your domain description</li>
@@ -444,9 +444,9 @@ Looking ahead, we can expect...`
                             </TabsContent>
 
                             <TabsContent value="presentation" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="p-2 bg-gray-800 rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full h-full">
-                                    <div className="p-2 bg-gray-800 rounded border border-gray-700 w-full h-full overflow-y-auto">
-                                        <ReactMarkdown 
+                                <div className="p-2 bg-background rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full h-full">
+                                    <div className="p-2 bg-background rounded border border-gray-700 w-full h-full overflow-y-auto">
+                                        <ReactMarkdown
                                             className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full"
                                             components={{
                                                 // Force any pre/code blocks to wrap and stay within container
@@ -468,7 +468,7 @@ Looking ahead, we can expect...`
 
                             <TabsContent value="preview" className="m-0 px-1 py-2 rounded bg-background">
                                 <div className="p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
-                                    <div className="bg-gray-800 rounded-lg p-6 shadow-lg border border-gray-700">
+                                    <div className="bg-background rounded-lg p-6 shadow-lg border border-gray-700">
                                         <h1 className="text-2xl font-bold text-green-400 mb-4">{domainName || "Domain Name"}</h1>
 
                                         <div className="mb-6">

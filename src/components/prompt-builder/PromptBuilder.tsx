@@ -460,7 +460,7 @@ The assistant will provide structured responses with:
                     <select
                         value={selectedModel}
                         onChange={(e) => setSelectedModel(e.target.value)}
-                        className="bg-gray-800 text-white text-xs rounded p-1 border border-gray-700"
+                        className="bg-background text-white text-xs rounded p-1 border border-gray-700"
                     >
                         <option value="deepseek-coder">Deepseek Coder</option>
                         <option value="gpt-4-turbo">GPT-4 Turbo</option>
@@ -481,7 +481,7 @@ The assistant will provide structured responses with:
                                 <div className="flex flex-col h-full w-full">
                                     {/* Chat welcome message */}
                                     <div className="flex-grow overflow-y-auto p- flex flex-col">
-                                        <div className="bg-gray-800 rounded-lg px-4">
+                                        <div className="bg-background rounded-lg px-4">
                                             <div className="flex items-center mb-1">
                                                 <FontAwesomeIcon icon={faRobot} className="mr-1 text-green-500 text-xs" />
                                                 <span className="font-medium text-green-400 text-sm">AI Assistant</span>
@@ -498,7 +498,7 @@ The assistant will provide structured responses with:
                                             </div>
                                             <div className=" items-center relative">
                                                 <Textarea
-                                                    className="w-full bg-gray-800 text-white border-gray-600 hover:border-b-green-500 focus:border-b-green-400 transition-colors duration-200 rounded-lg pr-10"
+                                                    className="w-full bg-background text-white border-gray-600 hover:border-b-green-500 focus:border-b-green-400 transition-colors duration-200 rounded-lg pr-10"
                                                     value={domainInput}
                                                     onChange={(e) => setDomainInput(e.target.value)}
                                                     onKeyDown={(e) => {
@@ -520,7 +520,7 @@ The assistant will provide structured responses with:
                                                         <span className="text-green-400 text-lg font-bold animate-pulse">...</span>
                                                     </div>
                                                 )}
-                                                
+
                                                 <Button
                                                     onClick={handleAskForClarification}
                                                     disabled={!domainInput.trim() || isLoading}
@@ -615,7 +615,7 @@ The assistant will provide structured responses with:
                                     {/* <div className="text-sm font-bold mt-2">{additionalDetails}</div> */}
                                 </div>
                                 {/* <div className="text-sm font-bold mt-2">Clarification Questions:</div> */}
-                                <div className="chat-output bg-gray-800 h-3/6 overflow-y-auto">
+                                <div className="chat-output bg-background h-3/6 overflow-y-auto">
                                     <div className="p-3 bg-gray-700 rounded shadow">Clarification...
                                         <div className="chat-output m-2 max-h-[calc(100vh-24rem)] overflow-y-auto">
                                             <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
@@ -791,7 +791,7 @@ The assistant will provide structured responses with:
                                     <div className="text-sm font-bold mt-4 mb-2">
                                         <span className="text-green-400">Note: </span> You can run the prompt in next step
                                     </div>
-                                    <div className="mt-6 p-3 border border-green-700 rounded bg-gray-800">
+                                    <div className="mt-6 p-3 border border-green-700 rounded bg-background">
                                         <h4 className="text-green-400 font-bold mb-2">Tips for best results:</h4>
                                         <ul className="text-white list-disc ml-5 space-y-1">
                                             <li>Be specific about your domain</li>

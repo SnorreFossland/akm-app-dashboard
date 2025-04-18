@@ -432,10 +432,10 @@ export default function ChatComponent({
                     {/* <div ref={messagesEndRef} /> */}
                 </div>
             </div>
-            <SimpleDivider
+            {/* <SimpleDivider
                 currentSize={topHeight}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
-            />
+            /> */}
             <div className="mb-4 p- rounded-lg w-full bg-background">
                 <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent h-auto">
                     <TextareaAutosize

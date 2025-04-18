@@ -121,7 +121,7 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
                 </DropdownMenu>
             </div>
             {/* Render the table */}
-            <table className="min-w-full divide-y bg-gray-800 divide-gray-500">
+            <table className="min-w-full divide-y bg-background divide-gray-500">
                 <thead>
                     {table.getHeaderGroups().map((headerGroup) => (
                         <tr key={headerGroup.id}>

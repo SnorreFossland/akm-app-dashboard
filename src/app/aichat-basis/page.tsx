@@ -330,7 +330,7 @@ const AIChatPage = () => {
                                         setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, '_'))
                                     }
                                     placeholder="Document Name"
-                                    className="text-xs bg-gray-800 border border-gray-600 text-white px-2 py-1 rounded"
+                                    className="text-xs bg-background border border-gray-600 text-white px-2 py-1 rounded"
                                 />
                                 <button
                                     onClick={handleSaveToRedux}
@@ -367,10 +367,10 @@ const AIChatPage = () => {
                             <textarea
                                 value={mdPreview}
                                 onChange={(e) => setMdPreview(e.target.value)}
-                                className="w-full h-full p-4 bg-gray-800 text-gray-100 rounded max-h-[80vh] overflow-y-auto"
+                                className="w-full h-full p-4 bg-background text-foreground rounded max-h-[80vh] overflow-y-auto"
                             />
                         ) : (
-                            <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto max-h-[80vh]">
+                            <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-background p-4 rounded-md overflow-auto max-h-[80vh]">
                                 <MarkdownPreview mdPreview={mdPreview} />
                             </div>
                         )}

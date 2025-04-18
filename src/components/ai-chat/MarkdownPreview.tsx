@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
@@ -9,12 +9,25 @@ interface MarkdownPreviewProps {
 }
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
+    // existing re-init on markdown change
+    useLayoutEffect(() => {
+        mermaid.initialize({ startOnLoad: false })
+        mermaid.init(undefined, '.mermaid')
+    }, [mdPreview])
+
+    // <-- new: re-init diagrams when window regains focus
     useEffect(() => {
-        mermaid.run(); // Re-run Mermaid after rendering
-    }, [mdPreview]); // Trigger Mermaid rendering when mdPreview changes
+        const handleWindowFocus = () => {
+            mermaid.init(undefined, '.mermaid')
+        }
+        window.addEventListener('focus', handleWindowFocus)
+        return () => {
+            window.removeEventListener('focus', handleWindowFocus)
+        }
+    }, [])
 
     return (
-        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-gray-800 p-4 rounded-md overflow-auto max-h-[80vh]">
+        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-background text-foreground p-4 rounded-md overflow-auto max-h-[80vh]">
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]} // Enables GitHub-flavored Markdown
                 rehypePlugins={[rehypeHighlight]} // Enables syntax highlighting

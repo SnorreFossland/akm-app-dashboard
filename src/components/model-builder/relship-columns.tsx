@@ -46,7 +46,7 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
             onBlur={handleSave}
             onKeyDown={(e) => e.key === 'Enter' && handleSave()}
             autoFocus
-            className="border rounded px-2 py-1 bg-gray-800 text-white"
+            className="border rounded px-2 py-1 bg-background text-white"
         />
     ) : (
         <span
@@ -93,10 +93,10 @@ const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
                 }}>
                     Double-Click on Name text to Edit
                 </DropdownMenuItem>
-<DropdownMenuItem onClick={() => {
-    console.log('Delete action clicked for:', row.original.id);
-    dispatch(deleteRelationship(row.original.id));
-}}>
+                <DropdownMenuItem onClick={() => {
+                    console.log('Delete action clicked for:', row.original.id);
+                    dispatch(deleteRelationship(row.original.id));
+                }}>
                     Delete
                 </DropdownMenuItem>
             </DropdownMenuContent>

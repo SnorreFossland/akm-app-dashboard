@@ -25,7 +25,7 @@ const MarkdownDocumentManager = ({
 
     // Expose this function to parent components
     const openLibrary = () => setIsLibraryOpen(true);
-    
+
     // Add effect to sync ref with the openLibrary function
     useEffect(() => {
         if (openLibraryButtonRef && openLibraryButtonRef.current) {
@@ -109,7 +109,7 @@ const MarkdownDocumentManager = ({
                 <input
                     type="text"
                     placeholder="Document name"
-                    className="text-sm bg-gray-800 text-white px-2 py-1 rounded mr-2 border border-gray-600"
+                    className="text-sm bg-background text-white px-2 py-1 rounded mr-2 border border-gray-600"
                     value={docName}
                     onChange={(e) => setDocName(e.target.value)}
                 />
@@ -120,7 +120,7 @@ const MarkdownDocumentManager = ({
             {/* Library Modal */}
             {isLibraryOpen && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50">
-                    <div className="bg-gray-800 rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto">
+                    <div className="bg-background rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto">
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold text-blue-400">Markdown Library</h3>
                             <div className="flex space-x-2">

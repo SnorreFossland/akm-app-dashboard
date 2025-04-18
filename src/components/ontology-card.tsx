@@ -67,23 +67,23 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
-        
+
         const handleWheel = (e: WheelEvent) => {
             if (e.shiftKey) {
                 // Horizontal scroll with Shift key
                 e.preventDefault();
-                
+
                 // Increase sensitivity for more noticeable movement
                 const scrollAmount = e.deltaY * 2;
-                
+
                 // Direct scrollLeft modification (more reliable)
                 container.scrollLeft += scrollAmount;
-                
+
                 console.log('Horizontal scroll', scrollAmount);
             } else if (isZoomMode) {
                 // Zoom mode
                 e.preventDefault();
-                
+
                 const zoomSensitivity = 0.1;
                 if (e.deltaY < 0) {
                     setZoom((prev) => Math.min(prev + zoomSensitivity, 5));
@@ -93,17 +93,17 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
             }
             // If neither condition is met, let the natural scrolling occur
         };
-        
+
         // Add wheel event listener
         if (isZoomMode) {
             container.addEventListener('wheel', handleWheel, { passive: false });
         }
-        
+
         return () => {
             container.removeEventListener('wheel', handleWheel);
         };
     }, [isZoomMode, setZoom]);
-    
+
     // Remove the external handleContainerWheel function since we now define it inside useEffect
 
     useEffect(() => {
@@ -177,7 +177,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
         <>
             <div className="p-1 w-100 rounded overflow-hidden">
                 <div className="bg-gray-700 px-1">
-                    <h3 className="flex pl-1 font-bold  bg-gray-700 text-gray-00 inline-block">Domain name: <span className="mx-1 px-1 inline-block bg-gray-800"> {ontologyData?.name}</span></h3>
+                    <h3 className="flex pl-1 font-bold  bg-gray-700 text-gray-00 inline-block">Domain name: <span className="mx-1 px-1 inline-block bg-background"> {ontologyData?.name}</span></h3>
                     <details>
                         <summary className="mx-1 text-gray-400 w-full cursor-pointe">Description...</summary>
                         <div className="mx-1 p-1 inline-block"> {ontologyData?.description}</div>
@@ -194,12 +194,12 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         <TabsContent value="summary" className="flex p-1 m-0 rounded bg-background  ">
                             <Card className="p-1 w-full border-gray-700 h-[calc(100vh-25rem)]">
                                 {/* <CardHeader> */}
-                                    {/* <CardTitle className="bg-gray-800 px-2 m-0 font-bold">Short Summary </CardTitle> */}
-                                    {/* <div className="mx-2">{ontologyData?.description}</div> */}
+                                {/* <CardTitle className="bg-background px-2 m-0 font-bold">Short Summary </CardTitle> */}
+                                {/* <div className="mx-2">{ontologyData?.description}</div> */}
                                 {/* </CardHeader> */}
                                 <CardContent>
                                     <div
-                                        className="prose prose-sm bg-gray-800 p-2 divide-y divide-gray-600 max-h-[calc(100vh-26rem)] 
+                                        className="prose prose-sm bg-background p-2 divide-y divide-gray-600 max-h-[calc(100vh-26rem)] 
                                                 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"
                                     >
                                         <ReactMarkdown>
@@ -212,7 +212,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         <TabsContent value="concepts" className=" m-0 px-1 py-1 rounded bg-background">
                             <Card className="">
                                 <CardHeader className="px-3 pt-3 pb-0">
-                                    <CardTitle className="bg-gray-800 px-2 text-1xl rounded">Concepts</CardTitle>
+                                    <CardTitle className="bg-background px-2 text-1xl rounded">Concepts</CardTitle>
                                 </CardHeader>
                                 <CardContent className="max-h-[calc(100vh-26rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                     {ontologyData && <ConceptTable data={ontologyData.concepts} />}
@@ -222,7 +222,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         <TabsContent value="relationships" className=" m-0 px-1 py-1 rounded bg-background">
                             <Card className="mt-1">
                                 <CardHeader className="px-3 pt-3 pb-0">
-                                    <CardTitle className="bg-gray-800 px-2 text-1xl rounded">Relations</CardTitle>
+                                    <CardTitle className="bg-background px-2 text-1xl rounded">Relations</CardTitle>
                                 </CardHeader>
                                 <CardContent className="max-h-[calc(100vh-26rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                     {ontologyData && <RelshipTable data={ontologyData.relationships} />}
@@ -241,11 +241,11 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                         >
                                             Show Mermaid Code
                                         </button>
-                                        
+
                                         <button
                                             onClick={() => setZoomMode(prev => !prev)}
-                                            className={`px-2 py-1 text-xs rounded ${isZoomMode 
-                                                ? 'bg-green-500 text-white' 
+                                            className={`px-2 py-1 text-xs rounded ${isZoomMode
+                                                ? 'bg-green-500 text-white'
                                                 : 'bg-gray-500 text-gray-200'}`}
                                         >
                                             {isZoomMode ? 'Zoom Mode: ON' : 'Zoom Mode: OFF'}

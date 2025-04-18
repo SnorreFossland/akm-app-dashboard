@@ -333,7 +333,7 @@ const ConceptBuilder = () => {
                         <label htmlFor="chatOutput" className="text-white mt-2">Domain Summary</label>
                         <Textarea
                             id="chatOutput"
-                            className="flex-grow p-1 rounded bg-gray-800"
+                            className="flex-grow p-1 rounded bg-background"
                             value={`${descrString} \n\n ${topicDescr}`}
                             disabled={isLoading}
                             onChange={(e) => setDescrString(e.target.value)}
@@ -363,7 +363,7 @@ const ConceptBuilder = () => {
                                     <label htmlFor="suggestedConcepts" className="text-white mt-2">Domain name </label>
                                     <Input
                                         id="suggestedConcepts"
-                                        className="flex-grow p-1 rounded bg-gray-800"
+                                        className="flex-grow p-1 rounded bg-background"
                                         value={domainDesc}
                                         disabled={isLoading}
                                         onChange={(e) => setDomainDesc(e.target.value)}
@@ -372,7 +372,7 @@ const ConceptBuilder = () => {
                                     <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts</label>
                                     <Input
                                         id="suggestedConcepts"
-                                        className="flex-grow p-1 rounded bg-gray-800"
+                                        className="flex-grow p-1 rounded bg-background"
                                         value={suggestedConceptData || ""}
                                         disabled={isLoading}
                                         onChange={(e) => setSuggestedConceptData(e.target.value)}

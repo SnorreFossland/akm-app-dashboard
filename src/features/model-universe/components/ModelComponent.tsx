@@ -121,9 +121,9 @@ function ModelComponent() {
           </div> 
         </div> 
       </header> */}
-      <div className="flex justify-between bg-gray-800">
+      <div className="flex justify-between bg-background">
         <div className="flex justify-between bg-gray-600 p-1">
-          <div className=" px-1 bg-gray-800">
+          <div className=" px-1 bg-background">
             <label htmlFor="model-select" className="mx-1 font-bold text-gray-400 inline-block">Model:</label>
             <select id="model-select" className="px-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
               {metis?.models.map((model: { name: string }) => (
@@ -131,7 +131,7 @@ function ModelComponent() {
               ))}
             </select>
           </div>
-          <div className="bg-gray-800">
+          <div className="bg-background">
             <label htmlFor="model-view-select" className="mx-2 font-bold text-gray-400 inline-block">Model View:</label>
             <select id="model-view-select" className="px-2 py-0 inline-block text-gray-400 inline-block" onChange={handleModelviewChange} value={currentModelview?.name}>
               {currentModel?.modelviews?.map((modelView: { name: string }) => (
@@ -141,7 +141,7 @@ function ModelComponent() {
           </div>
           <h3 className="flex mx-1 pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
         </div>
-        <div className="flex bg-gray-800">
+        <div className="flex bg-background">
           {/* <button
             className="bg-gray-700 text-white rounded m-1 py-0.5 px-2 text-xs"
             onClick={() => handleGetFile(dispatch, setFileStatus, setFileContent)} disabled={fileStatus === 'loading'}>
@@ -197,15 +197,15 @@ function ModelComponent() {
 
         </div>
       </div>
-      <div className="flex bg-gray-800">
-        <div className=" bg-gray-800 w-full">
+      <div className="flex bg-background">
+        <div className=" bg-background w-full">
           <details>
             <summary className="m-1 w-full cursor-pointe">Current AKM file details...</summary>
             <hr />
             <div className='model-universe-a-data text-left mx-2 p-2 bg-gray-600 w-full'>
               <div className="p-1 flex justify-start bg-gray-600">
-                <div className="flex justify-left mx-1 bg-gray-800">Focus:
-                  <h3 className="mx-2 font-bold text-gray-400 bg-gray-800 inline-block">Model: <span className="px-2 inline-block bg-gray-900"> {focusModel?.name} </span></h3>
+                <div className="flex justify-left mx-1 bg-background">Focus:
+                  <h3 className="mx-2 font-bold text-gray-400 bg-background inline-block">Model: <span className="px-2 inline-block bg-gray-900"> {focusModel?.name} </span></h3>
                   <h3 className="mx-2 font-bold text-gray-400 inline-block">Modelview: <span className="px-2 inline-block bg-gray-900"> {focusModelview?.name}</span></h3>
                   <h3 className="mx-2 font-bold text-gray-400 inline-block">Object:  <span className="px-2 inline-block bg-gray-900"> {focusObject?.name}</span></h3>
                   <h3 className="mx-2 font-bold text-gray-400 inline-block">Objectview:  <span className="px-2 inline-block bg-gray-900"> {focusObjectview?.name}</span></h3>
@@ -232,7 +232,7 @@ function ModelComponent() {
               <div className='model-universe-a-data text-left mx-2 p-4 bg-gray-700 w-full'>
                 <div className='grid grid-cols-2 gap-4 w-full'>
                   <h5>{data?.phData?.metis?.name}</h5> <br />
-                  <div className='text-left text-gray p-4 bg-gray-800 w-full'>
+                  <div className='text-left text-gray p-4 bg-background w-full'>
                     <h5>Models: </h5>
                     <ul>
                       {data?.phData?.metis?.models?.map((model: any) => (
@@ -242,7 +242,7 @@ function ModelComponent() {
                       ))}
                     </ul>
                   </div>
-                  <div className='text-left text-gray p-4 bg-gray-800 w-full'>
+                  <div className='text-left text-gray p-4 bg-background w-full'>
                     <h6>Metamodels: </h6>
                     {data?.phData?.metis?.metamodels?.map((metamodel: any) => (
                       <li key={metamodel.name} className="mb-2">
@@ -256,7 +256,7 @@ function ModelComponent() {
               <div className='text-center p-4 bg-gray-200 w-full'>No Model data available</div>
             )}
             <hr />
-            <div className='model-universe-a-data text-left p-4 bg-gray-800 w-full'>
+            <div className='model-universe-a-data text-left p-4 bg-background w-full'>
             </div>
           </details>
           {/* <span className="ms-2">{detailsOpen ? '▼' : '▶'}</span> */}

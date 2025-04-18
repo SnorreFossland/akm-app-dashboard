@@ -27,7 +27,7 @@ const AI_MODELS = [
     // { id: 'claude-3.7-sonnet', name: 'Claude 3.7 Sonnet' },
     // { id: 'gemini-pro', name: 'Gemini Pro' },
     // { id: 'gemini-ultra', name: 'Gemini Ultra' },
-    {  id: 'dummy', name: 'Dummy' },
+    { id: 'dummy', name: 'Dummy' },
 ];
 
 const validModels = AI_MODELS.map((model) => model.id);
@@ -47,7 +47,7 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
                 id="model-select"
                 value={model}
                 onChange={(e) => onModelChange(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-background border border-gray-700 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
                 {AI_MODELS.map((model) => (
                     <option key={model.id} value={model.id}>

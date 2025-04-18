@@ -4,16 +4,16 @@ import { clearStore, clearModel } from "@/features/featureA/featureASlice";
 import { Dispatch } from 'redux';
 
 interface FileControlsProps {
-  fileInputRef: React.RefObject<HTMLInputElement>;
-  dispatch: Dispatch<any>;
-  model: { name: string; objects: any[] };
-  handleGetLocalFile: (e: React.ChangeEvent<HTMLInputElement>, dispatch: Dispatch<any>) => void;
-  handleSaveToLocalFile: (data: any) => void;
+    fileInputRef: React.RefObject<HTMLInputElement>;
+    dispatch: Dispatch<any>;
+    model: { name: string; objects: any[] };
+    handleGetLocalFile: (e: React.ChangeEvent<HTMLInputElement>, dispatch: Dispatch<any>) => void;
+    handleSaveToLocalFile: (data: any) => void;
 }
 
 const FileControls = ({ fileInputRef, dispatch, model, handleGetLocalFile, handleSaveToLocalFile }: FileControlsProps) => (
     <div className="flex justify-between mx-2 px-4 text-white rounded">
-        <div className="flex justify-between align-center bg-gray-800">
+        <div className="flex justify-between align-center bg-background">
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> Current Model: </h3> <span className="inline-block"> {model?.name}</span>
             <h3 className="mx-2 font-bold text-gray-400 inline-block"> No. of Objects: </h3> <span className="inline-block"> {model?.objects.length}</span>
         </div>

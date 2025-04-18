@@ -101,11 +101,11 @@ export const ImportedOntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         <TabsContent value="concepts" className="flex m-0 px-1 py-2 rounded bg-background">
                             <Card className="w-full ">
                                 <CardHeader>
-                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Concepts </CardTitle>
+                                    <CardTitle className="bg-background px-2 m-0 text-1xl font-bold">Concepts </CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-6k ">
                                     <table className="divide-y divide-gray-700 text-sm w-full">
-                                        <thead className="w-full bg-gray-800 sticky top-0">
+                                        <thead className="w-full bg-background sticky top-0">
                                             <tr className="w-full">
                                                 <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">Name</th>
                                                 <th className="px-4 py-2 text-center font-medium text-gray-300 uppercase tracking-wider">Description</th>
@@ -114,7 +114,7 @@ export const ImportedOntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                         <tbody>
                                             <tr>
                                                 <td colSpan={3}>
-                                                    <div className="bg-gray-800 divide-y divide-gray-700 w-full max-h-[calc(100vh-20rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                                    <div className="bg-background divide-y divide-gray-700 w-full max-h-[calc(100vh-20rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                                         <table className="min-w-full divide-y divide-gray-700 text-sm w-full">
                                                             <tbody className="bg-gray-900 divide-y divide-gray-700 min-w-full w-full">
                                                                 {ontologyData?.concepts?.map((c, index) => (
@@ -134,10 +134,10 @@ export const ImportedOntologyCard = ({ ontologyData }: OntologyCardProps) => {
                             </Card>
                             {/* <Card className="w-full">
                                 <CardHeader>
-                                    <CardTitle className="bg-gray-800 px-2 m-0 text-1xl font-bold">Relations</CardTitle>
+                                    <CardTitle className="bg-background px-2 m-0 text-1xl font-bold">Relations</CardTitle>
                                 </CardHeader>
                                 <CardContent className="grid gap-2">
-                                    <div className="bg-gray-800 divide-y divide-gray-700 w-full max-h-[calc(82vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                    <div className="bg-background divide-y divide-gray-700 w-full max-h-[calc(82vh-8rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                         <table className="min-w-full divide-y divide-gray-700 text-sm">
                                             <thead className="bg-gray-900 sticky top-0">
                                                 <tr>
@@ -146,7 +146,7 @@ export const ImportedOntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                                     <th className="px-4 py-2 text-left font-medium text-gray-300 uppercase tracking-wider">To</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="bg-gray-800 divide-y divide-gray-700 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                            <tbody className="bg-background divide-y divide-gray-700 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                                 {ontologyData?.relationships?.map((rel, index) => (
                                                     <tr key={rel.name + index}>
                                                         <td className="px-4 py-2 whitespace-nowrap text-gray-300">{rel.nameFrom}</td>
