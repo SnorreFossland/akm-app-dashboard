@@ -400,7 +400,7 @@ export default function TemplatesPanel({
         console.log('391 Inserting content:', editableContent);
         const firstSentence = editableContent.trim().split(/(?<=[.?!])\s/)[0];
         const restTemplate = editableContent.trim().split(/(?<=[.?!])\s/).slice(1).join(' ');
-        let finalContent = `# Objective: ${firstSentence} 
+        const finalContent = `# Objective: ${firstSentence} 
 # Role:
     Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.
 
