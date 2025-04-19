@@ -21,6 +21,8 @@ interface ChatComponentProps {
     resetTrigger: number; // Added resetTrigger prop
     error?: string; // Optional error prop
     chatInput?: string;
+    input: string;
+    setInput: (input: string) => void;
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -40,6 +42,8 @@ interface DraggableDividerProps {
 export default function ChatComponent({
     selectedModel,
     chatInput,
+    input,
+    setInput,
     onResponseChange,
     onViewInMarkdown,
     setShowLeftPanel,
@@ -49,7 +53,7 @@ export default function ChatComponent({
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    const [input, setInput] = useState<string | undefined>(chatInput);
+    const [inputState, setInputState] = useState<string | undefined>(chatInput);
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [errorMsg, setErrorMsg] = useState(''); // <-- error state
 
@@ -142,19 +146,13 @@ export default function ChatComponent({
         return () => window.removeEventListener('resize', handleResize);
     }, [topHeight]);
 
-    // Auto-scroll to top of last message when messages update
+    // Auto-scroll to the end of last message when messages update
     useEffect(() => {
         if (messagesEndRef.current) {
             messagesEndRef.current.scrollIntoView({
                 behavior: 'smooth',
-                block: 'start', // Aligns the top of the element with the top of the viewport
+                block: 'end', // <-- Use 'end' to scroll to the bottom
             });
-
-            // Add a small offset from the top if desired
-            const parentContainer = document.querySelector('.flex-1.overflow-auto.mb-4.p-4');
-            if (parentContainer) {
-                parentContainer.scrollTop -= 16; // Adjust this value for desired spacing
-            }
         }
     }, [messages]);
 
@@ -338,7 +336,7 @@ export default function ChatComponent({
                     {messages.map((message, index) => (
                         <div key={index}
                             ref={index === messages.length - 1 ? messagesEndRef : undefined}
-                            className={`mb-4 p-3 rounded-lg flex items-between gap-2 ${message.role === 'user'
+                            className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
                                 ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border-blue-800'
                                 : 'bg-background mr-auto max-w-[90%] text-card-foreground flex-col border-4 border-secondary'
                                 }`}
@@ -377,10 +375,14 @@ export default function ChatComponent({
                                         </svg>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-400 ">
+                                <div className="text-xs text-gray-400 me-auto">
                                     {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
                                 </div>
-                                <div className="flex items-center gap-2 ml-auto rounded-md p-2">
+                                </div>
+                                <div className="flex-1 w-full p-1 whitespace-pre-wrap break-words overflow-auto">
+                                    {message.content}
+                                </div>
+                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
                                     <button
                                         onClick={() => handleCopyMessage(message.content, index)}
                                         className="text-xs text-gray-400 hover:text-gray-200"
@@ -415,21 +417,16 @@ export default function ChatComponent({
                                         </button>
                                     )}
                                 </div>
-                            </div>
-                            <div
-                                className="flex-1 w-full p-1 whitespace-pre-wrap break-words overflow-auto"
-                            // ref={index === messages.length - 1 ? messagesEndRef : undefined}
-                            >
-                                {message.content}
-                            </div>
+                 
+
                         </div>
                     ))}
+                    <div ref={messagesEndRef} />
                     {isLoading && (
                         <div>
                             {isLoading ? <p>Thinking...</p> : null}
                         </div>
                     )}
-                    {/* <div ref={messagesEndRef} /> */}
                 </div>
             </div>
             {/* <SimpleDivider

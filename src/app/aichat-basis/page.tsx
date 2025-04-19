@@ -19,6 +19,10 @@ const AIChatPage = () => {
     const [showRightPanel, setShowRightPanel] = useState(true);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
+    const [input, setInput] = useState<string>("");
+    const [showTemplates, setShowTemplates] = useState(true);
+    const [editableContent, setEditableContent] = useState('');
+    const [domainContent, setDomainContent] = useState('');
 
     const [selectedModel, setSelectedModel] = useState('mistral-small-latest'); // Default model
     const [resetConversationOnModelChange, setResetConversationOnModelChange] = useState(false);
@@ -180,11 +184,15 @@ const AIChatPage = () => {
                         >
                             {showLeftPanel ? '← Hide Templates' : '→'}
                         </button>
-                    </div>
-                    <TemplatesPanel onApplyTemplate={(content) => {
-                        console.log('Template content inserted:', content);
-                        setChatInput(content);
-                    }} selectedModel={selectedModel} />
+                    </div> 
+                    <TemplatesPanel 
+                        onApplyTemplate={handleApplyTemplate}
+                        editableContent={editableContent}
+                        setEditableContent={setEditableContent}
+                        domainContent={domainContent}
+                        setDomainContent={setDomainContent}
+                        selectedModel={selectedModel}
+                    />
 
                 </div>
             )}
@@ -257,6 +265,8 @@ const AIChatPage = () => {
 
                 </div>
                 <ChatComponent
+                    input={input}
+                    setInput={setInput}
                     selectedModel={selectedModel}
                     resetTrigger={resetTrigger}
                     onResponseChange={handleResponseChange}

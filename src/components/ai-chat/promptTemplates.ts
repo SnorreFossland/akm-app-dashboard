@@ -13,8 +13,8 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
         category: "Planning",
         usage: "Business",
         content:
-            `**[Insert your definition of the domain/topic here]**
-Help me define and scope the following domain/topic above.
+`
+Help me define and scope the domain/topic described in the context below.
 Domain Identification:**[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]**
 Domain scope:**[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]**
 Key Domain Concepts and Terms
@@ -30,18 +30,17 @@ Define clear, measurable, and achievable indicators of success
         title: "Domain/Topic",
         category: "Domain Definition",
         usage: "Business / Personal",
-        content: `Help me define describe and scope the following domain/topic:
-**[Insert your definition of the domain/topic here]**
+        content: `Help me define describe and scope the domain/topic described in the context below.:
 `
     },
-    { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the following topic:\n\n**[Describe topic here]**" },
+    { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the topic described below" },
     {
         title: "Project Plan",
         category: "Planning",
         usage: "Business",
         content:
-            `Make a project plan for the following project:
-**[Describe project here]**
+`Make a project plan for a project within the domian/topic described below.
+
 Include the following sections:
 1. Project Overview
 2. Scope Domain
@@ -52,7 +51,7 @@ Include the following sections:
 7. Risks and Mitigation Strategies
 8. Success Criteria
 9. Budget
-10. Communication Plan
+10. Communication Plan (text pluss Mermaid diagram)
 11. Evaluation and Reporting
 12. Conclusion
 13. Appendix
@@ -92,7 +91,7 @@ Include the following sections:
         title: "Learning Plan",
         category: "Learning",
         usage: "Personal",
-        content: "Create a learning plan for the following topic:\n\n**[Describe topic here]**\n\n Add a mermaid gantt diagram."
+        content: "Create a learning plan for the topic described in the context below."
     },
     {
         title: "Feedback Request",
@@ -104,13 +103,28 @@ Include the following sections:
         title: "Task List",
         category: "Task Management",
         usage: "Personal",
-        content: "Create a task list for the following project:\n\n**[Describe project here]**"
+        content: "Create a task list for the topic described in the context below."
     },
     {
         title: "Meeting Agenda",
         category: "Meetings",
         usage: "Business",
-        content: "Create an agenda for the following meeting:\n\n**[Describe meeting here]**"
+        content: `Create an agenda for the meeting on the topic described in the context below.
+        Include the following sections:
+        1. Meeting Title [Insert title]
+        2. Date and Time [Insert date and time]
+        3. Location [Insert location]
+        4. Attendees [Insert list of attendees]
+        5. Agenda Items [Insert list of agenda items]
+        6. Discussion Points [Insert list of discussion points]
+        7. Action Items [Insert list of action items]
+        8. Notes [Insert any additional notes]
+        9. Conclusion [Insert conclusion]
+        10. Follow-up [Insert follow-up items]
+        11. Additional Notes 
+           - Resources [Insert any resources or materials needed for the meeting]
+           - Contact Information [Insert contact information for the meeting organizer]
+        `
     },
     {
         title: "Meeting Summary",
@@ -140,13 +154,36 @@ Include the following sections:
         title: "Social Media Post",
         category: "Content Creation",
         usage: "Personal",
-        content: "Create a social media post for the following topic:\n\n**[Describe topic here]**"
+        content: "Create a social media post for the topic described below."
     },
     {
         title: "Blog Post",
         category: "Content Creation",
         usage: "Personal",
-        content: "Write a blog post about the topic in the #context: \n\n Include a title, introduction, body, and conclusion.\n\n"
+        content: 
+`Write a short blog post about the topic in the domain/topic described below.
+Include the following sections:
+1. Introduction
+2. Key Concepts
+3. Applications
+4. Challenges
+5. Future Trends
+6. Conclusion
+7. References
+8. Glossary of Terms
+9. Acknowledgments
+10. Additional Notes
+11. Call to Action
+12. Author Bio
+13. Related Articles
+14. Feedback Request
+15. Social Media Links
+16. Additional Resources
+17. Visuals (if applicable)
+18. SEO Optimization
+19. Keywords
+20. Meta Description
+`
     },
     {
         title: "Marketing Strategy",

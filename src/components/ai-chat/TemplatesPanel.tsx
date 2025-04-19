@@ -11,25 +11,35 @@ import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 interface TemplatesPanelProps {
     onApplyTemplate: (content: string) => void;
     selectedModel: string; // Add selectedModel to props
+    editableContent: string;
+    setEditableContent: (v: string) => void;
+    domainContent: string;
+    setDomainContent: (v: string) => void;
 }
 interface Message {
     role: 'user' | 'assistant';
     content: string;
 }
 
-export default function TemplatesPanel({ onApplyTemplate, selectedModel }: TemplatesPanelProps) {
+export default function TemplatesPanel({
+    onApplyTemplate, 
+    selectedModel,
+    editableContent,
+    setEditableContent,
+    domainContent,
+    setDomainContent 
+}: TemplatesPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.markdown.documents);
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
+    const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
     const [customTemplate, setCustomTemplate] = useState('');
-    const [editableContent, setEditableContent] = useState('');
-    const [domainContent, setDomainContent] = useState(''); // State for domain content
     const [selectedCategory, setSelectedCategory] = useState<string>('All'); // State for selected category
     const [isRefining, setIsRefining] = useState(false); // Loading state for refining
     const [isRefiningDomain, setIsRefiningDomain] = useState(false); // Loading state for refining domain
     const [hasRefined, setHasRefined] = useState(false);
     const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
-    // Add state to track placeholders
+    // Add state to track placeholders'
     const [placeholders, setPlaceholders] = useState<{ start: number, end: number, text: string }[]>([]);
     const [importedFile, setImportedFile] = useState<string>('');
     const [importedFileName, setImportedFileName] = useState<string>('');
@@ -269,39 +279,28 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
         }
     };
 
-    const handleTemplateSelect = (index: number) => {
-        setSelectedTemplate(index);
-
-        if (index === PROMPT_TEMPLATES.length - 1) {
-            setEditableContent(customTemplate);
-        } else {
-            setEditableContent(`${filteredTemplates[index].content}\n#Context:\n${domainContent}`);
-
-            // Find and select first placeholder on next tick
-            setTimeout(() => {
-                if (placeholders.length > 0) {
-                    selectPlaceholder(0);
-                }
-            }, 50);
-        }
+    const handleTemplateSelect = (template: PromptTemplate) => {
+        setSelectedTemplateKey(template.title); // or template.id if available
+        setEditableContent(`${template.content}`);
         setIsTemplatesOpen(false);
     };
 
-    const handleInsertTemplate = () => {
-        console.log('Inserting content:', editableContent);
-        const firstSentence = editableContent.trim().split(/(?<=[.?!])\s/)[0];
-        let finalContent = `# Role:
-    You are an expert consultant specializing in the domain described in the **context**. 
-    Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.
-    If placeholders are present, please replace them with the most relevant information.
-
-    # Objective:
-    ${firstSentence}
+    const handleRefineDomainPrompt = async () => {
+        setIsRefiningDomain(true); // Set loading state
+        const systemPrompt: Message = {
+            role: 'assistant',
+            content: `You are an expert consultant specializing in generating prompts. Leverage your extensive knowledge to help comprehensively define and scope the domain clearly and precisely.
+    You are a prompt refinement expert. Your task is to take the user's input prompt and transform it into the most effective and complete prompt possible for an AI system. 
+    Your output must strictly be a refined prompt, not a response or result of the prompt.
 
     # Instructions:
-    1. Analyze the provided content to understand the context, objectives, and requirements.
+
+    1. Analyze the user's input prompt to understand the context, objectives, and requirements.
     2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.
     3. Ensure the refined prompt is clear, concise, and actionable.
+    4. Include specific instructions or guidelines for the AI to follow.
+    5. Include a name, description, and a summary of the core topic of the prompt.
+    6. Use Markdown formatting for the output.
 
     # Reasoning Steps:
     1. Identify the key elements of the content.
@@ -309,69 +308,40 @@ export default function TemplatesPanel({ onApplyTemplate, selectedModel }: Templ
     3. Use the placeholders to guide the refinement process.
     4. Ensure the final output is coherent and follows a logical flow.
     5. Include specific instructions or guidelines for the AI to follow.
-    6. Use Markdown formatting for the output.
-    7. Make sure the Mermaid syntax for any diagrams or visual representations.
 
     # Output Format:
     Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate.
 
-    For Mermaid diagrams, use today's date (${new Date().toISOString().split('T')[0]}) as the start date and follow this exact format:
+    # Example:
+    **User Input:** "Help me enhance this prompt. 
+    # Domain Identification: Bike Rental Service 
+    # Objective: Create a detailed domain definition for a bike rental service in a tourist area. 
+    # Instructions: 
+    1. Identify the key elements of the bike rental service domain.
+    2. Break down the domain into manageable sections.
+    3. Ensure the final output is coherent and follows a logical flow.
+    4. Include specific instructions or guidelines for the AI to follow.
+    **Refined Prompt:** "Write a detailed domain definition for a bike rental service in a tourist area.
+    Include the following sections:
+    # Domain Identification: 
+    ## Name: Bike Rental Service
+    ## Description: A service that provides bicycles for rent to tourists and locals in a specific area.
+    ## Summary: A bike rental service that offers a variety of bicycles for rent, catering to tourists and locals in a popular tourist area.
+    # Domain Scope:
+    ## In-Scope: Bike rental service, repair service, rental app, customer demographics, pricing strategy, marketing strategies.
+    ## Out-of-Scope: Bike sales, bike manufacturing, bike accessories.
+    # Overview of the bike rental service
+    ## Key features and services offered
+    ## Core concepts and terminology
+    ## Target market and customer demographics
+    ## Pricing strategy and revenue model
+    ## Marketing and promotional strategies
+    ## Potential challenges and solutions
+    ## Future growth opportunities and trends
 
-    # Example Gantt Chart:
-
-    \`\`\`mermaid
-    gantt
-        title Project Timeline
-        dateFormat YYYY-MM-DD
-        axisFormat %Y-%m-%d
-        Start : milestone, ${new Date().toISOString().split('T')[0]}, 1d
-        section Phase 1
-        Task1 : 10d
-        Task2 : 20d
-        Task3 : 20d
-    \`\`\`
-
-    # Context 
-    ${editableContent} 
-
-    # Final Instructions:
-    If you include code snippets, wrap them in triple backticks and specify the language, e.g., \`\`\`javascript.
-    For any diagrams, ensure you use proper markdown syntax with three backticks (not two).
-    Only include diagrams in the response if they are specified of relevant to the content.
-    Also ensure to use the correct syntax for the diagram type you are using (e.g., mermaid, flowchart, etc.).
-    Do not wrap your entire response in triple backticks.`
-
-        onApplyTemplate(finalContent);
-    };
-
-    //IMPORTANT: In Mermaid Gantt charts, do not use colons in task names. The only colon should be between the task and its date/dependency.
-
-
-    const handleRefineDomainPrompt = async () => {
-        setIsRefiningDomain(true); // Set loading state
-        const systemPrompt: Message = {
-            role: 'assistant',
-            content: `You are a prompt refinement expert. Your task is to take the user's input and transform it into the most effective and complete prompt possible for an AI system. 
-The generated prompt must be about what the user wants to achieve, create or write, and it should be clear, concise, and actionable.
-Your output must strictly be a refined prompt, not a response or result to the user's input.
-
-# Instructions:
-
-1. Analyze the user's input to understand the context, objectives, and requirements.
-2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.
-3. Ensure the refined prompt is clear, concise, and actionable.
-4. include specific instructions or guidelines for the AI to follow.
-5. Include a name and description of the core topic of the prompt.
-6. Use Markdown formatting for the output.
-7. User Mermaid syntax for any diagrams or visual representations.
-
-# Example:
-**User Input:** "Help me write a blog post about AI."
-**Refined Prompt:** "Write a detailed blog post about the advancements in artificial intelligence, focusing on recent breakthroughs, applications in various industries, and potential future trends. 
-Include subject, description and examples and references to credible sources."
-
-Now, refine the following user input into an exceptional prompt:
-`
+    Include subject, description and examples and references to credible sources.
+    Now, refine the user input domain prompt into an exceptional domain prompt:
+    `
         };
         // build messages array and append file context if provided
         const userMessage: Message = {
@@ -425,6 +395,52 @@ Now, refine the following user input into an exceptional prompt:
             }
         }
     };
+
+    const handleInsertTemplate = () => {
+        console.log('391 Inserting content:', editableContent);
+        const firstSentence = editableContent.trim().split(/(?<=[.?!])\s/)[0];
+        const restTemplate = editableContent.trim().split(/(?<=[.?!])\s/).slice(1).join(' ');
+        let finalContent = `# Objective: ${firstSentence} 
+# Role:
+    Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.
+
+# Instructions:
+    1. Analyze the provided content to understand the context, objectives, and requirements.
+    2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.
+    3. Ensure the refined prompt is clear, concise, and actionable.
+
+
+# Reasoning Steps:
+    1. Identify the key elements of the content.
+    2. Break down the content into manageable sections
+    3. Ensure the final output is coherent and follows a logical flow.
+    4. Include specific instructions or guidelines for the AI to follow.
+
+   # Output Format:
+    Markdown
+
+# Context 
+${domainContent}
+
+# Content
+${restTemplate}
+
+# Constraints
+1. Ensure clarity, conciseness, and logical flow.
+2. Wrap any code in \`\`\`language …\`\`\` blocks.  
+3. Only include diagrams (e.g., Mermaid) if specified in the task.
+
+# Final Instructions
+If you include code snippets, use triple backticks and specify the language.  
+Do not wrap your entire response in backticks.
+`
+        onApplyTemplate(finalContent);
+    };
+
+    //IMPORTANT: In Mermaid Gantt charts, do not use colons in task names. The only colon should be between the task and its date/dependency.
+
+
+
     const handleRefinePrompt = async () => {
         setIsRefining(true); // Set loading state
         const systemPrompt: Message = {
@@ -636,23 +652,15 @@ Now, refine the following user input into an exceptional prompt:
                             <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground">
                                 <h3 className="text-sm font-semibold text-center">Business</h3>
                                 <div className="flex flex-col gap-2 h-[40vh] min-h-[10px] max-h-[120vh] overflow-y-auto">
-                                    {filteredTemplates
-                                        .filter(template => template.usage === "Business")
-                                        .map((template, index) => {
-                                            const actualIndex = filteredTemplates.findIndex(t => t === template);
-                                            return (
-                                                <button
-                                                    key={actualIndex}
-                                                    onClick={() => handleTemplateSelect(actualIndex)}
-                                                    className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-700 text-gray-100'
-                                                        }`}
-                                                >
-                                                    {template.title}
-                                                </button>
-                                            );
-                                        })}
+                                    {filteredTemplates.map((template) => (
+                                        <button
+                                            key={template.title}
+                                            onClick={() => handleTemplateSelect(template)}
+                                            className={selectedTemplateKey === template.title ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}
+                                        >
+                                            {template.title}
+                                        </button>
+                                    ))}
                                 </div>
                             </div>
 
@@ -667,7 +675,7 @@ Now, refine the following user input into an exceptional prompt:
                                             return (
                                                 <button
                                                     key={actualIndex}
-                                                    onClick={() => handleTemplateSelect(actualIndex)}
+                                                    onClick={() => handleTemplateSelect(filteredTemplates[actualIndex])}
                                                     className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
                                                         ? 'bg-blue-600 text-white'
                                                         : 'bg-gray-700 text-gray-100'

@@ -141,6 +141,14 @@
     max-width: 100%;
     height: auto;
 }
+/* Ensure all Mermaid edges and arrows are white in dark mode */
+.mermaid .edgePath path {
+    stroke: #ffffff !important;
+}
+
+.mermaid .arrowheadPath {
+    fill: #ffffff !important;
+}
 
 /* Override resizing if desired */
 .no-resize-mermaid .mermaid svg {

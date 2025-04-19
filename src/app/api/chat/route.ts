@@ -18,10 +18,45 @@ export async function POST(request: Request) {
     const effectiveModel = (body.model && body.model.trim()) ? body.model.trim() : 'gpt-4';
 
 
-    // Define system and assistant prompts
+    // Define prompt this is used as system common prompt for all prompts. 
     const systemPrompt = {
       role: 'system',
-      content: 'You are a helpful assistant and expert with several year of experience in the topic given by the user.'
+      content: `You are an expert consultant specializing in the domain described in the context. 
+Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.
+You are an expert consultant with extensive domain knowledge.
+  • Provide responses that are clear, precise, and actionable.
+  • Use Markdown: headings, bullet points, numbered lists.
+  • Wrap code in \`\`\`language …\`\`\` blocks.
+  • Include diagrams only when specified; use correct Mermaid syntax.
+  • For Gantt charts, use dateFormat YYYY-MM-DD and start at today's date.
+  • Use the latest version of Mermaid syntax.
+  • Use the latest version of Markdown.
+Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate.
+For Mermaid diagrams, use today's date as the start date and follow this exact format:
+
+# Example Gantt Chart:
+\`\`\`mermaid
+gantt
+  %%{ init: {
+      "theme": "base",
+      "themeVariables": {
+        "lineColor": "#dddddd",
+        "arrowColor": "#dddddd",
+        "ganttAxisTextColor": "#dddddd",
+        "ganttAxisFontSize": 12,
+        "ganttAxisFontFamily": "Arial, sans-serif"
+        "ganttTaskTextColor": "#dddddd",
+      }
+    } }%%
+    title Project Timeline
+    dateFormat YYYY-MM-DD
+    axisFormat %Y-%m-%d
+    Start: milestone, ${new Date().toISOString().split('T')[0]}, 5d
+    section Planning
+    Task1: 10d
+    Task2: 20d
+\`\`\`
+    `
     };
 
     const assistantStartPrompt = {
@@ -53,7 +88,8 @@ export async function POST(request: Request) {
     }
 
     // Prepend the prompts to the messages array
-    const updatedMessages = [systemPrompt, assistantPrompt, ...messages];
+    const updatedMessages = [systemPrompt, ...messages];
+    // const updatedMessages = [systemPrompt, assistantPrompt, ...messages];
     // Helper function to check if input is vague
     function isInputVague(input: string): boolean {
       // Check if input is only one word
@@ -144,7 +180,7 @@ export async function POST(request: Request) {
 
   // Deepseek API implementation - fixed the duplicate return statement
   async function callDeepseek(messages: Message[], model: string): Promise<string> {
-    console.log('Deepseek API called with messages:', messages, model);
+    console.log('147 Deepseek API called with messages:', messages, model);
     const apiKey = process.env.DEEPSEEK_API_KEY;
     console.log('api key', process.env.DEEPSEEK_API_KEY)
     if (!apiKey) {

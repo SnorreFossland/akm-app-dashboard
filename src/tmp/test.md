@@ -1,25 +1,69 @@
-#Help me define and scope the following domain/topic:
-Domain Identification:
-	•	Domain Name: **Mirmris Modeling App**
-	•	Domain Description: **Modeling App for cyclic Modeling and Metamodeling with graphical symbols and typeviews. It opens for various Modelviews of the same model objects and relationships.  Models can be stored as JSON files locally or on GitHub **
-Domain scope: 
-	•	In-Scope: **Enterprise Modeling, Process Modelling, Workspace Modeling,  POPS, IRTV**
-	•	Out-of-Scope: **Static diagramming**
-Key Domain Concepts and Terms
-	•	Core Concepts: **Cyclic Modeling and Metamodeling, Concept Modeling,  Scaffolding Modeling, Knowledge Modeling**
-	•	Relevant Keywords: **Metamodeling, Active knowledge Modeling, POPS Product- Organisation,-Process,-Service Modeling, IRTV Information-Role-Task-View Modeling**
-Primary objectives: **Make a comprehensive Modelling tool with the most flexible cyclic Meta modeling functionality available **
-Key stakeholders:
-Identify and categorize stakeholders by their roles or involvement:
-	•	Primary Stakeholders: **Kavca, Frank Lillehagen, Dag Karlsen, Snorre Fossland,**
-	•	Secondary Stakeholders: **Equinor, OSDU**
-Current limitations and Boundaries:
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-    •	Constraint/Boundary 1
-	•	Constraint/Boundary 2
-Success criteria: 
-Define clear, measurable, and achievable indicators of success:
-	•	**Make it a Open Source Software with many contributors** (Measurable)
-	•	**Get a stable user group and companies** (Measurable)
-
-##**Domain/Topic Scoping**: 
+[
+  {
+    role: 'system',
+    content: 'You are a helpful assistant and expert with several year of experience in the topic given by the user.'
+  },
+  {
+    role: 'assistant',
+    content: "Please provide as detailed response as possible to the user's query."
+  },
+  {
+    role: 'user',
+    content: '# Role:\n' +
+      '    You are an expert consultant specializing in the domain described in the **context**. \n' +
+      '    Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.\n' +
+      '    If placeholders are present, please replace them with the most relevant information.\n' +
+      '\n' +
+      '    # Objective:\n' +
+      '    Write a short blog post about the topic in the #context below:\n' +
+      'The context is a domain/topic definition and scope.\n' +
+      '\n' +
+      '    # Instructions:\n' +
+      '    1. Analyze the provided content to understand the context, objectives, and requirements.\n' +
+      '    2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.\n' +
+      '    3. Ensure the refined prompt is clear, concise, and actionable.\n' +
+      '\n' +
+      '    # Reasoning Steps:\n' +
+      '    1. Identify the key elements of the content.\n' +
+      '    2. Break down the content into manageable sections.\n' +
+      '    3. Use the placeholders to guide the refinement process.\n' +
+      '    4. Ensure the final output is coherent and follows a logical flow.\n' +
+      '    5. Include specific instructions or guidelines for the AI to follow.\n' +
+      '    6. Use Markdown formatting for the output.\n' +
+      '    7. Make sure the Mermaid syntax is correct for any diagrams or visual representations.\n' +
+      '\n' +
+      '    # Output Format:\n' +
+      '    Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate.\n' +
+      '\n' +
+      "    For Mermaid diagrams, use today's date (2025-04-19) as the start date and follow this exact format:\n" +
+      '\n' +
+      '    # Example Gantt Chart:\n' +
+      '\n' +
+      '    ```mermaid\n' +
+      '    gantt\n' +
+      '        title Project Timeline\n' +
+      '        dateFormat YYYY-MM-DD\n' +
+      '        axisFormat %Y-%m-%d\n' +
+      '        Start : milestone, 2025-04-19, 1d\n' +
+      '        section Phase 1\n' +
+      '        Task1 : 10d\n' +
+      '        Task2 : 20d\n' +
+      '        Task3 : 20d\n' +
+      '    ```\n' +
+      '\n' +
+      '    # Context \n' +
+      '    Write a short blog post about the topic in the #context below:\n' +
+      'The context is a domain/topic definition and scope. You should use this to create a blog post that is informative and engaging.\n' +
+      '\n' +
+      '#Context:\n' +
+	  ' ....................'
+  
+      '    # Final Instructions:\n' +
+      '    If you include code snippets, wrap them in triple backticks and specify the language, e.g., ```javascript.\n' +
+      '    For any diagrams, ensure you use proper markdown syntax with three backticks (not two).\n' +
+      '    Only include diagrams in the response if they are specified of relevant to the content.\n' +
+      '    Also ensure to use the correct syntax for the diagram type you are using (e.g., mermaid, flowchart, etc.).\n' +
+      '    Do not wrap your entire response in triple backticks.'
+  },
+  { role: 'user', content: 'Retry with model: deepseek-chat' }
+]
