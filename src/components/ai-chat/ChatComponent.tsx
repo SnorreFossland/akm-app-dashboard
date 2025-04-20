@@ -317,16 +317,32 @@ export default function ChatComponent({
                                 </div>
                             </div>
                         ) : (
-                            <div className="absolute inset-0 z-10 ">
-
-                                <div className="absolute inset-0 z-10 flex items-center justify-center">
-                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
-                                        <AnimatedAICircle className="absolute inset-0 z-0" />
+                            <div className="flex justify-center items-center bg-transparent px-6 py-3 rounded-lg">
+                                <div className="flex items-center justify-center">
+                                    <div>
+                                        <p className="text-gray-400 text-lg font-mono">
+                                            Getting started!
+                                            Follow the 1, 2, 3 steps in the left pane:
+                                            1. Describe your topic in the top left area in the pane. 
+                                            2. Select a prompt template to make a report on your topic.
+                                            3. Make changes to the report and click on the Right arrow to insert it into the chat.
+                                            4. Click on the up arrow to ask the AI.
+                                            5. Click on Preview to see the markdown preview.
+                                        </p>
+                                    </div>
+                                    <div className="absolute inset-0 z-10 flex items-center justify-center">
+                                        <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
+                                            <AnimatedAICircle className="absolute inset-0 z-0" />
+                                        </div>
+                                    </div>
+                                    <div className="mt-100 z-10 text-green-400 text-xl font-mono text-center">
+                                        Select a prompt template or start typing below ...
                                     </div>
                                 </div>
-                                <div className="mt-100 z-10 text-green-400 text-xl font-mono text-center">
-                                    Select a prompt template or start typing below ...
-                                </div>
+                                <div className="z-10 text-gray-400 text-lg font-mono text-center">
+                                    Getting started! Describe your topic in the top left area. 
+                                    Click to start typing...
+                                 </div>
                             </div>
                         )
                         }
