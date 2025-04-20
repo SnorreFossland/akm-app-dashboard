@@ -62,17 +62,14 @@ gantt
     const assistantStartPrompt = {
       role: 'assistant',
       content: `Hello! How can I assist you today?
-      You can ask me anything related to a topic you choose.\n\n
-      Please provide as much detail as possible for the best results.\n\n
-      If you're unsure where to start, here are some suggestions:\n\n
-      - Ask for a summary of a specific topic.\n\n
-      - Request a list of resources or references.\n\n
-      - Inquire about best practices or tips.\n\n
-      - Seek clarification on a concept or term.\n\n
-      - Ask for examples or case studies.\n\n
-      If you have a specific question or task, feel free to ask!\n\n
-      .\n
-      You can also select a template from the list in the left panel to get started.`
+      You can ask me anything related to a topic you choose.
+      Please provide as much detail as possible for the best results.
+      If you're unsure where to start, here are some suggestions:
+      - Ask for a summary of a specific topic.
+      - Request a list of resources or references.
+      - Seek clarification on a concept or term.
+      If you have a specific question or task, feel free to ask!\n
+      You can also click on template or library.`
     };
 
     const assistantPrompt = {

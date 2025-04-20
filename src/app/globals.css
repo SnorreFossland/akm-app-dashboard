@@ -210,3 +210,9 @@
 .sidebar-active-icon-mode .my-manual-sidebar-trigger {
     display: none;
 }
+
+.always-scrollbar {
+    overflow-y: scroll !important;
+    scrollbar-width: auto;
+    -webkit-overflow-scrolling: touch;
+}

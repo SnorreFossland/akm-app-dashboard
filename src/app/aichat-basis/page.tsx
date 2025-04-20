@@ -332,7 +332,9 @@ const AIChatPage = () => {
                         />
 
                         <div className="flex items-center justify-end space-x-2">
-                            <div className="flex space-x-2 items-center">
+                            <div className="flex space-x-2 items-center border border-gray-500 rounded p-1">
+                                <div className="text-xs">Name: </div>
+                                {/* Document Name Input */}
                                 <input
                                     type="text"
                                     value={(docName || mdPreview.split('\n')[0] || '').replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')}
@@ -347,7 +349,7 @@ const AIChatPage = () => {
                                     className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                                     disabled={!((docName || mdPreview.split('\n')[0]).replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')).trim()}
                                 >
-                                    <span>Save Current</span>
+                                    <span>Save</span>
                                 </button>
                             </div>
                             <button

@@ -22,12 +22,12 @@ interface Message {
 }
 
 export default function TemplatesPanel({
-    onApplyTemplate, 
+    onApplyTemplate,
     selectedModel,
     editableContent,
     setEditableContent,
     domainContent,
-    setDomainContent 
+    setDomainContent
 }: TemplatesPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.markdown.documents);
@@ -44,7 +44,7 @@ export default function TemplatesPanel({
     const [importedFile, setImportedFile] = useState<string>('');
     const [importedFileName, setImportedFileName] = useState<string>('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-
+    const initialDomainContent = useRef(domainContent);
     const [urlInput, setUrlInput] = useState('');
     const [isFetchingUrl, setIsFetchingUrl] = useState(false);
     const [urlError, setUrlError] = useState('');
@@ -524,10 +524,10 @@ Now, refine the following user input into an exceptional prompt:
         <div className="p-3 h-[92vh] flex flex-col gap-4 overflow-y-auto bg-secondary text-gray-100 shadow-lg">
             <div className="border border-gray-400 p-3 rounded-md">
                 <div className="flex justify-between items-center mb-2 ">
-                    <h2 className="text-secondary-foreground text-lg font-bold">1. What topic would you like to explore or accomplish? </h2>
+                    <h2 className="text-secondary-foreground text-lg font-bold">1. What topic would you like to chat about? </h2>
                     <button
                         onClick={() => setIsTopicVisible(prev => !prev)}
-                        className={`${buttonOutline} text-sm`}
+                        className={`${buttonOutline} text-sm text-foreground bg-background hover:bg-secondary/80`}
                     >
                         {isTopicVisible ? '▲' : '▼'}
                     </button>
@@ -539,17 +539,23 @@ Now, refine the following user input into an exceptional prompt:
                             {/* Special Domain/Topic Scoping Template section */}
                             {domainIndex !== -1 && (
                                 <>
-                                    <div className="flex align-middle items-center justify-between bg-secondary text-secondary-foreground p-2 rounded">
-                                        <h3 className="text-sm font-semibold mb-1">Provide a clear definition and scope for your topic, using:</h3>
+                                    <div className="flex align-middle gap-1 items-center justify-between bg-card text-secondary-foreground px-2 rounded">
+                                        <h3 className="text-sm font-semibold  mb-1 w-full">
+                                            Provide a clear description for your topic. You can use this:
+                                        </h3>
                                         <button
                                             onClick={() => handleDomainTemplate(domainIndex)}
-                                            className={buttonAccent}
+                                            className={`${buttonOutline} h-8`}
                                         >
                                             Template
                                         </button>
+                                        <h3 className="text-sm font-semibold mb-1 w-3/5">
+                                            or you can insert from a file:
+                                        </h3>
+
                                         <button
                                             onClick={() => setIsLibraryOpen(true)}
-                                            className={`${buttonOutline} ${isLibraryOpen ? 'bg-gray-300' : ''}`}
+                                            className={`${buttonSecondary} ${isLibraryOpen ? 'bg-gray-300 h-8' : ''} h-8 w-1/5`}
                                         >
                                             Library
                                         </button>
@@ -579,7 +585,7 @@ Now, refine the following user input into an exceptional prompt:
                         {/* URL Import Section */}
                         {/* Domain Content Section */}
                         <>
-                            <label className="block text-sm font-medium mb-1">... or you can type or paste you domain here :</label>
+                            <label className="block text-sm font-medium mb-1">... or you can type or paste you topic here :</label>
                             <TextareaAutosize
                                 ref={textareaRef}
                                 value={domainContent}
@@ -592,27 +598,42 @@ Now, refine the following user input into an exceptional prompt:
                                 id="editable-domain-textarea"
                             />
                             <div className="flex justify-between items-center mt-2">
-                                <button
-                                    onClick={handleRefineDomainPrompt}
-                                    className={`${buttonSecondary} mx-2 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    disabled={isRefining}
-                                >
-                                    {isRefiningDomain ? (
-                                        <div className="flex items-center">
-                                            <svg className="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                                                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
-                                            </svg>
-                                            <span>Generating...</span>
-                                        </div>
-                                    ) : 'Refine Domain Prompt'}
-                                </button>
-                                <button
-                                    onClick={() => handleSaveToRedux()}
-                                    className={`${buttonPrimary} mt-2`}
-                                >
-                                    Save to Library
-                                </button>
+                                {domainContent !== initialDomainContent.current && (
+                                    <>
+                                        <button
+                                            onClick={handleRefineDomainPrompt}
+                                            className={`mx-2 p-1 rounded ${isRefining ? 'opacity-50 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                            disabled={isRefining}
+                                        >
+                                            {isRefiningDomain ? (
+                                                <div className="flex items-center">
+                                                    <svg className="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+                                                    </svg>
+                                                    <span>Generating...</span>
+                                                </div>
+                                            ) : (
+                                                <div className="flex items-center">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-white" fill="orange" viewBox="0 0 20 20">
+                                                            <rect x="4" y="7" width="12" height="8" rx="2" />
+                                                            <rect x="7" y="3" width="6" height="4" rx="1" />
+                                                            <circle cx="7.5" cy="11" r="1" fill="white" />
+                                                            <circle cx="12.5" cy="11" r="1" fill="white" />
+                                                            <rect x="9" y="15" width="2" height="2" rx="1" />
+                                                        </svg>
+                                                    <span>Refine Domain Prompt</span>
+                                                </div>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => handleSaveToRedux()}
+                                            className={`${buttonSecondary} mx-2 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                        >
+                                            Save to Library
+                                        </button>
+                                    </>
+                                )}
                             </div>
                         </>
                     </>
@@ -621,10 +642,10 @@ Now, refine the following user input into an exceptional prompt:
 
             <div className="flex flex-col gap-2 p-2 bg-secondary text-gray-100 shadow-lg border border-gray-400">
                 <div className="flex justify-between items-center mb-2 ">
-                    <h2 className="text-secondary-foreground font-bold">2. Apply Report Templates</h2>
+                    <h2 className="text-secondary-foreground font-bold">2. Select Report Templates</h2>
                     <button
                         onClick={() => { setIsTemplatesOpen(!isTemplatesOpen); setIsTopicVisible(false) }}
-                        className={`${buttonOutline} text-sm`}
+                        className={`${buttonOutline} text-sm text-foreground bg-background hover:bg-secondary/80`}
                     >
                         {isTemplatesOpen ? '▲' : '▼'}
                     </button>
@@ -650,13 +671,17 @@ Now, refine the following user input into an exceptional prompt:
                         <div className="flex " id="templates-container">
                             {/* Business Templates Column */}
                             <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground">
-                                <h3 className="text-sm font-semibold text-center">Business</h3>
-                                <div className="flex flex-col gap-2 h-[40vh] min-h-[10px] max-h-[120vh] overflow-y-auto">
+                                <h3 className="text-xs font-semibold text-center">Business</h3>
+                                <div className="flex flex-col gap-1 h-[24vh] min-h-[10px] max-h-[40vh] always-scrollbar">
+                                    {/* Business templates will be rendered here */}
                                     {filteredTemplates.map((template) => (
                                         <button
                                             key={template.title}
                                             onClick={() => handleTemplateSelect(template)}
-                                            className={selectedTemplateKey === template.title ? 'bg-blue-600 text-white' : 'bg-gray-700 text-gray-100'}
+                                            className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplateKey === template.title
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-700 text-gray-100'
+                                                }`}
                                         >
                                             {template.title}
                                         </button>
@@ -666,8 +691,8 @@ Now, refine the following user input into an exceptional prompt:
 
                             {/* Personal Templates Column */}
                             <div className="w-1/2 pl-2 bg-secondary text-secondary-foreground ">
-                                <h3 className="text-sm font-semibold text-center">Personal</h3>
-                                <div className="flex flex-col gap-2 h-[40vh] min-h-[10px] max-h-[120vh] overflow-y-auto">
+                                <h3 className="text-xs font-semibold text-center">Personal</h3>
+                                <div className="flex flex-col gap-2 h-[24vh] min-h-[10px] max-h-[40vh] overflow-y-auto">
                                     {filteredTemplates
                                         .filter(template => template.usage === "Personal")
                                         .map((template, index) => {
@@ -676,9 +701,9 @@ Now, refine the following user input into an exceptional prompt:
                                                 <button
                                                     key={actualIndex}
                                                     onClick={() => handleTemplateSelect(filteredTemplates[actualIndex])}
-                                                    className={`w-full text-left p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
+                                                    className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
                                                         ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-700 text-gray-100'
+                                                        : 'bg-gray-700 text-gray-300'
                                                         }`}
                                                 >
                                                     {template.title}
