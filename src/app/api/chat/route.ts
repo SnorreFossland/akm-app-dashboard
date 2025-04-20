@@ -56,6 +56,8 @@ gantt
     Task1: 10d
     Task2: 20d
 \`\`\`
+Make sure to use the latest version of Mermaid syntax.
+For example, for a Gantt chart, use the date format YYYY-MM-DD and start at today's date.
     `
     };
 
@@ -224,7 +226,7 @@ gantt
     if (!apiKey) {
       throw new Error('MISTRAL_API_KEY is not set in environment variables');
     }
-
+    console.log('227 Mistral API called with messages:', messages, model);
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
       headers: {

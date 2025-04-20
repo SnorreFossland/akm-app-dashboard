@@ -15,8 +15,9 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
         content:
 `
 Help me define and scope the domain/topic described in the context below.
-Domain Identification:**[Insert concise and specific name, Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]**
-Domain scope:**[Explicitly list the elements, activities, or areas included within the domain and Clearly specify what aspects are explicitly excluded from the domain.]**
+Domain name:**[Insert concise and specific name]**
+Domain description:**[Provide a clear, concise summary (2-3 sentences) of the domain.]**
+Domain scope:**[List elements, activities, or areas included within the domain]**
 Key Domain Concepts and Terms
 Primary objectives
 Identify and categorize stakeholders by their roles or involvement
@@ -27,20 +28,19 @@ Define clear, measurable, and achievable indicators of success
 `
     },
     {
-        title: "Domain/Topic",
+        title: "Domain/Topic3",
         category: "Domain Definition",
         usage: "Business / Personal",
         content: `Help me define describe and scope the domain/topic described in the context below.:
 `
     },
-    { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the topic described below" },
+    { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the topic described in the context below" },
     {
         title: "Project Plan",
         category: "Planning",
         usage: "Business",
         content:
-`Make a project plan for a project within the domian/topic described below.
-
+`Make a project plan for a project within the domain/topic described in the context below.
 Include the following sections:
 1. Project Overview
 2. Scope Domain
@@ -51,14 +51,9 @@ Include the following sections:
 7. Risks and Mitigation Strategies
 8. Success Criteria
 9. Budget
-10. Communication Plan (text pluss Mermaid diagram)
+10. Communication Plan (text plus Mermaid diagram)
 11. Evaluation and Reporting
-12. Conclusion
-13. Appendix
-14. References
-15. Glossary of Terms
-16. Acknowledgments
-17. Additional Notes
+
 `
     },
     {
@@ -66,27 +61,28 @@ Include the following sections:
         category: "Planning",
         usage: "Business",
         content:
-            `Create a product roadmap for the following product:
-**[Describe product here]**
+`Create a product roadmap for the product described in the context below.:
+[Insert start date]
 Include the following sections:
-1. Product Vision
-2. Goals and Objectives
-3. Target Audience
-4. Key Features
-5. Timeline (phases and milestones as Mermaid diagram)
-6. Milestones
-7. Dependencies
-8. Risks and Mitigation Strategies
-9. Success Metrics
-10. Communication Plan
-11. Evaluation and Reporting
-12. Conclusion
-13. Appendix
-14. References
-15. Glossary of Terms
-16. Acknowledgments
-17. Additional Notes
-            ` },
+1. Header
+2. Time Horizon [Insert time horizon]
+3. Product Vision [Insert product vision]
+3. Strategic Themes & Objectives
+4. Initiatives & Epics
+    For each Theme, list major initiatives or epics that span multiple months.
+5. Features & Milestones (Monthly View)
+    Detail each feature per month, with milestone dates.
+6. Dependencies & Risks
+7. Stakeholders & Owners
+8. Resources & Budget
+9. Competitive Insights
+10. Status & Progress Indicators
+11. Next Steps & Quarterly Review
+12. Appendix
+    - Glossary of Terms
+    - References
+    - Additional Notes
+    ` },
     {
         title: "Learning Plan",
         category: "Learning",
@@ -110,21 +106,21 @@ Include the following sections:
         category: "Meetings",
         usage: "Business",
         content: `Create an agenda for the meeting on the topic described in the context below.
-        Include the following sections:
-        1. Meeting Title [Insert title]
-        2. Date and Time [Insert date and time]
-        3. Location [Insert location]
-        4. Attendees [Insert list of attendees]
-        5. Agenda Items [Insert list of agenda items]
-        6. Discussion Points [Insert list of discussion points]
-        7. Action Items [Insert list of action items]
-        8. Notes [Insert any additional notes]
-        9. Conclusion [Insert conclusion]
-        10. Follow-up [Insert follow-up items]
-        11. Additional Notes 
-           - Resources [Insert any resources or materials needed for the meeting]
-           - Contact Information [Insert contact information for the meeting organizer]
-        `
+Include the following sections:
+    1. Meeting Title [Insert title]
+    2. Date and Time [Insert date and time]
+    3. Location [Insert location]
+    4. Attendees [Insert list of attendees]
+    5. Agenda Items [Insert list of agenda items]
+    6. Discussion Points [Insert list of discussion points]
+    7. Action Items [Insert list of action items]
+    8. Notes [Insert any additional notes]
+    9. Conclusion [Insert conclusion]
+    10. Follow-up [Insert follow-up items]
+    11. Additional Notes 
+        - Resources [Insert any resources or materials needed for the meeting]
+        - Contact Information [Insert contact information for the meeting organizer]
+            `
     },
     {
         title: "Meeting Summary",
@@ -175,14 +171,6 @@ Include the following sections:
 10. Additional Notes
 11. Call to Action
 12. Author Bio
-13. Related Articles
-14. Feedback Request
-15. Social Media Links
-16. Additional Resources
-17. Visuals (if applicable)
-18. SEO Optimization
-19. Keywords
-20. Meta Description
 `
     },
     {
@@ -312,7 +300,7 @@ Include the following sections:
         content: ""
     },
     {
-        title: "Domain/Topic",
+        title: "Domain/Topic2",
         category: "Planning",
         usage: "Business",
         content:

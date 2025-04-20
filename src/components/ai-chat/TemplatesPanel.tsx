@@ -5,9 +5,6 @@ import { RootState } from '@/store';
 import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
 import TextareaAutosize from 'react-textarea-autosize';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
-
-
-
 interface TemplatesPanelProps {
     onApplyTemplate: (content: string) => void;
     selectedModel: string; // Add selectedModel to props
@@ -33,17 +30,18 @@ export default function TemplatesPanel({
     const documents = useSelector((state: RootState) => state.markdown.documents);
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
     const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
-    const [customTemplate, setCustomTemplate] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string>('All'); // State for selected category
     const [isRefining, setIsRefining] = useState(false); // Loading state for refining
     const [isRefiningDomain, setIsRefiningDomain] = useState(false); // Loading state for refining domain
     const [hasRefined, setHasRefined] = useState(false);
     const [messages, setMessages] = useState<Array<{ role: string, content: string }>>([]);
+    const [isPlusMenuOpen, setIsPlusMenuOpen] = useState(false);
     // Add state to track placeholders'
     const [placeholders, setPlaceholders] = useState<{ start: number, end: number, text: string }[]>([]);
     const [importedFile, setImportedFile] = useState<string>('');
     const [importedFileName, setImportedFileName] = useState<string>('');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const editableTextareaRef = useRef<HTMLTextAreaElement>(null);
     const initialDomainContent = useRef(domainContent);
     const [urlInput, setUrlInput] = useState('');
     const [isFetchingUrl, setIsFetchingUrl] = useState(false);
@@ -51,7 +49,9 @@ export default function TemplatesPanel({
     const [docName, setDocName] = useState('');
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [docFilter, setDocFilter] = useState('');
-    const [isTemplatesOpen, setIsTemplatesOpen] = useState(false);
+    const [isTemplatesOpen, setIsTemplatesOpen] = useState(true);
+    const [isDomainTemplateOpen, setIsDomainTemplateOpen] = useState(false);
+    const [templatePlaceholders, setTemplatePlaceholders] = useState<{ start: number, end: number, text: string }[]>([]);
 
     const [isTopicVisible, setIsTopicVisible] = useState(true);
 
@@ -87,12 +87,14 @@ export default function TemplatesPanel({
     }, []);
     // Find all placeholders when content changes, but exclude those within mermaid diagrams
     useEffect(() => {
-        let content = domainContent;
-        if (importedFile) {
+        let content = '';
+        if (editableContent && editableContent !== initialDomainContent.current) {
+            content = editableContent;
+        } else if (importedFile) {
             content = importedFile;
         } else if (editableContent) {
             content = editableContent;
-        }
+        } 
         // If the content is empty, reset placeholders and return
         if (!content) {
             setPlaceholders([]);
@@ -131,8 +133,14 @@ export default function TemplatesPanel({
                 });
             }
         }
-
-        setPlaceholders(newPlaceholders);
+        // Set the placeholders state
+        if (editableContent) {
+            setTemplatePlaceholders(newPlaceholders);
+        } else {    
+            setPlaceholders(newPlaceholders);
+        }
+    
+    
     }, [editableContent, domainContent, importedFile]);
 
     const handleUrlImport = async () => {
@@ -178,6 +186,10 @@ export default function TemplatesPanel({
     const handleSaveToRedux = () => {
         if (!domainContent.trim()) {
             alert('Please provide a Domain description before saving.');
+            return;
+        } else if (
+            !confirm('Are you sure you want to save this domain?')
+        ) {
             return;
         }
 
@@ -236,6 +248,26 @@ export default function TemplatesPanel({
 
         const placeholder = placeholders[index];
         const textarea = textareaRef.current;
+
+        // Focus and select the placeholder text
+        textarea.focus();
+        textarea.setSelectionRange(placeholder.start, placeholder.end);
+
+        // Calculate the position of the selection
+        const text = textarea.value;
+        const lines = text.substr(0, placeholder.start).split('\n');
+        const lineHeight = 20; // Approximate line height in pixels
+        const linePosition = lines.length * lineHeight;
+
+        // Set scroll position to ensure placeholder is visible in the middle of the textarea
+        const textareaHeight = textarea.clientHeight;
+        textarea.scrollTop = Math.max(0, linePosition - (textareaHeight / 2));
+    };
+    const selectTemplatePlaceholder = (index: number) => {
+        if (!editableTextareaRef.current || index >= templatePlaceholders.length) return;
+
+        const placeholder = templatePlaceholders[index];
+        const textarea = editableTextareaRef.current;
 
         // Focus and select the placeholder text
         textarea.focus();
@@ -521,8 +553,8 @@ Now, refine the following user input into an exceptional prompt:
     };
 
     return (
-        <div className="p-3 h-[92vh] flex flex-col gap-4 overflow-y-auto bg-secondary text-gray-100 shadow-lg">
-            <div className="border border-gray-400 p-3 rounded-md">
+        <div className="p-3 h-[96vh] flex flex-col gap-2 overflow-y-auto bg-secondary text-gray-100 shadow-lg">
+            <div className={`border border-gray-400 p-3 rounded-md`}>
                 <div className="flex justify-between items-center mb-2 ">
                     <h2 className="text-secondary-foreground text-lg font-bold">1. What topic would you like to chat about? </h2>
                     <button
@@ -533,36 +565,7 @@ Now, refine the following user input into an exceptional prompt:
                     </button>
                 </div>
                 {isTopicVisible && (
-                    <>
-                        <div className="text-sm text-gray-400 mb-2">
-                            {/* URL Import Section */}
-                            {/* Special Domain/Topic Scoping Template section */}
-                            {domainIndex !== -1 && (
-                                <>
-                                    <div className="flex align-middle gap-1 items-center justify-between bg-card text-secondary-foreground px-2 rounded">
-                                        <h3 className="text-sm font-semibold  mb-1 w-full">
-                                            Provide a clear description for your topic. You can use this:
-                                        </h3>
-                                        <button
-                                            onClick={() => handleDomainTemplate(domainIndex)}
-                                            className={`${buttonOutline} h-8`}
-                                        >
-                                            Template
-                                        </button>
-                                        <h3 className="text-sm font-semibold mb-1 w-3/5">
-                                            or you can insert from a file:
-                                        </h3>
-
-                                        <button
-                                            onClick={() => setIsLibraryOpen(true)}
-                                            className={`${buttonSecondary} ${isLibraryOpen ? 'bg-gray-300 h-8' : ''} h-8 w-1/5`}
-                                        >
-                                            Library
-                                        </button>
-                                    </div>
-                                </>
-                            )}
-                        </div>
+                    <div className="flex flex-col gap-2  rounded-md h-[95%] overflow-y-auto">
 
                         {/* Add placeholder jump buttons */}
                         {placeholders.length > 0 && (
@@ -584,30 +587,78 @@ Now, refine the following user input into an exceptional prompt:
 
                         {/* URL Import Section */}
                         {/* Domain Content Section */}
-                        <>
-                            <label className="block text-sm font-medium mb-1">... or you can type or paste you topic here :</label>
-                            <TextareaAutosize
-                                ref={textareaRef}
-                                value={domainContent}
-                                onChange={(e) => setDomainContent(e.target.value)}
-                                onKeyDown={handleKeyDown}
-                                minRows={7}
-                                maxRows={20}
-                                className="w-full p-2 border border-gray-600 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground"
-                                placeholder="You can edit the content here before saving"
-                                id="editable-domain-textarea"
-                            />
-                            <div className="flex justify-between items-center mt-2">
+
+                        {/* <label className="block text-sm font-medium mb-1">you can type or paste you topic here :</label> */}
+
+
+                        <TextareaAutosize
+                            ref={textareaRef}
+                            value={domainContent}
+                            onChange={(e) => setDomainContent(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            minRows={7}
+                            maxRows={9}
+                            className="w-full p-2 border border-gray-700 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground"
+                            placeholder="You can type or paste your topic here... or click the + button to add a template or file from library"
+                            id="editable-domain-textarea"
+                        />
+                        <div className="relative flex items-center gap-2">
+                            <div className="relative bottom-0 left-0 z-50">
+                                <div className="relative flex items-center gap-2">
+                                    <button
+                                        onClick={() => setIsPlusMenuOpen((open) => !open)}
+                                        className=" hover:bg-gray-700 text-foreground rounded w-8 h-8 flex items-center justify-center shadow-lg text-3xl"
+                                        aria-label="Open menu"
+                                    >
+                                        +
+                                    </button>
+                                    {isPlusMenuOpen && (
+                                        <div className="absolute bottom-full left-0 bg-secondary border border-gray-600 rounded shadow-lg flex flex-col min-w-[100px]">
+                                            <button
+                                                className="px-2 py-2 text-gray-400 text-left hover:bg-blue-600 hover:text-foreground rounded-t flex items-center gap-2"
+                                                onClick={() => {
+                                                    handleDomainTemplate(domainIndex);
+                                                    setIsPlusMenuOpen(false);
+                                                }}
+                                            >
+                                                {/* Template Icon */}
+                                                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <rect x="4" y="4" width="16" height="16" rx="2" fill="currentColor" className="text-blue-200" />
+                                                    <path d="M8 8h8M8 12h8M8 16h4" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                                </svg>
+                                                Template
+                                            </button>
+                                            <button
+                                                className="px-2 py-2 text-left text-gray-400 hover:bg-blue-600 hover:text-white rounded-b flex items-center gap-2"
+                                                onClick={() => {
+                                                    setIsLibraryOpen(true);
+                                                    setIsPlusMenuOpen(false);
+                                                }}
+                                            >
+                                                {/* Library Icon */}
+                                                <svg className="w-5 h-5 text-green-400" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                                                    <rect x="6" y="4" width="12" height="16" rx="2" fill="currentColor" className="text-green-200" />
+                                                    <path d="M9 8h6M9 12h6M9 16h2" stroke="white" strokeWidth="2" strokeLinecap="round" />
+                                                </svg>
+                                                Library
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="flex gap-2 justify-between text-foreground items-start ">
                                 {domainContent !== initialDomainContent.current && (
                                     <>
                                         <button
+                                            title="Click to refine the domain prompt"
                                             onClick={handleRefineDomainPrompt}
-                                            className={`mx-2 p-1 rounded ${isRefining ? 'opacity-50 cursor-not-allowed' : 'bg-blue-600 text-white hover:bg-blue-700'}`}
+                                            className={`p-1 rounded text-foreground  ${isRefining ? 'opacity-50 cursor-not-allowed' : 'bg-outline  hover:bg-gray-700'}`}
                                             disabled={isRefining}
                                         >
                                             {isRefiningDomain ? (
                                                 <div className="flex items-center">
-                                                    <svg className="animate-spin mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                                                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
                                                     </svg>
@@ -615,138 +666,169 @@ Now, refine the following user input into an exceptional prompt:
                                                 </div>
                                             ) : (
                                                 <div className="flex items-center">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5 text-white" fill="orange" viewBox="0 0 20 20">
-                                                            <rect x="4" y="7" width="12" height="8" rx="2" />
-                                                            <rect x="7" y="3" width="6" height="4" rx="1" />
-                                                            <circle cx="7.5" cy="11" r="1" fill="white" />
-                                                            <circle cx="12.5" cy="11" r="1" fill="white" />
-                                                            <rect x="9" y="15" width="2" height="2" rx="1" />
-                                                        </svg>
-                                                    <span>Refine Domain Prompt</span>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" className=" h-5 w-5 text-white" fill="orange" viewBox="0 0 20 20">
+                                                        <rect x="4" y="7" width="12" height="8" rx="2" />
+                                                        <rect x="7" y="3" width="6" height="4" rx="1" />
+                                                        <circle cx="7.5" cy="11" r="1" fill="white" />
+                                                        <circle cx="12.5" cy="11" r="1" fill="white" />
+                                                        <rect x="9" y="15" width="2" height="2" rx="1" />
+                                                    </svg>
+                                                    Refine the prompt
                                                 </div>
                                             )}
                                         </button>
                                         <button
+                                            title="Click to same domain prompt to the library"
                                             onClick={() => handleSaveToRedux()}
-                                            className={`${buttonSecondary} mx-2 ${isRefining ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                            className={`p-1 text-foreground text-foreground  ${isRefining ? 'opacity-50 cursor-not-allowed' : 'bg-outline  hover:bg-gray-700'}`}
+                                            disabled={isRefining}
                                         >
+                                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 inline-block mr-1" viewBox="0 0 20 20" fill="currentColor">
+                                                <path d="M17 3H5a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2zM5 3h11a1 1 0 011 1v3H4V4a1 1 0 011-1z" />
+                                            </svg>
                                             Save to Library
                                         </button>
                                     </>
                                 )}
                             </div>
-                        </>
-                    </>
-                )}
-            </div>
 
-            <div className="flex flex-col gap-2 p-2 bg-secondary text-gray-100 shadow-lg border border-gray-400">
-                <div className="flex justify-between items-center mb-2 ">
-                    <h2 className="text-secondary-foreground font-bold">2. Select Report Templates</h2>
-                    <button
-                        onClick={() => { setIsTemplatesOpen(!isTemplatesOpen); setIsTopicVisible(false) }}
-                        className={`${buttonOutline} text-sm text-foreground bg-background hover:bg-secondary/80`}
-                    >
-                        {isTemplatesOpen ? '▲' : '▼'}
-                    </button>
-                </div>
-                {isTemplatesOpen && (
-                    <div className="flex-1 flex flex-col gap-2">
-                        <div className="flex bg-secondary text-secondary-foreground px-2 rounded-md mb-4">
-                            <label htmlFor="category" className="block me-2 text-sm font-medium whitespace-nowrap">Filter by Category:</label>
-                            <select
-                                id="category"
-                                value={selectedCategory}
-                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                className="w-full px-2 border border-gray-600 rounded-md bg-secondary text-secondary-foreground"
-                            >
-                                {CATEGORIES.map((category, index) => (
-                                    <option key={index} value={category}>
-                                        {category}
-                                    </option>
-                                ))}
-                            </select>
                         </div>
-                        {/* Template Selection Section */}
-                        <div className="flex " id="templates-container">
-                            {/* Business Templates Column */}
-                            <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground">
-                                <h3 className="text-xs font-semibold text-center">Business</h3>
-                                <div className="flex flex-col gap-1 h-[24vh] min-h-[10px] max-h-[40vh] always-scrollbar">
-                                    {/* Business templates will be rendered here */}
-                                    {filteredTemplates.map((template) => (
-                                        <button
-                                            key={template.title}
-                                            onClick={() => handleTemplateSelect(template)}
-                                            className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplateKey === template.title
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-700 text-gray-100'
-                                                }`}
-                                        >
-                                            {template.title}
-                                        </button>
-                                    ))}
-                                </div>
-                            </div>
 
-                            {/* Personal Templates Column */}
-                            <div className="w-1/2 pl-2 bg-secondary text-secondary-foreground ">
-                                <h3 className="text-xs font-semibold text-center">Personal</h3>
-                                <div className="flex flex-col gap-2 h-[24vh] min-h-[10px] max-h-[40vh] overflow-y-auto">
-                                    {filteredTemplates
-                                        .filter(template => template.usage === "Personal")
-                                        .map((template, index) => {
-                                            const actualIndex = filteredTemplates.findIndex(t => t === template);
-                                            return (
-                                                <button
-                                                    key={actualIndex}
-                                                    onClick={() => handleTemplateSelect(filteredTemplates[actualIndex])}
-                                                    className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
-                                                        ? 'bg-blue-600 text-white'
-                                                        : 'bg-gray-700 text-gray-300'
-                                                        }`}
-                                                >
-                                                    {template.title}
-                                                </button>
-                                            );
-                                        })}
-                                </div>
-                            </div>
-                        </div>
                     </div>
                 )}
             </div>
-            {/* Editable Content Section */}
-            <div className="flex flex-col gap-2 p-2 bg-secondary text-gray-100 shadow-lg border border-gray-400">
-                {/* Custom Template Section */}
-                <h3 className="text-md font-semibold ml-1 bg-secondary text-secondary-foreground">
-                    {selectedTemplate === null
-                        ? '3. Prompt'
-                        : selectedTemplate === PROMPT_TEMPLATES.length - 1
-                            ? 'Custom Template'
-                            : 'Prompt for: ' + filteredTemplates[selectedTemplate]?.title}
-                </h3>
+            {/* Template Selection Section */}
+            <div className="flex flex-col gap-2 border border-gray-400 rounded h-[60%]">
+                <div className="shadow-lg overflow-y-auto">
+                    <div className="flex justify-between items-center p-2 bg-secondary text-secondary-foreground">
+                        <h2 className="text-secondary-foreground font-bold">2. Select Report Templates</h2>
+                        <button
+                            onClick={() => { setIsTemplatesOpen(!isTemplatesOpen) }}
+                            className={`${buttonOutline} text-sm text-foreground bg-background hover:bg-secondary/80`}
+                        >
+                            {isTemplatesOpen ? '▲' : '▼'}
+                        </button>
+                    </div>
+                    {isTemplatesOpen && (
+                        <div className="flex-1 flex flex-col gap-2 h-[60%]">
+                            <div className="flex bg-secondary text-secondary-foreground px-2 rounded-md mb-4">
+                                <label htmlFor="category" className="block me-2 text-sm font-medium whitespace-nowrap">Filter by Category:</label>
+                                <select
+                                    id="category"
+                                    value={selectedCategory}
+                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                    className="w-full px-2 border border-gray-600 rounded-md bg-secondary text-secondary-foreground"
+                                >
+                                    {CATEGORIES.map((category, index) => (
+                                        <option key={index} value={category}>
+                                            {category}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+                            {/* Template Selection Section */}
+                            <div className="flex " id="templates-container">
+                                {/* Business Templates Column */}
+                                <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground">
+                                    <h3 className="text-xs font-semibold text-center">Business</h3>
+                                    <div className="flex flex-col gap-1  h-[24vh] min-h-[10px] max-h-[40vh]  always-scrollbar">
+                                        {/* Business templates will be rendered here */}
+                                        {filteredTemplates.map((template) => (
+                                            <button
+                                                key={template.title}
+                                                onClick={() => handleTemplateSelect(template)}
+                                                className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplateKey === template.title
+                                                    ? 'bg-blue-600 text-white'
+                                                    : 'bg-gray-700 text-gray-100'
+                                                    }`}
+                                            >
+                                                {template.title}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
 
-                <TextareaAutosize
-                    value={editableContent}
-                    onChange={(e) => setEditableContent(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    minRows={7}
-                    maxRows={20}
-                    className="w-full p-2 border border-gray-600 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground"
-                    placeholder="You can edit the content here before inserting..."
-                    id="editable-content-textarea"
-                />
-                <div className="flex items-end justify-end gap-4">
-                    <button
-                        onClick={handleInsertTemplate}
-                        className="bg-blue-600 text-xs px-2 py-2 rounded-md hover:bg-blue-700"
-                    >
-                        Insert into Chat →
-                    </button>
+                                {/* Personal Templates Column */}
+                                <div className="w-1/2 pl-2 bg-secondary text-secondary-foreground ">
+                                    <h3 className="text-xs font-semibold text-center">Personal</h3>
+                                    <div className="flex flex-col gap-2 h-[24vh] min-h-[10px] max-h-[40vh] overflow-y-auto">
+                                        {filteredTemplates
+                                            .filter(template => template.usage === "Personal")
+                                            .map((template, index) => {
+                                                const actualIndex = filteredTemplates.findIndex(t => t === template);
+                                                return (
+                                                    <button
+                                                        key={actualIndex}
+                                                        onClick={() => handleTemplateSelect(filteredTemplates[actualIndex])}
+                                                        className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
+                                                            ? 'bg-blue-600 text-white'
+                                                            : 'bg-gray-700 text-gray-300'
+                                                            }`}
+                                                    >
+                                                        {template.title}
+                                                    </button>
+                                                );
+                                            })}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+                {/* Editable Content Section */}
+                <div className="flex flex-col gap-2 p-2 bg-secondary text-gray-100 shadow-lg overflow-y-auto">
+                    {/* Custom Template Section */}
+                    <h3 className="text-md font-semibold ml-1 bg-secondary text-secondary-foreground">
+                        {selectedTemplate === null
+                            ? 'Template Prompt'
+                            : selectedTemplate === PROMPT_TEMPLATES.length - 1
+                                ? 'Custom Template'
+                                : 'Prompt for: ' + filteredTemplates[selectedTemplate]?.title}
+                    </h3>
+
+                    {/* Add placeholder jump buttons */}
+                    {templatePlaceholders.length > 0 && (
+                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                            {templatePlaceholders.map((placeholder, idx) => (
+                                <button
+                                    key={idx}
+                                    onClick={() => selectTemplatePlaceholder(idx)}
+                                    className={buttonAccent}
+                                >
+                                    {placeholder.text.length > 100
+                                        ? `${placeholder.text.substring(0, 99)}...`
+                                        : placeholder.text}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <TextareaAutosize
+                        ref={editableTextareaRef}
+                        value={editableContent}
+                        onChange={(e) => setEditableContent(e.target.value)}
+                        onKeyDown={handleKeyDown}
+                        minRows={5}
+                        maxRows={30}
+                        className="w-full p-2 border border-gray-600 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground"
+                        placeholder="You can edit the content here before inserting..."
+                        id="editable-content-textarea"
+                    />
+                    <div className="flex items-end justify-end gap-4">
+                        <button
+                            title="Insert Prompt with Context into Chat"
+                            onClick={handleInsertTemplate}
+                            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg text-2xl relative group"
+                            aria-label="Insert Prompt with Context into Chat    "
+                            type="button"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
             </div>
-
             {isLibraryOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-gray-800 p-4 rounded-md w-3/4 max-w-2xl max-h-[80vh] overflow-y-auto">
@@ -818,7 +900,8 @@ Now, refine the following user input into an exceptional prompt:
                 </div>
             )
             }
-        </div >
+
+        </div>
     );
 }
 
