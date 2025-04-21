@@ -51,13 +51,14 @@ gantt
     title Project Timeline
     dateFormat YYYY-MM-DD
     axisFormat %Y-%m-%d
-    Start: milestone, ${new Date().toISOString().split('T')[0]}, 5d
+    Start: milestone, 2025-01-01, 0d
     section Planning
     Task1: 10d
     Task2: 20d
 \`\`\`
-Make sure to use the latest version of Mermaid syntax.
-For example, for a Gantt chart, use the date format YYYY-MM-DD and start at today's date.
+If not date is provided, use today's date ${new Date().toISOString().split('T')[0]} as the start date.
+Make sure the syntax is correct and the diagram renders properly.
+
     `
     };
 

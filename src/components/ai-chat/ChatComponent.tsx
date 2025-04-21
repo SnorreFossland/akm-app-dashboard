@@ -318,31 +318,34 @@ export default function ChatComponent({
                             </div>
                         ) : (
                             <div className="flex justify-center items-center bg-transparent px-6 py-3 rounded-lg">
-                                <div className="flex items-center justify-center">
-                                    <div>
-                                        <p className="text-gray-400 text-lg font-mono">
-                                            Getting started!
-                                            Follow the 1, 2, 3 steps in the left pane:
-                                            1. Describe your topic in the top left area in the pane. 
-                                            2. Select a prompt template to make a report on your topic.
-                                            3. Make changes to the report and click on the Right arrow to insert it into the chat.
-                                            4. Click on the up arrow to ask the AI.
-                                            5. Click on Preview to see the markdown preview.
-                                        </p>
-                                    </div>
-                                    <div className="absolute inset-0 z-10 flex items-center justify-center">
-                                        <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
-                                            <AnimatedAICircle className="absolute inset-0 z-0" />
+                                <div className="flex items-top">
+                                    <div className="relative w-[30%] bg-transparent px-6 py-3 rounded-lg">
+                                        <div className="text-gray-500 text-lg font-mono">
+                                            <p className="mb-2">Getting started! In the left pane follow these steps:</p>
+                                            <ol className="list-decimal list-inside">
+                                                <li>Click on the left pane to open the prompt template.</li>
+                                                <li>Describe your topic in the top left area in the pane.</li>
+                                                <li>Select a prompt template to make a report on your topic.</li>
+                                                <li>Make changes to the report and click on the Right arrow to insert it into the chat.</li>
+                                                <li>Click on the up arrow to ask the AI.</li>
+                                                <li>Click on Preview to see the markdown preview.</li>
+                                            </ol>
                                         </div>
                                     </div>
-                                    <div className="mt-100 z-10 text-green-400 text-xl font-mono text-center">
-                                        Select a prompt template or start typing below ...
+                                    <div className="flex-1 items-center justify-center w-[40%]">
+                                        <div className="mt-100 z-10 text-green-400 text-xl font-mono text-center">
+                                                <p>Getting started!</p> <br />
+                                            Select a prompt template or start typing below ...
+                                        </div>
+                                        <div className="flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
+                                            <AnimatedAICircle className="inset-0 z-0" />
+                                        </div>
+                                    </div>
+                                    <div className="text-gray-400 text-lg font-mono text-right w-[30%]">
+                                        Getting started! Describe your topic in the top left area.
+                                        Click to start typing...
                                     </div>
                                 </div>
-                                <div className="z-10 text-gray-400 text-lg font-mono text-center">
-                                    Getting started! Describe your topic in the top left area. 
-                                    Click to start typing...
-                                 </div>
                             </div>
                         )
                         }
@@ -353,8 +356,8 @@ export default function ChatComponent({
                         <div key={index}
                             ref={index === messages.length - 1 ? messagesEndRef : undefined}
                             className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
-                                ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border-blue-800'
-                                : 'bg-background mr-auto max-w-[90%] text-card-foreground flex-col border-4 border-secondary'
+                                ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-800'
+                                : 'bg-background mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
                                 }`}
                         >
                             <div className="flex items-center justify-between gap-3 ps-1">
@@ -394,46 +397,46 @@ export default function ChatComponent({
                                 <div className="text-xs text-gray-400 me-auto">
                                     {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
                                 </div>
-                                </div>
-                                <div className="flex-1 w-full p-1 whitespace-pre-wrap break-words overflow-auto">
-                                    {message.content}
-                                </div>
-                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                            </div>
+                            <div className="flex-1 w-full p-1 whitespace-pre-wrap break-words overflow-auto">
+                                {message.content}
+                            </div>
+                            <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                <button
+                                    onClick={() => handleCopyMessage(message.content, index)}
+                                    className="text-xs text-gray-400 hover:text-gray-200"
+                                >
+                                    {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                </button>
+                                {message.role === 'assistant' && (
                                     <button
-                                        onClick={() => handleCopyMessage(message.content, index)}
-                                        className="text-xs text-gray-400 hover:text-gray-200"
+                                        onClick={() => {
+                                            handleViewInMarkdown(message.content);
+                                        }}
+                                        className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                     >
-                                        {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                    </button>
-                                    {message.role === 'assistant' && (
-                                        <button
-                                            onClick={() => {
-                                                handleViewInMarkdown(message.content);
-                                            }}
-                                            className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                        Markdown Preview
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="18"
+                                            height="18"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            className="inline-block"
                                         >
-                                            Markdown Preview
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="18"
-                                                height="18"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                className="inline-block"
-                                            >
-                                                <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
-                                                <path
-                                                    d="M8 7h9v9"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                />
-                                            </svg>
-                                        </button>
-                                    )}
-                                </div>
-                 
+                                            <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
+                                            <path
+                                                d="M8 7h9v9"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
+
 
                         </div>
                     ))}
@@ -455,13 +458,29 @@ export default function ChatComponent({
                         ref={textareaRef}
                         value={input || ''}
                         onChange={(e) => setInput(e.target.value)}
-                        placeholder="Type a message..."
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                const now = Date.now();
+                                // Use a custom property on the event target to track the last Enter key time
+                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                    // If two returns occur within 2 seconds, submit the form
+                                    handleSubmit(e);
+                                    textarea.lastEnterTime = 0;
+                                } else {
+                                    textarea.lastEnterTime = now;
+                                }
+                            }
+                        }}
+                        placeholder="Ask anything ..."
                         className="flex-1 p-2 border border-gray-600 rounded-md text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
                         minRows={7}  // Reduced from 7 to give more space initially
                         maxRows={12}
                         disabled={isLoading}
                     />
-                    <button
+                    {/* Send button */}
+                    <button 
                         type="submit"
                         className="bg-blue-600 text-gray-100 p-2 rounded-full hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
                         disabled={isLoading || !input?.trim()}
@@ -476,6 +495,19 @@ export default function ChatComponent({
                         >
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
                         </svg>
+                        {/* <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            strokeWidth={2}
+                            stroke="currentColor"
+                            className="w-6 h-6"
+                        >
+                            <rect x="3" y="3" width="18" height="18" rx="3" ry="3" />
+                            <circle cx="9" cy="10" r="1" fill="currentColor" />
+                            <circle cx="15" cy="10" r="1" fill="currentColor" />
+                            <path d="M8 16h8" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg> */}
                     </button>
                 </form>
             </div>

@@ -15,8 +15,8 @@ import MarkdownDocumentManager from '@/components/ai-chat/MarkdownDocumentManage
 const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
-    const [showLeftPanel, setShowLeftPanel] = useState(true);
-    const [showRightPanel, setShowRightPanel] = useState(true);
+    const [showLeftPanel, setShowLeftPanel] = useState(false);
+    const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
     const [input, setInput] = useState<string>("");
@@ -179,10 +179,10 @@ const AIChatPage = () => {
                         <h2 className="text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">Prepare Prompt</h2>
                         <button
                             onClick={() => setShowLeftPanel(!showLeftPanel)}
-                            className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                            title={showLeftPanel ? 'Hide Templates' : 'Show Templates'}
+                            className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            title={showLeftPanel ? 'Hide' : 'Show'}
                         >
-                            {showLeftPanel ? '← Hide Templates' : '→'}
+                            {showLeftPanel ? '←' : '→'}
                         </button>
                     </div> 
                     <TemplatesPanel 
@@ -216,17 +216,17 @@ const AIChatPage = () => {
                     {!showLeftPanel ?
                         <button
                             onClick={() => setShowLeftPanel(!showLeftPanel)}
-                            className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
                             title='Show Templates'
                         >
-                            <span className="ml-1">{!showLeftPanel && '→ Show Templates'}</span>
+                            <span className="ml-1">{!showLeftPanel && '→ Left pane'}</span>
                         </button>
                         : <div className="flex"></div>
                     }
 
                     <h1 className="text-2xl font-bold text-blue-400 px-2">AIChat</h1>
                     <div className="flex items-center space-x-4">
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center text-foreground gap-2">
                             <ModelSelector
                                 selectedModel={selectedModel}
                                 onModelChange={(newModel) => {
@@ -255,10 +255,10 @@ const AIChatPage = () => {
                     {!showRightPanel ?
                         <button
                             onClick={() => setShowRightPanel(!showRightPanel)}
-                            className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
                             title='Show Markdown'
                         >
-                            <span className="mr-1">Show Markdown ←</span>
+                            <span className="mr-1">Right pane ←</span>
                         </button>
                         : <div className="flex"></div>
                     }
@@ -303,10 +303,10 @@ const AIChatPage = () => {
                         <div className="flex items-center justify-between m-2">
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
                                 title='Hide Markdown'
                             >
-                                {showRightPanel && '→ Hide Markdown'}
+                                {showRightPanel && '→'}
                             </button>
                             <h2 className="text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
                                 Markdown Preview
