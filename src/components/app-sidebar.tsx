@@ -1,5 +1,5 @@
 "use client"
-
+import { useState } from "react"  
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -56,80 +56,80 @@ const data = {
     avatar: "/avatar.png",
   },
   navMain: [
-    {
-      title: "AKM AI Playground",
-      url: "#",
-      icon: SquareTerminal,
-      isActive: true,
-      items: [
-        {
-          title: "0 AI chat basis",
-          url: "/aichat-basis",
-          icon: Star,
-          description: "Prompt Builder",
-        },
-        {
-          title: "1 Prompt builder",
-          url: "/prompt-builder",
-          icon: Star,
-          description: "Prompt Builder",
-        },
-        {
-          title: "2 Domain Builder",
-          url: "/domain-builder",
-          icon: Star,
-          description: "Domain Builder",
-        },
-        {
-          title: "3 Ontology Builder.",
-          url: "/concept-builder",
-          icon: Star,
-          description: "Concept Knowledge Modelling",
-        },
-        {
-          title: "4 POPS Model Builder.",
-          url: "/streaming",
-          icon: Star,
-          description: "Product, Organisation, Process, System (POPS) Modelling",
-        },
-        {
-          title: "4 IRTV Model Builder",
-          url: "/model-builder",
-          icon: Star,
-          description: "Active Knowledge Modelling with IRTV",
-        },
-        {
-          title: "5 Modelview Builder ",
-          url: "/model-universe",
-          icon: Star,
-          description: "Active Knowledge Modelling with IRTV",
-        },
-        {
-          title: "streaming test",
-          url: "/streaming",
-          icon: Star,
-          description: "Streaming",
-        },
-        // {
-        //   title: "History",
-        //   url: "#",
-        //   icon: History,
-        //   description: "View your recent prompts",
-        // },
-        // {
-        //   title: "Starred",
-        //   url: "#",
-        //   icon: Star,
-        //   description: "Browse your starred prompts",
-        // },
-        // {
-        //   title: "Settings",
-        //   url: "#",
-        //   icon: Settings2,
-        //   description: "Configure your playground",
-        // },
-      ],
-    },
+    // {
+    //   title: "AKM AI Playground",
+    //   url: "#",
+    //   icon: SquareTerminal,
+    //   isActive: true,
+    //   items: [
+    //     {
+    //       title: "0 AI chat basis",
+    //       url: "/aichat-basis",
+    //       icon: Star,
+    //       description: "Prompt Builder",
+    //     },
+    //     {
+    //       title: "1 Prompt builder",
+    //       url: "/prompt-builder",
+    //       icon: Star,
+    //       description: "Prompt Builder",
+    //     },
+    //     {
+    //       title: "2 Domain Builder",
+    //       url: "/domain-builder",
+    //       icon: Star,
+    //       description: "Domain Builder",
+    //     },
+    //     {
+    //       title: "3 Ontology Builder.",
+    //       url: "/concept-builder",
+    //       icon: Star,
+    //       description: "Concept Knowledge Modelling",
+    //     },
+    //     {
+    //       title: "4 POPS Model Builder.",
+    //       url: "/streaming",
+    //       icon: Star,
+    //       description: "Product, Organisation, Process, System (POPS) Modelling",
+    //     },
+    //     {
+    //       title: "4 IRTV Model Builder",
+    //       url: "/model-builder",
+    //       icon: Star,
+    //       description: "Active Knowledge Modelling with IRTV",
+    //     },
+    //     {
+    //       title: "5 Modelview Builder ",
+    //       url: "/model-universe",
+    //       icon: Star,
+    //       description: "Active Knowledge Modelling with IRTV",
+    //     },
+    //     {
+    //       title: "streaming test",
+    //       url: "/streaming",
+    //       icon: Star,
+    //       description: "Streaming",
+    //     },
+    //     // {
+    //     //   title: "History",
+    //     //   url: "#",
+    //     //   icon: History,
+    //     //   description: "View your recent prompts",
+    //     // },
+    //     // {
+    //     //   title: "Starred",
+    //     //   url: "#",
+    //     //   icon: Star,
+    //     //   description: "Browse your starred prompts",
+    //     // },
+    //     // {
+    //     //   title: "Settings",
+    //     //   url: "#",
+    //     //   icon: Settings2,
+    //     //   description: "Configure your playground",
+    //     // },
+    //   ],
+    // },
     // {
     //   title: "Models",
     //   url: "#",
@@ -155,29 +155,29 @@ const data = {
     //     },
     //   ],
     // },
-    {
-      title: "Documentation",
-      url: "#",
-      icon: BookOpen,
-      items: [
-        {
-          title: "Introduction",
-          url: "#",
-        },
-        {
-          title: "Get Started",
-          url: "#",
-        },
-        {
-          title: "Tutorials",
-          url: "#",
-        },
-        {
-          title: "Changelog",
-          url: "#",
-        },
-      ],
-    },
+    // {
+    //   title: "Documentation",
+    //   url: "#",
+    //   icon: BookOpen,
+    //   items: [
+    //     {
+    //       title: "Introduction",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Get Started",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Tutorials",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Changelog",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
     // {
     //   title: "API",
     //   url: "#",
@@ -205,29 +205,29 @@ const data = {
     // },
     //   ],
     // },
-    {
-      title: "Settings",
-      url: "#",
-      icon: Settings2,
-      items: [
-        {
-          title: "General",
-          url: "#",
-        },
-        {
-          title: "Team",
-          url: "#",
-        },
-        {
-          title: "Billing",
-          url: "#",
-        },
-        {
-          title: "Limits",
-          url: "#",
-        },
-      ],
-    },
+    // {
+    //   title: "Settings",
+    //   url: "#",
+    //   icon: Settings2,
+    //   items: [
+    //     {
+    //       title: "General",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Team",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Billing",
+    //       url: "#",
+    //     },
+    //     {
+    //       title: "Limits",
+    //       url: "#",
+    //     },
+    //   ],
+    // },
   ],
   navSecondary: [
     {
@@ -294,19 +294,23 @@ const data = {
 
 export function AppSidebar({ ...props }) {
   // console.log("291 AppSidebar", props)
+
   return (
-    <Sidebar collapsible="icon" {...props}>
+    <Sidebar 
+      // collapsible="icon"
+      {...props}
+     >
       <SidebarHeader className="sidebar-header mt-1">
-        <div className="flex w-full justify-between items-center">
+        {/* <div className="flex w-full justify-between items-center">
           <TeamSwitcher teams={data.teams} />
-        </div>
+        </div> */}
       </SidebarHeader>
       <SidebarContent className="sidebar-content">
         <SidebarGroup className="sidebar-group">
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
           <div className="space-y-1">
             <Link
-              href="/"
+              href="/aichat-basis"
               className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
               title="Home"
             >
@@ -323,10 +327,11 @@ export function AppSidebar({ ...props }) {
             </Link>
           </div>
         </SidebarGroup>
-        <SidebarGroup className="sidebar-group">
-          <SidebarGroupLabel>Platform</SidebarGroupLabel>
+
+        {/* <SidebarGroup className="sidebar-group">
+          <SidebarGroupLabel>AI Chat</SidebarGroupLabel>
           <NavMain items={data.navMain} searchResults={data.searchResults} />
-        </SidebarGroup>
+        </SidebarGroup> */}
 
         <div className="flex flex-col gap-4">
 
@@ -356,7 +361,7 @@ export function AppSidebar({ ...props }) {
             </div>
           </div> */}
           <ModeToggle />
-          <div className="flex flex-col">
+          {/* <div className="flex flex-col">
             <span className="text-sm font-semibold">Secondary</span>
             <div className="flex flex-col space-y-2">
               {data.navSecondary.map((item) => (
@@ -370,10 +375,10 @@ export function AppSidebar({ ...props }) {
                 </Link>
               ))}
             </div>
-          </div>
+          </div> */}
         </div>
       </SidebarContent>
-      <SidebarFooter className="sidebar-footer">
+      {/* <SidebarFooter className="sidebar-footer">
         <div className="flex items-center space-x-2">
           <Image
             src={data.user.avatar}
@@ -389,7 +394,7 @@ export function AppSidebar({ ...props }) {
             </span>
           </div>
         </div>
-      </SidebarFooter>
+      </SidebarFooter> */}
     </Sidebar>
   )
 }

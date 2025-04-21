@@ -157,7 +157,6 @@ Make sure the syntax is correct and the diagram renders properly.
           model: model,
           messages: messages,
           temperature: 0.7,
-          max_tokens: 100
         }),
         signal: controller.signal
       });
