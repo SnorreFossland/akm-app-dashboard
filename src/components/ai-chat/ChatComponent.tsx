@@ -57,7 +57,7 @@ export default function ChatComponent({
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [errorMsg, setErrorMsg] = useState(''); // <-- error state
 
-    const [topHeight, setTopHeight] = useState<number>(800); // 
+    const [topHeight, setTopHeight] = useState<number>(600); // 
 
     const [showDigitalRain, setShowDigitalRain] = useState(false);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
@@ -90,7 +90,7 @@ export default function ChatComponent({
         const textareaHeight = textareaRef.current.scrollHeight;
 
         // Define minimum space to keep for messages (adjust as needed)
-        const minMessagesSpace = 700;
+        const minMessagesSpace = 500;
 
         // If textarea is larger than default, adjust topHeight
         if (textareaHeight > 150) { // 150px is approximately 7 rows of text
@@ -125,7 +125,7 @@ export default function ChatComponent({
         if (containerRef.current) {
             const containerHeight = containerRef.current.offsetHeight;
             // Set initial top panel to fill most of the container (minus space for input)
-            const initialTopHeight = Math.floor(containerHeight * 0.7);
+            const initialTopHeight = Math.floor(containerHeight * 0.5);
             setTopHeight(initialTopHeight);
         }
     }, []); // Empty dependency array = runs once on mount
@@ -292,11 +292,12 @@ export default function ChatComponent({
     };
 
     return (
-        <div ref={containerRef} className="mb-4 p-4 rounded-lg w-full h-full bg-background">
-            <div className="flex flex-col bg-background rounded-m overflow-y-auto h-full"
-                style={{ height: `${topHeight}px` }}>
-                {messages.length < 1 ? (
-                    <div className="bg-transparent overflow-auto relative h-full">
+        <div ref={containerRef} className="mb-4 p-4 rounded-lg w-[98%]  bg-background">
+            {/* Show getting started and digital rain when no messages */}
+            <div className="flex flex-col bg-background rounded-m h-[600px] overflow-y-auto"> 
+                 {/* style={{ height: `${topHeight}px` }}> this is for draggable bar*/}
+                {messages.length < 1 ? ( 
+                    <div className="bg-transparent overflow-auto">
                         {/* Digital Rain overlay */}
                         {showDigitalRain ? (
                             <div className=" ">
@@ -317,7 +318,7 @@ export default function ChatComponent({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex justify-center items-center bg-transparent px-6 py-3 rounded-lg">
+                            <div className="flex justify-center items-center bg-transparent px-6 py-3 rounded-lg overflow-auto">
                                 <div className="flex items-top">
                                     <div className="relative w-[30%] bg-transparent px-6 py-3 rounded-lg">
                                         <div className="text-gray-500 text-lg font-mono">
@@ -351,7 +352,7 @@ export default function ChatComponent({
                         }
                     </div>
                 ) : <>{messages.length} messages</>}
-                <div className="flex-1 mb-4 p-4 rounded-lg w-full bg-background">
+                <div className="flex-1 mb-4 p-4 rounded-lg w-full max-h-[400px] bg-background">  {/* Set a max height */}
                     {messages.map((message, index) => (
                         <div key={index}
                             ref={index === messages.length - 1 ? messagesEndRef : undefined}
@@ -452,8 +453,8 @@ export default function ChatComponent({
                 currentSize={topHeight}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             /> */}
-            <div className="mb-4 p- rounded-lg w-full bg-background">
-                <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent h-auto">
+            <div className="mb-1 p- rounded-lg w-full bg-background">
+                <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent rounded-lg">
                     <TextareaAutosize
                         ref={textareaRef}
                         value={input || ''}

@@ -57,6 +57,8 @@ export default async function RootLayout({
                 <div className="h-full rounded-md p-0">
                   {children}
                 </div>
+                {/* Spacer to mitigate the gray lower bar on iPads */}
+                <div className="h-16 md:h-20 lg:h-24 bg-transparent"></div>
               </main>
             </SidebarProvider>
           </ThemeProvider>
