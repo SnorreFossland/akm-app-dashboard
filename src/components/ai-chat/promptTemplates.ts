@@ -329,5 +329,22 @@ Define clear, measurable, and achievable indicators of success:
 	•	**[Success Criterion 1]** (Measurable)
 	•	**[Success Criterion 2]** (Measurable)
 `
-    }
+    },
+    {
+        title: "Plan a walk",
+        category: "Exercise",
+        usage: "Personal",
+        content:
+`
+Plan a walk for the with focus on the context below.
+Include:
+1.  Location: [Insert location]
+2.  Distance: [Insert distance]
+3.  Duration: [Insert duration]
+4.  Time of day: [Insert time of day]
+5. Landmarks: [Insert any specific landmarks or points of interest]
+Include search map links to locations, trails, or routes
+Make sure the links are clickable and works
+Make the walk fun and engaging but as choose the shortest continous route possible
+    `
 ];
