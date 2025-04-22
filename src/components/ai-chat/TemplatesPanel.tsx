@@ -598,7 +598,7 @@ Now, refine the following user input into an exceptional prompt:
                             onKeyDown={handleKeyDown}
                             minRows={7}
                             maxRows={9}
-                            className="w-full p-2 border border-gray-700 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground"
+                            className="w-full p-2 border border-gray-700 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground text-base"
                             placeholder="You can type or paste your topic here... or click the + button to add a template or file from library"
                             id="editable-domain-textarea"
                         />
@@ -810,7 +810,7 @@ Now, refine the following user input into an exceptional prompt:
                         onKeyDown={handleKeyDown}
                         minRows={5}
                         maxRows={30}
-                        className="w-full p-2 border border-gray-600 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground"
+                        className="w-full p-2 border border-gray-600 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground text-base"
                         placeholder="You can edit the content here before inserting..."
                         id="editable-content-textarea"
                     />

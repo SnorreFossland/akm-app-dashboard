@@ -1,5 +1,5 @@
 "use client"
-import { useState } from "react"  
+import { useState } from "react"
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -294,48 +294,57 @@ const data = {
 
 export function AppSidebar({ ...props }) {
   // console.log("291 AppSidebar", props)
+  const [isCollapsed, setIsCollapsed] = useState(false); // Replace with your actual logic
+
+  // Toggle handler for the sidebar trigger
+  const handleToggleSidebar = () => setIsCollapsed((prev) => !prev);
 
   return (
-    <Sidebar 
-      // collapsible="icon"
-      {...props}
-     >
-      <SidebarHeader className="sidebar-header mt-1">
-        {/* <div className="flex w-full justify-between items-center">
+    <div className="relative">
+      {/* Fixed topbar, only as wide as the sidebar */}
+      <div className="fixed top-0 left-0 z-30 w-16 h-6 flex flex-row items-center justify-between bg-transparent">
+        <SidebarTrigger onClick={handleToggleSidebar} />
+        {isCollapsed && <ModeToggle />}
+      </div>
+      {/* Sidebar with top padding to avoid overlap */}
+      <div className="pl-6 pt-12">
+        <Sidebar {...props}>
+          <SidebarHeader className="sidebar-header mt-1">
+            {/* <div className="flex w-full justify-between items-center">
           <TeamSwitcher teams={data.teams} />
         </div> */}
-      </SidebarHeader>
-      <SidebarContent className="sidebar-content">
-        <SidebarGroup className="sidebar-group">
-          <SidebarGroupLabel>Navigation</SidebarGroupLabel>
-          <div className="space-y-1">
-            <Link
-              href="/aichat-basis"
-              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
-              title="Home"
-            >
-              <Frame className="h-4 w-4 flex-shrink-0" />
-              <span className="text-sm sidebar-item-content">Home</span>
-            </Link>
-            <Link
-              href="/modelling"
-              className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
-              title="AKM Modeller"
-            >
-              <Atom className="h-4 w-4 flex-shrink-0" />
-              <span className="text-sm sidebar-item-content">AKM Modeller</span>
-            </Link>
-          </div>
-        </SidebarGroup>
+          </SidebarHeader>
+          <SidebarContent className="sidebar-content">
+            <SidebarGroup className="sidebar-group">
+              <SidebarGroupLabel>Navigation</SidebarGroupLabel>
+              <div className="space-y-1">
+                <Link
+                  href="/aichat-basis"
+                  className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
+                  title="Home"
+                >
+                  <Frame className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-sm sidebar-item-content">Home</span>
+                </Link>
+                <Link
+                  href="/modelling"
+                  className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
+                  title="AKM Modeller"
+                >
+                  <Atom className="h-4 w-4 flex-shrink-0" />
+                  <span className="text-sm sidebar-item-content">AKM Modeller</span>
+                </Link>
+              </div>
+            </SidebarGroup>
 
-        {/* <SidebarGroup className="sidebar-group">
+            {/* <SidebarGroup className="sidebar-group">
           <SidebarGroupLabel>AI Chat</SidebarGroupLabel>
           <NavMain items={data.navMain} searchResults={data.searchResults} />
         </SidebarGroup> */}
 
-        <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-4">
 
-          {/* <div className="flex flex-col">
+              {/* <div className="flex flex-col">
             <span className="text-sm font-semibold">Projects</span>
             <div className="flex flex-col space-y-2">
               {data.projects.map((project) => (
@@ -350,7 +359,7 @@ export function AppSidebar({ ...props }) {
               ))}
             </div>
           </div> */}
-          {/* <div className="flex flex-col">
+              {/* <div className="flex flex-col">
             <span className="text-sm font-semibold">Storage</span>
             <div className="flex flex-col space-y-2">
               <StorageCard
@@ -360,8 +369,8 @@ export function AppSidebar({ ...props }) {
               />
             </div>
           </div> */}
-          <ModeToggle />
-          {/* <div className="flex flex-col">
+
+              {/* <div className="flex flex-col">
             <span className="text-sm font-semibold">Secondary</span>
             <div className="flex flex-col space-y-2">
               {data.navSecondary.map((item) => (
@@ -376,9 +385,9 @@ export function AppSidebar({ ...props }) {
               ))}
             </div>
           </div> */}
-        </div>
-      </SidebarContent>
-      {/* <SidebarFooter className="sidebar-footer">
+            </div>
+          </SidebarContent>
+          {/* <SidebarFooter className="sidebar-footer">
         <div className="flex items-center space-x-2">
           <Image
             src={data.user.avatar}
@@ -395,6 +404,8 @@ export function AppSidebar({ ...props }) {
           </div>
         </div>
       </SidebarFooter> */}
-    </Sidebar>
+        </Sidebar>
+      </div>
+    </div>
   )
 }

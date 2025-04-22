@@ -292,13 +292,13 @@ export default function ChatComponent({
     };
 
     return (
-        <div ref={containerRef} className="mb-4 p-4 rounded-lg w-[98%]  bg-background">
+        <div ref={containerRef} className="flex flex-col h-[92%] min-h-0 rounded-lg bg-background sm:min-w-[460px] sm:h-auto sm:p-1 overflow-hidden">
+        {/* <div ref={containerRef} className="flex flex-col h-[92%] min-h-0 rounded-lg bg-background sm:min-w-[460px] sm:h-auto sm:p-1 overflow-hidden"> */}
             {/* Show getting started and digital rain when no messages */}
-            <div className="flex flex-col bg-background rounded-m h-[600px] overflow-y-auto"> 
-                 {/* style={{ height: `${topHeight}px` }}> this is for draggable bar*/}
-                {messages.length < 1 ? ( 
-                    <div className="bg-transparent overflow-auto">
-                        {/* Digital Rain overlay */}
+            <div className="flex-1 flex flex-col bg-background rounded-m  overflow-y-auto min-h-0">
+                {/* style={{ height: `${topHeight}px` }}> this is for draggable bar*/}
+                {messages.length < 1 ? (
+                    <div className="flex flex-col items-center justify-center w-full py-6 overflow-auto">
                         {showDigitalRain ? (
                             <div className=" ">
                                 <div className="absolute inset-0 z-20">
@@ -309,7 +309,7 @@ export default function ChatComponent({
                                     />
                                 </div>
                                 <div className="absolute inset-0 z-20 flex items-center justify-center">
-                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
+                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg min-h-0">
                                         <AnimatedAICircle className="absolute inset-0 z-0" />
                                     </div>
                                 </div>
@@ -318,45 +318,37 @@ export default function ChatComponent({
                                 </div>
                             </div>
                         ) : (
-                            <div className="flex justify-center items-center bg-transparent px-6 py-3 rounded-lg overflow-auto">
-                                <div className="flex items-top">
-                                    <div className="relative w-[30%] bg-transparent px-6 py-3 rounded-lg">
-                                        <div className="text-gray-500 text-lg font-mono">
-                                            <p className="mb-2">Getting started! In the left pane follow these steps:</p>
-                                            <ol className="list-decimal list-inside">
-                                                <li>Click on the left pane to open the prompt template.</li>
+                            <div className="flex-1 text-primary overflow-auto min-h-0">
+                                    <div className="flex flex-col items-center justify-center w-full py-6 min-h-0">
+                                        <div className="text-green-400 text-xl font-mono text-center mb-4">
+                                            <p>Getting started by asking your question below!</p>
+                                        </div>
+                                        <div className="flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg mb-4 min-h-0">
+                                            <AnimatedAICircle className="inset-0 z-0" />
+                                        </div>
+                                        <div className="w-full max-w-md">
+                                            <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
+                                            <p className="mb-2 text-center">Follow these steps:</p>
+                                            <ol className="text-sm list-decimal list-inside overflow-auto text-left">
+                                                <li>Open the left pane Click on the "Left pane" button upper left .</li>
                                                 <li>Describe your topic in the top left area in the pane.</li>
-                                                <li>Select a prompt template to make a report on your topic.</li>
-                                                <li>Make changes to the report and click on the Right arrow to insert it into the chat.</li>
+                                                <li>Select a prompt template to make a report/doc on your topic.</li>
+                                                <li>Edit the prompt and click on the Right arrow to insert it into the chat.</li>
                                                 <li>Click on the up arrow to ask the AI.</li>
-                                                <li>Click on Preview to see the markdown preview.</li>
+                                                <li>Click on Preview to see the result in right panel as markdown preview.</li>
                                             </ol>
                                         </div>
                                     </div>
-                                    <div className="flex-1 items-center justify-center w-[40%]">
-                                        <div className="mt-100 z-10 text-green-400 text-xl font-mono text-center">
-                                                <p>Getting started!</p> <br />
-                                            Select a prompt template or start typing below ...
-                                        </div>
-                                        <div className="flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg">
-                                            <AnimatedAICircle className="inset-0 z-0" />
-                                        </div>
-                                    </div>
-                                    <div className="text-gray-400 text-lg font-mono text-right w-[30%]">
-                                        Getting started! Describe your topic in the top left area.
-                                        Click to start typing...
-                                    </div>
-                                </div>
                             </div>
-                        )
-                        }
+                        )}
                     </div>
-                ) : <>{messages.length} messages</>}
-                <div className="flex-1 mb-4 p-4 rounded-lg w-full max-h-[400px] bg-background">  {/* Set a max height */}
+                ) : null}
+
+                <div className="flex flex-col p-4 rounded-lg w-full bg-background overflow-auto min-h-0">
                     {messages.map((message, index) => (
                         <div key={index}
                             ref={index === messages.length - 1 ? messagesEndRef : undefined}
-                            className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
+                            className={`mb-4 p-3 rounded-lg flex flex-col gap-2 bg-background ${message.role === 'user'
                                 ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-800'
                                 : 'bg-background mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
                                 }`}
@@ -395,11 +387,14 @@ export default function ChatComponent({
                                         </svg>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-400 me-auto">
+                                <div className="text-xs text-gray-400 me-auto overflow-auto">
                                     {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
                                 </div>
                             </div>
-                            <div className="flex-1 w-full p-1 whitespace-pre-wrap break-words overflow-auto">
+                            <div
+                                className="flex w-full p-1 whitespace-pre-wrap break-words break-all overflow-auto"
+                                style={{ overflowWrap: 'anywhere' }}
+                            >
                                 {message.content}
                             </div>
                             <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
@@ -453,8 +448,8 @@ export default function ChatComponent({
                 currentSize={topHeight}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             /> */}
-            <div className="mb-1 p- rounded-lg w-full bg-background">
-                <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent rounded-lg">
+            <div className="p-2 rounded-lg w-full bg-background">
+                <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent rounded-lg min-h-0">
                     <TextareaAutosize
                         ref={textareaRef}
                         value={input || ''}
@@ -475,13 +470,13 @@ export default function ChatComponent({
                             }
                         }}
                         placeholder="Ask anything ..."
-                        className="flex-1 p-2 border border-gray-600 rounded-md text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="flex-1 p-2 border border-gray-600 rounded-md text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
                         minRows={7}  // Reduced from 7 to give more space initially
                         maxRows={12}
                         disabled={isLoading}
                     />
                     {/* Send button */}
-                    <button 
+                    <button
                         type="submit"
                         className="bg-blue-600 text-gray-100 p-2 rounded-full hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
                         disabled={isLoading || !input?.trim()}

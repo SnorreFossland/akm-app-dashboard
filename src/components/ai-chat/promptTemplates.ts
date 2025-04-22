@@ -8,38 +8,9 @@ export interface PromptTemplate {
 
 // Export the templates array
 export const PROMPT_TEMPLATES: PromptTemplate[] = [
-    {
-        title: "Domain",
-        category: "Planning",
-        usage: "Business",
-        content:
-`
-Help me define and scope the domain/topic described in the context below.
-Domain name:**[Insert concise and specific name]**
-Domain description:**[Provide a clear, concise summary (2-3 sentences) of the domain.]**
-Domain scope:**[List elements, activities, or areas included within the domain]**
-Key Domain Concepts and Terms
-Primary objectives
-Identify and categorize stakeholders by their roles or involvement
-Current limitations and Boundaries
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-Success criteria 
-Define clear, measurable, and achievable indicators of success
-`
-    },
-    {
-        title: "Domain/Topic3",
-        category: "Domain Definition",
-        usage: "Business / Personal",
-        content: `Help me define describe and scope the domain/topic described in the context below.:
-`
-    },
-    { category: "Brainstorming", title: "Brainstorming Ideas", usage: "Personal", content: "Generate ideas for the topic described in the context below" },
-    {
-        title: "Project Plan",
-        category: "Planning",
-        usage: "Business",
-        content:
+    { title: "Brainstorming Ideas", category: "Brainstorming", usage: "Personal", content: "Generate ideas for the topic described in the context below" },
+    {title: "Task List", category: "Task Management", usage: "Personal",content: "Create a task list for the topic described in the context below." },
+    { title: "Project Plan", category: "Planning",usage: "Business", content:
 `Make a project plan for a project within the domain/topic described in the context below.
 Include the following sections:
 1. Project Overview
@@ -56,10 +27,7 @@ Include the following sections:
 
 `
     },
-    {
-        title: "Product Roadmap",
-        category: "Planning",
-        usage: "Business",
+    {title: "Product Roadmap", category: "Planning", usage: "Business",
         content:
 `Create a product roadmap for the product described in the context below.:
 [Insert start date]
@@ -74,35 +42,16 @@ Include the following sections:
     Detail each feature per month, with milestone dates.
 6. Dependencies & Risks
 7. Stakeholders & Owners
-8. Resources & Budget
-9. Competitive Insights
-10. Status & Progress Indicators
-11. Next Steps & Quarterly Review
-12. Appendix
-    - Glossary of Terms
-    - References
-    - Additional Notes
-    ` },
-    {
-        title: "Learning Plan",
+` 
+    },
+
+    {title: "Learning Plan",
         category: "Learning",
         usage: "Personal",
         content: "Create a learning plan for the topic described in the context below."
     },
-    {
-        title: "Feedback Request",
-        category: "Feedback",
-        usage: "Business",
-        content: "Request feedback on the following topic:\n\n**[Describe topic here]**"
-    },
-    {
-        title: "Task List",
-        category: "Task Management",
-        usage: "Personal",
-        content: "Create a task list for the topic described in the context below."
-    },
-    {
-        title: "Meeting Agenda",
+
+    {title: "Meeting Agenda",
         category: "Meetings",
         usage: "Business",
         content: `Create an agenda for the meeting on the topic described in the context below.
@@ -122,38 +71,32 @@ Include the following sections:
         - Contact Information [Insert contact information for the meeting organizer]
             `
     },
-    {
-        title: "Meeting Summary",
+    {title: "Meeting Summary",
         category: "Meetings",
         usage: "Business",
         content: "Summarize the following meeting:\n\n**[Describe meeting here]**"
     },
-    {
-        title: "Meeting Notes",
+    { title: "Meeting Notes",
         category: "Meetings",
         usage: "Business",
         content: "Summarize the following meeting notes into key points:\n\n**[Paste meeting notes here]**"
     },
-    {
-        title: "Content Outline",
+    {title: "Content Outline",
         category: "Content Creation",
         usage: "Business",
         content: "Create an outline for the following content:\n\n**[Describe content here]**"
     },
-    {
-        title: "Presentation Slides",
+    { title: "Presentation Slides",
         category: "Content Creation",
         usage: "Business",
         content: "Create a slide deck for the following topic:\n\n**[Describe topic here]**"
     },
-    {
-        title: "Social Media Post",
+    {title: "Social Media Post",
         category: "Content Creation",
         usage: "Personal",
         content: "Create a social media post for the topic described below."
     },
-    {
-        title: "Blog Post",
+    {title: "Blog Post",
         category: "Content Creation",
         usage: "Personal",
         content: 
@@ -173,80 +116,62 @@ Include the following sections:
 12. Author Bio
 `
     },
-    {
-        title: "Marketing Strategy",
+    {title: "Marketing Strategy",
         category: "Marketing",
         usage: "Business",
         content: "Outline a marketing strategy for the following product:\n\n**[Describe product here]**"
     },
-    {
-        title: "Press Release",
+    {title: "Press Release",
         category: "Marketing",
         usage: "Business",
-        content: "Draft a press release for the following event:\n\n**[Describe event here]**"
+        content: "Draft a press release for the following event:\n\n**[Describe event here]** about the topic in the domain/topic described in the context below."
     },
-    {
-        title: "User Persona",
+    {title: "User Persona",
         category: "User Research",
         usage: "Business",
-        content: "Create a user persona for the following target audience:\n\n**[Describe target audience here]**"
+        content: "Create a user persona for the target audience described in the context below."
     },
-    {
-        title: "User Journey Map",
+    {title: "User Journey Map",
         category: "User Research",
         usage: "Business",
-        content: "Create a user journey map for the following user experience:\n\n**[Describe user experience here]**"
+        content: "Create a user journey map for the user experience described in the context below."
     },
-    {
-        title: "SWOT Analysis",
+    {title: "SWOT Analysis",
         category: "Analysis",
         usage: "Business",
-        content: "Conduct a SWOT analysis for the following business:\n\n**[Describe business here]**"
+        content: "Conduct a SWOT analysis for the business described in the context below."
     },
-    {
-        title: "Competitive Analysis",
+    {title: "Competitive Analysis",
         category: "Analysis",
         usage: "Business",
-        content: "Conduct a competitive analysis for the following market:\n\n**[Describe market here]**"
+        content: "Conduct a competitive analysis for the market described in the context below."
     },
-    {
-        title: "Customer Feedback",
+    {title: "Customer Feedback",
         category: "Feedback",
         usage: "Business",
         content: "Summarize the following customer feedback:\n\n**[Paste customer feedback here]**"
     },
-    {
-        title: "Email Response",
+    {title: "Email Response",
         category: "Communication",
         usage: "Business",
         content: "Draft a response to the following email:\n\n**[Paste email here]**"
     },
-    {
-        title: "Email Draft",
+    {title: "Email Draft",
         category: "Communication",
         usage: "Business",
         content: "Draft a professional email for the following purpose:\n\n**[Describe purpose here]**"
     },
-    {
-        title: "Research Summary",
+    {title: "Research Summary",
         category: "Summarization",
         usage: "Business",
         content: "Summarize the following research findings:\n\n**[Paste research findings here]**"
     },
-    {
-        title: "Report Summary",
-        category: "Summarization",
+    {title: "Feedback Request",
+        category: "Feedback",
         usage: "Business",
-        content: "Summarize the following report into a concise overview:\n\n**[Paste report content here]**"
+        content: "Request feedback on the topic described in the context below."
     },
-    {
-        title: "Technical Documentation",
-        category: "Documentation",
-        usage: "Business",
-        content: "Create technical documentation for the following software:\n\n**[Describe software here]**"
-    },
-    {
-        title: "User Guide",
+    {title: "User Guide",
         category: "Documentation",
         usage: "Business",
         content: "Create a user guide for the following product:\n\n**[Describe product here]**"
@@ -300,6 +225,64 @@ Include the following sections:
         content: ""
     },
     {
+        title: "Plan a walk",
+        category: "Exercise",
+        usage: "Personal",
+        content:
+`
+Plan a walk for the with focus on the context below.
+Include:
+1.  Location: [Insert location]
+2.  Distance: [Insert distance]
+3.  Duration: [Insert duration]
+4.  Time of day: [Insert time of day]
+5. Landmarks: [Insert any specific landmarks or points of interest]
+Include  map search links to locations, trails, or routes
+Make sure the links are clickable and works
+Make the walk fun and engaging but as choose the shortest continous route possible
+    `
+    },
+    {
+        title: "Domain",
+        category: "Planning",
+        usage: "Business",
+        content:
+            `
+Help me define and scope the domain/topic described in the context below.
+Domain name:**[Insert concise and specific name]**
+Domain description:**[Provide a clear, concise summary (2-3 sentences) of the domain.]**
+Domain scope:**[List elements, activities, or areas included within the domain]**
+Key Domain Concepts and Terms
+Primary objectives
+Identify and categorize stakeholders by their roles or involvement
+Current limitations and Boundaries
+Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+Success criteria 
+Define clear, measurable, and achievable indicators of success
+`
+    },
+    {
+        title: "Plan a run",
+        category: "Exercise",
+        usage: "Personal",
+        content:
+`
+Plan a run for the with focus on the context below.
+Include:
+1.  Location: [Insert location]
+2.  Distance: [Insert distance]
+3.  Duration: [Insert duration]
+Include search map search links to locations, trails, or routes.
+`
+    },
+    {
+        title: "Domain/Topic3",
+        category: "Domain Definition",
+        usage: "Business / Personal",
+        content: `Help me define describe and scope the domain/topic described in the context below.:
+`
+    },
+    {
         title: "Domain/Topic2",
         category: "Planning",
         usage: "Business",
@@ -329,22 +312,5 @@ Define clear, measurable, and achievable indicators of success:
 	•	**[Success Criterion 1]** (Measurable)
 	•	**[Success Criterion 2]** (Measurable)
 `
-    },
-    {
-        title: "Plan a walk",
-        category: "Exercise",
-        usage: "Personal",
-        content:
-`
-Plan a walk for the with focus on the context below.
-Include:
-1.  Location: [Insert location]
-2.  Distance: [Insert distance]
-3.  Duration: [Insert duration]
-4.  Time of day: [Insert time of day]
-5. Landmarks: [Insert any specific landmarks or points of interest]
-Include search map links to locations, trails, or routes
-Make sure the links are clickable and works
-Make the walk fun and engaging but as choose the shortest continous route possible
-    `
+    }
 ];

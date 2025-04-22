@@ -35,7 +35,8 @@ export default async function RootLayout({
       <head>
         {/* This helps Next.js better understand how to handle the preloaded resources */}
         {/* <meta name="next-size-adjust" content="true" /> */}
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        {/* <meta name="viewport" content="width=device-width, initial-scale=1" /> */}
+        <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.2"></meta>
 
       </head>
       <body className={`${inter.className}`}>
@@ -50,12 +51,12 @@ export default async function RootLayout({
             {/* <SidebarProvider defaultOpen={sidebarState?.value !== "false"}> */}
               <AppSidebar variant="inset"/>
               <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
-                <div className="fixed top-0 left-0 z-50">
-                  <SidebarTrigger />
+                {/* <div className="fixed top-0 left-0 z-50"> */}
+                  {/* <SidebarTrigger />
                   {/* <SidebarTrigger>
                     <PanelLeft className="h-4 w-2" />
                   </SidebarTrigger> */}
-                </div>
+                {/* </div> */}
                 <div className="h-full rounded-md p-0">
                   {children}
                 </div>
