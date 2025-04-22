@@ -292,10 +292,11 @@ export default function ChatComponent({
     };
 
     return (
-        <div ref={containerRef} className="flex flex-col h-[92%] min-h-0 rounded-lg bg-background sm:min-w-[460px] sm:h-auto sm:p-1 overflow-hidden">
-        {/* <div ref={containerRef} className="flex flex-col h-[92%] min-h-0 rounded-lg bg-background sm:min-w-[460px] sm:h-auto sm:p-1 overflow-hidden"> */}
+        <div ref={containerRef} className="flex flex-col h-[90%] min-h-0 rounded-lg bg-background sm:min-w-[460px] overflow-hidden relative">
+         {/* <div ref={containerRef} className="flex flex-col h-[92%] min-h-0 rounded-lg bg-background sm:min-w-[460px] sm:h-auto sm:p-1 overflow-hidden"> */}
             {/* Show getting started and digital rain when no messages */}
-            <div className="flex-1 flex flex-col bg-background rounded-m  overflow-y-auto min-h-0">
+            <div className="flex-1 overflow-y-auto pb-[150px]">
+            {/* <div className="flex-1 flex flex-col bg-background rounded-m overflow-y-auto"> */}
                 {/* style={{ height: `${topHeight}px` }}> this is for draggable bar*/}
                 {messages.length < 1 ? (
                     <div className="flex flex-col items-center justify-center w-full py-6 overflow-auto">
@@ -323,9 +324,6 @@ export default function ChatComponent({
                                         <div className="text-green-400 text-xl font-mono text-center mb-4">
                                             <p>Getting started by asking your question below!</p>
                                         </div>
-                                        <div className="flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg mb-4 min-h-0">
-                                            <AnimatedAICircle className="inset-0 z-0" />
-                                        </div>
                                         <div className="w-full max-w-md">
                                             <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
                                             <p className="mb-2 text-center">Follow these steps:</p>
@@ -344,8 +342,8 @@ export default function ChatComponent({
                     </div>
                 ) : null}
 
-                <div className="flex flex-col p-4 rounded-lg w-full bg-background overflow-auto min-h-0">
-                    {messages.map((message, index) => (
+                <div className="flex flex-col p-4 rounded-lg w-full bg-background">
+                     {messages.map((message, index) => (
                         <div key={index}
                             ref={index === messages.length - 1 ? messagesEndRef : undefined}
                             className={`mb-4 p-3 rounded-lg flex flex-col gap-2 bg-background ${message.role === 'user'
@@ -448,7 +446,9 @@ export default function ChatComponent({
                 currentSize={topHeight}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             /> */}
-            <div className="p-2 rounded-lg w-full bg-background">
+            {/* Input area always at the bottom */}
+            <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-gray-800 z-20 pb-safe">
+            {/* <div className="sticky bottom-0 flex-none p-2 rounded-lg w-full bg-background"> */}
                 <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent rounded-lg min-h-0">
                     <TextareaAutosize
                         ref={textareaRef}
@@ -458,10 +458,8 @@ export default function ChatComponent({
                             if (e.key === 'Enter' && !e.shiftKey) {
                                 e.preventDefault();
                                 const now = Date.now();
-                                // Use a custom property on the event target to track the last Enter key time
                                 const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
                                 if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                    // If two returns occur within 2 seconds, submit the form
                                     handleSubmit(e);
                                     textarea.lastEnterTime = 0;
                                 } else {
@@ -471,11 +469,10 @@ export default function ChatComponent({
                         }}
                         placeholder="Ask anything ..."
                         className="flex-1 p-2 border border-gray-600 rounded-md text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                        minRows={7}  // Reduced from 7 to give more space initially
-                        maxRows={12}
+                        minRows={4}
+                        maxRows={8}
                         disabled={isLoading}
                     />
-                    {/* Send button */}
                     <button
                         type="submit"
                         className="bg-blue-600 text-gray-100 p-2 rounded-full hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
@@ -491,19 +488,6 @@ export default function ChatComponent({
                         >
                             <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
                         </svg>
-                        {/* <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2}
-                            stroke="currentColor"
-                            className="w-6 h-6"
-                        >
-                            <rect x="3" y="3" width="18" height="18" rx="3" ry="3" />
-                            <circle cx="9" cy="10" r="1" fill="currentColor" />
-                            <circle cx="15" cy="10" r="1" fill="currentColor" />
-                            <path d="M8 16h8" strokeLinecap="round" strokeLinejoin="round" />
-                        </svg> */}
                     </button>
                 </form>
             </div>

@@ -169,11 +169,11 @@ const AIChatPage = () => {
     };
 
     return (
-        <div className="flex flex-row h-[100dvh] w-full max-w-full bg-background text-gray-100 overflow-x-auto overflow-y-hidden">
+        <>
+        <div className="flex flex-row flex-nowrap h-[100dvh] min-w-[450px] w-full max-w-full bg-background text-gray-100 overflow-x-auto overflow-y-hidden">
             {/* Left Panel: Templates */}
             {showLeftPanel && (
-                <div
-                    className="flex-shrink-0 px-1 sm:px-2 min-w-[80px] sm:min-w-[260px] max-w-[95vw]"
+                <div className="flex-shrink-0 px-1 sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw]"
                     style={{
                         width: `${leftPanelWidth}px`,
                     }}
@@ -203,8 +203,7 @@ const AIChatPage = () => {
 
             {/* Draggable Bar for Left Panel */}
             {showLeftPanel && (
-                <div
-                    className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative min-w-[8px]"
+                <div className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative min-w-[8px]"
                     onMouseDown={(e) => {
                         if (!showLeftPanel) setShowLeftPanel(true);
                         handleMouseDown(e, 'left');
@@ -214,8 +213,9 @@ const AIChatPage = () => {
                 </div>
             )}
 
+
             {/* Middle Panel: AI Chat */}
-            <div className="flex-1 p-1 min-w-[0] sm:min-w-[0] sm:px-2 overflow-hidden">
+            <div className="flex-1 p-1 min-w-[450px] sm:min-w-[0] sm:px-2 overflow-hidden">
                 {/* <div className="flex-1 min-w-0 px-1 sm:px-2 overflow-hidden"></div> */}
                 <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2 ">
                     {!showLeftPanel ? (
@@ -297,8 +297,7 @@ const AIChatPage = () => {
 
             {/* Right Panel: Markdown Preview */}
             {showRightPanel && (
-                <div
-                    className="flex-shrink-0 px-1 sm:px-2 min-w-[80px] sm:min-w-[260px] max-w-[95vw] w-auto h-full"
+                <div className="flex-shrink-0 px-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] w-auto h-full"
                 >
                 {/*  <div
                      className="flex-shrink-0 px-1 sm:px-2 min-w-[80px] sm:min-w-[260px] max-w-[95vw]"
@@ -395,6 +394,10 @@ const AIChatPage = () => {
                 </div>
             )}
         </div >
+        <div className="flex justify-center items-center mt-1">
+            <hr className="border-gray-700 w-full" />
+        </div>
+        </>
     );
 };
 
