@@ -15,7 +15,9 @@ import MarkdownDocumentManager from '@/components/ai-chat/MarkdownDocumentManage
 const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
-    const [showLeftPanel, setShowLeftPanel] = useState(true);
+
+    // Initialize showLeftPanel with false as default for all devices
+    const [showLeftPanel, setShowLeftPanel] = useState(false);
     const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
@@ -60,6 +62,22 @@ const AIChatPage = () => {
         });
         setShowRightPanel(false);
     }, []);
+
+    // Check device type on component mount
+    useEffect(() => {
+        const checkDeviceType = () => {
+            // Check if it's a larger screen device
+            const isDesktop = window.innerWidth >= 768; // Typical tablet/desktop breakpoint
+            setShowLeftPanel(isDesktop);
+        };
+
+        checkDeviceType();
+
+        // Also update on resize for orientation changes
+        window.addEventListener('resize', checkDeviceType);
+        return () => window.removeEventListener('resize', checkDeviceType);
+    }, []);
+
     // Add this useEffect to adjust right panel width when left panel visibility changes
     useEffect(() => {
         if (!showLeftPanel) {
@@ -299,7 +317,11 @@ const AIChatPage = () => {
 
                 {/* Right Panel: Markdown Preview */}
                 {showRightPanel && (
-                    <div className="flex-shrink-0 px-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] w-[650px] max-h-1/2 overflow-hidden">
+                    <div className="flex-shrink-0 px-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] max-h-1/2 overflow-hidden"
+                        style={{
+                            width: `${rightPanelWidth}px`,
+                        }}
+                    >
                         <div className="flex items-center justify-between m-1 sm:m-2">
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
@@ -383,7 +405,7 @@ const AIChatPage = () => {
                             />
                         ) : (
                             /* Added "max-w-full" to the markdown container */
-                            <div className="prose prose-invert custom-markdown markdown-preview bg-background p-4 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
                                 <MarkdownPreview mdPreview={mdPreview} />
                             </div>
                         )}

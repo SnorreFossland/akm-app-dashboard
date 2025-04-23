@@ -8,9 +8,15 @@ import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
 import { Plus, Paperclip, X } from 'lucide-react'; // Add icon imports
+// Import mammoth.js for DOCX conversion
+import * as mammoth from 'mammoth';
+// import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
+// import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
+
+// pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
 interface Message {
-    role: 'user' | 'assistant';
+    role: 'user' | 'assistant' | 'system';
     content: string;
 }
 
@@ -81,6 +87,8 @@ export default function ChatComponent({
     }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    // Set the worker source for pdfjs
+
 
     // Add this effect to adjust topHeight based on input size
     useEffect(() => {
@@ -137,7 +145,7 @@ export default function ChatComponent({
             const containerHeight = container ? container.offsetHeight : window.innerHeight;
             const minInputHeight = 160;
             const maxTopHeight = containerHeight - minInputHeight;
-            console.log('108 Container Height:', containerHeight, 'Top Height:', topHeight, 'Max Top Height:', maxTopHeight);
+            // console.log('108 Container Height:', containerHeight, 'Top Height:', topHeight, 'Max Top Height:', maxTopHeight);
             if (topHeight > maxTopHeight) {
                 setTopHeight(maxTopHeight);
             }
@@ -226,6 +234,87 @@ export default function ChatComponent({
     const [contextContent, setContextContent] = useState<string>('');
     const [isContextAttached, setIsContextAttached] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isProcessingFile, setIsProcessingFile] = useState(false);
+
+    // Enhanced text extraction function with DOCX support
+    const extractTextFromFile = async (file: File): Promise<string> => {
+        const fileName = file.name;
+        const fileType = fileName.split('.').pop()?.toLowerCase() || '';
+
+        // For text-based files, use the native text() method
+        if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType)) {
+            try {
+                return await file.text();
+            } catch (error) {
+                console.error(`Error reading text from ${fileName}:`, error);
+                return `[Failed to read text content from ${fileName}]`;
+            }
+        }
+
+        // Handle DOCX files using mammoth.js
+        if (fileType === 'docx') {
+            try {
+                setErrorMsg(`Converting DOCX file: ${fileName}...`);
+                // Read file as ArrayBuffer
+                const arrayBuffer = await file.arrayBuffer();
+                // Use mammoth to extract text
+                const result = await mammoth.extractRawText({ arrayBuffer });
+                console.log(`Extracted ${result.value.length} characters from DOCX`);
+                if (result.value.length > 0) {
+                    return result.value;
+                } else {
+                    return `[DOCX file ${fileName} appears to be empty or could not be parsed]`;
+                }
+            } catch (error) {
+                console.error(`Error extracting text from DOCX ${fileName}:`, error);
+                return `[Failed to extract text from DOCX file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
+            }
+        }
+
+        // Handle PDF files using pdfjs-dist
+        // if (fileType === 'pdf') {
+        //     try {
+        //         setErrorMsg(`Extracting PDF file: ${fileName}...`);
+        //         const arrayBuffer = await file.arrayBuffer();
+        //         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+        //         let extractedText = '';
+
+        //         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+        //             const page = await pdf.getPage(pageNumber);
+        //             const textContent = await page.getTextContent();
+        //             const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
+        //             extractedText += pageText + '\n\n';
+        //         }
+
+        //         if (extractedText.trim().length > 0) {
+        //             return extractedText;
+        //         } else {
+        //             return `[PDF file ${fileName} appears to be empty or could not be parsed]`;
+        //         }
+        //     } catch (error) {
+        //         console.error(`Error extracting text from PDF ${fileName}:`, error);
+        //         return `[Failed to extract text from PDF file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
+        //     }
+        // }
+
+        // For other binary files, provide a more explicit message about limitations
+        return `[File: ${fileName}
+Type: ${fileType.toUpperCase()} (Binary file)
+Size: ${(file.size / 1024).toFixed(1)} KB
+
+IMPORTANT NOTE FOR AI: This is a binary file and its contents CANNOT be directly accessed or analyzed. 
+When users upload binary files like PDF, you MUST explicitly inform them that:
+"I'm sorry, but I'm unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
+
+Then offer to help them if they provide the text in another way:
+"However, I can help if you copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
+
+UNDER NO CIRCUMSTANCES should you pretend to have read or analyzed the contents of this binary file.
+
+File type: ${fileType.toUpperCase()} 
+File size: ${(file.size / 1024).toFixed(1)} KB
+Last modified: ${new Date(file.lastModified).toLocaleString()}]`;
+    };
 
     // Handle file selection for context
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -233,16 +322,64 @@ export default function ChatComponent({
         if (!files || files.length === 0) return;
         const selectedFiles = Array.from(files);
         setContextFiles(selectedFiles);
+        setIsProcessingFile(true);
+        setErrorMsg(`Processing ${selectedFiles.length} file(s)...`);
 
-        // Read file contents
-        const fileContents = await Promise.all(
-            selectedFiles.map(async (file) => {
-                const text = await file.text();
-                return `File: ${file.name}\n\n${text}`;
-            })
-        );
-        setContextContent(fileContents.join('\n\n---\n\n'));
-        setIsContextAttached(true);
+        try {
+            // Process files one by one with status updates
+            const fileContents = [];
+            const binaryFiles = [];
+
+            for (const file of selectedFiles) {
+                setErrorMsg(`Reading ${file.name}...`);
+                const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+
+                // Track binary files to show warning later
+                if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType)) {
+                    binaryFiles.push(file.name);
+                }
+
+                const text = await extractTextFromFile(file);
+                console.log(`File processed: ${file.name}, size: ${text.length} chars`);
+
+                fileContents.push(`
+====================
+DOCUMENT: ${file.name}
+====================
+
+${text}
+
+====================
+END OF DOCUMENT: ${file.name}
+====================`);
+            }
+
+            const combinedContent = fileContents.join('\n\n');
+            setContextContent(combinedContent);
+            setIsContextAttached(true);
+            console.log(`Total context size: ${combinedContent.length} chars`);
+
+            // Show user feedback about attached files
+            let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
+
+            // Add warning about binary files if any were attached
+            if (binaryFiles.length > 0) {
+                message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
+                message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
+            }
+
+            setErrorMsg(message);
+            setTimeout(() => setErrorMsg(''), binaryFiles.length > 0 ? 10000 : 6000); // Show longer for binary files
+        } catch (error) {
+            console.error('Error processing files:', error);
+            setErrorMsg(
+                error instanceof Error
+                    ? `Error processing files: ${error.message}`
+                    : `Error processing files: ${String(error)}`
+            );
+        } finally {
+            setIsProcessingFile(false);
+        }
     };
 
     // Open file picker
@@ -264,32 +401,86 @@ export default function ChatComponent({
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
         try {
-            const requestBody: any = { messages: newMessages, model: selectedModel };
+            // We'll use a different approach - including content directly in messages
+            let messagesToSend = [...newMessages];
+
             if (contextContent && isContextAttached) {
-                requestBody.context = contextContent;
+                // Add a system message at the beginning with clear instructions
+                const systemMessage: Message = {
+                    role: 'system',
+                    content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.`
+                };
+
+                // Add context as a separate system message to ensure it's seen
+                const contextMessage: Message = {
+                    role: 'system',
+                    content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
+                };
+
+                // Prepend both messages to ensure they're processed first
+                messagesToSend = [systemMessage, contextMessage, ...messagesToSend];
+
+                // Enhance the last user message to explicitly reference the files
+                if (messagesToSend.length > 2) {
+                    const lastUserIndex = messagesToSend.length - 1;
+                    const lastMessage = messagesToSend[lastUserIndex];
+
+                    if (lastMessage && lastMessage.role === 'user') {
+                        const fileNames = contextFiles.map(file => file.name).join(', ');
+                        messagesToSend[lastUserIndex] = {
+                            ...lastMessage,
+                            content: `${lastMessage.content}\n\nPlease analyze the attached documents (${fileNames}) and include specific information from them in your response.`
+                        };
+                    }
+                }
+
+                console.log(`Sending context to the model (${contextContent.length} chars)`);
+                console.log('First 200 chars of context:', contextContent.substring(0, 200));
             }
-            console.log('246 Request Body:', requestBody);
+
+            // Build the API request body
+            const requestBody: any = {
+                messages: messagesToSend,
+                model: selectedModel
+            };
+
+            // Log what we're sending (for debugging)
+            console.log('Sending to API:', {
+                model: selectedModel,
+                messagesCount: messagesToSend.length,
+                hasContext: Boolean(contextContent && isContextAttached),
+                messagePreview: JSON.stringify(messagesToSend.slice(0, 2))
+            });
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
             });
+
+            // Check if the response is valid JSON
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                throw new Error(`Expected JSON response but got ${contentType} `);
+            }
+
             const data = await response.json();
             if (!response.ok) {
                 // Set error message if response fails
                 setErrorMsg(data.error || 'An error occurred');
+                console.error('API error response:', data);
             } else {
                 // Clear any previous errors if successful
                 setErrorMsg('');
                 setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
             }
         } catch (error) {
-            console.error('Error:', error);
-            setErrorMsg('An unexpected error occurred.');
+            console.error('Error sending message:', error);
+            setErrorMsg(`Failed to communicate with AI: ${error.message} `);
         } finally {
             setIsLoading(false);
         }
-    }, [selectedModel, contextContent, isContextAttached]);
+    }, [selectedModel, contextContent, isContextAttached, contextFiles]);
 
     // When selectedModel changes, retry sending the last non-retry user message
     useEffect(() => {
@@ -317,7 +508,7 @@ export default function ChatComponent({
                 retryInProgress.current = true;
                 const modelChangeMessage: Message = {
                     role: 'user',
-                    content: `Retry with model: ${selectedModel}`,
+                    content: `Retry with model: ${selectedModel} `,
                 };
                 setMessages((prev) => [...prev, modelChangeMessage]);
                 setModelRetryCount((prev) => prev + 1);
@@ -338,7 +529,9 @@ export default function ChatComponent({
         let userMessageContent = input;
         if (isContextAttached && contextFiles.length > 0) {
             const fileNames = contextFiles.map(file => file.name).join(', ');
-            userMessageContent = `${input}\n\n[Context files attached: ${fileNames}]`;
+            // Make the message more explicit
+            userMessageContent = `${input}`;
+            // Note: We're not adding the reference here, as we'll do it in sendMessageToAPI
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
@@ -367,11 +560,31 @@ export default function ChatComponent({
         }
     };
 
+    // Add this function for the thinking animation
+    const ThinkingAnimation = () => {
+        return (
+            <div className="flex items-center gap-1 text-blue-400 font-mono p-3 rounded-lg bg-blue-950/20 border border-blue-900/40 max-w-[200px]">
+                <span className="ml-2">Thinking</span>
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+            </div>
+        );
+    };
+
     return (
         // Changed overflow-auto to overflow-hidden on the main container
-        <div ref={containerRef} className="flex flex-col h-[90%] min-h-0 rounded-lg bg-background sm:min-w-[460px] overflow-hidden relative">
+        <div ref={containerRef} className="flex flex-col h-[90%] min-h-0 rounded-lg sm:min-w-[460px] overflow-hidden relative">
+            {/* Add error message display near the top */}
+            {errorMsg && (
+                <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-100 px-4 py-2 mb-2 rounded-md text-sm">
+                    {errorMsg}
+                </div>
+            )}
+
+            {/* Rest of your component remains the same */}
             <div className="flex-1 min-h-0 overflow-y-auto pb-[150px]" id="message-container">
-                {/* style={{ height: `${topHeight}px` }}> this is for draggable bar*/}
+                {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
                 {messages.length < 1 ? (
                     <div className="flex flex-col items-center justify-center w-full py-6 overflow-auto">
                         {showDigitalRain ? (
@@ -416,13 +629,13 @@ export default function ChatComponent({
                     </div>
                 ) : null}
 
-                <div className="flex flex-col p-4 rounded-lg w-full bg-background">
+                <div className="flex flex-col p-4 rounded-lg w-full bg-card overflow-auto">
                     {messages.map((message, index) => (
                         <div key={index}
-                            className={`mb-4 p-3 rounded-lg flex flex-col gap-2 bg-background ${message.role === 'user'
-                                ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-800'
-                                : 'bg-background mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
-                                }`}
+                            className={`mb - 4 p - 3 rounded - lg flex flex - col gap - 2 ${message.role === 'user'
+                                ? 'bg-background ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-300'
+                                : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
+                                } `}
                         >
                             <div className="flex items-center justify-between gap-3 ps-1">
                                 <div className="flex-shrink-0">
@@ -459,7 +672,7 @@ export default function ChatComponent({
                                     )}
                                 </div>
                                 <div className="text-xs text-gray-400 me-auto overflow-auto">
-                                    {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
+                                    {message.role === 'user' ? 'You' : `Assistant(${selectedModel})`}
                                 </div>
                             </div>
                             <div
@@ -508,8 +721,8 @@ export default function ChatComponent({
                         </div>
                     ))}
                     {isLoading && (
-                        <div>
-                            {isLoading ? <p>Thinking...</p> : null}
+                        <div className="flex justify-start my-4">
+                            <ThinkingAnimation />
                         </div>
                     )}
                     {/* Add padding and make sure this is the absolute last element */}
@@ -522,19 +735,64 @@ export default function ChatComponent({
             /> */}
             {/* Input area always at the bottom */}
             <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-gray-800 z-20 pb-safe">
-                {/* Context files indicator */}
+                {/* Context files indicator with enhanced info */}
                 {isContextAttached && contextFiles.length > 0 && (
-                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-900/20 text-xs">
-                        <Paperclip className="w-3 h-3" />
-                        <span>
-                            {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached
-                        </span>
-                        <button
-                            onClick={handleRemoveContext}
-                            className="ml-auto text-gray-400 hover:text-white"
-                        >
-                            <X className="w-3 h-3" />
-                        </button>
+                    <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
+                        <div className="flex items-center gap-2">
+                            <Paperclip className="w-3 h-3" />
+                            <span>
+                                {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached:
+                                <span className="font-mono ml-1">
+                                    {contextFiles.map((file, idx) => {
+                                        const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                        const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                        return (
+                                            <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
+                                                {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
+                                            </span>
+                                        );
+                                    })}
+                                    ({Math.round(contextContent.length / 1024)}KB)
+                                </span>
+                            </span>
+                            <button
+                                onClick={handleRemoveContext}
+                                className="ml-auto text-gray-400 hover:text-white"
+                            >
+                                <X className="w-3 h-3" />
+                            </button>
+                        </div>
+                        {/* Add guidance about binary files if any are attached */}
+                        {contextFiles.some(file => {
+                            const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                            return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                        }) && (
+                                <div className="mt-1 text-yellow-300 text-[10px]">
+                                    ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
+                                    <button
+                                        className="ml-1 underline hover:text-white"
+                                        onClick={() => {
+                                            const binaryFiles = contextFiles
+                                                .filter(f => {
+                                                    const fileType = f.name.split('.').pop()?.toLowerCase() || '';
+                                                    return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                                    // return !['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType);
+                                                })
+                                                .map(f => f.name)
+                                                .join(", ");
+
+                                            setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
+                                            setTimeout(() => {
+                                                if (textareaRef.current) {
+                                                    textareaRef.current.focus();
+                                                }
+                                            }, 100);
+                                        }}
+                                    >
+                                        Open the document and copy all text and Add the text to explain file
+                                    </button>
+                                </div>
+                            )}
                     </div>
                 )}
                 <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent rounded-lg min-h-0">
@@ -561,15 +819,21 @@ export default function ChatComponent({
                         maxRows={8}
                         disabled={isLoading}
                     />
-                    {/* Add Context Button */}
+                    {/* Add Context Button with loading indicator */}
                     <button
                         type="button"
                         onClick={handleAddContext}
                         className="bg-blue-600/40 text-gray-100 p-2 rounded-full hover:bg-blue-700/60 disabled:bg-blue-800 disabled:text-gray-400"
-                        disabled={isLoading}
+                        disabled={isLoading || isProcessingFile}
                         title="Add context files"
                     >
-                        {isContextAttached ? <Paperclip className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                        {isProcessingFile ? (
+                            <div className="w-6 h-6 border-2 border-t-transparent border-blue-200 rounded-full animate-spin" />
+                        ) : isContextAttached ? (
+                            <Paperclip className="w-6 h-6" />
+                        ) : (
+                            <Plus className="w-6 h-6" />
+                        )}
                     </button>
                     <input
                         ref={fileInputRef}
@@ -577,7 +841,7 @@ export default function ChatComponent({
                         multiple
                         style={{ display: 'none' }}
                         onChange={handleFileSelect}
-                        accept=".txt,.md,.json,.csv,.pdf,.docx,.xlsx"
+                        accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.pdf,.docx,.xlsx,.xls"
                     />
                     <button
                         type="submit"
