@@ -7,7 +7,7 @@ import styles from '@/components/SplitPanel.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
-import { Plus, Paperclip, X } from 'lucide-react'; // Add icon imports
+import { Plus, Paperclip, X, FileText } from 'lucide-react';
 // Import mammoth.js for DOCX conversion
 import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
@@ -72,6 +72,7 @@ export default function ChatComponent({
 
     const isInitialRender = useRef(true);
     const previousModelRef = useRef<string | null>(null);
+    const mdFileInputRef = useRef<HTMLInputElement>(null);
 
     const containerRef = useRef<HTMLDivElement>(null);
 
@@ -89,6 +90,35 @@ export default function ChatComponent({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     // Set the worker source for pdfjs
 
+    // open md picker
+    const handleAddMD = () => {
+        mdFileInputRef.current?.click();
+    };
+
+    // load .md file into input
+    const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            setInput(
+`Please revise the content below for clarity, style, and grammar.
+Take into consideration the following changes or additions : [Please describe the changes want in detail here].
+
+Do not use its contents as contextual input for other questions--I want it improved not analyzed:
+# Content:
+
+ ${text}
+ 
+ # End of Content
+ `);
+            setErrorMsg(`Loaded ${file.name} for editing.`);
+        } catch (err) {
+            console.error(err);
+            setErrorMsg(`Failed to load ${file.name}`);
+        }
+        e.target.value = '';
+        };
 
     // Add this effect to adjust topHeight based on input size
     useEffect(() => {
@@ -842,6 +872,24 @@ END OF DOCUMENT: ${file.name}
                         style={{ display: 'none' }}
                         onChange={handleFileSelect}
                         accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.pdf,.docx,.xlsx,.xls"
+                    />
+
+                    {/* NEW: Markdown-only import button */}
+                    <button
+                        type="button"
+                        onClick={handleAddMD}
+                        className="bg-green-600/40 text-gray-100 p-2 rounded-full hover:bg-green-700/60 disabled:bg-green-800 disabled:text-gray-400"
+                        disabled={isLoading}
+                        title="Import Markdown"
+                    >
+                        <FileText className="w-6 h-6" />
+                    </button>
+                    <input
+                        ref={mdFileInputRef}
+                        type="file"
+                        accept=".md"
+                        style={{ display: 'none' }}
+                        onChange={handleMDFileSelect}
                     />
                     <button
                         type="submit"
