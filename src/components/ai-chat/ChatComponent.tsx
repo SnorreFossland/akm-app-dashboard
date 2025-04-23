@@ -198,7 +198,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                     });
 
                     // Also try direct parent scrolling
-                    const parentElement = messagesEndRef.current.parentElement;
+                    const parentElement = messagesEndRef.current?.parentElement;
                     if (parentElement) {
                         parentElement.scrollTop = parentElement.scrollHeight;
                     }
@@ -506,7 +506,7 @@ END OF DOCUMENT: ${file.name}
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            setErrorMsg(`Failed to communicate with AI: ${error.message} `);
+            setErrorMsg(`Failed to communicate with AI: ${error instanceof Error ? error.message : String(error)} `);
         } finally {
             setIsLoading(false);
         }
@@ -645,7 +645,7 @@ END OF DOCUMENT: ${file.name}
                                         <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
                                         <p className="mb-2 text-center">Follow these steps:</p>
                                         <ol className="text-sm list-decimal list-inside overflow-auto text-left">
-                                            <li>Open the left pane Click on the "Left pane" button upper left .</li>
+                                                <li>Open the left pane Click on the &quot;Left pane&quot; button upper left .</li>
                                             <li>Describe your topic in the top left area in the pane.</li>
                                             <li>Select a prompt template to make a report/doc on your topic.</li>
                                             <li>Edit the prompt and click on the Right arrow to insert it into the chat.</li>
