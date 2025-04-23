@@ -15,7 +15,7 @@ import MarkdownDocumentManager from '@/components/ai-chat/MarkdownDocumentManage
 const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
-    const [showLeftPanel, setShowLeftPanel] = useState(false);
+    const [showLeftPanel, setShowLeftPanel] = useState(true);
     const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
@@ -169,235 +169,232 @@ const AIChatPage = () => {
     };
 
     return (
-        <>
-        <div className="flex flex-row flex-nowrap h-[100dvh] min-w-[450px] w-full max-w-full bg-background text-gray-100 overflow-x-auto overflow-y-hidden">
-            {/* Left Panel: Templates */}
-            {showLeftPanel && (
-                <div className="flex-shrink-0 px-1 sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw]"
-                    style={{
-                        width: `${leftPanelWidth}px`,
-                    }}
-                >
-                    <div className="flex justify-between items-center m-1 sm:m-2">
-                        <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">
-                            Prepare Prompt
-                        </h2>
-                        <button
-                            onClick={() => setShowLeftPanel(!showLeftPanel)}
-                            className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                            title={showLeftPanel ? 'Hide' : 'Show'}
-                        >
-                            <span className="text-lg">{showLeftPanel ? '←' : '→'}</span>
-                        </button>
-                    </div>
-                    <TemplatesPanel
-                        onApplyTemplate={handleApplyTemplate}
-                        editableContent={editableContent}
-                        setEditableContent={setEditableContent}
-                        domainContent={domainContent}
-                        setDomainContent={setDomainContent}
-                        selectedModel={selectedModel}
-                    />
-                </div>
-            )}
-
-            {/* Draggable Bar for Left Panel */}
-            {showLeftPanel && (
-                <div className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative min-w-[8px]"
-                    onMouseDown={(e) => {
-                        if (!showLeftPanel) setShowLeftPanel(true);
-                        handleMouseDown(e, 'left');
-                    }}
-                >
-                    <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1.5 sm:w-2 mx-auto max-w-full "></div>
-                </div>
-            )}
-
-
-            {/* Middle Panel: AI Chat */}
-            <div className="flex-1 p-1 min-w-[450px] sm:min-w-[0] sm:px-2 overflow-hidden">
-                {/* <div className="flex-1 min-w-0 px-1 sm:px-2 overflow-hidden"></div> */}
-                <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2 ">
-                    {!showLeftPanel ? (
-                        <button
-                            onClick={() => setShowLeftPanel(!showLeftPanel)}
-                            className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                            title='Show Templates'
-                        >
-                            <span>→</span>
-                            <span className="ml-1 hidden sm:inline">{!showLeftPanel && 'Left pane'}</span>
-                        </button>
-                    ) : (
-                        <div className="flex"></div>
-                    )}
-
-                    <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
-                    <div className="flex items-center space-x-2 sm:space-x-4">
-                        <div className="flex items-center text-foreground gap-1">
-                            <ModelSelector
-                                selectedModel={selectedModel}
-                                onModelChange={(newModel) => {
-                                    setSelectedModel(newModel);
-                                    if (resetConversationOnModelChange) {
-                                        setResetTrigger(prev => prev + 1);
-                                    }
-                                }}
-                            />
-                            <div className="flex items-center gap-1 text-xs sm:text-sm">
-                                <input
-                                    type="checkbox"
-                                    id="resetConversation"
-                                    checked={resetConversationOnModelChange}
-                                    onChange={(e) => setResetConversationOnModelChange(e.target.checked)}
-                                    className="h-4 w-4 accent-blue-500"
-                                />
-                                <label htmlFor="resetConversation" className="text-gray-300">
-                                    Reset
-                                </label>
-                            </div>
-                        </div>
-                    </div>
-                    {!showRightPanel ? (
-                        <button
-                            onClick={() => setShowRightPanel(!showRightPanel)}
-                            className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                            title='Show Markdown'
-                        >
-                            <span>←</span>
-                            <span className="ml-1 hidden sm:inline">{!showLeftPanel && 'Right pane'}</span>
-                        </button>
-                    ) : (
-                        <div className="flex"></div>
-                    )}
-                </div>
-                <ChatComponent
-                    input={input}
-                    setInput={setInput}
-                    selectedModel={selectedModel}
-                    resetTrigger={resetTrigger}
-                    onResponseChange={handleResponseChange}
-                    onViewInMarkdown={handleViewInMarkdown}
-                    setShowLeftPanel={setShowLeftPanel}
-                    chatInput={chatInput}
-                />
-            </div>
-
-            {/* Draggable Bar for Right Panel */}
-            {showRightPanel && (
-                <div
-                    className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative"
-                    onMouseDown={(e) => {
-                        if (!showRightPanel) setShowRightPanel(true);
-                        handleMouseDown(e, 'right');
-                    }}
-                >
-                    <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1.5 sm:w-2 mx-auto"></div>
-                </div>
-            )}
-
-            {/* Right Panel: Markdown Preview */}
-            {showRightPanel && (
-                <div className="flex-shrink-0 px-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] w-auto h-full"
-                >
-                {/*  <div
-                     className="flex-shrink-0 px-1 sm:px-2 min-w-[80px] sm:min-w-[260px] max-w-[95vw]"
-                     style={{
-                         width: `${rightPanelWidth}px`,
-                     }}
-                 > */}
-                    <div className="flex items-center justify-between m-1 sm:m-2">
-                        <button
-                            onClick={() => setShowRightPanel(!showRightPanel)}
-                            className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
-                            title='Hide Markdown'
-                        >
-                            <span className="text-lg">{showRightPanel && '→'}</span>
-                        </button>
-                        <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
-                            Markdown Preview
-                        </h2>
-                        <div className="w-[60px] sm:w-[100px]">
-                            <div className="markdown-preview-header">
-                                <button
-                                    ref={openLibraryButtonRef}
-                                    className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
-                                >
-                                    <span>Open Library</span>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    {/*  Markdown Document Manager */}
-                    <MarkdownDocumentManager
-                        docName={docName}
-                        setDocName={setDocName}
-                        markdownContent={mdPreview} // Change markdownContent to mdPreview
-                        onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
-                        openLibraryButtonRef={openLibraryButtonRef}
-                    />
-
-                    <div className="flex items-center justify-end space-x-2">
-                        <div className="flex space-x-2 items-center border border-gray-500 rounded p-1">
-                            <div className="text-xs">Name: </div>
-                            {/* Document Name Input */}
-                            <input
-                                type="text"
-                                value={(docName || mdPreview.split('\n')[0] || '').replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')}
-                                onChange={(e) =>
-                                    setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, '_'))
-                                }
-                                placeholder="Document Name"
-                                className="text-xs bg-background border border-gray-600 text-white px-2 py-1 rounded"
-                            />
+        <div className="flex flex-col items-center justify-center w-full h-full bg-background text-gray-100">
+            <div className="flex flex-row flex-nowrap h-[100dvh] min-w-[450px] w-full max-w-full bg-background text-gray-100 overflow-hidden">
+                {/* Left Panel: Templates */}
+                {showLeftPanel && (
+                    <div className="flex-shrink-0 px-1 sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw]"
+                        style={{
+                            width: `${leftPanelWidth}px`,
+                        }}
+                    >
+                        <div className="flex justify-between items-center m-1 sm:m-2">
+                            <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">
+                                Prepare Prompt
+                            </h2>
                             <button
-                                onClick={handleSaveToRedux}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                disabled={!((docName || mdPreview.split('\n')[0]).replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')).trim()}
+                                onClick={() => setShowLeftPanel(!showLeftPanel)}
+                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                title={showLeftPanel ? 'Hide' : 'Show'}
                             >
-                                <span>Save</span>
+                                <span className="text-lg">{showLeftPanel ? '←' : '→'}</span>
                             </button>
                         </div>
-                        <button
-                            onClick={() => {
-                                navigator.clipboard.writeText(mdPreview);
-                                // You could show a temporary "Copied!" tooltip here
-                                const button = document.activeElement as HTMLButtonElement;
-                                const originalText = button.textContent;
-                                button.textContent = "Copied!";
-                                setTimeout(() => {
-                                    button.textContent = originalText;
-                                }, 2000);
-                            }}
-                            className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                        >
-                            Copy
-                        </button>
-                        <button
-                            onClick={() => setIsEditing(!isEditing)}
-                            className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                        >
-                            {isEditing ? 'Preview' : 'Edit'}
-                        </button>
-                    </div>
-                    {/* Either render a textarea or a preview */}
-                    {isEditing ? (
-                        <textarea
-                            value={mdPreview}
-                            onChange={(e) => setMdPreview(e.target.value)}
-                            className="w-full h-full p-4 bg-background text-foreground rounded max-h-[80vh] overflow-y-auto"
+                        <TemplatesPanel
+                            onApplyTemplate={handleApplyTemplate}
+                            editableContent={editableContent}
+                            setEditableContent={setEditableContent}
+                            domainContent={domainContent}
+                            setDomainContent={setDomainContent}
+                            selectedModel={selectedModel}
                         />
-                    ) : (
-                        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-background p-4 rounded-md overflow-auto max-h-[80vh]">
-                            <MarkdownPreview mdPreview={mdPreview} />
+                    </div>
+                )}
+
+                {/* Draggable Bar for Left Panel */}
+                {showLeftPanel && (
+                    <div className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative min-w-[8px]"
+                        onMouseDown={(e) => {
+                            if (!showLeftPanel) setShowLeftPanel(true);
+                            handleMouseDown(e, 'left');
+                        }}
+                    >
+                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1.5 sm:w-2 mx-auto max-w-full "></div>
+                    </div>
+                )}
+
+
+                {/* Middle Panel: AI Chat */}
+                <div className="flex-1 p-1 min-w-[450px] sm:min-w-[0] sm:px-2">
+                    {/* <div className="flex-1 min-w-0 px-1 sm:px-2 overflow-hidden"></div> */}
+                    <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2 ">
+                        {!showLeftPanel ? (
+                            <button
+                                onClick={() => setShowLeftPanel(!showLeftPanel)}
+                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                title='Show Templates'
+                            >
+                                <span>→</span>
+                                <span className="ml-1 hidden sm:inline">{!showLeftPanel && 'Left pane'}</span>
+                            </button>
+                        ) : (
+                            <div className="flex"></div>
+                        )}
+
+                        <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
+                        <div className="flex items-center space-x-2 sm:space-x-4">
+                            <div className="flex items-center text-foreground gap-1">
+                                <ModelSelector
+                                    selectedModel={selectedModel}
+                                    onModelChange={(newModel) => {
+                                        setSelectedModel(newModel);
+                                        if (resetConversationOnModelChange) {
+                                            setResetTrigger(prev => prev + 1);
+                                        }
+                                    }}
+                                />
+                                <div className="flex items-center gap-1 text-xs sm:text-sm">
+                                    <input
+                                        type="checkbox"
+                                        id="resetConversation"
+                                        checked={resetConversationOnModelChange}
+                                        onChange={(e) => setResetConversationOnModelChange(e.target.checked)}
+                                        className="h-4 w-4 accent-blue-500"
+                                    />
+                                    <label htmlFor="resetConversation" className="text-gray-300">
+                                        Reset
+                                    </label>
+                                </div>
+                            </div>
                         </div>
-                    )}
+                        {!showRightPanel ? (
+                            <button
+                                onClick={() => setShowRightPanel(!showRightPanel)}
+                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                title='Show Markdown'
+                            >
+                                <span>←</span>
+                                <span className="ml-1 hidden sm:inline">{!showLeftPanel && 'Right pane'}</span>
+                            </button>
+                        ) : (
+                            <div className="flex"></div>
+                        )}
+                    </div>
+                    <div className="mx-auto max-w-[1200px] h-full overflow-auto">
+                        <ChatComponent
+                            input={input}
+                            setInput={setInput}
+                            selectedModel={selectedModel}
+                            resetTrigger={resetTrigger}
+                            onResponseChange={handleResponseChange}
+                            onViewInMarkdown={handleViewInMarkdown}
+                            setShowLeftPanel={setShowLeftPanel}
+                            chatInput={chatInput}
+                        />
+                    </div>
                 </div>
-            )}
-        </div >
-        <div className="flex justify-center items-center mt-1">
-            <hr className="border-gray-700 w-full" />
+
+                {/* Draggable Bar for Right Panel */}
+                {showRightPanel && (
+                    <div
+                        className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative"
+                        onMouseDown={(e) => {
+                            if (!showRightPanel) setShowRightPanel(true);
+                            handleMouseDown(e, 'right');
+                        }}
+                    >
+                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1.5 sm:w-2 mx-auto"></div>
+                    </div>
+                )}
+
+                {/* Right Panel: Markdown Preview */}
+                {showRightPanel && (
+                    <div className="flex-shrink-0 px-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] w-[650px] max-h-1/2 overflow-hidden">
+                        <div className="flex items-center justify-between m-1 sm:m-2">
+                            <button
+                                onClick={() => setShowRightPanel(!showRightPanel)}
+                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                title='Hide Markdown'
+                            >
+                                <span className="text-lg">{showRightPanel && '→'}</span>
+                            </button>
+                            <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
+                                Markdown Preview
+                            </h2>
+                            <div className="w-[60px] sm:w-[100px]">
+                                <div className="markdown-preview-header">
+                                    <button
+                                        ref={openLibraryButtonRef}
+                                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                    >
+                                        <span>Open Library</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        {/*  Markdown Document Manager */}
+                        <MarkdownDocumentManager
+                            docName={docName}
+                            setDocName={setDocName}
+                            markdownContent={mdPreview} // Change markdownContent to mdPreview
+                            onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
+                            openLibraryButtonRef={openLibraryButtonRef}
+                        />
+
+                        <div className="flex items-center justify-end space-x-2">
+                            <div className="flex space-x-2 items-center border border-gray-500 rounded p-1">
+                                <div className="text-xs">Name: </div>
+                                {/* Document Name Input */}
+                                <input
+                                    type="text"
+                                    value={(docName || mdPreview.split('\n')[0] || '').replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')}
+                                    onChange={(e) =>
+                                        setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, '_'))
+                                    }
+                                    placeholder="Document Name"
+                                    className="text-xs bg-background border border-gray-600 text-white px-2 py-1 rounded"
+                                />
+                                <button
+                                    onClick={handleSaveToRedux}
+                                    className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                    disabled={!((docName || mdPreview.split('\n')[0]).replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')).trim()}
+                                >
+                                    <span>Save</span>
+                                </button>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(mdPreview);
+                                    // You could show a temporary "Copied!" tooltip here
+                                    const button = document.activeElement as HTMLButtonElement;
+                                    const originalText = button.textContent;
+                                    button.textContent = "Copied!";
+                                    setTimeout(() => {
+                                        button.textContent = originalText;
+                                    }, 2000);
+                                }}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            >
+                                Copy
+                            </button>
+                            <button
+                                onClick={() => setIsEditing(!isEditing)}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            >
+                                {isEditing ? 'Preview' : 'Edit'}
+                            </button>
+                        </div>
+                        {/* Either render a textarea or a preview */}
+                        {isEditing ? (
+                            <textarea
+                                value={mdPreview}
+                                onChange={(e) => setMdPreview(e.target.value)}
+                                className="w-full h-full p-4 bg-background text-foreground rounded max-h-[80vh] overflow-y-auto"
+                            />
+                        ) : (
+                            /* Added "max-w-full" to the markdown container */
+                            <div className="prose prose-invert custom-markdown markdown-preview bg-background p-4 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                                <MarkdownPreview mdPreview={mdPreview} />
+                            </div>
+                        )}
+
+                    </div>
+                )}
+            </div >
+            <div className="flex justify-center items-center mt-1">
+                <hr className="border-gray-700 w-full" />
+            </div>
         </div>
-        </>
     );
 };
 

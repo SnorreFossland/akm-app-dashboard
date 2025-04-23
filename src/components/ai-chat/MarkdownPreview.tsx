@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
+import rehypeRaw from 'rehype-raw';
 import mermaid from 'mermaid';
 
 interface MarkdownPreviewProps {
@@ -27,36 +28,67 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
     }, [])
 
     return (
-        <div className="prose prose-invert max-w-none custom-markdown markdown-preview bg-background text-foreground p-4 rounded-md overflow-auto max-h-[80vh]">
-            <ReactMarkdown
-                remarkPlugins={[remarkGfm]} // Enables GitHub-flavored Markdown
-                rehypePlugins={[rehypeHighlight]} // Enables syntax highlighting
-                components={{
-                    code: ({ className, children, ...props }) => {
-                        const match = /language-(\w+)/.exec(className || '');
-                        // Check if this is a mermaid code block
-                        if (match && match[1] === 'mermaid') {
-                            return (
-                                <div className="mermaid my-4">
-                                    {String(children).replace(/\n$/, '')}
-                                </div>
+        <>
+            {/* Add global styles for code blocks to ensure they don't expand containers */}
+
+            <div className="prose prose-invert custom-markdown markdown-preview bg-background text-foreground p-4 rounded-md overflow-auto max-h-[80vh] max-w-[800px] mx-auto whitespace-pre-wrap break-words break-all">
+                <ReactMarkdown
+                    remarkPlugins={[remarkGfm]} // Enables GitHub-flavored Markdown
+                    rehypePlugins={[rehypeHighlight, rehypeRaw]} // Added rehypeRaw to process HTML
+                    components={{
+                        code: ({ node, inline, className, children, ...props }: any) => {
+                            const match = /language-(\w+)/.exec(className || '');
+                            // Check if this is a mermaid code block
+                            if (match && match[1] === 'mermaid') {
+                                return (
+                                    <div className="mermaid my-4 break-all">
+                                        {String(children).replace(/\n$/, '')}
+                                    </div>
+                                );
+                            }
+
+                            // Handle other code blocks with proper formatting
+                            return !inline && match ? (
+                                <pre className={`language-${match[1]} overflow-auto`}>
+                                    <code className={`${className} break-all`} {...props}>
+                                        {children}
+                                    </code>
+                                </pre>
+                            ) : (
+                                <code className={`${className || ''} break-all`} {...props}>
+                                    {children}
+                                </code>
                             );
                         }
-
-                        return (
-                            <code
-                                className={className || ''}
-                                {...props}
-                            >
-                                {children}
-                            </code>
-                        );
-                    }
-                }}
-            >
-                {mdPreview}
-            </ReactMarkdown>
-        </div>
+                    }}
+                >
+                    {mdPreview}
+                </ReactMarkdown>
+            </div>
+            <style jsx global>{`
+                .markdown-preview pre {
+                    max-width: 100%;
+                    overflow-x: auto;
+                    white-space: pre-wrap;
+                    word-break: break-word;
+                }
+                .markdown-preview code {
+                    word-break: break-all;
+                    white-space: pre-wrap;
+                }
+                .markdown-preview table {
+                    display: block;
+                    max-width: 100%;
+                    overflow-x: auto;
+                }
+                .markdown-preview pre > code {
+                    display: block;
+                    padding: 1em;
+                    background-color: #1e1e1e;
+                    border-radius: 0.3em;
+                }
+            `}</style>
+        </>
     );
 };
 

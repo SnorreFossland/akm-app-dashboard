@@ -441,21 +441,18 @@ export default function TemplatesPanel({
     2. Identify any missing details or placeholders and replace them with relevant suggestions or examples.
     3. Ensure the refined prompt is clear, concise, and actionable.
 
-
 # Reasoning Steps:
-    1. Identify the key elements of the content.
+    1. Identify the key elements of the context.
     2. Break down the content into manageable sections
     3. Ensure the final output is coherent and follows a logical flow.
     4. Include specific instructions or guidelines for the AI to follow.
 
-   # Output Format:
-    Markdown
-
-# Context 
-${domainContent}
-
-# Content
+# Output Format:
 ${restTemplate}
+Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate.
+
+# Context
+${domainContent}
 
 # Constraints
 1. Ensure clarity, conciseness, and logical flow.
@@ -465,6 +462,9 @@ ${restTemplate}
 # Final Instructions
 If you include code snippets, use triple backticks and specify the language.  
 Do not wrap your entire response in backticks.
+
+
+
 `
         onApplyTemplate(finalContent);
     };
@@ -829,6 +829,7 @@ Now, refine the following user input into an exceptional prompt:
                     </div>
                 </div>
             </div>
+            {/* Library Modal */}
             {isLibraryOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
                     <div className="bg-gray-800 p-4 rounded-md w-3/4 max-w-2xl max-h-[80vh] overflow-y-auto">

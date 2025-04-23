@@ -216,3 +216,23 @@
     scrollbar-width: auto;
     -webkit-overflow-scrolling: touch;
 }
+
+/* Custom Markdown styles (necessary?*/
+.markdown-preview pre {
+    max-width: 100%;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.markdown-preview code {
+    word-break: break-all;
+    white-space: pre-wrap;
+}
+
+.markdown-preview table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+

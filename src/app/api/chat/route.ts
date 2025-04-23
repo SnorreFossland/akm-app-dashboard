@@ -21,20 +21,27 @@ export async function POST(request: Request) {
     // Define prompt this is used as system common prompt for all prompts. 
     const systemPrompt = {
       role: 'system',
-      content: `You are an expert consultant specializing in the domain described in the context. 
+      content:
+        `# Initial Context and Setup
+You are a powerful agentic AI domain expert, specializing in the domain described in the context. 
 Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.
 You are an expert consultant with extensive domain knowledge.
-  • Provide responses that are clear, precise, and actionable.
-  • Use Markdown: headings, bullet points, numbered lists.
-  • Wrap code in \`\`\`language …\`\`\` blocks.
-  • Include diagrams only when specified; use correct Mermaid syntax.
-  • For Gantt charts, use dateFormat YYYY-MM-DD and start at today's date.
-  • Use the latest version of Mermaid syntax.
-  • For location add links to Google Maps.
-Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate.
-For Mermaid diagrams, use today's date as the start date and follow this exact format:
 
-# Example Gantt Chart:
+Communication Guidelines
+
+1. Be conversational but professional.
+2. Refer to the USER in the second person and yourself in the first person.
+3. Format your responses in markdown. Use backticks to format file, directory, function, and class names. Use ( and ) for inline math, [ and ] for block math.
+4. NEVER lie or make things up.
+7. Refrain from apologizing all the time when results are unexpected. Instead, just try your best to proceed or explain the circumstances to the user without apologizing.
+8. Wrap code in \`\`\`language …\`\`\` blocks.
+9. Include diagrams only when specified; use correct Mermaid syntax, use dateFormat YYYY-MM-DD and start at today's date.
+10. For location add links to Google Maps. Open in a new tab.
+
+Please format your response clearly using Markdown syntax for readability, employing headings, bullet points, emphasis, and numbered lists as appropriate.
+
+
+# Example Mermaid Gantt Chart:
 \`\`\`mermaid
 gantt
   %%{ init: {
@@ -56,6 +63,7 @@ gantt
     Task1: 10d
     Task2: 20d
 \`\`\`
+
 If not date is provided, use today's date ${new Date().toISOString().split('T')[0]} as the start date.
 Make sure the syntax is correct and the diagram renders properly.
 
@@ -331,24 +339,24 @@ async function callDummyModel(messages: Message[], model: string): Promise<strin
   // Get the last user message to customize the response
   const userMessage = messages.find(msg => msg.role === 'user')?.content || '';
 
-  // Generate a sample response based on the user's message
-  return `[DUMMY MODEL] This is a test response from the dummy model (${model}).
-    
-I received your message: "${userMessage.substring(0, 50)}${userMessage.length > 50 ? '...' : ''}"
+  // Using an array join approach to prevent template literal backtick issues
+  const parts = [
+    `[DUMMY MODEL] This is a test response from the dummy model (${model}).\n`,
+    `\nI received your message: "${userMessage.substring(0, 50)}${userMessage.length > 50 ? '...' : ''}"\n`,
+    `\nThis is a simulated response for UI testing purposes. No actual AI model was called.`,
+    `This is a very long line that goes on and on without any breaks, serving as a test string to ensure that extremely lengthy log messages or sample texts can be handled appropriately by the system when rendered in a UI, or potentially displayed in a code block in Markdown. It continues, unceasingly, narrating its verbose messages and including enough details so that every element of its exhaustive composition is displayed without any subjects omitted or truncated in the debugging interface.\n`,
+    `\nSome sample formatted text:`,
+    `- Point 1: Test data`,
+    `- Point 2: More test data\n`,
+    `\nSample code block\n`,
+    "```javascript",
+    "function test() {",
+    "  return \"Hello world\";",
+    "}",
+    "```\n",
+    `\nThe current timestamp is: ${new Date().toISOString()}`
+  ];
 
-This is a simulated response for UI testing purposes. No actual AI model was called.
-
-Some sample formatted text:
-- Point 1: Test data
-- Point 2: More test data
-
-\`\`\`
-Sample code block
-function test() {
-  return "Hello world";
-}
-\`\`\`
-
-The current timestamp is: ${new Date().toISOString()}`;
+  return parts.join('\n');
 }
 

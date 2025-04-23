@@ -7,6 +7,7 @@ import styles from '@/components/SplitPanel.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
+import { Plus, Paperclip, X } from 'lucide-react'; // Add icon imports
 
 interface Message {
     role: 'user' | 'assistant';
@@ -146,15 +147,40 @@ export default function ChatComponent({
         return () => window.removeEventListener('resize', handleResize);
     }, [topHeight]);
 
-    // Auto-scroll to the end of last message when messages update
+    // Scroll to bottom whenever messages change or loading completes
     useEffect(() => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({
-                behavior: 'smooth',
-                block: 'end', // <-- Use 'end' to scroll to the bottom
-            });
-        }
-    }, [messages]);
+        const scrollToBottom = () => {
+            if (messagesEndRef.current) {
+                // Use a longer timeout to ensure DOM has fully updated
+                setTimeout(() => {
+                    // Try multiple approaches to ensure scrolling works
+                    messagesEndRef.current?.scrollIntoView({
+                        behavior: 'auto',
+                        block: 'end',
+                    });
+
+                    // Also try direct parent scrolling
+                    const parentElement = messagesEndRef.current.parentElement;
+                    if (parentElement) {
+                        parentElement.scrollTop = parentElement.scrollHeight;
+                    }
+
+                    // Try scrolling the main container as well
+                    const messageContainer = document.querySelector('.flex-1.min-h-0.overflow-y-auto');
+                    if (messageContainer) {
+                        (messageContainer as HTMLElement).scrollTop = (messageContainer as HTMLElement).scrollHeight;
+                    }
+                }, 200);
+            }
+        };
+
+        scrollToBottom();
+
+        // Also scroll after a longer delay as a fallback
+        const fallbackTimer = setTimeout(scrollToBottom, 500);
+
+        return () => clearTimeout(fallbackTimer);
+    }, [messages, isLoading]);
 
     useEffect(() => {
         const lastAssistant = messages.findLast((m) => m.role === 'assistant');
@@ -195,14 +221,58 @@ export default function ChatComponent({
         };
     }, [resetInactivityTimer, showDigitalRain]);
 
+    // Context file state
+    const [contextFiles, setContextFiles] = useState<File[]>([]);
+    const [contextContent, setContextContent] = useState<string>('');
+    const [isContextAttached, setIsContextAttached] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // Handle file selection for context
+    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+        const files = event.target.files;
+        if (!files || files.length === 0) return;
+        const selectedFiles = Array.from(files);
+        setContextFiles(selectedFiles);
+
+        // Read file contents
+        const fileContents = await Promise.all(
+            selectedFiles.map(async (file) => {
+                const text = await file.text();
+                return `File: ${file.name}\n\n${text}`;
+            })
+        );
+        setContextContent(fileContents.join('\n\n---\n\n'));
+        setIsContextAttached(true);
+    };
+
+    // Open file picker
+    const handleAddContext = () => {
+        if (fileInputRef.current) {
+            fileInputRef.current.click();
+        }
+    };
+
+    // Remove context
+    const handleRemoveContext = () => {
+        setContextFiles([]);
+        setContextContent('');
+        setIsContextAttached(false);
+        if (fileInputRef.current) fileInputRef.current.value = '';
+    };
+
     // Function to send messages to the API
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
         try {
+            const requestBody: any = { messages: newMessages, model: selectedModel };
+            if (contextContent && isContextAttached) {
+                requestBody.context = contextContent;
+            }
+            console.log('246 Request Body:', requestBody);
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ messages: newMessages, model: selectedModel }),
+                body: JSON.stringify(requestBody),
             });
             const data = await response.json();
             if (!response.ok) {
@@ -219,7 +289,7 @@ export default function ChatComponent({
         } finally {
             setIsLoading(false);
         }
-    }, [selectedModel]);
+    }, [selectedModel, contextContent, isContextAttached]);
 
     // When selectedModel changes, retry sending the last non-retry user message
     useEffect(() => {
@@ -265,7 +335,13 @@ export default function ChatComponent({
         e.preventDefault();
         if (!input?.trim()) return;
 
-        const userMessage: Message = { role: 'user', content: input };
+        let userMessageContent = input;
+        if (isContextAttached && contextFiles.length > 0) {
+            const fileNames = contextFiles.map(file => file.name).join(', ');
+            userMessageContent = `${input}\n\n[Context files attached: ${fileNames}]`;
+        }
+
+        const userMessage: Message = { role: 'user', content: userMessageContent };
         setMessages((prev) => [...prev, userMessage]);
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed
@@ -292,11 +368,9 @@ export default function ChatComponent({
     };
 
     return (
+        // Changed overflow-auto to overflow-hidden on the main container
         <div ref={containerRef} className="flex flex-col h-[90%] min-h-0 rounded-lg bg-background sm:min-w-[460px] overflow-hidden relative">
-         {/* <div ref={containerRef} className="flex flex-col h-[92%] min-h-0 rounded-lg bg-background sm:min-w-[460px] sm:h-auto sm:p-1 overflow-hidden"> */}
-            {/* Show getting started and digital rain when no messages */}
-            <div className="flex-1 overflow-y-auto pb-[150px]">
-            {/* <div className="flex-1 flex flex-col bg-background rounded-m overflow-y-auto"> */}
+            <div className="flex-1 min-h-0 overflow-y-auto pb-[150px]" id="message-container">
                 {/* style={{ height: `${topHeight}px` }}> this is for draggable bar*/}
                 {messages.length < 1 ? (
                     <div className="flex flex-col items-center justify-center w-full py-6 overflow-auto">
@@ -320,32 +394,31 @@ export default function ChatComponent({
                             </div>
                         ) : (
                             <div className="flex-1 text-primary overflow-auto min-h-0">
-                                    <div className="flex flex-col items-center justify-center w-full py-6 min-h-0">
-                                        <div className="text-green-400 text-xl font-mono text-center mb-4">
-                                            <p>Getting started by asking your question below!</p>
-                                        </div>
-                                        <div className="w-full max-w-md">
-                                            <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
-                                            <p className="mb-2 text-center">Follow these steps:</p>
-                                            <ol className="text-sm list-decimal list-inside overflow-auto text-left">
-                                                <li>Open the left pane Click on the "Left pane" button upper left .</li>
-                                                <li>Describe your topic in the top left area in the pane.</li>
-                                                <li>Select a prompt template to make a report/doc on your topic.</li>
-                                                <li>Edit the prompt and click on the Right arrow to insert it into the chat.</li>
-                                                <li>Click on the up arrow to ask the AI.</li>
-                                                <li>Click on Preview to see the result in right panel as markdown preview.</li>
-                                            </ol>
-                                        </div>
+                                <div className="flex flex-col items-center justify-center w-full py-6 min-h-0">
+                                    <div className="text-green-400 text-xl font-mono text-center mb-4">
+                                        <p>Getting started by asking your question below!</p>
                                     </div>
+                                    <div className="w-full max-w-md">
+                                        <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
+                                        <p className="mb-2 text-center">Follow these steps:</p>
+                                        <ol className="text-sm list-decimal list-inside overflow-auto text-left">
+                                            <li>Open the left pane Click on the "Left pane" button upper left .</li>
+                                            <li>Describe your topic in the top left area in the pane.</li>
+                                            <li>Select a prompt template to make a report/doc on your topic.</li>
+                                            <li>Edit the prompt and click on the Right arrow to insert it into the chat.</li>
+                                            <li>Click on the up arrow to ask the AI.</li>
+                                            <li>Click on Preview to see the result in right panel as markdown preview.</li>
+                                        </ol>
+                                    </div>
+                                </div>
                             </div>
                         )}
                     </div>
                 ) : null}
 
                 <div className="flex flex-col p-4 rounded-lg w-full bg-background">
-                     {messages.map((message, index) => (
+                    {messages.map((message, index) => (
                         <div key={index}
-                            ref={index === messages.length - 1 ? messagesEndRef : undefined}
                             className={`mb-4 p-3 rounded-lg flex flex-col gap-2 bg-background ${message.role === 'user'
                                 ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-800'
                                 : 'bg-background mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
@@ -434,12 +507,13 @@ export default function ChatComponent({
 
                         </div>
                     ))}
-                    <div ref={messagesEndRef} />
                     {isLoading && (
                         <div>
                             {isLoading ? <p>Thinking...</p> : null}
                         </div>
                     )}
+                    {/* Add padding and make sure this is the absolute last element */}
+                    <div ref={messagesEndRef}></div>
                 </div>
             </div>
             {/* <SimpleDivider
@@ -448,7 +522,21 @@ export default function ChatComponent({
             /> */}
             {/* Input area always at the bottom */}
             <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-gray-800 z-20 pb-safe">
-            {/* <div className="sticky bottom-0 flex-none p-2 rounded-lg w-full bg-background"> */}
+                {/* Context files indicator */}
+                {isContextAttached && contextFiles.length > 0 && (
+                    <div className="flex items-center gap-2 px-3 py-1 bg-blue-900/20 text-xs">
+                        <Paperclip className="w-3 h-3" />
+                        <span>
+                            {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached
+                        </span>
+                        <button
+                            onClick={handleRemoveContext}
+                            className="ml-auto text-gray-400 hover:text-white"
+                        >
+                            <X className="w-3 h-3" />
+                        </button>
+                    </div>
+                )}
                 <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent rounded-lg min-h-0">
                     <TextareaAutosize
                         ref={textareaRef}
@@ -472,6 +560,24 @@ export default function ChatComponent({
                         minRows={4}
                         maxRows={8}
                         disabled={isLoading}
+                    />
+                    {/* Add Context Button */}
+                    <button
+                        type="button"
+                        onClick={handleAddContext}
+                        className="bg-blue-600/40 text-gray-100 p-2 rounded-full hover:bg-blue-700/60 disabled:bg-blue-800 disabled:text-gray-400"
+                        disabled={isLoading}
+                        title="Add context files"
+                    >
+                        {isContextAttached ? <Paperclip className="w-6 h-6" /> : <Plus className="w-6 h-6" />}
+                    </button>
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        multiple
+                        style={{ display: 'none' }}
+                        onChange={handleFileSelect}
+                        accept=".txt,.md,.json,.csv,.pdf,.docx,.xlsx"
                     />
                     <button
                         type="submit"
