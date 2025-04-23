@@ -202,7 +202,7 @@ const AIChatPage = () => {
                             </h2>
                             <button
                                 onClick={() => setShowLeftPanel(!showLeftPanel)}
-                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 rounded"
                                 title={showLeftPanel ? 'Hide' : 'Show'}
                             >
                                 <span className="text-lg">{showLeftPanel ? '←' : '→'}</span>

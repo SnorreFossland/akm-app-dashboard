@@ -102,7 +102,7 @@ export default function ChatComponent({
         try {
             const text = await file.text();
             setInput(
-`Please revise the content below for clarity, style, and grammar.
+                `Please revise the content below for clarity, style, and grammar.
 Take into consideration the following changes or additions : [Please describe the changes want in detail here].
 
 Do not use its contents as contextual input for other questions--I want it improved not analyzed:
@@ -118,7 +118,7 @@ Do not use its contents as contextual input for other questions--I want it impro
             setErrorMsg(`Failed to load ${file.name}`);
         }
         e.target.value = '';
-        };
+    };
 
     // Add this effect to adjust topHeight based on input size
     useEffect(() => {
@@ -604,7 +604,7 @@ END OF DOCUMENT: ${file.name}
 
     return (
         // Changed overflow-auto to overflow-hidden on the main container
-        <div ref={containerRef} className="flex flex-col h-[90%] min-h-0 rounded-lg sm:min-w-[460px] overflow-hidden relative">
+        <div ref={containerRef} className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
             {/* Add error message display near the top */}
             {errorMsg && (
                 <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-100 px-4 py-2 mb-2 rounded-md text-sm">
@@ -645,7 +645,7 @@ END OF DOCUMENT: ${file.name}
                                         <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
                                         <p className="mb-2 text-center">Follow these steps:</p>
                                         <ol className="text-sm list-decimal list-inside overflow-auto text-left">
-                                                <li>Open the left pane Click on the &quot;Left pane&quot; button upper left .</li>
+                                            <li>Open the left pane Click on the &quot;Left pane&quot; button upper left .</li>
                                             <li>Describe your topic in the top left area in the pane.</li>
                                             <li>Select a prompt template to make a report/doc on your topic.</li>
                                             <li>Edit the prompt and click on the Right arrow to insert it into the chat.</li>
@@ -659,7 +659,7 @@ END OF DOCUMENT: ${file.name}
                     </div>
                 ) : null}
 
-                <div className="flex flex-col p-4 rounded-lg w-full bg-card overflow-auto">
+                <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
                     {messages.map((message, index) => (
                         <div key={index}
                             className={`mb - 4 p - 3 rounded - lg flex flex - col gap - 2 ${message.role === 'user'
@@ -667,6 +667,7 @@ END OF DOCUMENT: ${file.name}
                                 : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
                                 } `}
                         >
+                            {/* header with avatar/role */}
                             <div className="flex items-center justify-between gap-3 ps-1">
                                 <div className="flex-shrink-0">
                                     {message.role === 'user' ? (
@@ -705,13 +706,9 @@ END OF DOCUMENT: ${file.name}
                                     {message.role === 'user' ? 'You' : `Assistant(${selectedModel})`}
                                 </div>
                             </div>
-                            <div
-                                className="flex w-full p-1 whitespace-pre-wrap break-words break-all overflow-auto"
-                                style={{ overflowWrap: 'anywhere' }}
-                            >
-                                {message.content}
-                            </div>
-                            <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+
+                            {/* >>> duplicate buttons here */}
+                            <div className="flex items-center gap-2 mt-1 ml-auto p-2">
                                 <button
                                     onClick={() => handleCopyMessage(message.content, index)}
                                     className="text-xs text-gray-400 hover:text-gray-200"
@@ -720,9 +717,7 @@ END OF DOCUMENT: ${file.name}
                                 </button>
                                 {message.role === 'assistant' && (
                                     <button
-                                        onClick={() => {
-                                            handleViewInMarkdown(message.content);
-                                        }}
+                                        onClick={() => handleViewInMarkdown(message.content)}
                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                     >
                                         Markdown Preview
@@ -747,15 +742,59 @@ END OF DOCUMENT: ${file.name}
                                 )}
                             </div>
 
+                            {/* message content */}
+                            <div
+                                className="flex w-full p-1 whitespace-pre-wrap break-words break-all overflow-auto"
+                                style={{ overflowWrap: 'anywhere' }}
+                            >
+                                {message.content}
+                            </div>
 
+                            {/* original bottom buttons */}
+                            <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                <button
+                                    onClick={() => handleCopyMessage(message.content, index)}
+                                    className="text-xs text-gray-400 hover:text-gray-200"
+                                >
+                                    {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                </button>
+                                {message.role === 'assistant' && (
+                                    <button
+                                        onClick={() => handleViewInMarkdown(message.content)}
+                                        className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                    >
+                                        Markdown Preview
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            width="18"
+                                            height="18"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            className="inline-block"
+                                        >
+                                            <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
+                                            <path
+                                                d="M8 7h9v9"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </button>
+                                )}
+                            </div>
                         </div>
                     ))}
                     {isLoading && (
                         <div className="flex justify-start my-4">
                             <ThinkingAnimation />
+                            <div className="h-6" />
                         </div>
                     )}
-                    {/* Add padding and make sure this is the absolute last element */}
+
+                    {/* This is the end of the messages */}
+
                     <div ref={messagesEndRef}></div>
                 </div>
             </div>
@@ -764,149 +803,143 @@ END OF DOCUMENT: ${file.name}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             /> */}
             {/* Input area always at the bottom */}
-            <div className="absolute bottom-0 left-0 right-0 bg-background border-t border-gray-800 z-20 pb-safe">
-                {/* Context files indicator with enhanced info */}
-                {isContextAttached && contextFiles.length > 0 && (
-                    <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
-                        <div className="flex items-center gap-2">
-                            <Paperclip className="w-3 h-3" />
-                            <span>
-                                {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached:
-                                <span className="font-mono ml-1">
-                                    {contextFiles.map((file, idx) => {
-                                        const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                        const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
-                                        return (
-                                            <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
-                                                {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
-                                            </span>
-                                        );
-                                    })}
-                                    ({Math.round(contextContent.length / 1024)}KB)
-                                </span>
-                            </span>
-                            <button
-                                onClick={handleRemoveContext}
-                                className="ml-auto text-gray-400 hover:text-white"
-                            >
-                                <X className="w-3 h-3" />
-                            </button>
-                        </div>
-                        {/* Add guidance about binary files if any are attached */}
-                        {contextFiles.some(file => {
-                            const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                            return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
-                        }) && (
-                                <div className="mt-1 text-yellow-300 text-[10px]">
-                                    ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
-                                    <button
-                                        className="ml-1 underline hover:text-white"
-                                        onClick={() => {
-                                            const binaryFiles = contextFiles
-                                                .filter(f => {
-                                                    const fileType = f.name.split('.').pop()?.toLowerCase() || '';
-                                                    return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
-                                                    // return !['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType);
-                                                })
-                                                .map(f => f.name)
-                                                .join(", ");
+            <div className="relative bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 border-t border-gray-800 z-20 pb-safe">
 
-                                            setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
-                                            setTimeout(() => {
-                                                if (textareaRef.current) {
-                                                    textareaRef.current.focus();
-                                                }
-                                            }, 100);
-                                        }}
-                                    >
-                                        Open the document and copy all text and Add the text to explain file
-                                    </button>
-                                </div>
-                            )}
-                    </div>
-                )}
-                <form onSubmit={handleSubmit} className="flex gap-2 p-2 bg-transparent rounded-lg min-h-0">
+                <button
+                    type="button"
+                    onClick={handleAddMD}
+                    className="p-2 text-gray-500 hover:text-gray-300"
+                    disabled={isLoading}
+                    title="Let AI Load Markdown"
+                >
+                    <FileText className="w-5 h-5" />
+                </button>
+                <input
+                    ref={mdFileInputRef}
+                    type="file"
+                    accept=".md"
+                    className="hidden"
+                    onChange={handleMDFileSelect}
+                />
+
+                {/* START FORM */}
+                <form onSubmit={handleSubmit} className="px-2 bg-transparent rounded-lg">
                     <TextareaAutosize
                         ref={textareaRef}
                         value={input || ''}
                         onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                const now = Date.now();
-                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                    handleSubmit(e);
-                                    textarea.lastEnterTime = 0;
-                                } else {
-                                    textarea.lastEnterTime = now;
-                                }
-                            }
-                        }}
-                        placeholder="Ask anything ..."
-                        className="flex-1 p-2 border border-gray-600 rounded-md text-card-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-                        minRows={4}
-                        maxRows={8}
+                        placeholder="Ask anything …"
+                        className="w-full px-1 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minRows={6}
+                        maxRows={12}
                         disabled={isLoading}
                     />
-                    {/* Add Context Button with loading indicator */}
-                    <button
-                        type="button"
-                        onClick={handleAddContext}
-                        className="bg-blue-600/40 text-gray-100 p-2 rounded-full hover:bg-blue-700/60 disabled:bg-blue-800 disabled:text-gray-400"
-                        disabled={isLoading || isProcessingFile}
-                        title="Add context files"
-                    >
-                        {isProcessingFile ? (
-                            <div className="w-6 h-6 border-2 border-t-transparent border-blue-200 rounded-full animate-spin" />
-                        ) : isContextAttached ? (
-                            <Paperclip className="w-6 h-6" />
-                        ) : (
-                            <Plus className="w-6 h-6" />
-                        )}
-                    </button>
-                    <input
-                        ref={fileInputRef}
-                        type="file"
-                        multiple
-                        style={{ display: 'none' }}
-                        onChange={handleFileSelect}
-                        accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.pdf,.docx,.xlsx,.xls"
-                    />
+                    <div className="flex justify-between">
+                        <div className="flex items-center gap-2 justify-end">
+                            {/* Context file input */}
+                            <button
+                                type="button"
+                                onClick={handleAddContext}
+                                className="text-gray-500 hover:text-gray-300"
+                                disabled={isLoading || isProcessingFile}
+                                title="Add context from files"
+                            >
+                                <Paperclip className="w-5 h-5" />
+                            </button>
+                            <input
+                                type="file"
+                                multiple
+                                className="hidden"
+                                onChange={handleFileSelect}
+                                accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.docx"
+                                ref={fileInputRef}
+                            />
+                            {/* Context files indicator with enhanced info */}
+                            {isContextAttached && contextFiles.length > 0 && (
+                                <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
+                                    <div className="flex items-center gap-2">
+                                        {/* <Paperclip className="w-3 h-3" /> */}
+                                        <span>
+                                            {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached as context:
+                                            <span className="font-mono ml-1">
+                                                {contextFiles.map((file, idx) => {
+                                                    const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                                    return (
+                                                        <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
+                                                            {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
+                                                        </span>
+                                                    );
+                                                })}
+                                                ({Math.round(contextContent.length / 1024)}KB)
+                                            </span>
+                                        </span>
+                                        <button
+                                            onClick={handleRemoveContext}
+                                            className="ml-auto text-gray-400 hover:text-white"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                    {/* Add guidance about binary files if any are attached */}
+                                    {contextFiles.some(file => {
+                                        const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                        return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                    }) && (
+                                            <div className="mt-1 text-yellow-300 text-[10px]">
+                                                ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
+                                                <button
+                                                    className="ml-1 underline hover:text-white"
+                                                    onClick={() => {
+                                                        const binaryFiles = contextFiles
+                                                            .filter(f => {
+                                                                const fileType = f.name.split('.').pop()?.toLowerCase() || '';
+                                                                return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                                                // return !['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType);
+                                                            })
+                                                            .map(f => f.name)
+                                                            .join(", ");
 
-                    {/* NEW: Markdown-only import button */}
-                    <button
-                        type="button"
-                        onClick={handleAddMD}
-                        className="bg-green-600/40 text-gray-100 p-2 rounded-full hover:bg-green-700/60 disabled:bg-green-800 disabled:text-gray-400"
-                        disabled={isLoading}
-                        title="Import Markdown"
-                    >
-                        <FileText className="w-6 h-6" />
-                    </button>
-                    <input
-                        ref={mdFileInputRef}
-                        type="file"
-                        accept=".md"
-                        style={{ display: 'none' }}
-                        onChange={handleMDFileSelect}
-                    />
-                    <button
-                        type="submit"
-                        className="bg-blue-600 text-gray-100 p-2 rounded-full hover:bg-blue-700 disabled:bg-blue-800 disabled:text-gray-400"
-                        disabled={isLoading || !input?.trim()}
-                    >
-                        <svg
-                            xmlns="http://www.w3.org/2000/svg"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            strokeWidth={2}
-                            stroke="currentColor"
-                            className="w-6 h-6"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M5 15l7-7 7 7" />
-                        </svg>
-                    </button>
+                                                        setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
+                                                        setTimeout(() => {
+                                                            if (textareaRef.current) {
+                                                                textareaRef.current.focus();
+                                                            }
+                                                        }, 100);
+                                                    }}
+                                                >
+                                                    Open the document and copy all text and Add the text to explain file
+                                                </button>
+                                            </div>
+                                        )}
+                                </div>
+                            )}
+
+                        </div>
+                        {/* now include the send‐button here */}
+                        <div className="flex justify-between px-2 ">
+                            <div className="flex items-center gap-2 justify-end">
+                                {/* …context buttons… */}
+                            </div>
+                            <button
+                                type="submit"
+                                className="p-2 text-blue-200 hover:text-blue-800"
+                                disabled={isLoading || !input?.trim()}
+                                title="Send"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-8 h-8"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
                 </form>
             </div>
         </div>

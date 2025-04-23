@@ -30,7 +30,6 @@
   },
   "include": [
     "next-env.d.ts",
-    "pdfjs-worker.d.ts",
     "**/*.ts",
     "**/*.tsx",
     ".next/types/**/*.ts"
