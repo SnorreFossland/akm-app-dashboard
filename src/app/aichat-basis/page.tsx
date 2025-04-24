@@ -31,7 +31,7 @@ const AIChatPage = () => {
     const [lastResponse, setLastResponse] = useState<string>('');
     const documents = useSelector((state: RootState) => state.markdown.documents);
 
-    const [resetTrigger, setResetTrigger] = useState(0);
+    // const [resetTrigger, setResetTrigger] = useState(0);
 
     const openLibraryButtonRef = useRef<HTMLButtonElement>(null);
 
@@ -186,19 +186,23 @@ const AIChatPage = () => {
         setShowLeftPanel(false); // Hide the left panel when viewing markdown
     };
 
+
     return (
         <div className="flex flex-col items-center justify-center w-full h-full bg-background text-gray-100">
             <div className="flex flex-row flex-nowrap h-[100dvh] min-w-[450px] w-full max-w-full bg-background text-gray-100 overflow-hidden">
                 {/* Left Panel: Templates */}
                 {showLeftPanel && (
-                    <div className="flex-shrink-0 px-1 sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw]"
+                    <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw]"
                         style={{
                             width: `${leftPanelWidth}px`,
                         }}
                     >
-                        <div className="flex justify-between items-center m-1 sm:m-2">
+                        <div className="flex justify-between items-center m-1 sm:m-2">                          
+                            <div className="flex items-center">
+                                {/* spacer */}
+                            </div>
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">
-                                Prepare Prompt
+                                Input: Prepare Prompt
                             </h2>
                             <button
                                 onClick={() => setShowLeftPanel(!showLeftPanel)}
@@ -239,18 +243,18 @@ const AIChatPage = () => {
                         {!showLeftPanel ? (
                             <button
                                 onClick={() => setShowLeftPanel(!showLeftPanel)}
-                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
                                 title='Show Templates'
                             >
                                 <span>→</span>
-                                <span className="ml-1 hidden sm:inline">{!showLeftPanel && 'Left pane'}</span>
+                                <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel && 'Left pane'}</span>
                             </button>
                         ) : (
                             <div className="flex"></div>
                         )}
 
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
-                        <div className="flex items-center space-x-2 sm:space-x-4">
+                        {/* <div className="flex items-center space-x-2 sm:space-x-4">
                             <div className="flex items-center text-foreground gap-1">
                                 <ModelSelector
                                     selectedModel={selectedModel}
@@ -274,15 +278,15 @@ const AIChatPage = () => {
                                     </label>
                                 </div>
                             </div>
-                        </div>
+                        </div> */}
                         {!showRightPanel ? (
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
                                 title='Show Markdown'
                             >
                                 <span>←</span>
-                                <span className="ml-1 hidden sm:inline">{!showLeftPanel && 'Right pane'}</span>
+                                <span className="ml-1 hidden sm:inline">{!showRightPanel && 'Right pane'}</span>
                             </button>
                         ) : (
                             <div className="flex"></div>
@@ -293,7 +297,7 @@ const AIChatPage = () => {
                             input={input}
                             setInput={setInput}
                             selectedModel={selectedModel}
-                            resetTrigger={resetTrigger}
+                            setSelectedModel={setSelectedModel}
                             onResponseChange={handleResponseChange}
                             onViewInMarkdown={handleViewInMarkdown}
                             setShowLeftPanel={setShowLeftPanel}
@@ -317,7 +321,7 @@ const AIChatPage = () => {
 
                 {/* Right Panel: Markdown Preview */}
                 {showRightPanel && (
-                    <div className="flex-shrink-0 px-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] max-h-1/2 overflow-hidden"
+                    <div className="flex-shrink-0 bg-primary-foreground p-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] max-h-1/2 overflow-hidden"
                         style={{
                             width: `${rightPanelWidth}px`,
                         }}
@@ -325,13 +329,13 @@ const AIChatPage = () => {
                         <div className="flex items-center justify-between m-1 sm:m-2">
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-gray-400 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2  whitespace-nowrap rounded"
                                 title='Hide Markdown'
                             >
                                 <span className="text-lg">{showRightPanel && '→'}</span>
                             </button>
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
-                                Markdown Preview
+                                Output: Markdown Preview
                             </h2>
                             <div className="w-[60px] sm:w-[100px]">
                                 <div className="markdown-preview-header">

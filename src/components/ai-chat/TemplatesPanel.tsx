@@ -94,7 +94,7 @@ export default function TemplatesPanel({
             content = importedFile;
         } else if (editableContent) {
             content = editableContent;
-        } 
+        }
         // If the content is empty, reset placeholders and return
         if (!content) {
             setPlaceholders([]);
@@ -136,11 +136,11 @@ export default function TemplatesPanel({
         // Set the placeholders state
         if (editableContent) {
             setTemplatePlaceholders(newPlaceholders);
-        } else {    
+        } else {
             setPlaceholders(newPlaceholders);
         }
-    
-    
+
+
     }, [editableContent, domainContent, importedFile]);
 
     const handleUrlImport = async () => {
@@ -814,14 +814,17 @@ Now, refine the following user input into an exceptional prompt:
                         placeholder="You can edit the content here before inserting..."
                         id="editable-content-textarea"
                     />
-                    <div className="flex items-end justify-end gap-4">
+                    <div className="flex items-center justify-end gap-4">
                         <button
                             title="Insert Prompt with Context into Chat"
                             onClick={handleInsertTemplate}
-                            className="bg-blue-600 hover:bg-blue-700 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg text-2xl relative group"
+                            className={`${buttonOutline} hover:bg-blue-700 text-white rounded-full w-120 h-12 px-5 flex items-center justify-center shadow-lg text-2xl relative group`}
                             aria-label="Insert Prompt with Context into Chat    "
                             type="button"
                         >
+                            <div className="flex gap-2 text-sm text-gray-300">
+                                Insert this prompt into chat
+                            </div>
                             <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                             </svg>

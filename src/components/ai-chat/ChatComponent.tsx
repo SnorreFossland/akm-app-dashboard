@@ -7,11 +7,12 @@ import styles from '@/components/SplitPanel.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
-import { Plus, Paperclip, X, FileText } from 'lucide-react';
+import { Plus, Paperclip, X, FileText, Info } from 'lucide-react';  // add Info
 // Import mammoth.js for DOCX conversion
 import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
+import ModelSelector from './ModelSelector';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -22,10 +23,10 @@ interface Message {
 
 interface ChatComponentProps {
     selectedModel: string;
+    setSelectedModel: (model: string) => void;
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (response: string) => void;
     setShowLeftPanel: (show: boolean) => void;
-    resetTrigger: number; // Added resetTrigger prop
     error?: string; // Optional error prop
     chatInput?: string;
     input: string;
@@ -48,13 +49,13 @@ interface DraggableDividerProps {
 
 export default function ChatComponent({
     selectedModel,
+    setSelectedModel,
     chatInput,
     input,
     setInput,
     onResponseChange,
     onViewInMarkdown,
     setShowLeftPanel,
-    resetTrigger, // Add this prop to the destructured list
 }: ChatComponentProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -62,7 +63,7 @@ export default function ChatComponent({
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [inputState, setInputState] = useState<string | undefined>(chatInput);
     const [modelRetryCount, setModelRetryCount] = useState(0);
-    const [errorMsg, setErrorMsg] = useState(''); // <-- error state
+    const [statusMsg, setStatusMsg] = useState(''); // <-- error state
 
     const [topHeight, setTopHeight] = useState<number>(600); // 
 
@@ -75,6 +76,8 @@ export default function ChatComponent({
     const mdFileInputRef = useRef<HTMLInputElement>(null);
 
     const containerRef = useRef<HTMLDivElement>(null);
+
+
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
@@ -112,10 +115,10 @@ Do not use its contents as contextual input for other questions--I want it impro
  
  # End of Content
  `);
-            setErrorMsg(`Loaded ${file.name} for editing.`);
+            setStatusMsg(`Loaded "${file.name}" for editing and refinement.`);
         } catch (err) {
             console.error(err);
-            setErrorMsg(`Failed to load ${file.name}`);
+            setStatusMsg(`Failed to load ${file.name}`);
         }
         e.target.value = '';
     };
@@ -146,17 +149,17 @@ Do not use its contents as contextual input for other questions--I want it impro
         }
     }, [input, containerRef.current?.offsetHeight]);
 
-    useEffect(() => {
-        if (resetTrigger > 0) {
-            // Reset conversation state
-            setMessages([]);
-            // Reset any other related state
-            setIsLoading(false);
-            setErrorMsg(''); // Fix: use setErrorMsg instead of setError
-            // You might want to clear the input as well
-            setInput('');
-        }
-    }, [resetTrigger]);
+    // useEffect(() => {
+    //     if (resetTrigger > 0) {
+    //         // Reset conversation state
+    //         setMessages([]);
+    //         // Reset any other related state
+    //         setIsLoading(false);
+    //         setErrorMsg(''); // Fix: use setErrorMsg instead of setError
+    //         // You might want to clear the input as well
+    //         setInput('');
+    //     }
+    // }, [resetTrigger]);
 
     // 2. Add a useEffect to set the initial height based on container size
     useEffect(() => {
@@ -353,7 +356,7 @@ Last modified: ${new Date(file.lastModified).toLocaleString()}]`;
         const selectedFiles = Array.from(files);
         setContextFiles(selectedFiles);
         setIsProcessingFile(true);
-        setErrorMsg(`Processing ${selectedFiles.length} file(s)...`);
+        setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
 
         try {
             // Process files one by one with status updates
@@ -361,7 +364,7 @@ Last modified: ${new Date(file.lastModified).toLocaleString()}]`;
             const binaryFiles = [];
 
             for (const file of selectedFiles) {
-                setErrorMsg(`Reading ${file.name}...`);
+                setStatusMsg(`Reading ${file.name}...`);
                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
 
                 // Track binary files to show warning later
@@ -398,11 +401,11 @@ END OF DOCUMENT: ${file.name}
                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
             }
 
-            setErrorMsg(message);
-            setTimeout(() => setErrorMsg(''), binaryFiles.length > 0 ? 10000 : 6000); // Show longer for binary files
+            setStatusMsg(message);
+            setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 10000 : 6000); // Show longer for binary files
         } catch (error) {
             console.error('Error processing files:', error);
-            setErrorMsg(
+            setStatusMsg(
                 error instanceof Error
                     ? `Error processing files: ${error.message}`
                     : `Error processing files: ${String(error)}`
@@ -605,13 +608,6 @@ END OF DOCUMENT: ${file.name}
     return (
         // Changed overflow-auto to overflow-hidden on the main container
         <div ref={containerRef} className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
-            {/* Add error message display near the top */}
-            {errorMsg && (
-                <div className="bg-yellow-900/50 border border-yellow-700 text-yellow-100 px-4 py-2 mb-2 rounded-md text-sm">
-                    {errorMsg}
-                </div>
-            )}
-
             {/* Rest of your component remains the same */}
             <div className="flex-1 min-h-0 overflow-y-auto pb-[150px]" id="message-container">
                 {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
@@ -662,8 +658,8 @@ END OF DOCUMENT: ${file.name}
                 <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
                     {messages.map((message, index) => (
                         <div key={index}
-                            className={`mb - 4 p - 3 rounded - lg flex flex - col gap - 2 ${message.role === 'user'
-                                ? 'bg-background ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-300'
+                            className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
+                                ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
                                 : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
                                 } `}
                         >
@@ -705,10 +701,7 @@ END OF DOCUMENT: ${file.name}
                                 <div className="text-xs text-gray-400 me-auto overflow-auto">
                                     {message.role === 'user' ? 'You' : `Assistant(${selectedModel})`}
                                 </div>
-                            </div>
 
-                            {/* >>> duplicate buttons here */}
-                            <div className="flex items-center gap-2 mt-1 ml-auto p-2">
                                 <button
                                     onClick={() => handleCopyMessage(message.content, index)}
                                     className="text-xs text-gray-400 hover:text-gray-200"
@@ -744,46 +737,48 @@ END OF DOCUMENT: ${file.name}
 
                             {/* message content */}
                             <div
-                                className="flex w-full p-1 whitespace-pre-wrap break-words break-all overflow-auto"
+                                className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
                                 style={{ overflowWrap: 'anywhere' }}
                             >
                                 {message.content}
                             </div>
 
-                            {/* original bottom buttons */}
-                            <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
-                                <button
-                                    onClick={() => handleCopyMessage(message.content, index)}
-                                    className="text-xs text-gray-400 hover:text-gray-200"
-                                >
-                                    {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                </button>
-                                {message.role === 'assistant' && (
+                            {/*  bottom buttons */}
+                            {message.role === 'assistant' && (
+                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
                                     <button
-                                        onClick={() => handleViewInMarkdown(message.content)}
-                                        className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                        onClick={() => handleCopyMessage(message.content, index)}
+                                        className="text-xs text-gray-400 hover:text-gray-200"
                                     >
-                                        Markdown Preview
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="18"
-                                            height="18"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            className="inline-block"
-                                        >
-                                            <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
-                                            <path
-                                                d="M8 7h9v9"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
+                                        {copiedIndex === index ? 'Copied!' : 'Copy'}
                                     </button>
-                                )}
-                            </div>
+                                    {message.role === 'assistant' && (
+                                        <button
+                                            onClick={() => handleViewInMarkdown(message.content)}
+                                            className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                        >
+                                            Markdown Preview
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                width="18"
+                                                height="18"
+                                                viewBox="0 0 24 24"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                className="inline-block"
+                                            >
+                                                <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
+                                                <path
+                                                    d="M8 7h9v9"
+                                                    strokeWidth="2"
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                />
+                                            </svg>
+                                        </button>
+                                    )}
+                                </div>
+                            )}
                         </div>
                     ))}
                     {isLoading && (
@@ -802,6 +797,14 @@ END OF DOCUMENT: ${file.name}
                 currentSize={topHeight}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             /> */}
+            {/* Add  message display near the top */}
+            {statusMsg && (
+                <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
+                    <Info className="w-4 h-4 mr-2" />     {/* icon in front */}
+                    <span>{statusMsg}</span>
+                </div>
+            )}
+
             {/* Input area always at the bottom */}
             <div className="relative bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 border-t border-gray-800 z-20 pb-safe">
 
@@ -828,6 +831,21 @@ END OF DOCUMENT: ${file.name}
                         ref={textareaRef}
                         value={input || ''}
                         onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                e.preventDefault();
+                                const now = Date.now();
+                                // Use a custom property on the event target to track the last Enter key time
+                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                    // If two returns occur within 2 seconds, submit the form
+                                    handleSubmit(e);
+                                    textarea.lastEnterTime = 0;
+                                } else {
+                                    textarea.lastEnterTime = now;
+                                }
+                            }
+                        }}
                         placeholder="Ask anything …"
                         className="w-full px-1 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         minRows={6}
@@ -916,6 +934,15 @@ END OF DOCUMENT: ${file.name}
                             )}
 
                         </div>
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                }}
+                            />
+                        </div>
+
                         {/* now include the send‐button here */}
                         <div className="flex justify-between px-2 ">
                             <div className="flex items-center gap-2 justify-end">

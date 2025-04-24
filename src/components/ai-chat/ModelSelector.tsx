@@ -42,12 +42,12 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
 
     return (
         <div className="flex items-center">
-            <label htmlFor="model-select" className="mr-2 text-sm hidden sm:inline">Model:</label>
+            {/* <label htmlFor="model-select" className="mr-2 text-sm hidden sm:inline">Model:</label> */}
             <select
                 id="model-select"
                 value={model}
                 onChange={(e) => onModelChange(e.target.value)}
-                className="bg-background border border-gray-700 rounded-md px- py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className=" py-1 text-sm text-muted-foreground "
             >
                 {AI_MODELS.map((model) => (
                     <option key={model.id} value={model.id}>
