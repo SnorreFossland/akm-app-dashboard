@@ -1,6 +1,5 @@
 'use client';
-
-import { useState, useEffect, useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
@@ -10,9 +9,27 @@ import ModelSelector from '@/components/ai-chat/ModelSelector';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import MarkdownDocumentManager from '@/components/ai-chat/MarkdownDocumentManager';
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 
+export interface ChatComponentProps {
+    selectedModel: string;
+    setSelectedModel: (model: string) => void;
+    onResponseChange: (response: string) => void;
+    onViewInMarkdown: (response: string) => void;
+    setShowLeftPanel: (show: boolean) => void;
+    error?: string; // Optional error prop
+    chatInput?: string;
+    input: string;
+    setInput: (input: string) => void;
+    setMdContent: (message: string) => void;
+    mdContent: string;
+    onAddMD: () => void;
+}
 
 const AIChatPage = () => {
+    const dispatch = useDispatch();
+    const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document'>('templates');
+
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
 
@@ -30,16 +47,32 @@ const AIChatPage = () => {
     const [resetConversationOnModelChange, setResetConversationOnModelChange] = useState(false);
     const [lastResponse, setLastResponse] = useState<string>('');
     const documents = useSelector((state: RootState) => state.markdown.documents);
+    const [documentPanelOpen, setDocumentPanelOpen] = useState(false); // State to control document panel visibility
+
 
     // const [resetTrigger, setResetTrigger] = useState(0);
 
-    const openLibraryButtonRef = useRef<HTMLButtonElement>(null);
-
+    // replace your single openLibraryButtonRef with two refs:
+    const openLibraryLeftRef = useRef<HTMLButtonElement>(null);
+    const openLibraryRightRef = useRef<HTMLButtonElement>(null);
 
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-    const dispatch = useDispatch();
+    const mdFileInputRef = useRef<HTMLInputElement>(null)
+    const [mdContent, setMdContent] = useState<string>('')
+
+    const handleAddMD = () => {
+        mdFileInputRef.current?.click()
+    }
+
+    const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const text = await file.text()
+        setMdContent(text)
+        e.target.value = ''
+    }
 
 
     // Initialize mermaid when component mounts
@@ -63,7 +96,7 @@ const AIChatPage = () => {
         setShowRightPanel(false);
     }, []);
 
-    // Check device type on component mount
+    // Check device type on component mount'
     useEffect(() => {
         const checkDeviceType = () => {
             // Check if it's a larger screen device
@@ -77,6 +110,10 @@ const AIChatPage = () => {
         window.addEventListener('resize', checkDeviceType);
         return () => window.removeEventListener('resize', checkDeviceType);
     }, []);
+
+    useEffect(() => {
+        setActiveLeftTab('document');
+    }, [documentPanelOpen]);
 
     // Add this useEffect to adjust right panel width when left panel visibility changes
     useEffect(() => {
@@ -129,7 +166,7 @@ const AIChatPage = () => {
     };
 
     const handleSelectFromLibrary = (content: string, name: string) => {
-        setMdPreview(content);
+        setMdContent(content);
         setDocName(name);
         // setIsLibraryOpen(false);
     };
@@ -192,34 +229,87 @@ const AIChatPage = () => {
             <div className="flex flex-row flex-nowrap h-[100dvh] min-w-[450px] w-full max-w-full bg-background text-gray-100 overflow-hidden">
                 {/* Left Panel: Templates */}
                 {showLeftPanel && (
-                    <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw]"
-                        style={{
-                            width: `${leftPanelWidth}px`,
-                        }}
+                    <div
+                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw] overflow-visible"
+                        style={{ width: `${leftPanelWidth}px` }}
                     >
-                        <div className="flex justify-between items-center m-1 sm:m-2">                          
-                            <div className="flex items-center">
-                                {/* spacer */}
-                            </div>
-                            <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis">
-                                Input: Prepare Prompt
+                        <div className="flex justify-between items-center m-1 sm:m-2">
+                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">
+                                Input: {activeLeftTab === 'templates' ? 'Domain Topic' : 'Current Document'}
                             </h2>
+                                <div className="markdown-preview-header">
+                                    <button
+                                        ref={openLibraryLeftRef}                  // ← left ref
+                                        onClick={() => setDocumentPanelOpen(true)}           // ← added
+                                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                    >
+                                        Open Library
+                                    </button>
+                                    <MarkdownDocumentManager
+                                        docName={docName}
+                                        setDocName={setDocName}
+                                        markdownContent={mdPreview} // Change markdownContent to mdPreview
+                                        onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
+                                        openLibraryButtonRef={openLibraryLeftRef}  // ← left ref
+                                        documentPanelOpen={documentPanelOpen}
+                                        setDocumentPanelOpen={setDocumentPanelOpen}
+                                    />
+                                </div>
                             <button
                                 onClick={() => setShowLeftPanel(!showLeftPanel)}
                                 className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 rounded"
-                                title={showLeftPanel ? 'Hide' : 'Show'}
                             >
                                 <span className="text-lg">{showLeftPanel ? '←' : '→'}</span>
                             </button>
                         </div>
-                        <TemplatesPanel
-                            onApplyTemplate={handleApplyTemplate}
-                            editableContent={editableContent}
-                            setEditableContent={setEditableContent}
-                            domainContent={domainContent}
-                            setDomainContent={setDomainContent}
-                            selectedModel={selectedModel}
-                        />
+
+                        {/* tabs */}
+                        <ul className="flex border-b border-gray-600 mb-2 text-sm">
+                            <li
+                                className={`px-3 py-1 cursor-pointer ${activeLeftTab === 'templates'
+                                    ? 'border-b-2 border-blue-400 font-semibold'
+                                    : 'text-gray-400'
+                                    }`}
+                                onClick={() => setActiveLeftTab('templates')}
+                            >
+                                Templates
+                            </li>
+                            <li
+                                className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'document'
+                                    ? 'border-b-2 border-blue-400 font-semibold'
+                                    : 'text-gray-400'
+                                    }`}
+                                onClick={() => setActiveLeftTab('document')}
+                            >
+                                Document
+                            </li>
+                        </ul>
+
+                        {/* tab content */}
+                        {activeLeftTab === 'templates' ? (
+                            <>
+                                {/* hidden shared picker */}
+                                < input
+                                    ref={mdFileInputRef}
+                                    type="file"
+                                    accept=".md"
+                                    className="hidden"
+
+                                />
+                                <TemplatesPanel
+                                    onApplyTemplate={handleApplyTemplate}
+                                    editableContent={editableContent}
+                                    setEditableContent={setEditableContent}
+                                    domainContent={domainContent}
+                                    setDomainContent={setDomainContent}
+                                    selectedModel={selectedModel}
+                                    onAddMD={handleAddMD}
+                                    mdContent={mdContent}
+                                />
+                            </>
+                        ) : (
+                            <DocumentPanel mdContent={mdContent} />
+                        )}
                     </div>
                 )}
 
@@ -254,31 +344,6 @@ const AIChatPage = () => {
                         )}
 
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
-                        {/* <div className="flex items-center space-x-2 sm:space-x-4">
-                            <div className="flex items-center text-foreground gap-1">
-                                <ModelSelector
-                                    selectedModel={selectedModel}
-                                    onModelChange={(newModel) => {
-                                        setSelectedModel(newModel);
-                                        if (resetConversationOnModelChange) {
-                                            setResetTrigger(prev => prev + 1);
-                                        }
-                                    }}
-                                />
-                                <div className="flex items-center gap-1 text-xs sm:text-sm">
-                                    <input
-                                        type="checkbox"
-                                        id="resetConversation"
-                                        checked={resetConversationOnModelChange}
-                                        onChange={(e) => setResetConversationOnModelChange(e.target.checked)}
-                                        className="h-4 w-4 accent-blue-500"
-                                    />
-                                    <label htmlFor="resetConversation" className="text-gray-300">
-                                        Reset
-                                    </label>
-                                </div>
-                            </div>
-                        </div> */}
                         {!showRightPanel ? (
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
@@ -302,6 +367,9 @@ const AIChatPage = () => {
                             onViewInMarkdown={handleViewInMarkdown}
                             setShowLeftPanel={setShowLeftPanel}
                             chatInput={chatInput}
+                            onAddMD={handleAddMD}
+                            mdContent={mdContent}
+                            setMdContent={setMdContent}
                         />
                     </div>
                 </div>
@@ -337,25 +405,27 @@ const AIChatPage = () => {
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
                                 Output: Markdown Preview
                             </h2>
-                            <div className="w-[60px] sm:w-[100px]">
+                            {/* <div className="w-[60px] sm:w-[100px]">
                                 <div className="markdown-preview-header">
                                     <button
-                                        ref={openLibraryButtonRef}
+                                        ref={openLibraryRightRef}                 // ← right ref
+                                        onClick={() => setDocumentPanelOpen(true)}           // ← added
                                         className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
                                     >
                                         <span>Open Library</span>
                                     </button>
+                                    <MarkdownDocumentManager
+                                        docName={docName}
+                                        setDocName={setDocName}
+                                        markdownContent={mdPreview} // Change markdownContent to mdPreview
+                                        onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
+                                        openLibraryButtonRef={openLibraryRightRef} // ← right ref
+                                        documentPanelOpen={documentPanelOpen}
+                                        setDocumentPanelOpen={setDocumentPanelOpen}
+                                    />
                                 </div>
-                            </div>
+                            </div> */}
                         </div>
-                        {/*  Markdown Document Manager */}
-                        <MarkdownDocumentManager
-                            docName={docName}
-                            setDocName={setDocName}
-                            markdownContent={mdPreview} // Change markdownContent to mdPreview
-                            onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
-                            openLibraryButtonRef={openLibraryButtonRef}
-                        />
 
                         <div className="flex items-center justify-end space-x-2">
                             <div className="flex space-x-2 items-center border border-gray-500 rounded p-1">
@@ -413,7 +483,6 @@ const AIChatPage = () => {
                                 <MarkdownPreview mdPreview={mdPreview} />
                             </div>
                         )}
-
                     </div>
                 )}
             </div >

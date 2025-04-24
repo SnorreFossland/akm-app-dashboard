@@ -9,6 +9,9 @@ interface MarkdownDocumentManagerProps {
     markdownContent: string;
     onDocumentSelect: (content: string, name: string) => void;
     openLibraryButtonRef?: React.RefObject<HTMLButtonElement>; // Make it optional with ?
+    documentPanelOpen: boolean;
+    setDocumentPanelOpen: (open: boolean) => void; // Add this prop
+
 }
 
 const MarkdownDocumentManager = ({
@@ -16,11 +19,13 @@ const MarkdownDocumentManager = ({
     setDocName,
     markdownContent,
     onDocumentSelect,
-    openLibraryButtonRef
+    openLibraryButtonRef,
+    documentPanelOpen,
+    setDocumentPanelOpen, // Assuming this is a function to set the document panel open state
 }: MarkdownDocumentManagerProps) => {
-    const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-    const documents = useSelector((state: RootState) => state.markdown.documents);
     const dispatch = useDispatch();
+    const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+   const documents = useSelector((state: RootState) => state.markdown.documents);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Expose this function to parent components
@@ -52,7 +57,12 @@ const MarkdownDocumentManager = ({
     };
     const handleSelectFromLibrary = (content: string, name: string) => {
         onDocumentSelect(content, name);
+        setDocName(name);
         // setIsLibraryOpen(false);
+        // set the Document panel open
+        // This is a placeholder. You should implement the logic to open the document panel.
+        // For example, you might want to set a state in the parent component to show the document panel.
+        setDocumentPanelOpen(true);
     };
 
     // Import library functionality
@@ -104,19 +114,7 @@ const MarkdownDocumentManager = ({
     };
 
     return (
-        <div className="flex items-center justify-end text-xs bg-gray-700 p-2 rounded mb-2">
-            {/* <div className="flex items-center grow">
-                <input
-                    type="text"
-                    placeholder="Document name"
-                    className="text-sm bg-background text-white px-2 py-1 rounded mr-2 border border-gray-600"
-                    value={docName}
-                    onChange={(e) => setDocName(e.target.value)}
-                />
-            </div> */}
-
-
-
+        <>
             {/* Library Modal */}
             {isLibraryOpen && (
                 <div className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50">
@@ -153,7 +151,6 @@ const MarkdownDocumentManager = ({
                                 </button>
                             </div>
                         </div>
-
                         {/* Pass export functionality to library component */}
                         <MarkdownLibrary
                             onSelect={handleSelectFromLibrary}
@@ -162,7 +159,7 @@ const MarkdownDocumentManager = ({
                     </div>
                 </div>
             )}
-        </div>
+        </>
     );
 };
 

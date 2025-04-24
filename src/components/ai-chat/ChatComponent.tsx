@@ -21,7 +21,7 @@ interface Message {
     content: string;
 }
 
-interface ChatComponentProps {
+export interface ChatComponentProps {
     selectedModel: string;
     setSelectedModel: (model: string) => void;
     onResponseChange: (response: string) => void;
@@ -31,6 +31,8 @@ interface ChatComponentProps {
     chatInput?: string;
     input: string;
     setInput: (input: string) => void;
+    setMdContent: (message: string) => void;
+    mdContent: string;
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -56,6 +58,8 @@ export default function ChatComponent({
     onResponseChange,
     onViewInMarkdown,
     setShowLeftPanel,
+    setMdContent,
+    mdContent,
 }: ChatComponentProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -70,14 +74,18 @@ export default function ChatComponent({
     const [showDigitalRain, setShowDigitalRain] = useState(false);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
     const retryInProgress = useRef(false);
-
+    // Context file state
+    const [contextFiles, setContextFiles] = useState<File[]>([]);
+    const [contextContent, setContextContent] = useState<string>('');
+    const [isContextAttached, setIsContextAttached] = useState(false);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [isProcessingFile, setIsProcessingFile] = useState(false);
     const isInitialRender = useRef(true);
     const previousModelRef = useRef<string | null>(null);
     const mdFileInputRef = useRef<HTMLInputElement>(null);
+    const [docRefine, setDocRefine] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
-
-
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
@@ -91,37 +99,7 @@ export default function ChatComponent({
     }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    // Set the worker source for pdfjs
 
-    // open md picker
-    const handleAddMD = () => {
-        mdFileInputRef.current?.click();
-    };
-
-    // load .md file into input
-    const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-        try {
-            const text = await file.text();
-            setInput(
-                `Please revise the content below for clarity, style, and grammar.
-Take into consideration the following changes or additions : [Please describe the changes want in detail here].
-
-Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-# Content:
-
- ${text}
- 
- # End of Content
- `);
-            setStatusMsg(`Loaded "${file.name}" for editing and refinement.`);
-        } catch (err) {
-            console.error(err);
-            setStatusMsg(`Failed to load ${file.name}`);
-        }
-        e.target.value = '';
-    };
 
     // Add this effect to adjust topHeight based on input size
     useEffect(() => {
@@ -262,12 +240,34 @@ Do not use its contents as contextual input for other questions--I want it impro
         };
     }, [resetInactivityTimer, showDigitalRain]);
 
-    // Context file state
-    const [contextFiles, setContextFiles] = useState<File[]>([]);
-    const [contextContent, setContextContent] = useState<string>('');
-    const [isContextAttached, setIsContextAttached] = useState(false);
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const [isProcessingFile, setIsProcessingFile] = useState(false);
+    // open md picker
+    const handleAddMD = () => {
+        mdFileInputRef.current?.click();
+        setDocRefine(true);
+    };
+
+    // load .md file into input
+    const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        try {
+            const text = await file.text();
+            setInput(
+                `Please revise the content below for clarity, style, and grammar.
+Take into consideration the following changes or additions : [Please describe the changes want in detail here].
+Your task is to improve and refine the text, not to analyze it.
+Do not use its contents as contextual input for other questions--I want it improved not analyzed:
+# Content:
+
+ `);
+            setStatusMsg(`Loaded "${file.name}" for editing and refinement.`);
+            setMdContent(text);
+        } catch (err) {
+            console.error(err);
+            setStatusMsg(`Failed to load ${file.name}`);
+        }
+        e.target.value = '';
+    };
 
     // Enhanced text extraction function with DOCX support
     const extractTextFromFile = async (file: File): Promise<string> => {
@@ -287,7 +287,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         // Handle DOCX files using mammoth.js
         if (fileType === 'docx') {
             try {
-                setErrorMsg(`Converting DOCX file: ${fileName}...`);
+                setStatusMsg(`Converting DOCX file: ${fileName}...`);
                 // Read file as ArrayBuffer
                 const arrayBuffer = await file.arrayBuffer();
                 // Use mammoth to extract text
@@ -500,16 +500,16 @@ END OF DOCUMENT: ${file.name}
             const data = await response.json();
             if (!response.ok) {
                 // Set error message if response fails
-                setErrorMsg(data.error || 'An error occurred');
+                setStatusMsg(data.error || 'An error occurred');
                 console.error('API error response:', data);
             } else {
                 // Clear any previous errors if successful
-                setErrorMsg('');
+                setStatusMsg('');
                 setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            setErrorMsg(`Failed to communicate with AI: ${error instanceof Error ? error.message : String(error)} `);
+            setStatusMsg(`Failed to communicate with AI: ${error instanceof Error ? error.message : String(error)} `);
         } finally {
             setIsLoading(false);
         }
@@ -560,13 +560,13 @@ END OF DOCUMENT: ${file.name}
         if (!input?.trim()) return;
 
         let userMessageContent = input;
-        if (isContextAttached && contextFiles.length > 0) {
-            const fileNames = contextFiles.map(file => file.name).join(', ');
-            // Make the message more explicit
-            userMessageContent = `${input}`;
-            // Note: We're not adding the reference here, as we'll do it in sendMessageToAPI
+        // if (isContextAttached && contextFiles.length > 0) {
+        //     const fileNames = contextFiles.map(file => file.name).join(', ');
+        //     userMessageContent = `${input}`;
+        // }
+        if (docRefine) {
+            userMessageContent = `${userMessageContent} #content:\n ${mdContent}`;
         }
-
         const userMessage: Message = { role: 'user', content: userMessageContent };
         setMessages((prev) => [...prev, userMessage]);
         setInput(''); // Clear the input field after submission
@@ -807,15 +807,22 @@ END OF DOCUMENT: ${file.name}
 
             {/* Input area always at the bottom */}
             <div className="relative bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 border-t border-gray-800 z-20 pb-safe">
-
                 <button
                     type="button"
-                    onClick={handleAddMD}
-                    className="p-2 text-gray-500 hover:text-gray-300"
+                    onClick={() => { setDocRefine(!docRefine); handleAddMD(); }}
+                    className="p-2 text-gray-500 hover:text-gray-300 flex items-center gap-2"
                     disabled={isLoading}
-                    title="Let AI Load Markdown"
+                    title={docRefine ? "Document refinement active" : "Enable document refinement"}
                 >
                     <FileText className="w-5 h-5" />
+                   <div className={`h-5 w-5 border ${docRefine ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                        {docRefine && (
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                        )}
+                    </div>
+                        <span className="text-xs">{docRefine ? 'Refine document' : ''}</span>
                 </button>
                 <input
                     ref={mdFileInputRef}
@@ -824,7 +831,6 @@ END OF DOCUMENT: ${file.name}
                     className="hidden"
                     onChange={handleMDFileSelect}
                 />
-
                 {/* START FORM */}
                 <form onSubmit={handleSubmit} className="px-2 bg-transparent rounded-lg">
                     <TextareaAutosize

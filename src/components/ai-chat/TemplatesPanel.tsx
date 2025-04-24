@@ -12,6 +12,8 @@ interface TemplatesPanelProps {
     setEditableContent: (v: string) => void;
     domainContent: string;
     setDomainContent: (v: string) => void;
+    onAddMD: () => void
+    mdContent: string
 }
 interface Message {
     role: 'user' | 'assistant';
@@ -24,10 +26,13 @@ export default function TemplatesPanel({
     editableContent,
     setEditableContent,
     domainContent,
-    setDomainContent
+    setDomainContent,
+    onAddMD,
+    mdContent,
 }: TemplatesPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.markdown.documents);
+    const [activeTab, setActiveTab] = useState<'templates' | 'document'>('templates')
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
     const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);
     const [selectedCategory, setSelectedCategory] = useState<string>('All'); // State for selected category
@@ -904,7 +909,6 @@ Now, refine the following user input into an exceptional prompt:
                 </div>
             )
             }
-
         </div>
     );
 }
