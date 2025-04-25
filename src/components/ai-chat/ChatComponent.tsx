@@ -13,6 +13,7 @@ import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
 import ModelSelector from './ModelSelector';
+import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -245,29 +246,46 @@ export default function ChatComponent({
         mdFileInputRef.current?.click();
         setDocRefine(true);
     };
+    
 
     // load .md file into input
     const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
         const file = e.target.files?.[0];
         if (!file) return;
+
         try {
-            const text = await file.text();
+            setStatusMsg(`Processing ${file.name}...`);
+
+            // Process based on file type
+            const fileType = file.name.split('.').pop()?.toLowerCase();
+            let content = '';
+
+            if (fileType === 'docx') {
+                content = await convertDocxToMarkdown(file, { skipImages: true });
+                setStatusMsg(`Converted ${file.name} to Markdown. Images skipped.`);
+            } else {
+                // Handle markdown and other text files
+                content = await file.text();
+            }
+
             setInput(
                 `Please revise the content below for clarity, style, and grammar.
-Take into consideration the following changes or additions : [Please describe the changes want in detail here].
-Your task is to improve and refine the text, not to analyze it.
-Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-# Content:
+  Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
+  Your task is to improve and refine the text, not to analyze it.
+  Do not use its contents as contextual input for other questions--I want it improved not analyzed:
+  # Content:
+  `
+            );
 
- `);
             setStatusMsg(`Loaded "${file.name}" for editing and refinement.`);
-            setMdContent(text);
+            setMdContent(content); // This will be shown in the preview
         } catch (err) {
             console.error(err);
             setStatusMsg(`Failed to load ${file.name}`);
         }
+
         e.target.value = '';
-    };
+  };
 
     // Enhanced text extraction function with DOCX support
     const extractTextFromFile = async (file: File): Promise<string> => {
@@ -275,7 +293,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         const fileType = fileName.split('.').pop()?.toLowerCase() || '';
 
         // For text-based files, use the native text() method
-        if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType)) {
+        if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
             try {
                 return await file.text();
             } catch (error) {
@@ -368,7 +386,7 @@ Last modified: ${new Date(file.lastModified).toLocaleString()}]`;
                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
 
                 // Track binary files to show warning later
-                if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType)) {
+                if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
                     binaryFiles.push(file.name);
                 }
 
@@ -813,6 +831,9 @@ END OF DOCUMENT: ${file.name}
 
             {/* Input area always at the bottom */}
             <div className="relative bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 border-t border-gray-800 z-20 pb-safe">
+                <div className="flex items-center justify-between p-2">
+                    <div className="flex items-center gap-2">
+     
                 <button
                     type="button"
                     onClick={() => { setDocRefine(!docRefine); handleAddMD(); }}
@@ -821,6 +842,15 @@ END OF DOCUMENT: ${file.name}
                     title={docRefine ? "Document refinement active" : "Enable document refinement"}
                 >
                     <FileText className="w-5 h-5" />
+                </button>
+                <input
+                    ref={mdFileInputRef}
+                    type="file"
+                    accept=".md, .txt, .markdown, .docx"
+                    style={{ display: 'none' }}
+                    className="hidden"
+                    onChange={handleMDFileSelect}
+                />
                    <div className={`h-5 w-5 border ${docRefine ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
                         {docRefine && (
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
@@ -829,14 +859,8 @@ END OF DOCUMENT: ${file.name}
                         )}
                     </div>
                         <span className="text-xs">{docRefine ? 'Refine document' : ''}</span>
-                </button>
-                <input
-                    ref={mdFileInputRef}
-                    type="file"
-                    accept=".md"
-                    className="hidden"
-                    onChange={handleMDFileSelect}
-                />
+                    </div>
+                </div>
                 {/* START FORM */}
                 <form onSubmit={handleSubmit} className="px-2 bg-transparent rounded-lg">
                     <TextareaAutosize
@@ -894,7 +918,7 @@ END OF DOCUMENT: ${file.name}
                                             <span className="font-mono ml-1">
                                                 {contextFiles.map((file, idx) => {
                                                     const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv','docx'].includes(fileType);
                                                     return (
                                                         <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
                                                             {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
@@ -914,7 +938,7 @@ END OF DOCUMENT: ${file.name}
                                     {/* Add guidance about binary files if any are attached */}
                                     {contextFiles.some(file => {
                                         const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                        return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                        return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
                                     }) && (
                                             <div className="mt-1 text-yellow-300 text-[10px]">
                                                 ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
@@ -924,7 +948,7 @@ END OF DOCUMENT: ${file.name}
                                                         const binaryFiles = contextFiles
                                                             .filter(f => {
                                                                 const fileType = f.name.split('.').pop()?.toLowerCase() || '';
-                                                                return !['txt', 'md', 'js', 'ts', 'html', 'csv'].includes(fileType);
+                                                                return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
                                                                 // return !['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType);
                                                             })
                                                             .map(f => f.name)

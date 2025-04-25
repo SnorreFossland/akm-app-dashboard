@@ -71,6 +71,7 @@ const AIChatPage = () => {
         if (!file) return
         const text = await file.text()
         setMdContent(text)
+        setActiveLeftTab('document') // Switch to document tab when a file is loaded
         e.target.value = ''
     }
 
@@ -111,9 +112,11 @@ const AIChatPage = () => {
         return () => window.removeEventListener('resize', checkDeviceType);
     }, []);
 
-    useEffect(() => {
-        setActiveLeftTab('document');
-    }, [documentPanelOpen]);
+    // useEffect(() => {
+    //     if (documentPanelOpen) {
+    //         setActiveLeftTab('templates'); // Switch to templates tab when opening library
+    //     }
+    // }, [documentPanelOpen]);
 
     // Add this useEffect to adjust right panel width when left panel visibility changes
     useEffect(() => {
@@ -235,26 +238,30 @@ const AIChatPage = () => {
                     >
                         <div className="flex justify-between items-center m-1 sm:m-2">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400">
-                                Input: {activeLeftTab === 'templates' ? 'Domain Topic' : 'Current Document'}
+                                Input: {activeLeftTab === 'templates' ? 'Domain Topic' : 'Document'}
                             </h2>
-                                <div className="markdown-preview-header">
-                                    <button
-                                        ref={openLibraryLeftRef}                  // ← left ref
-                                        onClick={() => setDocumentPanelOpen(true)}           // ← added
-                                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
-                                    >
-                                        Open Library
-                                    </button>
-                                    <MarkdownDocumentManager
-                                        docName={docName}
-                                        setDocName={setDocName}
-                                        markdownContent={mdPreview} // Change markdownContent to mdPreview
-                                        onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
-                                        openLibraryButtonRef={openLibraryLeftRef}  // ← left ref
-                                        documentPanelOpen={documentPanelOpen}
-                                        setDocumentPanelOpen={setDocumentPanelOpen}
-                                    />
-                                </div>
+                            <div className="markdown-preview-header">
+                                <button
+                                    ref={openLibraryLeftRef}
+                                    onClick={() => setDocumentPanelOpen(true)}
+                                    className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                >
+                                    Library
+                                </button>
+                                <MarkdownDocumentManager
+                                    docName={docName}
+                                    setDocName={setDocName}
+                                    markdownContent={mdPreview}
+                                    onDocumentSelect={(content, name) => {
+                                        handleSelectFromLibrary(content, name);
+                                        setActiveLeftTab('document'); // Ensure document tab is active after selection
+                                        setDocumentPanelOpen(false); // Close the library panel after selection
+                                    }}
+                                    openLibraryButtonRef={openLibraryLeftRef}
+                                    documentPanelOpen={documentPanelOpen}
+                                    setDocumentPanelOpen={setDocumentPanelOpen}
+                                />
+                            </div>
                             <button
                                 onClick={() => setShowLeftPanel(!showLeftPanel)}
                                 className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 rounded"
@@ -307,8 +314,17 @@ const AIChatPage = () => {
                                     mdContent={mdContent}
                                 />
                             </>
-                        ) : (
-                            <DocumentPanel mdContent={mdContent} />
+                        ) : ( // if mdContent is not empty, show DocumentPanel
+                            (mdContent && mdContent.length > 0)
+                                ?
+                                <DocumentPanel mdContent={mdContent} />
+                                : (
+                                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
+                                        <div className="text-sm">No document selected</div>
+                                        <div className="text-sm">...</div>
+                                        <div className="text-sm">Select a document from the library above.</div>
+                                    </div>
+                                )
                         )}
                     </div>
                 )}

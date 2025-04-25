@@ -21,6 +21,11 @@
         "name": "next"
       }
     ],
+    "typeRoots": [
+      "./node_modules/@types",
+      "./types",
+      "./src/types"
+    ],
     "paths": {
       "@/*": [
         "./src/*"
@@ -32,8 +37,9 @@
     "next-env.d.ts",
     "**/*.ts",
     "**/*.tsx",
-    ".next/types/**/*.ts"
-, "src/app/streaming/page.tsx.bak", "src/auth/index.ts.bak", "src/app/api/auth/[...nextauth]/route.ts.bak", "src/app/api/whoami/route.ts.bak", "src/app/test-route/page.tsx.bak", "src/app/AuthButton.server.tsx.bak", "src/auth/helpers.ts.bak", "src/app/AuthButton.client.tsx.bak", "src/components/_aiBuilders copy/ActionsCell.tsx.bak", "src/features/featureA/components/FeatureAComponent.tsx.bak", "src/features/featureA/index.ts.bak", "src/features/model-universe/components/HandleGetFile.ts.bak", "src/features/model-universe/components/HandleSaveToGithub.ts.bak"  ],
+    "types/**/*.ts",
+    "src/**/*.ts",
+    ".next/types/**/*.ts", "src/app/streaming/page.tsx.bak", "src/auth/index.ts.bak", "src/app/api/auth/[...nextauth]/route.ts.bak", "src/app/api/whoami/route.ts.bak", "src/app/test-route/page.tsx.bak", "src/app/AuthButton.server.tsx.bak", "src/auth/helpers.ts.bak", "src/app/AuthButton.client.tsx.bak", "src/components/_aiBuilders copy/ActionsCell.tsx.bak", "src/features/featureA/components/FeatureAComponent.tsx.bak", "src/features/featureA/index.ts.bak", "src/features/model-universe/components/HandleGetFile.ts.bak", "src/features/model-universe/components/HandleSaveToGithub.ts.bak"  ],
   "exclude": [
     "node_modules", "**/*.bak","**/components/**/copy.bak"
   ]

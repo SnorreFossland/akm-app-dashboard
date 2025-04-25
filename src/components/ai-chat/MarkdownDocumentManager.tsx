@@ -29,7 +29,7 @@ const MarkdownDocumentManager = ({
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Expose this function to parent components
-    const openLibrary = () => setIsLibraryOpen(true);
+    const openLibrary = () => setIsLibraryOpen(documentPanelOpen ? false : true);
 
     // Add effect to sync ref with the openLibrary function
     useEffect(() => {
