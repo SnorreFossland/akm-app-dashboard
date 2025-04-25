@@ -638,7 +638,8 @@ END OF DOCUMENT: ${file.name}
                                         <p>Getting started by:
                                         <ul>
                                         <li>1. Ask your question below!</li>
-                                        <li>1. Open the left pane and select a prompt template!</li>
+                                        <li>1. Select a Prompt Template below!</li>
+                                        <li>3. Open the left pane and select a prompt template!</li>
                                         </ul>
                                     </div>
                                     <div className="w-full max-w-md">
@@ -657,6 +658,7 @@ END OF DOCUMENT: ${file.name}
                             </div>
                         )}
                     </div>
+
                 ) : null}
 
                 <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
