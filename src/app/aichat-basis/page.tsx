@@ -5,15 +5,12 @@ import { RootState } from '@/store';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import mermaid from 'mermaid';
-import ModelSelector from '@/components/ai-chat/ModelSelector';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
-import MarkdownDocumentManager from '@/components/ai-chat/MarkdownDocumentManager';
+import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 
 export interface ChatComponentProps {
-    selectedModel: string;
-    setSelectedModel: (model: string) => void;
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (response: string) => void;
     setShowLeftPanel: (show: boolean) => void;
@@ -23,59 +20,95 @@ export interface ChatComponentProps {
     setInput: (input: string) => void;
     setMdContent: (message: string) => void;
     mdContent: string;
-    onAddMD: () => void;
+    onAddMD?: () => void;
 }
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
     const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document'>('templates');
-
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
-
-    // Initialize showLeftPanel with false as default for all devices
     const [showLeftPanel, setShowLeftPanel] = useState(false);
     const [showRightPanel, setShowRightPanel] = useState(false);
-    const [leftPanelWidth, setLeftPanelWidth] = useState(400);
+    const [leftPanelWidth, setLeftPanelWidth] = useState(550);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
     const [input, setInput] = useState<string>("");
-    const [showTemplates, setShowTemplates] = useState(true);
     const [editableContent, setEditableContent] = useState('');
     const [domainContent, setDomainContent] = useState('');
-
     const [selectedModel, setSelectedModel] = useState('mistral-small-latest'); // Default model
-    const [resetConversationOnModelChange, setResetConversationOnModelChange] = useState(false);
     const [lastResponse, setLastResponse] = useState<string>('');
     const documents = useSelector((state: RootState) => state.markdown.documents);
-    const [documentPanelOpen, setDocumentPanelOpen] = useState(false); // State to control document panel visibility
-
-
-    // const [resetTrigger, setResetTrigger] = useState(0);
+    const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
 
     // replace your single openLibraryButtonRef with two refs:
-    const openLibraryLeftRef = useRef<HTMLButtonElement>(null);
-    const openLibraryRightRef = useRef<HTMLButtonElement>(null);
-
+    const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
-    const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const mdFileInputRef = useRef<HTMLInputElement>(null)
     const [mdContent, setMdContent] = useState<string>('')
+    const [forceRefresh, setForceRefresh] = useState(0);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleAddMD = () => {
         mdFileInputRef.current?.click()
     }
 
-    const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0]
-        if (!file) return
-        const text = await file.text()
-        setMdContent(text)
-        setActiveLeftTab('document') // Switch to document tab when a file is loaded
-        e.target.value = ''
-    }
+    const handleExportLibrary = () => {
+        if (documents.length === 0) return;
 
+        // Create a JSON file from the documents
+        const dataStr = JSON.stringify(documents, null, 2);
+        const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
 
+        // Create and trigger a download link
+        const exportFileName = `markdown-library-${new Date().toISOString().split('T')[0]}.json`;
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileName);
+        linkElement.click();
+    };
+
+    const handleImportLibrary = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const importedDocuments = JSON.parse(event.target?.result as string);
+
+                // Validate the imported data structure
+                if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
+                    typeof doc === 'object' && doc !== null &&
+                    'id' in doc && 'name' in doc && 'content' in doc)) {
+
+                    // Import each document to Redux
+                    importedDocuments.forEach(doc => {
+                        dispatch(saveMarkdownDocument({
+                            id: doc.id || Date.now().toString(),
+                            name: doc.name,
+                            content: doc.content,
+                            createdAt: doc.createdAt || new Date().toISOString()
+                        }));
+                    });
+
+                    alert(`Successfully imported ${importedDocuments.length} documents`);
+                } else {
+                    alert('Invalid file format. Import failed.');
+                }
+            } catch (error) {
+                console.error('Error importing library:', error);
+                alert('Failed to import library. Invalid JSON format.');
+            }
+        };
+
+        reader.readAsText(file);
+        e.target.value = ''; // Reset the file input
+      };
     // Initialize mermaid when component mounts
     useEffect(() => {
         mermaid.initialize({
@@ -91,7 +124,7 @@ const AIChatPage = () => {
             themeVariables: {
                 primaryColor: '#1e3a8a',
                 edgeLabelBackground: '#334155',
-                edgeLabelBorder: '#1e3a8a'
+                edgeLabelBorder: '#1e3a8a',
             }
         });
         setShowRightPanel(false);
@@ -104,19 +137,11 @@ const AIChatPage = () => {
             const isDesktop = window.innerWidth >= 768; // Typical tablet/desktop breakpoint
             setShowLeftPanel(isDesktop);
         };
-
         checkDeviceType();
-
         // Also update on resize for orientation changes
         window.addEventListener('resize', checkDeviceType);
         return () => window.removeEventListener('resize', checkDeviceType);
     }, []);
-
-    // useEffect(() => {
-    //     if (documentPanelOpen) {
-    //         setActiveLeftTab('templates'); // Switch to templates tab when opening library
-    //     }
-    // }, [documentPanelOpen]);
 
     // Add this useEffect to adjust right panel width when left panel visibility changes
     useEffect(() => {
@@ -125,6 +150,7 @@ const AIChatPage = () => {
             setRightPanelWidth(Math.min(800, window.innerWidth / 2));
         }
     }, [showLeftPanel]);
+
     useEffect(() => {
         if (mdPreview && mdPreview.includes('mermaid') && !isEditing) {
             setTimeout(() => {
@@ -147,23 +173,19 @@ const AIChatPage = () => {
 
     const handleSaveToRedux = () => {
         if (!docName.trim()) return;
-
         console.log('Saving to Redux:', {
             id: Date.now().toString(),
             name: docName,
             content: mdPreview
         });
-
         dispatch(saveMarkdownDocument({
             id: Date.now().toString(),
             name: docName,
             content: mdPreview,
             createdAt: new Date().toISOString()
         }));
-
         // Show success notification
         alert('Document saved to library');
-
         // Add this to check if documents are updated after dispatch
         console.log('Documents after save:', documents);
     };
@@ -171,18 +193,22 @@ const AIChatPage = () => {
     const handleSelectFromLibrary = (content: string, name: string) => {
         setMdContent(content);
         setDocName(name);
-        // setIsLibraryOpen(false);
+        setIsEditing(false);
+        setActiveLeftTab('document'); // Switch to document tab
+        setIsLibraryOpen(false); // Close the library modal after selection
+
+        console.log("Selected document from library:", { content, name });
     };
+
+
 
     const MIN_PANEL_WIDTH = 80;
     const MAX_PANEL_WIDTH = () => window.innerWidth - 320; // leave at least 320px for the middle
-
 
     const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
         const startX = e.clientX;
         const startLeftWidth = leftPanelWidth;
         const startRightWidth = rightPanelWidth;
-
         const onMouseMove = (event: MouseEvent) => {
             const deltaX = event.clientX - startX;
 
@@ -194,12 +220,10 @@ const AIChatPage = () => {
                 setRightPanelWidth(newWidth);
             }
         };
-
         const onMouseUp = () => {
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
         };
-
         document.addEventListener('mousemove', onMouseMove);
         document.addEventListener('mouseup', onMouseUp);
     };
@@ -209,24 +233,21 @@ const AIChatPage = () => {
         setChatInput(content); // Update the chat input field
     };
 
-    const handleResponseChange = (response: string) => {
-        setLastResponse(response);
-    };
-
+    const handleResponseChange = (response: string) => { setLastResponse(response) };
+    
     const handleViewInMarkdown = (response: string) => {
         const cleanResponse = (response: string) => {
             let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
             cleaned = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
             return cleaned;
         };
-
         const cleanedResponse = cleanResponse(response);
         setMdPreview(cleanedResponse);
         setShowRightPanel(true); // Ensure the right panel is shown
         setShowLeftPanel(false); // Hide the left panel when viewing markdown
     };
 
-
+    // #region Main Layout
     return (
         <div className="flex flex-col items-center justify-center w-full h-full bg-background text-gray-100">
             <div className="flex flex-row flex-nowrap h-[100dvh] min-w-[450px] w-full max-w-full bg-background text-gray-100 overflow-hidden">
@@ -242,25 +263,11 @@ const AIChatPage = () => {
                             </h2>
                             <div className="markdown-preview-header">
                                 <button
-                                    ref={openLibraryLeftRef}
-                                    onClick={() => setDocumentPanelOpen(true)}
+                                    onClick={() => setIsLibraryOpen(prev => !prev)}
                                     className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
                                 >
                                     Library
                                 </button>
-                                <MarkdownDocumentManager
-                                    docName={docName}
-                                    setDocName={setDocName}
-                                    markdownContent={mdPreview}
-                                    onDocumentSelect={(content, name) => {
-                                        handleSelectFromLibrary(content, name);
-                                        setActiveLeftTab('document'); // Ensure document tab is active after selection
-                                        setDocumentPanelOpen(false); // Close the library panel after selection
-                                    }}
-                                    openLibraryButtonRef={openLibraryLeftRef}
-                                    documentPanelOpen={documentPanelOpen}
-                                    setDocumentPanelOpen={setDocumentPanelOpen}
-                                />
                             </div>
                             <button
                                 onClick={() => setShowLeftPanel(!showLeftPanel)}
@@ -421,26 +428,6 @@ const AIChatPage = () => {
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
                                 Output: Markdown Preview
                             </h2>
-                            {/* <div className="w-[60px] sm:w-[100px]">
-                                <div className="markdown-preview-header">
-                                    <button
-                                        ref={openLibraryRightRef}                 // ← right ref
-                                        onClick={() => setDocumentPanelOpen(true)}           // ← added
-                                        className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
-                                    >
-                                        <span>Open Library</span>
-                                    </button>
-                                    <MarkdownDocumentManager
-                                        docName={docName}
-                                        setDocName={setDocName}
-                                        markdownContent={mdPreview} // Change markdownContent to mdPreview
-                                        onDocumentSelect={handleSelectFromLibrary} // Change handleDocumentSelect to handleSelectFromLibrary
-                                        openLibraryButtonRef={openLibraryRightRef} // ← right ref
-                                        documentPanelOpen={documentPanelOpen}
-                                        setDocumentPanelOpen={setDocumentPanelOpen}
-                                    />
-                                </div>
-                            </div> */}
                         </div>
 
                         <div className="flex items-center justify-end space-x-2">
@@ -505,8 +492,55 @@ const AIChatPage = () => {
             <div className="flex justify-center items-center mt-1">
                 <hr className="border-gray-700 w-full" />
             </div>
+            <>
+                {/* Library Modal */}
+                {isLibraryOpen && (
+                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50">
+                        <div className="bg-background rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto">
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-blue-400">Markdown Library</h3>
+                                <div className="flex space-x-2">
+
+                                    <button
+                                        onClick={handleExportLibrary}
+                                        className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
+                                        disabled={documents.length === 0}
+                                    >
+                                        Export Library
+                                    </button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileSelection}
+                                        accept=".json"
+                                        style={{ display: 'none' }}
+                                    />
+                                    <button
+                                        onClick={handleImportLibrary}
+                                        className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
+                                    >
+                                        <span>Import Library</span>
+                                    </button>
+                                    <button
+                                        onClick={() => setIsLibraryOpen(false)}
+                                        className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                            {/* Pass export functionality to library component */}
+                            <MarkdownLibrary
+                                onSelect={handleSelectFromLibrary}
+                                hideExportLibraryButton={true}
+                            />
+                        </div>
+                    </div>
+                )}
+            </>
         </div>
     );
 };
+// #endregion
 
 export default AIChatPage;

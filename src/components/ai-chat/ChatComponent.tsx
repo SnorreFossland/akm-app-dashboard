@@ -25,15 +25,15 @@ interface Message {
 export interface ChatComponentProps {
     selectedModel: string;
     setSelectedModel: (model: string) => void;
-    onResponseChange: (response: string) => void;
-    onViewInMarkdown: (response: string) => void;
-    setShowLeftPanel: (show: boolean) => void;
-    error?: string; // Optional error prop
     chatInput?: string;
     input: string;
     setInput: (input: string) => void;
-    setMdContent: (message: string) => void;
+    onResponseChange: (response: string) => void;
+    onViewInMarkdown: (content: string) => void;
+    setShowLeftPanel: (show: boolean) => void;
+    setMdContent: (content: string) => void;
     mdContent: string;
+    onAddMD: () => void;
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -61,6 +61,7 @@ export default function ChatComponent({
     setShowLeftPanel,
     setMdContent,
     mdContent,
+    onAddMD,
 }: ChatComponentProps) {
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
@@ -167,13 +168,12 @@ export default function ChatComponent({
         return () => window.removeEventListener('resize', handleResize);
     }, [topHeight]);
 
-    // Scroll to bottom whenever messages change or loading completes
+    // Scroll to bottom whenever there is messages or messages change or loading completes
     useEffect(() => {
         const scrollToBottom = () => {
-            if (messagesEndRef.current) {
-                // Use a longer timeout to ensure DOM has fully updated
+            if (messagesEndRef.current && messages.length > 0) {
+                // Only scroll if we actually have messages
                 setTimeout(() => {
-                    // Try multiple approaches to ensure scrolling works
                     messagesEndRef.current?.scrollIntoView({
                         behavior: 'auto',
                         block: 'end',
@@ -194,12 +194,12 @@ export default function ChatComponent({
             }
         };
 
-        scrollToBottom();
-
-        // Also scroll after a longer delay as a fallback
-        const fallbackTimer = setTimeout(scrollToBottom, 500);
-
-        return () => clearTimeout(fallbackTimer);
+        // Only scroll if we have messages
+        if (messages.length > 0) {
+            scrollToBottom();
+            const fallbackTimer = setTimeout(scrollToBottom, 500);
+            return () => clearTimeout(fallbackTimer);
+        }
     }, [messages, isLoading]);
 
     useEffect(() => {
@@ -246,7 +246,15 @@ export default function ChatComponent({
         mdFileInputRef.current?.click();
         setDocRefine(true);
     };
-    
+
+    const refinePrompt = (
+        `Please revise the content below for clarity, style, and grammar.
+Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
+Your task is to improve and refine the text, not to analyze it.
+Do not use its contents as contextual input for other questions--I want it improved not analyzed:
+# Content:
+`
+    )
 
     // load .md file into input
     const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -268,14 +276,7 @@ export default function ChatComponent({
                 content = await file.text();
             }
 
-            setInput(
-                `Please revise the content below for clarity, style, and grammar.
-  Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
-  Your task is to improve and refine the text, not to analyze it.
-  Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-  # Content:
-  `
-            );
+            setInput(refinePrompt);
 
             setStatusMsg(`Loaded "${file.name}" for editing and refinement.`);
             setMdContent(content); // This will be shown in the preview
@@ -285,7 +286,7 @@ export default function ChatComponent({
         }
 
         e.target.value = '';
-  };
+    };
 
     // Enhanced text extraction function with DOCX support
     const extractTextFromFile = async (file: File): Promise<string> => {
@@ -630,7 +631,7 @@ END OF DOCUMENT: ${file.name}
             <div className="flex-1 min-h-0 overflow-y-auto pb-[150px]" id="message-container">
                 {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
                 {messages.length < 1 ? (
-                    <div className="flex flex-col items-center justify-center w-full py-6 overflow-auto">
+                    <div className="flex flex-col items-center justify-start w-full py-6 overflow-auto">
                         {showDigitalRain ? (
                             <div className=" ">
                                 <div className="absolute inset-0 z-20">
@@ -640,8 +641,8 @@ END OF DOCUMENT: ${file.name}
                                         backgroundColor="rgba(10, 20, 10, 0.03)"
                                     />
                                 </div>
-                                <div className="absolute inset-0 z-20 flex items-center justify-center">
-                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-3 rounded-lg min-h-0">
+                                <div className="absolute inset-0 z-20 flex items-center justify-center transform -translate-y-5">
+                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-0 rounded-lg min-h-0">
                                         <AnimatedAICircle className="absolute inset-0 z-0" />
                                     </div>
                                 </div>
@@ -651,26 +652,33 @@ END OF DOCUMENT: ${file.name}
                             </div>
                         ) : (
                             <div className="flex-1 text-primary overflow-auto min-h-0">
-                                <div className="flex flex-col items-center justify-center w-full py-6 min-h-0">
-                                    <div className="text-green-400 text-xl font-mono text-center mb-4">
-                                        <p>Getting started by:
-                                        <ul>
-                                        <li>1. Ask your question below!</li>
-                                        <li>1. Select a Prompt Template below!</li>
-                                        <li>3. Open the left pane and select a prompt template!</li>
+                                <div className="flex flex-col items-center justify-start w-full py-6">
+                                    <div className="text-green-400 text-xl text-left font-mono mb-4">
+                                        Getting started by:
+                                        <ul className="text-sm list-disc list-inside overflow-auto text-left">
+                                            <li>Alternative 1. Ask your question below and click on the up-arrow to send!</li>
+                                            <li>Alternative 2. Select a Prompt Template below!</li>
+                                            <li>Alternative 3. Open the left pane and select a prompt template!</li>
                                         </ul>
                                     </div>
-                                    <div className="w-full max-w-md">
-                                        <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
-                                        <p className="mb-2 text-center">Follow these steps:</p>
+                                    <div className="w-full">
+                                        <p className="mt-5">Use Prompt templates in the left pane.</p>
                                         <ol className="text-sm list-decimal list-inside overflow-auto text-left">
-                                            <li>Open the left pane Click on the &quot;Left pane&quot; button upper left .</li>
-                                            <li>Describe your topic in the top left area in the pane.</li>
+                                            <li>Open the left pane Click on the &quot;Left pane&quot; button upper left corner.</li>
+                                            <li>Open the Templates tab.</li>
+                                            <li>Describe your topic in the top input area (1. What topic...).</li>
                                             <li>Select a prompt template to make a report/doc on your topic.</li>
-                                            <li>Edit the prompt and click on the Right arrow to insert it into the chat.</li>
+                                            <li>Click on the Right arrow to insert the Prompt into the chat.</li>
                                             <li>Click on the up arrow to ask the AI.</li>
-                                            <li>Click on Preview to see the result in right panel as markdown preview.</li>
                                         </ol>
+                                        <p className="mt-5">Preview Response Document.</p>
+                                        <ul className="text-sm list-decimal list-inside overflow-auto text-left">
+                                            <li>Click on the &quot;Preview&quot; button to see the document in the right panel.</li>
+                                            <li>Click on the &quot;Edit&quot; button to edit the document.</li>
+                                            <li>Click on the &quot;Save&quot; button to save the document to the library.</li>
+                                            <li>Click on the &quot;Download&quot; button to download the document.</li>
+                                            <li>Open Library to save the document(s) to a local library file (JSON).</li>
+                                        </ul>
                                     </div>
                                 </div>
                             </div>
@@ -830,39 +838,55 @@ END OF DOCUMENT: ${file.name}
             )}
 
             {/* Input area always at the bottom */}
-            <div className="relative bottom-0 left-0 right-0 bg-gray-950 border-t border-gray-800 border-t border-gray-800 z-20 pb-safe">
+            <div className="relative bottom-0 left-0 right-0 bg-popover z-20 pb-safe">
                 <div className="flex items-center justify-between p-2">
                     <div className="flex items-center gap-2">
-     
-                <button
-                    type="button"
-                    onClick={() => { setDocRefine(!docRefine); handleAddMD(); }}
-                    className="p-2 text-gray-500 hover:text-gray-300 flex items-center gap-2"
-                    disabled={isLoading}
-                    title={docRefine ? "Document refinement active" : "Enable document refinement"}
-                >
-                    <FileText className="w-5 h-5" />
-                </button>
-                <input
-                    ref={mdFileInputRef}
-                    type="file"
-                    accept=".md, .txt, .markdown, .docx"
-                    style={{ display: 'none' }}
-                    className="hidden"
-                    onChange={handleMDFileSelect}
-                />
-                   <div className={`h-5 w-5 border ${docRefine ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                        {docRefine && (
-                            <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
-                               <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                        )}
-                    </div>
-                        <span className="text-xs">{docRefine ? 'Refine document' : ''}</span>
+                        <button
+                            type="button"
+                            onClick={() => { handleAddMD(); }}
+                            className="p-2 text-gray-500 hover:text-gray-300 flex items-center gap-2"
+                            disabled={isLoading}
+                            title="Add a file for refinement by the AI"
+                        >
+                            <FileText className="w-5 h-5" />
+                        </button>
+                        <input
+                            ref={mdFileInputRef}
+                            type="file"
+                            accept=".md, .txt, .markdown, .docx"
+                            style={{ display: 'none' }}
+                            className="hidden"
+                            onChange={handleMDFileSelect}
+                        />
+                        <button
+                            type="button"
+                            title="Refine document by the AI"
+                            disabled={isLoading}
+                            onClick={() => {
+                                if (!mdContent) {
+                                    setDocRefine(false);
+                                    setInput('');
+                                } else {
+                                    const newRefineState = mdContent ? !docRefine : false;
+                                    setDocRefine(newRefineState);
+                                    setInput(newRefineState && mdContent ? refinePrompt : '');
+                                }
+                            }}
+                            className={`h-5 w-5 border ${docRefine ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                            {docRefine && (
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                </svg>
+                            )}
+                        </button>
+                        {docRefine
+                            ? <span className="text-gray-500">{mdContent ? "Let AI refine the document in the left panel" : "No document in the left panel"}</span>
+                            : <span className="text-gray-500">{mdContent ? "Let AI refine the document in the left panel" : "No document to refine in the left panel"}</span>
+                        }
                     </div>
                 </div>
                 {/* START FORM */}
-                <form onSubmit={handleSubmit} className="px-2 bg-transparent rounded-lg">
+                <form onSubmit={handleSubmit} className="px-2 bg-popover rounded-lg">
                     <TextareaAutosize
                         ref={textareaRef}
                         value={input || ''}
@@ -883,7 +907,7 @@ END OF DOCUMENT: ${file.name}
                             }
                         }}
                         placeholder="Ask anything …"
-                        className="w-full px-1 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         minRows={6}
                         maxRows={12}
                         disabled={isLoading}
@@ -918,7 +942,7 @@ END OF DOCUMENT: ${file.name}
                                             <span className="font-mono ml-1">
                                                 {contextFiles.map((file, idx) => {
                                                     const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv','docx'].includes(fileType);
+                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
                                                     return (
                                                         <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
                                                             {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
@@ -949,11 +973,9 @@ END OF DOCUMENT: ${file.name}
                                                             .filter(f => {
                                                                 const fileType = f.name.split('.').pop()?.toLowerCase() || '';
                                                                 return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                                                // return !['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv'].includes(fileType);
                                                             })
                                                             .map(f => f.name)
                                                             .join(", ");
-
                                                         setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
                                                         setTimeout(() => {
                                                             if (textareaRef.current) {
