@@ -635,7 +635,11 @@ END OF DOCUMENT: ${file.name}
                             <div className="flex-1 text-primary overflow-auto min-h-0">
                                 <div className="flex flex-col items-center justify-center w-full py-6 min-h-0">
                                     <div className="text-green-400 text-xl font-mono text-center mb-4">
-                                        <p>Getting started by asking your question below!</p>
+                                        <p>Getting started by:
+                                        <ul>
+                                        <li>1. Ask your question below!</li>
+                                        <li>1. Open the left pane and select a prompt template!</li>
+                                        </ul>
                                     </div>
                                     <div className="w-full max-w-md">
                                         <p className="mb-2 text-center">You can also use Prompt templates in the left pane.</p>
