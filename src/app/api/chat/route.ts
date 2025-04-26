@@ -271,34 +271,56 @@ You are an agent that *never* invents facts.
       throw error;
     }
   }
-
   // Mistral API implementation
   async function callMistral(messages: Message[], model: string): Promise<string> {
     const apiKey = process.env.MISTRAL_API_KEY;
     if (!apiKey) {
       throw new Error('MISTRAL_API_KEY is not set in environment variables');
     }
-    console.log('227 Mistral API called with messages:', messages, model);
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
-      },
-      body: JSON.stringify({
-        model: model,
-        messages: messages,
-        temperature: 0.7
-      })
-    });
 
-    if (!response.ok) {
-      const error = await response.json();
-      throw new Error(`Mistral API error: ${JSON.stringify(error)}`);
+    // Use an AbortController to set a timeout
+    const controller = new AbortController();
+    const timeout = 20000; // 20 seconds timeout
+    const timeoutId = setTimeout(() => controller.abort(), timeout);
+
+    try {
+      console.log('227 Mistral API called with messages:', messages, model);
+      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: model,
+          messages: messages,
+          temperature: 0.7
+        }),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (!response.ok) {
+        // Check content type for error response
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const error = await response.json();
+          throw new Error(`Mistral API error: ${JSON.stringify(error)}`);
+        } else {
+          // Handle text error
+          const errorText = await response.text();
+          throw new Error(`Mistral API error (${response.status}): ${errorText}`);
+        }
+      }
+
+      const data = await response.json();
+      return data.choices[0].message.content;
+    } catch (error: any) {
+      if (error.name === 'AbortError') {
+        throw new Error('Request timed out. Please try again.');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    return data.choices[0].message.content;
   }
 
   // Claude API implementation

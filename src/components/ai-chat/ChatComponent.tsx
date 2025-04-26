@@ -510,13 +510,24 @@ END OF DOCUMENT: ${file.name}
                 body: JSON.stringify(requestBody),
             });
 
-            // Check if the response is valid JSON
+            let data;
             const contentType = response.headers.get('content-type');
-            if (!contentType || !contentType.includes('application/json')) {
-                throw new Error(`Expected JSON response but got ${contentType} `);
+
+            // Handle different response types
+            if (contentType && contentType.includes('application/json')) {
+                data = await response.json();
+            } else {
+                // Handle text response
+                const textResponse = await response.text();
+                try {
+                    // Try to parse as JSON anyway in case Content-Type is incorrect
+                    data = JSON.parse(textResponse);
+                } catch (e) {
+                    // If not valid JSON, create a data object with the text
+                    data = { message: textResponse };
+                }
             }
 
-            const data = await response.json();
             if (!response.ok) {
                 // Set error message if response fails
                 setStatusMsg(data.error || 'An error occurred');
