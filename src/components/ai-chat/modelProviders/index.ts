@@ -16,7 +16,7 @@ export async function getModelResponse(messages: Message[], model: string): Prom
 
   const dummy = [
     `[DUMMY MODEL] This is a test response from the dummy model (${model}).\n`,
-    `\nI received your message: "${messages.substring(0, 50)}${messages.length > 50 ? '...' : ''}"\n`,
+    `\nI received your message: "${messages}${messages.length > 50 ? '...' : ''}"\n`,
     `\nThis is a simulated response for UI testing purposes. No actual AI model was called.`,
     `This is a very long line that goes on and on without any breaks, serving as a test string to ensure that extremely lengthy log messages or sample texts can be handled appropriately by the system when rendered in a UI, or potentially displayed in a code block in Markdown. It continues, unceasingly, narrating its verbose messages and including enough details so that every element of its exhaustive composition is displayed without any subjects omitted or truncated in the debugging interface.\n`,
     `\nSome sample formatted text:`,

@@ -23,7 +23,7 @@ export async function callClaude(messages: Message[], model: string): Promise<st
     endpoint: 'https://api.anthropic.com/v1/messages',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': apiKey,
+      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
       'anthropic-version': '2023-06-01'
     },
     body: {
