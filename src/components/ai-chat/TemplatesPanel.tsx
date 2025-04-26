@@ -558,7 +558,7 @@ Now, refine the following user input into an exceptional prompt:
     };
 
     return (
-        <div className="p-3 h-[96vh] flex flex-col gap-2 overflow-y-auto bg-secondary text-gray-100 shadow-lg">
+        <div className="p-3 h-[99vh] sm:h-[90vh] flex flex-col gap-2 overflow-y-auto bg-secondary text-gray-100 shadow-lg">
             <div className={`border border-gray-400 p-3 rounded-md`}>
                 <div className="flex justify-between items-center mb-2 ">
                     <h2 className="text-secondary-foreground text-lg font-bold">1. What topic would you like to chat about? </h2>
@@ -570,7 +570,7 @@ Now, refine the following user input into an exceptional prompt:
                     </button>
                 </div>
                 {isTopicVisible && (
-                    <div className="flex flex-col gap-2  rounded-md h-[95%] overflow-y-auto">
+                    <div className="flex flex-col gap-2 rounded-md h-[92%] overflow-y-auto">
 
                         {/* Add placeholder jump buttons */}
                         {placeholders.length > 0 && (
@@ -601,7 +601,7 @@ Now, refine the following user input into an exceptional prompt:
                             value={domainContent}
                             onChange={(e) => setDomainContent(e.target.value)}
                             onKeyDown={handleKeyDown}
-                            minRows={7}
+                            minRows={4}
                             maxRows={9}
                             className="w-full p-2 border border-gray-700 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground text-base"
                             placeholder="You can type or paste your topic here... or click the + button to add a template or file from library"

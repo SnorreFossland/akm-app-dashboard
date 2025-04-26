@@ -254,7 +254,7 @@ const AIChatPage = () => {
                 {/* Left Panel: Templates */}
                 {showLeftPanel && (
                     <div
-                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw] overflow-visible"
+                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw] overflow-auto"
                         style={{ width: `${leftPanelWidth}px` }}
                     >
                         <div className="flex justify-between items-center m-1 sm:m-2">
@@ -489,7 +489,7 @@ const AIChatPage = () => {
                     </div>
                 )}
             </div >
-            <div className="flex justify-center items-center mt-1">
+            <div className="flex w-full max-h-[5px] justify-center items-center mt-1">
                 <hr className="border-gray-700 w-full" />
             </div>
             <>
