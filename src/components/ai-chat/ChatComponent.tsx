@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import DraggableDivider from '@/components/DraggableDivider';
-import SimpleDivider from '@/components/SimpleDivider';
-import styles from '@/components/SplitPanel.module.css';
+// import DraggableDivider from '@/components/DraggableDivider';
+// import SimpleDivider from '@/components/SimpleDivider';
+// import styles from '@/components/SplitPanel.module.css';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';

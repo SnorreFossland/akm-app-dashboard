@@ -5,7 +5,11 @@ import { Message, callModelAPI } from '../modelApiHandler';
  */
 export async function callClaude(messages: Message[], model: string): Promise<string> {
   console.log('Claude API called with model:', model);
-  
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY is not defined in environment variables');
+  }
 
   // Convert messages to Anthropic format
   const formattedMessages = messages.map(msg => ({
@@ -19,7 +23,7 @@ export async function callClaude(messages: Message[], model: string): Promise<st
     endpoint: 'https://api.anthropic.com/v1/messages',
     headers: {
       'Content-Type': 'application/json',
-      'x-api-key': process.env.ANTHROPIC_API_KEY as string,
+      'x-api-key': apiKey,
       'anthropic-version': '2023-06-01'
     },
     body: {
