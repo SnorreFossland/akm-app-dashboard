@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getModelResponse } from '@/utils/modelProviders';
-import type { Message } from '@/utils/modelApiHandler';
+import { getModelResponse } from '@/components/ai-chat/modelProviders';
+import type { Message } from '@/components/ai-chat/modelApiHandler';
 
 export async function POST(request: Request) {
   try {

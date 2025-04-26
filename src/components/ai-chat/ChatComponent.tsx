@@ -539,7 +539,21 @@ END OF DOCUMENT: ${file.name}
             }
         } catch (error) {
             console.error('Error sending message:', error);
-            setStatusMsg(`Failed to communicate with AI: ${error instanceof Error ? error.message : String(error)} `);
+            const errorMessage = error instanceof Error
+                ? error.message
+                : String(error);
+
+            // Check if it's a timeout error
+            const isTimeout =
+                errorMessage.includes('timeout') ||
+                errorMessage.includes('timed out') ||
+                errorMessage.includes('AbortError');
+
+            setStatusMsg(
+                isTimeout
+                    ? `Request timed out. AI is taking too long to respond. ${selectedModel} might be busy. Try again or switch models.`
+                    : `Failed to communicate with AI ${selectedModel}: ${errorMessage}`
+            );
         } finally {
             setIsLoading(false);
         }
@@ -843,8 +857,22 @@ END OF DOCUMENT: ${file.name}
             {/* Add  message display near the top */}
             {statusMsg && (
                 <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
-                    <Info className="w-4 h-4 mr-2" />     {/* icon in front */}
+                    <Info className="w-4 h-4 mr-2" />
                     <span>{statusMsg}</span>
+                    {statusMsg.includes('timed out') && (
+                        <button
+                            onClick={() => {
+                                const lastUserMessage = messages.findLast(m => m.role === 'user');
+                                if (lastUserMessage) {
+                                    setStatusMsg('Retrying request...');
+                                    sendMessageToAPI([...messages.filter(m => m.role !== 'assistant')]);
+                                }
+                            }}
+                            className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                        >
+                            Retry
+                        </button>
+                    )}
                 </div>
             )}
 
