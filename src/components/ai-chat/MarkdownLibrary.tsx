@@ -129,6 +129,8 @@ const MarkdownLibrary = ({ onSelect, hideExportLibraryButton }: MarkdownLibraryP
 
       {filteredDocuments.length === 0 ? (
         <div className="text-gray-400 text-center p-4">
+          Select a document to view or edit
+          <br />
           {searchTerm ? 'No documents match your search' : 'No documents saved yet'}
         </div>
       ) : (

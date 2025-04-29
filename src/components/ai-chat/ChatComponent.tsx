@@ -1,18 +1,22 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
+import { useDispatch } from 'react-redux'; // Add this import
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info } from 'lucide-react';
+
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
+import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
-import { Plus, Paperclip, X, FileText, Info } from 'lucide-react';  // add Info
 // Import mammoth.js for DOCX conversion
 import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
 import ModelSelector from './ModelSelector';
+import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -23,20 +27,23 @@ interface Message {
 }
 
 export interface ChatComponentProps {
-    selectedModel: string;
-    setSelectedModel: (model: string) => void;
-    chatInput?: string;
     input: string;
     setInput: (input: string) => void;
+    selectedModel: string;
+    setSelectedModel: (model: string) => void;
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (content: string) => void;
     setShowLeftPanel: (show: boolean) => void;
-    setMdContent: (content: string) => void;
-    mdContent: string;
+    chatInput?: string;
     onAddMD: () => void;
+    mdContent: string;
+    setMdContent: (content: string) => void;
+    setCurrentMessages: (messages: any[]) => void;
 }
 
 const MAX_MODEL_RETRIES = 4;
+
+
 interface DraggableDividerProps {
     direction: string;
     initialPosition: number;
@@ -51,18 +58,20 @@ interface DraggableDividerProps {
 }
 
 export default function ChatComponent({
-    selectedModel,
-    setSelectedModel,
-    chatInput,
     input,
     setInput,
+    selectedModel,
+    setSelectedModel,
     onResponseChange,
     onViewInMarkdown,
     setShowLeftPanel,
-    setMdContent,
-    mdContent,
+    chatInput,
     onAddMD,
+    mdContent,
+    setMdContent,
+    setCurrentMessages,
 }: ChatComponentProps) {
+    const dispatch = useDispatch();
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -88,7 +97,54 @@ export default function ChatComponent({
     const [docRefine, setDocRefine] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
+    // Add right after your state definitions
+    const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
+    const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('');
 
+    // Generate categories list dynamically from templates
+    const CATEGORIES = ["All", ...Array.from(
+        new Set(PROMPT_TEMPLATES.map(template => template.category))
+    ).sort()];
+
+    const filteredTemplates = selectedCategory === 'All'
+        ? PROMPT_TEMPLATES
+        : PROMPT_TEMPLATES.filter(template => template.category === selectedCategory);
+
+    // Define templates for document refinement
+    const refineTemplates = {
+        "Translate Document": `Please translate the content below accurately while preserving the meaning, tone, and format.
+Maintain all original paragraph breaks, bullet points, and document structure.
+Keep specialized terminology intact or provide appropriate equivalents in the target language.
+If you encounter culturally specific references, provide appropriate context or alternatives. 
+Target language: [specify language here]
+        `,
+        "Summarize Document": `Please provide a summary of the content below.
+Highlight any conclusions or recommendations presented in the document.
+
+`,
+        "General Refinement": `Please revise the content below for clarity, style, and grammar.
+Your task is to improve and refine the text, not to analyze it.
+Do not use its contents as contextual input for other questions--I want it improved not analyzed:
+`,
+
+        "Academic Style": `Please refine the content below to follow academic writing standards.
+Ensure proper citations, formal language, logical structure, and reduce redundancy. 
+Make the arguments more rigorous and well-supported.
+`,
+        "Technical Documentation": `Transform this content below into professional technical documentation.
+Improve clarity, use consistent terminology, add proper headings and structure.
+Make sure explanations are precise and easy to follow for technical readers.
+`,
+        "Marketing Copy": `Revise this content below to be more persuasive and engaging marketing copy.
+Enhance customer benefits, use action-oriented language, create emotional appeal.
+Make it more concise and impactful for potential customers.
+`,
+        "Check Grammar & Spelling": `Revise the content below. Focus only on correcting grammar, spelling, and punctuation errors in the text below.
+Do not alter the content, structure, or meaning of the text.
+Just fix linguistic errors and improve readability where necessary.
+`
+    };
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
         if (inactivityTimerRef.current) {
@@ -200,6 +256,7 @@ export default function ChatComponent({
             const fallbackTimer = setTimeout(scrollToBottom, 500);
             return () => clearTimeout(fallbackTimer);
         }
+        setCurrentMessages(messages);
     }, [messages, isLoading]);
 
     useEffect(() => {
@@ -207,6 +264,7 @@ export default function ChatComponent({
         if (lastAssistant) {
             onResponseChange(lastAssistant.content);
         }
+        setCurrentMessages(messages);
     }, [messages, onResponseChange]);
 
     useEffect(() => {
@@ -252,7 +310,7 @@ export default function ChatComponent({
 Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
 Your task is to improve and refine the text, not to analyze it.
 Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-# Content:
+
 `
     )
 
@@ -276,7 +334,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 content = await file.text();
             }
 
-            setInput(refinePrompt);
+            // setInput(refinePrompt);
 
             setStatusMsg(`Loaded "${file.name}" for editing and refinement.`);
             setMdContent(content); // This will be shown in the preview
@@ -368,6 +426,55 @@ File size: ${(file.size / 1024).toFixed(1)} KB
 Last modified: ${new Date(file.lastModified).toLocaleString()}]`;
     };
 
+    const handleSaveToLibrary = (content: string) => {
+        // Extract title from first line of content
+        const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+        const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
+
+        const documentTitle = cleanTitle || 'Untitled Document';
+
+        // Save to Redux store
+        dispatch(saveMarkdownDocument({
+            id: Date.now().toString(),
+            name: documentTitle,
+            content: content,
+            createdAt: new Date().toISOString()
+        }));
+
+        // Show confirmation to user
+        setStatusMsg(`Saved "${documentTitle}" to library`);
+        setTimeout(() => setStatusMsg(''), 30000);
+    };
+
+    // Add this function with your other handler functions
+    const handleSaveToFile = (content: string) => {
+        // Create a blob with the content
+        const blob = new Blob([content], { type: 'text/markdown' });
+
+        // Create a URL for the blob
+        const url = URL.createObjectURL(blob);
+
+        // Extract title from first line for filename
+        const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+        const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
+        const fileName = `${cleanTitle || 'document'}.md`;
+
+        // Create a temporary anchor element
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+
+        // Trigger download
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Show confirmation
+        setStatusMsg(`Saved "${fileName}" to downloads`);
+        setTimeout(() => setStatusMsg(''), 30000);
+    };
+
     // Handle file selection for context
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
@@ -421,7 +528,7 @@ END OF DOCUMENT: ${file.name}
             }
 
             setStatusMsg(message);
-            setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 10000 : 6000); // Show longer for binary files
+            setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
         } catch (error) {
             console.error('Error processing files:', error);
             setStatusMsg(
@@ -542,13 +649,11 @@ END OF DOCUMENT: ${file.name}
             const errorMessage = error instanceof Error
                 ? error.message
                 : String(error);
-
             // Check if it's a timeout error
             const isTimeout =
                 errorMessage.includes('timeout') ||
                 errorMessage.includes('timed out') ||
                 errorMessage.includes('AbortError');
-
             setStatusMsg(
                 isTimeout
                     ? `Request timed out. AI is taking too long to respond. ${selectedModel} might be busy. Try again or switch models.`
@@ -604,19 +709,24 @@ END OF DOCUMENT: ${file.name}
         if (!input?.trim()) return;
 
         let userMessageContent = input;
-        // if (isContextAttached && contextFiles.length > 0) {
-        //     const fileNames = contextFiles.map(file => file.name).join(', ');
-        //     userMessageContent = `${input}`;
-        // }
+
         if (docRefine) {
             userMessageContent = `${userMessageContent} #content:\n ${mdContent}`;
+        } else {
+            userMessageContent = `${userMessageContent} #context:\n ${mdContent}`;
         }
+
         const userMessage: Message = { role: 'user', content: userMessageContent };
+
+        // Always update the messages state with the new user message
         setMessages((prev) => [...prev, userMessage]);
+
+        // Send all messages including the new one to maintain conversation context
+        await sendMessageToAPI([...messages, userMessage]);
+
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed
         setShowDigitalRain(false); // Turn OFF digital rain when sending a message
-        await sendMessageToAPI([...messages, userMessage]);
     };
 
     const handleCopyMessage = (content: string, index: number) => {
@@ -677,33 +787,100 @@ END OF DOCUMENT: ${file.name}
                             </div>
                         ) : (
                             <div className="flex-1 text-primary overflow-auto min-h-0">
-                                <div className="flex flex-col items-center justify-start w-full py-6">
-                                    <div className="text-green-400 text-xl text-left font-mono mb-4">
-                                        Getting started by:
-                                        <ul className="text-sm list-disc list-inside overflow-auto text-left">
-                                            <li>Alternative 1. Ask your question below and click on the up-arrow to send!</li>
-                                            <li>Alternative 2. Select a Prompt Template below!</li>
-                                            <li>Alternative 3. Open the left pane and select a prompt template!</li>
-                                        </ul>
-                                    </div>
-                                    <div className="w-full">
-                                        <p className="mt-5">Use Prompt templates in the left pane.</p>
-                                        <ol className="text-sm list-decimal list-inside overflow-auto text-left">
-                                            <li>Open the left pane Click on the &quot;Left pane&quot; button upper left corner.</li>
-                                            <li>Open the Templates tab.</li>
-                                            <li>Describe your topic in the top input area (1. What topic...).</li>
-                                            <li>Select a prompt template to make a report/doc on your topic.</li>
-                                            <li>Click on the Right arrow to insert the Prompt into the chat.</li>
-                                            <li>Click on the up arrow to ask the AI.</li>
-                                        </ol>
-                                        <p className="mt-5">Preview Response Document.</p>
-                                        <ul className="text-sm list-decimal list-inside overflow-auto text-left">
-                                            <li>Click on the &quot;Preview&quot; button to see the document in the right panel.</li>
-                                            <li>Click on the &quot;Edit&quot; button to edit the document.</li>
-                                            <li>Click on the &quot;Save&quot; button to save the document to the library.</li>
-                                            <li>Click on the &quot;Download&quot; button to download the document.</li>
-                                            <li>Open Library to save the document(s) to a local library file (JSON).</li>
-                                        </ul>
+                                <div className="flex flex-col items-center justify-start w-full pb-6">
+                                    <div className="p-4 space-y- max-w-3xl mx-auto">
+                                        <section>
+                                            <h2 className="text-xl font-semibold text-blue-400 mb-3">Getting Started</h2>
+                                            <div className="space-y-4">
+                                                <div>
+                                                    <h3 className="text-lg font-medium text-gray-200">1. Ask a Question Directly</h3>
+                                                    <ul className="list-disc pl-6 mt-1 text-gray-300">
+                                                        <li>Type your question in the provided input area.</li>
+                                                        <li>Click the up-arrow to send your question to the AI.</li>
+                                                    </ul>
+                                                </div>
+
+                                                <div>
+                                                    <h3 className="text-lg font-medium text-gray-200">2. Use Prompt Templates</h3>
+                                                    <ul className="list-disc pl-6 mt-1 text-gray-300">
+                                                        <li><strong>Option 1:</strong> Select a prompt template from the list below the input area.</li>
+                                                        <li><strong>Option 2:</strong> Import a local file to use as context for your prompt.</li>
+                                                    </ul>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <section>
+                                            <h2 className="text-xl font-semibold text-blue-400 my-3">Working with the AI Response</h2>
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                <div className="p-3 border border-gray-700 rounded-lg">
+                                                    <h3 className="font-medium text-gray-200">1. Preview the Response</h3>
+                                                        <p className="text-gray-300">Click the &quot;Preview&quot; button to see the generated document in the right panel.</p>
+                                                </div>
+                                                <div className="p-3 border border-gray-700 rounded-lg">
+                                                    <h3 className="font-medium text-gray-200">2. Save the Document</h3>
+                                                        <p className="text-gray-300">Click the &quot;Save&quot; button to save the document to the library.</p>
+                                                </div>
+                                                <div className="p-3 border border-gray-700 rounded-lg">
+                                                    <h3 className="font-medium text-gray-200">3. Open Library</h3>
+                                                        <p className="text-gray-300">Click the &quot;Library&quot; button in the left panel to open library with the saved documents. Select a document to view its details.</p>
+                                                </div>
+                                                <div className="p-3 border border-gray-700 rounded-lg">
+                                                    <h3 className="font-medium text-gray-200">4. Edit the Document</h3>
+                                                    <p className="text-gray-300">
+                                                        Click the &quot;Edit&quot; button to make any changes to the document. Click the <BookmarkPlus className="inline text-bold h-4 w-4" /> button to apply your changes and save to library.
+                                                    </p>
+                                                </div>
+                                                <div className="p-3 border border-gray-700 rounded-lg">
+                                                    <h3 className="font-medium text-gray-200">5. Import a Document</h3>
+                                                    <p className="text-gray-300">
+                                                            Click the <Library className="inline w-4 h-4 mr-1" /> button and then &quot;Import&quot; to import a document from your local device.
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </section>
+
+                                        <section>
+                                            <h2 className="text-xl font-semibold text-blue-400 mb-3">Tips for Effective Use</h2>
+                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                                                <div className="flex items-start gap-3">
+                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
+                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-medium text-gray-200">Be Specific</h3>
+                                                        <p className="text-gray-300">The more detailed your question or topic description, the better the AI can assist you.</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
+                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-medium text-gray-200">Use Templates Wisely</h3>
+                                                        <p className="text-gray-300">Templates can save you time and ensure you cover all necessary points.</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
+                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-medium text-gray-200">Review and Edit</h3>
+                                                        <p className="text-gray-300">Always review the generated content and make edits as needed to ensure accuracy and relevance.</p>
+                                                    </div>
+                                                </div>
+                                                <div className="flex items-start gap-3">
+                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
+                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
+                                                    </div>
+                                                    <div>
+                                                        <h3 className="font-medium text-gray-200">Save and Organize</h3>
+                                                        <p className="text-gray-300">Use the library feature to keep your documents organized and easily accessible.</p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </section>
                                     </div>
                                 </div>
                             </div>
@@ -759,57 +936,34 @@ END OF DOCUMENT: ${file.name}
                                     {message.role === 'user' ? 'You' : `Assistant(${selectedModel})`}
                                 </div>
 
-                                <button
-                                    onClick={() => handleCopyMessage(message.content, index)}
-                                    className="text-xs text-gray-400 hover:text-gray-200"
-                                >
-                                    {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                </button>
+
                                 {message.role === 'assistant' && (
-                                    <button
-                                        onClick={() => handleViewInMarkdown(message.content)}
-                                        className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
-                                    >
-                                        Markdown Preview
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            width="18"
-                                            height="18"
-                                            viewBox="0 0 24 24"
-                                            fill="none"
-                                            stroke="currentColor"
-                                            className="inline-block"
+                                    <>
+
+                                        {/* Add Save to Library button */}
+                                        <button
+                                            title="Save to Library"
+                                            onClick={() => handleSaveToLibrary(message.content)}
+                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
                                         >
-                                            <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
-                                            <path
-                                                d="M8 7h9v9"
-                                                strokeWidth="2"
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                            />
-                                        </svg>
-                                    </button>
-                                )}
-                            </div>
 
-                            {/* message content */}
-                            <div
-                                className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
-                                style={{ overflowWrap: 'anywhere' }}
-                            >
-                                {message.content}
-                            </div>
+                                            <BookmarkPlus className="h-4 w-4" />
+                                        </button>
 
-                            {/*  bottom buttons */}
-                            {message.role === 'assistant' && (
-                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
-                                    <button
-                                        onClick={() => handleCopyMessage(message.content, index)}
-                                        className="text-xs text-gray-400 hover:text-gray-200"
-                                    >
-                                        {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                    </button>
-                                    {message.role === 'assistant' && (
+                                        <button
+                                            title="Save to File"
+                                            onClick={() => handleSaveToFile(message.content)}
+                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                        >
+                                            <Save className="h-4 w-4" />
+                                        </button>
+                                        <button
+                                            title="Copy message"
+                                            onClick={() => handleCopyMessage(message.content, index)}
+                                            className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                        >
+                                            {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                        </button>
                                         <button
                                             onClick={() => handleViewInMarkdown(message.content)}
                                             className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
@@ -833,6 +987,72 @@ END OF DOCUMENT: ${file.name}
                                                 />
                                             </svg>
                                         </button>
+
+                                    </>
+
+                                )}
+                            </div>
+
+                            {/* message content */}
+                            <div
+                                className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
+                                style={{ overflowWrap: 'anywhere' }}
+                            >
+                                {message.content}
+                            </div>
+
+                            {/*  bottom buttons */}
+                            {message.role === 'assistant' && (
+                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                    {message.role === 'assistant' && (
+                                        <>
+                                            {/* Add Save to Library button */}
+                                            <button
+                                                title="Save to Library"
+                                                onClick={() => handleSaveToLibrary(message.content)}
+                                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                                            >
+
+                                                <BookmarkPlus className="h-4 w-4" />
+                                            </button>
+
+                                            <button
+                                                title="Save to File"
+                                                onClick={() => handleSaveToFile(message.content)}
+                                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                            >
+                                                <Save className="h-4 w-4" />
+                                            </button>
+                                            <button
+                                                onClick={() => handleCopyMessage(message.content, index)}
+                                                className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                            >
+                                                {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                            </button>
+                                            <button
+                                                onClick={() => handleViewInMarkdown(message.content)}
+                                                className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                            >
+                                                Markdown Preview
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    width="18"
+                                                    height="18"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    className="inline-block"
+                                                >
+                                                    <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
+                                                    <path
+                                                        d="M8 7h9v9"
+                                                        strokeWidth="2"
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                    />
+                                                </svg>
+                                            </button>
+                                        </>
                                     )}
                                 </div>
                             )}
@@ -855,37 +1075,39 @@ END OF DOCUMENT: ${file.name}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             /> */}
             {/* Add  message display near the top */}
-            {statusMsg && (
-                <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
-                    <Info className="w-4 h-4 mr-2" />
-                    <span>{statusMsg}</span>
-                    {statusMsg.includes('timed out') && (
-                        <button
-                            onClick={() => {
-                                const lastUserMessage = messages.findLast(m => m.role === 'user');
-                                if (lastUserMessage) {
-                                    setStatusMsg('Retrying request...');
-                                    sendMessageToAPI([...messages.filter(m => m.role !== 'assistant')]);
-                                }
-                            }}
-                            className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
-                        >
-                            Retry
-                        </button>
-                    )}
-                </div>
-            )}
-
+            {
+                statusMsg && (
+                    <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
+                        <Info className="w-4 h-4 mr-2" />
+                        <span>{statusMsg}</span>
+                        {statusMsg.includes('timed out') && (
+                            <button
+                                onClick={() => {
+                                    const lastUserMessage = messages.findLast(m => m.role === 'user');
+                                    if (lastUserMessage) {
+                                        setStatusMsg('Retrying request... if it fails again, please try a different model.');
+                                        sendMessageToAPI([lastUserMessage]);
+                                    }
+                                }}
+                                className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                            >
+                                Retry
+                            </button>
+                        )}
+                    </div>
+                )
+            }
             {/* Input area always at the bottom */}
-            <div className="relative bottom-0 left-0 right-0 bg-popover z-20 pb-safe">
+            <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe">
                 <div className="flex items-center justify-between p-2">
+                    {/* button row above the chat */}
                     <div className="flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => { handleAddMD(); }}
                             className="p-2 text-gray-500 hover:text-gray-300 flex items-center gap-2"
                             disabled={isLoading}
-                            title="Add a file for refinement by the AI"
+                            title="Add a local file for refinement."
                         >
                             <FileText className="w-5 h-5" />
                         </button>
@@ -897,175 +1119,228 @@ END OF DOCUMENT: ${file.name}
                             className="hidden"
                             onChange={handleMDFileSelect}
                         />
-                        <button
-                            type="button"
-                            title="Refine document by the AI"
-                            disabled={isLoading}
-                            onClick={() => {
-                                if (!mdContent) {
-                                    setDocRefine(false);
-                                    setInput('');
-                                } else {
-                                    const newRefineState = mdContent ? !docRefine : false;
-                                    setDocRefine(newRefineState);
-                                    setInput(newRefineState && mdContent ? refinePrompt : '');
-                                }
-                            }}
-                            className={`h-5 w-5 border ${docRefine ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                            {docRefine && (
-                                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                </svg>
-                            )}
-                        </button>
-                        {docRefine
-                            ? <span className="text-gray-500">{mdContent ? "Let AI refine the document in the left panel" : "No document in the left panel"}</span>
-                            : <span className="text-gray-500">{mdContent ? "Let AI refine the document in the left panel" : "No document to refine in the left panel"}</span>
+                        {mdContent && (
+                            <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                    type="checkbox"
+                                    checked={docRefine && !!mdContent}
+                                    disabled={!mdContent || isLoading}
+                                    onChange={() => {
+                                        if (!mdContent) {
+                                            setDocRefine(false);
+                                            setInput('');
+                                        } else {
+                                            const newRefineState = !docRefine;
+                                            setDocRefine(newRefineState);
+                                            // setInput(newRefineState ? refinePrompt : '');
+                                        }
+                                    }}
+                                    className="sr-only" // Hide default checkbox but keep it accessible
+                                />
+                                <div className={`h-5 w-5 border ${docRefine && mdContent ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                    {docRefine && mdContent && (
+                                        <div className="h-2 w-2 bg-white rounded-full"></div>
+                                    )}
+                                </div>
+                                <span className="text-gray-500">{mdContent ? "Refine document" : "No document in the left panel"}</span>
+                            </label>
+                        )}
+                    </div>
+                    <div className="flex items-center gap-2">
+                        {/* Template selection */}
+                        {mdContent && docRefine &&
+                            <div className="flex items-center gap-2">
+                                <select
+                                    title="Select a style for the document"
+                                    className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
+                                    onChange={(e) => {
+                                        const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
+                                        if (selectedTemplate) {
+                                            setInput(selectedTemplate);
+                                            setDocRefine(true);
+                                        }
+                                    }}
+                                    disabled={isLoading || !mdContent}
+                                >
+                                    <option value="">Select style...</option>
+                                    {Object.keys(refineTemplates).map((key) => (
+                                        <option key={key} value={key}>{key}</option>
+                                    ))}
+                                </select>
+                            </div>
                         }
+                        <div className="flex items-center gap-2">
+                            {!docRefine &&
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
+                                        value={selectedReportTemplate}
+                                        onChange={(e) => {
+                                            const selectedTemplate = filteredTemplates.find(template => template.title === e.target.value);
+                                            if (selectedTemplate) {
+                                                setSelectedReportTemplate(selectedTemplate.title);
+                                                setInput(selectedTemplate.content);
+                                            } else {
+                                                setSelectedReportTemplate('');
+                                            }
+                                        }}
+                                    >
+                                        <option value="">Select Prompt Template...</option>
+                                        {filteredTemplates.map((template) => (
+                                            <option key={template.title} value={template.title}>
+                                                {template.title}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            }
+                        </div>
                     </div>
                 </div>
-                {/* START FORM */}
-                <form onSubmit={handleSubmit} className="px-2 bg-popover rounded-lg">
-                    <TextareaAutosize
-                        ref={textareaRef}
-                        value={input || ''}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                e.preventDefault();
-                                const now = Date.now();
-                                // Use a custom property on the event target to track the last Enter key time
-                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                    // If two returns occur within 2 seconds, submit the form
-                                    handleSubmit(e);
-                                    textarea.lastEnterTime = 0;
-                                } else {
-                                    textarea.lastEnterTime = now;
-                                }
-                            }
-                        }}
-                        placeholder="Ask anything …"
-                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        minRows={6}
-                        maxRows={12}
-                        disabled={isLoading}
-                    />
-                    <div className="flex justify-between">
-                        <div className="flex items-center gap-2 justify-end">
-                            {/* Context file input */}
-                            <button
-                                type="button"
-                                onClick={handleAddContext}
-                                className="text-gray-500 hover:text-gray-300"
-                                disabled={isLoading || isProcessingFile}
-                                title="Add context from files"
-                            >
-                                <Paperclip className="w-5 h-5" />
-                            </button>
-                            <input
-                                type="file"
-                                multiple
-                                className="hidden"
-                                onChange={handleFileSelect}
-                                accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.docx"
-                                ref={fileInputRef}
-                            />
-                            {/* Context files indicator with enhanced info */}
-                            {isContextAttached && contextFiles.length > 0 && (
-                                <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
-                                    <div className="flex items-center gap-2">
-                                        {/* <Paperclip className="w-3 h-3" /> */}
-                                        <span>
-                                            {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached as context:
-                                            <span className="font-mono ml-1">
-                                                {contextFiles.map((file, idx) => {
-                                                    const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                                    return (
-                                                        <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
-                                                            {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
-                                                        </span>
-                                                    );
-                                                })}
-                                                ({Math.round(contextContent.length / 1024)}KB)
-                                            </span>
-                                        </span>
-                                        <button
-                                            onClick={handleRemoveContext}
-                                            className="ml-auto text-gray-400 hover:text-white"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                    {/* Add guidance about binary files if any are attached */}
-                                    {contextFiles.some(file => {
-                                        const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                        return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                    }) && (
-                                            <div className="mt-1 text-yellow-300 text-[10px]">
-                                                ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
-                                                <button
-                                                    className="ml-1 underline hover:text-white"
-                                                    onClick={() => {
-                                                        const binaryFiles = contextFiles
-                                                            .filter(f => {
-                                                                const fileType = f.name.split('.').pop()?.toLowerCase() || '';
-                                                                return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                                            })
-                                                            .map(f => f.name)
-                                                            .join(", ");
-                                                        setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
-                                                        setTimeout(() => {
-                                                            if (textareaRef.current) {
-                                                                textareaRef.current.focus();
-                                                            }
-                                                        }, 100);
-                                                    }}
-                                                >
-                                                    Open the document and copy all text and Add the text to explain file
-                                                </button>
-                                            </div>
-                                        )}
-                                </div>
-                            )}
-
-                        </div>
-                        <div className="flex items-center text-foreground gap-1">
-                            <ModelSelector
-                                selectedModel={selectedModel}
-                                onModelChange={(newModel) => {
-                                    setSelectedModel(newModel);
-                                }}
-                            />
-                        </div>
-
-                        {/* now include the send‐button here */}
-                        <div className="flex justify-between px-2 ">
-                            <div className="flex items-center gap-2 justify-end">
-                                {/* …context buttons… */}
-                            </div>
-                            <button
-                                type="submit"
-                                className="p-2 text-blue-200 hover:text-blue-800"
-                                disabled={isLoading || !input?.trim()}
-                                title="Send"
-                            >
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    className="w-8 h-8"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </form>
+                <div className="flex items-center gap-2"></div>
             </div>
-        </div>
+
+            {/* START FORM */}
+            <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
+                <TextareaAutosize
+                    ref={textareaRef}
+                    value={input || ''}
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            const now = Date.now();
+                            // Use a custom property on the event target to track the last Enter key time
+                            const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                            if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                // If two returns occur within 2 seconds, submit the form
+                                handleSubmit(e);
+                                textarea.lastEnterTime = 0;
+                            } else {
+                                textarea.lastEnterTime = now;
+                            }
+                        }
+                    }}
+                    placeholder="Ask anything …"
+                    className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    minRows={6}
+                    maxRows={12}
+                    disabled={isLoading}
+                />
+                <div className="flex justify-between">
+                    <div className="flex items-center gap-2 justify-end">
+                        {/* Context file input */}
+                        <button
+                            type="button"
+                            onClick={handleAddContext}
+                            className="text-gray-500 hover:text-gray-300"
+                            disabled={isLoading || isProcessingFile}
+                            title="Add context from file"
+                        >
+                            <Paperclip className="w-5 h-5" />
+                        </button>
+                        <input
+                            type="file"
+                            multiple
+                            className="hidden"
+                            onChange={handleFileSelect}
+                            accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.docx"
+                            ref={fileInputRef}
+                        />
+                        {/* Context files indicator with enhanced info */}
+                        {isContextAttached && contextFiles.length > 0 && (
+                            <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
+                                <div className="flex items-center gap-2">
+                                    {/* <Paperclip className="w-3 h-3" /> */}
+                                    <span>
+                                        {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached as context:
+                                        <span className="font-mono ml-1">
+                                            {contextFiles.map((file, idx) => {
+                                                const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                                const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                                return (
+                                                    <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
+                                                        {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
+                                                    </span>
+                                                );
+                                            })}
+                                            ({Math.round(contextContent.length / 1024)}KB)
+                                        </span>
+                                    </span>
+                                    <button
+                                        onClick={handleRemoveContext}
+                                        className="ml-auto text-gray-400 hover:text-white"
+                                    >
+                                        <X className="w-3 h-3" />
+                                    </button>
+                                </div>
+                                {/* Add guidance about binary files if any are attached */}
+                                {contextFiles.some(file => {
+                                    const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                    return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                }) && (
+                                        <div className="mt-1 text-yellow-300 text-[10px]">
+                                            ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
+                                            <button
+                                                className="ml-1 underline hover:text-white"
+                                                onClick={() => {
+                                                    const binaryFiles = contextFiles
+                                                        .filter(f => {
+                                                            const fileType = f.name.split('.').pop()?.toLowerCase() || '';
+                                                            return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                                        })
+                                                        .map(f => f.name)
+                                                        .join(", ");
+                                                    setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
+                                                    setTimeout(() => {
+                                                        if (textareaRef.current) {
+                                                            textareaRef.current.focus();
+                                                        }
+                                                    }, 100);
+                                                }}
+                                            >
+                                                Open the document and copy all text and Add the text to explain file
+                                            </button>
+                                        </div>
+                                    )}
+                            </div>
+                        )}
+
+                    </div>
+                    <div className="flex items-center text-foreground gap-1">
+                        <ModelSelector
+                            selectedModel={selectedModel}
+                            onModelChange={(newModel) => {
+                                setSelectedModel(newModel);
+                            }}
+                        />
+                    </div>
+
+                    {/* now include the send‐button here */}
+                    <div className="flex justify-between px-2 ">
+                        <div className="flex items-center gap-2 justify-end">
+                            {/* …context buttons… */}
+                        </div>
+                        <button
+                            type="submit"
+                            className="p-2 text-blue-200 hover:text-blue-800"
+                            disabled={isLoading || !input?.trim()}
+                            title="Send"
+                        >
+                            <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                className="w-8 h-8"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div >
     )
 }

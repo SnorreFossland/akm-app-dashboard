@@ -249,9 +249,10 @@ Make the walk fun and engaging but as choose the shortest continous route possib
         content:
             `
 Help me define and scope the domain/topic described in the context below.
-Domain name:**[Insert concise and specific name]**
-Domain description:**[Provide a clear, concise summary (2-3 sentences) of the domain.]**
-Domain scope:**[List elements, activities, or areas included within the domain]**
+Domain name:** [Insert concise and specific name] **
+Domain description:** [Provide a clear, concise summary (2-3 sentences) of the domain.] **
+Domain definition:
+Domain scope: [List elements, activities, or areas included within the domain]
 Key Domain Concepts and Terms
 Primary objectives
 Identify and categorize stakeholders by their roles or involvement

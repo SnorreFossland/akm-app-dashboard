@@ -4,7 +4,7 @@ import { Message, callModelAPI } from '../modelApiHandler';
  * Call Mistral API with provided messages and model
  */
 export async function callMistral(messages: Message[], model: string): Promise<string> {
-  console.log('Mistral API called with model:', model);
+  console.log('Mistral API called with model:', model); //, 'and messages:', messages);
 
   return callModelAPI({
     apiKey: process.env.MISTRAL_API_KEY,

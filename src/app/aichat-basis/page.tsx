@@ -9,6 +9,7 @@ import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
+import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 
 export interface ChatComponentProps {
     onResponseChange: (response: string) => void;
@@ -25,7 +26,7 @@ export interface ChatComponentProps {
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
-    const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document'>('templates');
+    const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document' | 'conversations'>('document');
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
     const [showLeftPanel, setShowLeftPanel] = useState(false);
@@ -48,6 +49,10 @@ const AIChatPage = () => {
     const [mdContent, setMdContent] = useState<string>('')
     const [forceRefresh, setForceRefresh] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    // New state variables for conversations
+    const [conversations, setConversations] = useState<any[]>([]);
+    const [currentMessages, setCurrentMessages] = useState<any[]>([]);
 
     const handleAddMD = () => {
         mdFileInputRef.current?.click()
@@ -108,7 +113,7 @@ const AIChatPage = () => {
 
         reader.readAsText(file);
         e.target.value = ''; // Reset the file input
-      };
+    };
     // Initialize mermaid when component mounts
     useEffect(() => {
         mermaid.initialize({
@@ -171,6 +176,20 @@ const AIChatPage = () => {
         }
     }, [mdPreview, docName]);
 
+    // Add this useEffect to load saved conversations from localStorage
+    useEffect(() => {
+        const storedConversations = localStorage.getItem('savedConversations');
+        if (storedConversations) {
+            try {
+                const parsedConversations = JSON.parse(storedConversations);
+                setConversations(parsedConversations);
+                console.log('Loaded saved conversations:', parsedConversations);
+            } catch (error) {
+                console.error('Error parsing saved conversations:', error);
+            }
+        }
+    }, []);
+
     const handleSaveToRedux = () => {
         if (!docName.trim()) return;
         console.log('Saving to Redux:', {
@@ -200,7 +219,94 @@ const AIChatPage = () => {
         console.log("Selected document from library:", { content, name });
     };
 
+    // New handler functions for conversations
+    const handleSelectConversation = (conversation: any) => {
+        // Logic to load a saved conversation into the chat
+        // You would need to integrate this with your ChatComponent
+        console.log('Selected conversation:', conversation);
+    };
 
+    const handleDeleteConversation = (id: string) => {
+        setConversations(conversations.filter(conv => conv.id !== id));
+        // Also remove from local storage if you're using that
+        const storedConversations = JSON.parse(localStorage.getItem('savedConversations') || '[]');
+        localStorage.setItem('savedConversations',
+            JSON.stringify(storedConversations.filter((conv: any) => conv.id !== id))
+        );
+    };
+
+    const handleSaveCurrentConversation = () => {
+        console.log('Current messages to save:', currentMessages);
+
+        // Don't allow saving if no messages
+        if (!currentMessages || currentMessages.length === 0) {
+            alert("No messages to save. Please have a conversation first.");
+            return;
+        }
+
+        // Extract the first sentence from the first user message or after #content marker
+        let title = '';
+        if (currentMessages && currentMessages.length > 0) {
+            // First, check if any message contains #content marker
+            const contentMarkerMessage = currentMessages.find(msg =>
+                typeof msg.content === 'string' && msg.content.includes('#content')
+            );
+
+            if (contentMarkerMessage) {
+                // Extract text after #content
+                const contentParts = contentMarkerMessage.content.split('#content');
+                if (contentParts.length > 1) {
+                    // Find the first sentence after #content
+                    const match = contentParts[1].match(/^\s*(.*?[.!?])/);
+                    if (match) {
+                        title = match[1].trim();
+                    }
+                }
+            }
+            if (!title) {
+                const firstAssistantMessage = currentMessages.find(msg => msg.role === 'assistant');
+                if (firstAssistantMessage && firstAssistantMessage.content) {
+                    const match = firstAssistantMessage.content.match(/^.*?[.!?]/);
+                    title = match ? match[0].trim() : firstAssistantMessage.content.trim().substring(0, 50);
+                }
+            }
+            console.log('266 Extracted title from #content:', title, contentMarkerMessage, currentMessages);
+            // If no title from #content, fall back to first user message
+            if (!title) {
+                const firstUserMessage = currentMessages.find(msg => msg.role === 'user');
+                if (firstUserMessage && firstUserMessage.content) {
+                    // Extract the first sentence - look for the first period, question mark, or exclamation
+                    const match = firstUserMessage.content.match(/^.*?[.!?]/);
+                    title = match ? match[0].trim() : firstUserMessage.content.trim().substring(0, 50);
+                }
+            }
+
+            // If it's too long, truncate it
+            if (title.length > 50) {
+                title = title.substring(0, 47) + '...';
+            }
+        }
+
+        // If we couldn't extract a title, use a default title with timestamp
+        if (!title) {
+            title = `Conversation ${new Date().toLocaleString()}`;
+        }
+
+        const newConversation = {
+            id: Date.now().toString(),
+            title,
+            date: new Date().toLocaleString(),
+            messages: currentMessages,
+        };
+
+        const updatedConversations = [...conversations, newConversation];
+        setConversations(updatedConversations);
+
+        // Save to localStorage for persistence
+        localStorage.setItem('savedConversations', JSON.stringify(updatedConversations));
+
+        alert(`Conversation "${title}" saved successfully!`);
+    };
 
     const MIN_PANEL_WIDTH = 80;
     const MAX_PANEL_WIDTH = () => window.innerWidth - 320; // leave at least 320px for the middle
@@ -234,7 +340,7 @@ const AIChatPage = () => {
     };
 
     const handleResponseChange = (response: string) => { setLastResponse(response) };
-    
+
     const handleViewInMarkdown = (response: string) => {
         const cleanResponse = (response: string) => {
             let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
@@ -264,21 +370,30 @@ const AIChatPage = () => {
                             <div className="markdown-preview-header">
                                 <button
                                     onClick={() => setIsLibraryOpen(prev => !prev)}
-                                    className="flex items-center text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 whitespace-nowrap rounded"
+                                    className="flex items-center text-xs bg-blue-800 hover:bg-blue-600 text-white px-2 py-1 whitespace-nowrap rounded"
                                 >
                                     Library
                                 </button>
                             </div>
-                            <button
+                            {/* <button
                                 onClick={() => setShowLeftPanel(!showLeftPanel)}
                                 className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 rounded"
                             >
                                 <span className="text-lg">{showLeftPanel ? '←' : '→'}</span>
-                            </button>
+                            </button> */}
                         </div>
 
                         {/* tabs */}
                         <ul className="flex border-b border-gray-600 mb-2 text-sm">
+                            <li
+                                className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'conversations'
+                                    ? 'border-b-2 border-blue-400 font-semibold'
+                                    : 'text-gray-400'
+                                    }`}
+                                onClick={() => setActiveLeftTab('conversations')}
+                            >
+                                Conversations
+                            </li>
                             <li
                                 className={`px-3 py-1 cursor-pointer ${activeLeftTab === 'templates'
                                     ? 'border-b-2 border-blue-400 font-semibold'
@@ -300,15 +415,24 @@ const AIChatPage = () => {
                         </ul>
 
                         {/* tab content */}
-                        {activeLeftTab === 'templates' ? (
+                        {activeLeftTab === 'conversations' ? (
+                            <div className="p-2">
+                                <ConversationsPanel
+                                    conversations={conversations}
+                                    onSelectConversation={handleSelectConversation}
+                                    onDeleteConversation={handleDeleteConversation}
+                                    onSaveConversation={handleSaveCurrentConversation}
+                                    currentMessages={currentMessages} // Pass this prop to enable/disable save button
+                                />
+                            </div>
+                        ) : activeLeftTab === 'templates' ? (
                             <>
                                 {/* hidden shared picker */}
-                                < input
+                                <input
                                     ref={mdFileInputRef}
                                     type="file"
                                     accept=".md"
                                     className="hidden"
-
                                 />
                                 <TemplatesPanel
                                     onApplyTemplate={handleApplyTemplate}
@@ -321,17 +445,24 @@ const AIChatPage = () => {
                                     mdContent={mdContent}
                                 />
                             </>
-                        ) : ( // if mdContent is not empty, show DocumentPanel
+                        ) : ( // Document tab (activeLeftTab === 'document')
                             (mdContent && mdContent.length > 0)
                                 ?
-                                <DocumentPanel mdContent={mdContent} />
-                                : (
-                                    <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                                        <div className="text-sm">No document selected</div>
-                                        <div className="text-sm">...</div>
-                                        <div className="text-sm">Select a document from the library above.</div>
-                                    </div>
-                                )
+                                <DocumentPanel
+                                    mdContent={mdContent}
+                                    setMdContent={setMdContent}
+                                    setIsLibraryOpen={setIsLibraryOpen}
+                                    isLibraryOpen={isLibraryOpen}
+                                />
+                                :
+                                <>
+                                    <DocumentPanel
+                                        mdContent={``}
+                                        setMdContent={setMdContent}
+                                        setIsLibraryOpen={setIsLibraryOpen}
+                                        isLibraryOpen={isLibraryOpen}
+                                    />
+                                </>
                         )}
                     </div>
                 )}
@@ -353,32 +484,35 @@ const AIChatPage = () => {
                 <div className="flex-1 p-1 min-w-[450px] sm:min-w-[0] sm:px-2">
                     {/* <div className="flex-1 min-w-0 px-1 sm:px-2 overflow-hidden"></div> */}
                     <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2 ">
-                        {!showLeftPanel ? (
-                            <button
-                                onClick={() => setShowLeftPanel(!showLeftPanel)}
-                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                title='Show Templates'
-                            >
-                                <span>→</span>
-                                <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel && 'Left pane'}</span>
-                            </button>
-                        ) : (
-                            <div className="flex"></div>
-                        )}
-
+                        <button
+                            onClick={() => setShowLeftPanel(!showLeftPanel)}
+                            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                            title='Show Left pane'
+                        >
+                            <span>
+                                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                            </span>
+                            <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
+                        </button>
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
-                        {!showRightPanel ? (
+
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
                                 title='Show Markdown'
                             >
-                                <span>←</span>
-                                <span className="ml-1 hidden sm:inline">{!showRightPanel && 'Right pane'}</span>
+                            <span>
+                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    <line x1="10" y1="17" x2="22" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                </svg>
+                            </span>
+                                <span className="ml-1 hidden sm:inline">{!showRightPanel}</span>
                             </button>
-                        ) : (
-                            <div className="flex"></div>
-                        )}
+
                     </div>
                     <div className="mx-auto max-w-[1200px] h-full overflow-auto">
                         <ChatComponent
@@ -393,6 +527,7 @@ const AIChatPage = () => {
                             onAddMD={handleAddMD}
                             mdContent={mdContent}
                             setMdContent={setMdContent}
+                            setCurrentMessages={setCurrentMessages}
                         />
                     </div>
                 </div>
@@ -418,39 +553,20 @@ const AIChatPage = () => {
                         }}
                     >
                         <div className="flex items-center justify-between m-1 sm:m-2">
-                            <button
+                            {/* <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
                                 className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2  whitespace-nowrap rounded"
                                 title='Hide Markdown'
                             >
                                 <span className="text-lg">{showRightPanel && '→'}</span>
-                            </button>
+                            </button> */}
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
                                 Output: Markdown Preview
                             </h2>
                         </div>
 
                         <div className="flex items-center justify-end space-x-2">
-                            <div className="flex space-x-2 items-center border border-gray-500 rounded p-1">
-                                <div className="text-xs">Name: </div>
-                                {/* Document Name Input */}
-                                <input
-                                    type="text"
-                                    value={(docName || mdPreview.split('\n')[0] || '').replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')}
-                                    onChange={(e) =>
-                                        setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, '_'))
-                                    }
-                                    placeholder="Document Name"
-                                    className="text-xs bg-background border border-gray-600 text-white px-2 py-1 rounded"
-                                />
-                                <button
-                                    onClick={handleSaveToRedux}
-                                    className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                    disabled={!((docName || mdPreview.split('\n')[0]).replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')).trim()}
-                                >
-                                    <span>Save</span>
-                                </button>
-                            </div>
+
                             <button
                                 onClick={() => {
                                     navigator.clipboard.writeText(mdPreview);
@@ -470,16 +586,14 @@ const AIChatPage = () => {
                                 onClick={() => setIsEditing(!isEditing)}
                                 className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                             >
-                                {isEditing ? 'Preview' : 'Edit'}
+                                {isEditing ? 'Refresh' : 'Refresh'}
                             </button>
                         </div>
                         {/* Either render a textarea or a preview */}
                         {isEditing ? (
-                            <textarea
-                                value={mdPreview}
-                                onChange={(e) => setMdPreview(e.target.value)}
-                                className="w-full h-full p-4 bg-background text-foreground rounded max-h-[80vh] overflow-y-auto"
-                            />
+                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                                <MarkdownPreview mdPreview={mdPreview} />
+                            </div>
                         ) : (
                             /* Added "max-w-full" to the markdown container */
                             <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
@@ -495,10 +609,16 @@ const AIChatPage = () => {
             <>
                 {/* Library Modal */}
                 {isLibraryOpen && (
-                    <div className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50">
-                        <div className="bg-background rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto">
+                    <div
+                        className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
+                        onClick={() => setIsLibraryOpen(false)}
+                    >
+                        <div
+                            className="bg-background rounded-lg p-4 w-[600px]"
+                            onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
+                        >
                             <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-blue-400">Markdown Library</h3>
+                                <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
                                 <div className="flex space-x-2">
 
                                     <button
@@ -530,10 +650,12 @@ const AIChatPage = () => {
                                 </div>
                             </div>
                             {/* Pass export functionality to library component */}
-                            <MarkdownLibrary
-                                onSelect={handleSelectFromLibrary}
-                                hideExportLibraryButton={true}
-                            />
+                            <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
+                                <MarkdownLibrary
+                                    onSelect={handleSelectFromLibrary}
+                                    hideExportLibraryButton={true}
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -544,3 +666,24 @@ const AIChatPage = () => {
 // #endregion
 
 export default AIChatPage;
+
+// <div className="flex space-x-2 items-center border border-gray-500 rounded p-1">
+//     <div className="text-xs">Name: </div>
+
+//     <input
+//         type="text"
+//         value={(docName || mdPreview.split('\n')[0] || '').replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')}
+//         onChange={(e) =>
+//             setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, '_'))
+//         }
+//         placeholder="Document Name"
+//         className="text-xs bg-background border border-gray-600 text-white px-2 py-1 rounded"
+//     />
+//     <button
+//         onClick={handleSaveToRedux}
+//         className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+//         disabled={!((docName || mdPreview.split('\n')[0]).replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')).trim()}
+//     >
+//         <span>Save</span>
+//     </button>
+// </div>
