@@ -182,10 +182,77 @@
 .markdown-preview h4,
 .markdown-preview h5,
 .markdown-preview h6 {
-    margin-top: 1.5em;
+    margin-top: 0.5em;
     /* Add space above headings */
 }
+.condensed-prose p {
+    margin-top: 0.1em !important;
+    margin-bottom: 0.1em !important;
+}
 
+.condensed-prose h1,
+.condensed-prose h2,
+.condensed-prose h3,
+.condensed-prose h4,
+.condensed-prose h5,
+.condensed-prose h6 {
+    margin-top: 0.1em !important;
+    margin-bottom: 0.1em !important;
+    line-height: 1 !important;
+}
+
+/* More specific selectors to overcome Tailwind's prose classes */
+.prose.prose-invert.custom-markdown.condensed-prose ol,
+.condensed-prose ol {
+    list-style-type: decimal !important;
+    margin-top: 0em !important;
+    margin-bottom: 0em !important;
+    padding-left: 2em !important;  /* Increased padding to ensure visibility */
+    line-height: 1 !important;  /* Tighter line height */
+}
+
+.prose.prose-invert.custom-markdown.condensed-prose ol > li,
+.condensed-prose ol > li {
+    display: list-item !important;
+    position: relative !important;
+    padding-left: 0.5em !important;
+    line-height: 1 !important;
+}
+
+/* Force marker visibility */
+.prose.prose-invert.custom-markdown.condensed-prose ol > li::marker,
+.condensed-prose ol > li::marker {
+    color: #f0f0f0 !important;
+    opacity: 1 !important;
+    font-weight: 500 !important;
+    display: inline !important;
+    line-height: 1 !important;
+}
+
+/* Same for unordered lists */
+.prose.prose-invert.custom-markdown.condensed-prose ul,
+.condensed-prose ul {
+    list-style-type: disc !important;
+    padding-left: 2em !important;
+}
+
+.prose.prose-invert.custom-markdown.condensed-prose ul > li,
+.condensed-prose ul > li {
+    display: list-item !important;
+    line-height: 1 !important;
+}
+
+.prose.prose-invert.custom-markdown.condensed-prose ul > li::marker,
+.condensed-prose ul > li::marker {
+    color: #f0f0f0 !important;
+    opacity: 1 !important;
+    display: inline !important;
+    line-height: 1 !important;
+}
+
+
+
+/* Sidebar styles */
 .bg-active-item {
     background-color: #eed8c210;
     /* example active background color */

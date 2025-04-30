@@ -596,12 +596,11 @@ const AIChatPage = () => {
                         </div>
                         {/* Either render a textarea or a preview */}
                         {isEditing ? (
-                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
+                            <div className="prose prose-invert custom-markdown markdown-preview condensed-prose bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
                                 <MarkdownPreview mdPreview={mdPreview} />
                             </div>
                         ) : (
-                            /* Added "max-w-full" to the markdown container */
-                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
+                            <div className="prose prose-invert custom-markdown markdown-preview condensed-prose bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
                                 <MarkdownPreview mdPreview={mdPreview} />
                             </div>
                         )}
