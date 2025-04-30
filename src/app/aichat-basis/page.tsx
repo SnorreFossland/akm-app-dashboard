@@ -140,7 +140,8 @@ const AIChatPage = () => {
         const checkDeviceType = () => {
             // Check if it's a larger screen device
             const isDesktop = window.innerWidth >= 768; // Typical tablet/desktop breakpoint
-            setShowLeftPanel(isDesktop);
+            // setShowLeftPanel(isDesktop);
+            setShowLeftPanel(false);
         };
         checkDeviceType();
         // Also update on resize for orientation changes
@@ -153,6 +154,9 @@ const AIChatPage = () => {
         if (!showLeftPanel) {
             // When left panel closes, make right panel wider
             setRightPanelWidth(Math.min(800, window.innerWidth / 2));
+        } else {
+            // When left panel opens, set right panel to a fixed width
+            setRightPanelWidth(400);
         }
     }, [showLeftPanel]);
 
@@ -499,19 +503,19 @@ const AIChatPage = () => {
                         </button>
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
 
-                            <button
-                                onClick={() => setShowRightPanel(!showRightPanel)}
+                        <button
+                            onClick={() => setShowRightPanel(!showRightPanel)}
                             className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                                title='Show Markdown'
-                            >
+                            title='Show Markdown'
+                        >
                             <span>
                                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                     <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                                     <line x1="10" y1="17" x2="22" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                                 </svg>
                             </span>
-                                <span className="ml-1 hidden sm:inline">{!showRightPanel}</span>
-                            </button>
+                            <span className="ml-1 hidden sm:inline">{!showRightPanel}</span>
+                        </button>
 
                     </div>
                     <div className="mx-auto max-w-[1200px] h-full overflow-auto">
@@ -547,19 +551,12 @@ const AIChatPage = () => {
 
                 {/* Right Panel: Markdown Preview */}
                 {showRightPanel && (
-                    <div className="flex-shrink-0 bg-primary-foreground p-1 sm:px-2 min-w-[450px] sm:min-w-[450px] max-w-[95vw] max-h-1/2 overflow-hidden"
+                    <div className="flex-shrink-0 bg-primary-foreground p-1 sm:px-2 overflow-auto"
                         style={{
                             width: `${rightPanelWidth}px`,
                         }}
                     >
                         <div className="flex items-center justify-between m-1 sm:m-2">
-                            {/* <button
-                                onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2  whitespace-nowrap rounded"
-                                title='Hide Markdown'
-                            >
-                                <span className="text-lg">{showRightPanel && '→'}</span>
-                            </button> */}
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
                                 Output: Markdown Preview
                             </h2>
@@ -578,25 +575,33 @@ const AIChatPage = () => {
                                         button.textContent = originalText;
                                     }, 2000);
                                 }}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded flex items-center gap-1"
                             >
-                                Copy
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                <span>Copy</span>
                             </button>
                             <button
                                 onClick={() => setIsEditing(!isEditing)}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded flex items-center gap-1"
                             >
-                                {isEditing ? 'Refresh' : 'Refresh'}
+                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M23 4v6h-6"></path>
+                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
+                                </svg>
+                                <span>{isEditing ? 'Refresh' : 'Refresh'}</span>
                             </button>
                         </div>
                         {/* Either render a textarea or a preview */}
                         {isEditing ? (
-                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
                                 <MarkdownPreview mdPreview={mdPreview} />
                             </div>
                         ) : (
                             /* Added "max-w-full" to the markdown container */
-                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
                                 <MarkdownPreview mdPreview={mdPreview} />
                             </div>
                         )}

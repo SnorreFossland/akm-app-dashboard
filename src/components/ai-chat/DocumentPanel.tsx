@@ -124,7 +124,7 @@ export default function DocumentPanel({
             {/* {mdContent && ( */}
             <>
                 <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="text-sm text-gray-400">Current text</div>
+                    <div className="text-sm text-gray-400">Current context</div>
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setIsLibraryOpen(true)}

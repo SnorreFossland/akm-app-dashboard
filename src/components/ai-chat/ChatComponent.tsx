@@ -803,8 +803,26 @@ END OF DOCUMENT: ${file.name}
                                                 <div>
                                                     <h3 className="text-lg font-medium text-gray-200">2. Use Prompt Templates</h3>
                                                     <ul className="list-disc pl-6 mt-1 text-gray-300">
-                                                        <li><strong>Option 1:</strong> Select a prompt template from the list below the input area.</li>
-                                                        <li><strong>Option 2:</strong> Import a local file to use as context for your prompt.</li>
+                                                        <li>Select a prompt template from the dropdown menu above the input area.</li>
+                                                        <li>You can add a local file to use as context for your prompt.</li>
+                                                    </ul>
+                                                </div>
+
+                                                <div>
+                                                    <h3 className="text-lg font-medium text-gray-200">Add a local file to change or use as context to your questions.</h3>
+                                                    <ul className="list-disc pl-6 mt-1 text-gray-300">
+                                                        <li>
+                                                            <strong>Alternative 1 Change: </strong>
+                                                            Click the <FileText className="inline w-4 h-4 mr-1" /> button above the input area to select a file for change.
+                                                        </li>
+                                                        <li>
+                                                            <strong>Alternative 2 Context: </strong>
+                                                            Click the <Paperclip className="inline w-4 h-4 mr-1" /> button below the input area to select a file as context.
+                                                        </li>
+                                                        <li>
+                                                            <strong>Alternative 3 use the left panel: </strong>
+                                                            Click the upper left button to open the left panel .
+                                                        </li>
                                                     </ul>
                                                 </div>
                                             </div>
@@ -815,15 +833,15 @@ END OF DOCUMENT: ${file.name}
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="p-3 border border-gray-700 rounded-lg">
                                                     <h3 className="font-medium text-gray-200">1. Preview the Response</h3>
-                                                        <p className="text-gray-300">Click the &quot;Preview&quot; button to see the generated document in the right panel.</p>
+                                                    <p className="text-gray-300">Click the &quot;Preview&quot; button to see the generated document in the right panel.</p>
                                                 </div>
                                                 <div className="p-3 border border-gray-700 rounded-lg">
                                                     <h3 className="font-medium text-gray-200">2. Save the Document</h3>
-                                                        <p className="text-gray-300">Click the &quot;Save&quot; button to save the document to the library.</p>
+                                                    <p className="text-gray-300">Click the &quot;Save&quot; button to save the document to the library.</p>
                                                 </div>
                                                 <div className="p-3 border border-gray-700 rounded-lg">
                                                     <h3 className="font-medium text-gray-200">3. Open Library</h3>
-                                                        <p className="text-gray-300">Click the &quot;Library&quot; button in the left panel to open library with the saved documents. Select a document to view its details.</p>
+                                                    <p className="text-gray-300">Click the &quot;Library&quot; button in the left panel to open library with the saved documents. Select a document to view its details.</p>
                                                 </div>
                                                 <div className="p-3 border border-gray-700 rounded-lg">
                                                     <h3 className="font-medium text-gray-200">4. Edit the Document</h3>
@@ -834,14 +852,14 @@ END OF DOCUMENT: ${file.name}
                                                 <div className="p-3 border border-gray-700 rounded-lg">
                                                     <h3 className="font-medium text-gray-200">5. Import a Document</h3>
                                                     <p className="text-gray-300">
-                                                            Click the <Library className="inline w-4 h-4 mr-1" /> button and then &quot;Import&quot; to import a document from your local device.
+                                                        Click the <Library className="inline w-4 h-4 mr-1" /> button and then &quot;Import&quot; to import a document from your local device.
                                                     </p>
                                                 </div>
                                             </div>
                                         </section>
 
                                         <section>
-                                            <h2 className="text-xl font-semibold text-blue-400 mb-3">Tips for Effective Use</h2>
+                                            <h2 className="text-xl mt-4 font-semibold text-blue-400 mb-3">Tips for Effective Use</h2>
                                             <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                                                 <div className="flex items-start gap-3">
                                                     <div className="rounded-full bg-blue-500/20 p-2 mt-1">
@@ -1107,9 +1125,9 @@ END OF DOCUMENT: ${file.name}
                             onClick={() => { handleAddMD(); }}
                             className="p-2 text-gray-500 hover:text-gray-300 flex items-center gap-2"
                             disabled={isLoading}
-                            title="Add a local file for refinement."
+                            title="Add a local file to be refined."
                         >
-                            <FileText className="w-5 h-5" />
+                            <FileText className="w-5 h-5" /> {!docRefine && 'Add a file'}
                         </button>
                         <input
                             ref={mdFileInputRef}
