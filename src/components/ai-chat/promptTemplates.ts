@@ -279,14 +279,14 @@ Include search map search links to locations, trails, or routes.
     {
         title: "Domain/Topic3",
         category: "Domain Definition",
-        usage: "Business / Personal",
+        usage: "Test",
         content: `Help me define describe and scope the domain/topic described in the context below.:
 `
     },
     {
         title: "Domain/Topic2",
         category: "Planning",
-        usage: "Business",
+        usage: "Test",
         content:
             `
 Help me define and scope the following domain/topic:
