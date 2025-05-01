@@ -152,7 +152,7 @@ export default function DocumentPanel({
                                 <>
                                     <button
                                         onClick={() => { setMdContent(editContent); setIsEditing(false); }}
-                                        className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
+                                        className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
                                         title="Save changes"
                                     >
                                         <Check className="h-4 w-4" />
