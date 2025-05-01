@@ -481,6 +481,8 @@ const AIChatPage = () => {
                             <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
                         </button>
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
+                        <div className="flex items-center gap-2"></div>
+  
 
 
                     </div>

@@ -20,7 +20,7 @@ export async function POST(request: Request) {
     const systemPrompt2 = {
       role: 'system',
       content:
-`# Initial Context and Setup
+        `# Initial Context and Setup
 You are a powerful agentic AI domain expert, specializing in the domain described in the context. 
 Leverage your extensive knowledge to help comprehensively define and scope the domain in question clearly and precisely.
 You are an expert consultant with extensive domain knowledge.
@@ -69,7 +69,7 @@ Make sure the syntax is correct and the diagram renders properly.
       D --> E
   \`\`\`
       `}
-    
+
 
     // Define system prompt
     const systemPrompt = {
