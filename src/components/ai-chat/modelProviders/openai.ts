@@ -3,7 +3,7 @@ import { Message, callModelAPI } from '../modelApiHandler';
 /**
  * Call OpenAI API with provided messages and model
  */
-export async function callOpenAI(messages: Message[], model: string): Promise<string> {
+export async function callOpenAI(messages: Message[], model: string, temperature: number): Promise<string> {
   console.log('OpenAI API called with model:', model);
 
   return callModelAPI({
@@ -17,7 +17,7 @@ export async function callOpenAI(messages: Message[], model: string): Promise<st
     body: {
       model: model,
       messages: messages,
-      temperature: 0.7,
+      temperature: temperature || 0.7,
     },
     timeout: 10000, // OpenAI uses a shorter timeout
     responseHandler: (data) => data.choices[0].message.content

@@ -3,7 +3,7 @@ import { Message, callModelAPI } from '../modelApiHandler';
 /**
  * Call Deepseek API with provided messages and model
  */
-export async function callDeepseek(messages: Message[], model: string): Promise<string> {
+export async function callDeepseek(messages: Message[], model: string, temperature: number): Promise<string> {
   console.log('Deepseek API called with model:', model);
 
   return callModelAPI({
@@ -17,7 +17,7 @@ export async function callDeepseek(messages: Message[], model: string): Promise<
     body: {
       model: model,
       messages: messages,
-      temperature: 0.7
+      temperature: temperature || 0.7,
     },
     responseHandler: (data) => data.choices[0].message.content
   });

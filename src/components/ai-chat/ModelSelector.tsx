@@ -16,6 +16,7 @@ const AI_MODELS = [
     { id: 'mistral-small-latest', name: 'Mistral Small Latest' },
     { id: 'deepseek-chat', name: 'Deepseek-Chat' },
     { id: 'gpt-4o-mini', name: 'GPT-4o mini' },
+    // { id: 'qwen3', name: 'Qwen3' },
     // { id: 'mistral-7b', name: 'Mistral 7B' },
     // { id: 'gpt-4-16k', name: 'GPT-4 16k' },
     // { id: 'gpt-4-32k', name: 'GPT-4 32k' },

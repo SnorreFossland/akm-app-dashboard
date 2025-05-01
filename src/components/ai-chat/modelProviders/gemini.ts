@@ -3,7 +3,7 @@ import { Message, callModelAPI } from '../modelApiHandler';
 /**
  * Call Google Gemini API with provided messages and model
  */
-export async function callGemini(messages: Message[], model: string): Promise<string> {
+export async function callGemini(messages: Message[], model: string, temperature: number): Promise<string> {
   console.log('Gemini API called with model:', model);
 
   // Convert messages to Gemini format
@@ -22,7 +22,7 @@ export async function callGemini(messages: Message[], model: string): Promise<st
     body: {
       contents: formattedMessages,
       generationConfig: {
-        temperature: 0.7
+        temperature: temperature || 0.7,
       }
     },
     responseHandler: (data) => data.candidates[0].content.parts[0].text

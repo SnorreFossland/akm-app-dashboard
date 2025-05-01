@@ -5,7 +5,7 @@ import type { Message } from '@/components/ai-chat/modelApiHandler';
 export async function POST(request: Request) {
   try {
     // Extract request data
-    const { messages = [], model, temperature } = await request.json();
+    const { messages = [], model } = await request.json();
 
     // Input validation
     if (!messages || !Array.isArray(messages)) {
@@ -98,7 +98,7 @@ This will help me give you a more relevant and useful answer.`
     const updatedMessages = [systemPrompt, ...messages];
 
     // Get response from the appropriate model
-    const response = await getModelResponse(updatedMessages, model, temperature);
+    const response = await getModelResponse(updatedMessages, model);
 
     return NextResponse.json({ message: response }, { status: 200 });
   } catch (error) {

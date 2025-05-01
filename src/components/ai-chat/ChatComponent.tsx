@@ -18,6 +18,7 @@ import * as mammoth from 'mammoth';
 import ModelSelector from './ModelSelector';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
+// import { API_BASE_URL } from '@/config/apiConfig';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -79,6 +80,7 @@ export default function ChatComponent({
     const [inputState, setInputState] = useState<string | undefined>(chatInput);
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
+    const [temperature, setTemperature] = useState<number>(0.7); // Default value 0.7
 
     const [topHeight, setTopHeight] = useState<number>(600); // 
 
@@ -335,6 +337,23 @@ Just fix linguistic errors and improve readability where necessary.
             document.removeEventListener('mousedown', handleClickOutside);
         };
     }, []);
+
+    useEffect(() => {
+        // Load saved model preference from localStorage on component mount
+        const savedModel = localStorage.getItem('aiDashboard_selectedModel');
+        if (savedModel && savedModel !== selectedModel) {
+            setSelectedModel(savedModel);
+        }
+    }, []);
+
+    useEffect(() => {
+        // Load saved temperature preference from localStorage
+        const savedTemp = localStorage.getItem('aiDashboard_temperature');
+        if (savedTemp) {
+            setTemperature(parseFloat(savedTemp));
+        }
+    }, []);
+
     // open md picker
     const handleAddMD = () => {
         mdFileInputRef.current?.click();
@@ -636,7 +655,8 @@ END OF DOCUMENT: ${file.name}
             // Build the API request body
             const requestBody: any = {
                 messages: messagesToSend,
-                model: selectedModel
+                model: selectedModel,
+                temperature: temperature
             };
 
             // Log what we're sending (for debugging)
@@ -647,6 +667,7 @@ END OF DOCUMENT: ${file.name}
                 messagePreview: JSON.stringify(messagesToSend.slice(0, 2))
             });
 
+            // const response = await fetch(`${API_BASE_URL}/chat`, {
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -795,6 +816,32 @@ END OF DOCUMENT: ${file.name}
         );
     };
 
+    const TemperatureSelector = () => {
+        return (
+            <div className="flex flex-col items-center text-xs">
+                <div className="flex items-center gap-1">
+                    <span className="text-gray-400">Temp:</span>
+                    <select
+                        value={temperature}
+                        onChange={(e) => {
+                            const newTemp = parseFloat(e.target.value);
+                            setTemperature(newTemp);
+                            localStorage.setItem('aiDashboard_temperature', newTemp.toString());
+                        }}
+                        className="bg-popover border border-gray-600 rounded text-xs py-0 px-1"
+                        title="Temperature controls randomness. Lower values are more deterministic, higher values more creative."
+                    >
+                        <option value="0.0">0.0</option>
+                        <option value="0.3">0.3</option>
+                        <option value="0.5">0.5</option>
+                        <option value="0.7">0.7</option>
+                        <option value="1.0">1.0</option>
+                        <option value="1.2">1.2</option>
+                    </select>
+                </div>
+            </div>
+        );
+    };
     return (
         // Changed overflow-auto to overflow-hidden on the main container
         <div ref={containerRef} className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
@@ -802,7 +849,7 @@ END OF DOCUMENT: ${file.name}
             <div className="flex-1 min-h-0 overflow-y-auto pb-[150px]" id="message-container">
                 {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
                 {messages.length < 1 ? (
-                    <div className="flex flex-col items-center justify-start w-full py-6 overflow-auto">
+                    <div className="flex flex-col items-center justify-start w-full overflow-auto">
                         {showDigitalRain ? (
                             <div className=" ">
                                 <div className="absolute inset-0 z-20">
@@ -824,7 +871,7 @@ END OF DOCUMENT: ${file.name}
                         ) : (
                             <div className="flex-1 text-primary overflow-auto min-h-0">
                                 <div className="flex flex-col items-center justify-start w-full pb-6">
-                                    <div className="p-4 space-y- max-w-3xl mx-auto">
+                                    <div className="space-y- max-w-3xl mx-auto">
                                         <section>
                                             <h2 className="text-xl font-semibold text-blue-400 mb-3">Getting Started</h2>
                                             <div className="space-y-4">
@@ -1425,8 +1472,11 @@ END OF DOCUMENT: ${file.name}
                             selectedModel={selectedModel}
                             onModelChange={(newModel) => {
                                 setSelectedModel(newModel);
+                                // Persist selected model to localStorage
+                                localStorage.setItem('aiDashboard_selectedModel', newModel);
                             }}
                         />
+                        <TemperatureSelector />
                     </div>
 
                     {/* now include the send‐button here */}

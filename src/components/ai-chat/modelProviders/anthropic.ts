@@ -3,7 +3,7 @@ import { Message, callModelAPI } from '../modelApiHandler';
 /**
  * Call Claude API with provided messages and model
  */
-export async function callClaude(messages: Message[], model: string): Promise<string> {
+export async function callClaude(messages: Message[], model: string, temperature: number): Promise<string> {
   console.log('Claude API called with model:', model);
   const apiKey = process.env.ANTHROPIC_API_KEY;
 
@@ -29,7 +29,13 @@ export async function callClaude(messages: Message[], model: string): Promise<st
     body: {
       model: model,
       messages: formattedMessages,
-      max_tokens: 1000
+      temperature: temperature || 0.7,
+      // top_k: 40,
+      // top_p: 0.9,
+      // stop_sequences: ['\n\n'],
+      // Anthropic's API has a different max_tokens parameter
+      // compared to OpenAI's API. Adjust as needed.
+      // max_tokens_to_sample: 2000,
     },
     responseHandler: (data) => data.content[0].text
   });
