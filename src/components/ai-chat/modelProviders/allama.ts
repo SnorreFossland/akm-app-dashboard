@@ -37,13 +37,21 @@ export async function clearALLama(messages: Message[], model: string, temperatur
         stream: false
       })
     });
-    
     if (!response.ok) {
       const errorData = await response.json();
       throw new Error(`ALLama API error: ${response.status} ${JSON.stringify(errorData)}`);
     }
-    
-    const data = await response.json();
+
+    // Add interface for the response structure
+    interface ALLamaResponse {
+      choices: Array<{
+        message: {
+          content: string;
+        };
+      }>;
+    }
+
+    const data = await response.json() as ALLamaResponse;
     return data.choices[0].message.content;
   } catch (error) {
     console.error('Error calling ALLama API:', error);
