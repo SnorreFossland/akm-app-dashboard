@@ -74,12 +74,12 @@ Include the following sections:
     {title: "Meeting Summary",
         category: "Meetings",
         usage: "Business",
-        content: "Summarize the following meeting:\n\n**[Describe meeting here]**"
+        content: "Summarize the following meeting notes:"
     },
     { title: "Meeting Notes",
         category: "Meetings",
         usage: "Business",
-        content: "Summarize the following meeting notes into key points:\n\n**[Paste meeting notes here]**"
+        content: "Summarize the following meeting notes into key points:\n\n"
     },
     {title: "Content Outline",
         category: "Content Creation",

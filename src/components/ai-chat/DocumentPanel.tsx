@@ -142,22 +142,13 @@ export default function DocumentPanel({
                         </button>
                         {isEditing ? (
                             <>
-                                {/* <button
-                                    onClick={onPaste}
-                                    className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
-                                    title="Paste content"
+                                <button
+                                    onClick={() => { setMdContent(editContent); setIsEditing(false); }}
+                                    className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
+                                    title="Apply changes"
                                 >
-                                    <Clipboard className="h-4 w-4" />
-                                </button> */}
-                                <>
-                                    <button
-                                        onClick={() => { setMdContent(editContent); setIsEditing(false); }}
-                                        className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
-                                        title="Save changes"
-                                    >
-                                        <Check className="h-4 w-4" />
-                                    </button>
-                                </>
+                                    <Check className="h-4 w-4" />
+                                </button>
                             </>
                         ) : (
                             <button

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux'; // Add this import
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info } from 'lucide-react';
-
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
@@ -18,6 +18,8 @@ import * as mammoth from 'mammoth';
 import ModelSelector from './ModelSelector';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
+import DigitalRainIntro from './DigitalRainIntro';
+import GettingStartedGuide from './GettingStartedGuide';
 // import { API_BASE_URL } from '@/config/apiConfig';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -103,6 +105,7 @@ export default function ChatComponent({
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
     const [selectedCategory, setSelectedCategory] = useState<string>('Business');
     const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('');
+    const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
 
     // // Generate categories list dynamically from templates
     // const CATEGORIES = ["All", ...Array.from(
@@ -796,11 +799,13 @@ END OF DOCUMENT: ${file.name}
                 console.error('Failed to copy text: ', err);
             });
     };
-
-    const handleViewInMarkdown = (content: string) => {
-        if (onViewInMarkdown) {
-            onViewInMarkdown(content);
-            setShowLeftPanel(false);
+    const handleViewInMarkdown = (content: string, index: number) => {
+        if (previewMessageIndex === index) {
+            // Toggle off preview mode if clicking the same message
+            setPreviewMessageIndex(null);
+        } else {
+            // Set this message to preview mode
+            setPreviewMessageIndex(index);
         }
     };
 
@@ -851,140 +856,13 @@ END OF DOCUMENT: ${file.name}
                 {messages.length < 1 ? (
                     <div className="flex flex-col items-center justify-start w-full overflow-auto">
                         {showDigitalRain ? (
-                            <div className=" ">
-                                <div className="absolute inset-0 z-20">
-                                    <DigitalRain
-                                        onInteraction={() => setShowDigitalRain(false)}
-                                        speed={4}
-                                        backgroundColor="rgba(10, 20, 10, 0.03)"
-                                    />
-                                </div>
-                                <div className="absolute inset-0 z-20 flex items-center justify-center transform -translate-y-5">
-                                    <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-0 rounded-lg min-h-0">
-                                        <AnimatedAICircle className="absolute inset-0 z-0" />
-                                    </div>
-                                </div>
-                                <div className="z-20 m-5 text-green-400 text-xl font-mono text-center">
-                                    Click to start typing...
-                                </div>
-                            </div>
+                            <DigitalRainIntro
+                                onInteraction={() => setShowDigitalRain(false)}
+                                speed={4}
+                                backgroundColor="rgba(10, 20, 10, 0.03)"
+                            />
                         ) : (
-                            <div className="flex-1 text-primary overflow-auto min-h-0">
-                                <div className="flex flex-col items-center justify-start w-full pb-6">
-                                    <div className="space-y- max-w-3xl mx-auto">
-                                        <section>
-                                            <h2 className="text-xl font-semibold text-blue-400 mb-3">Getting Started</h2>
-                                            <div className="space-y-4">
-                                                <div>
-                                                    <h3 className="text-lg font-medium text-gray-200">1. Ask a Question Directly</h3>
-                                                    <ul className="list-disc pl-6 mt-1 text-gray-300">
-                                                        <li>Type your question in the provided input area.</li>
-                                                        <li>Click the up-arrow to send your question to the AI.</li>
-                                                    </ul>
-                                                </div>
-
-                                                <div>
-                                                    <h3 className="text-lg font-medium text-gray-200">2. Use Prompt Templates</h3>
-                                                    <ul className="list-disc pl-6 mt-1 text-gray-300">
-                                                        <li>Select a prompt template from the dropdown menu above the input area.</li>
-                                                        <li>You can add a local file to use as context for your prompt.</li>
-                                                    </ul>
-                                                </div>
-
-                                                <div>
-                                                    <h3 className="text-lg font-medium text-gray-200">Add a local file to change or use as context to your questions.</h3>
-                                                    <ul className="list-disc pl-6 mt-1 text-gray-300">
-                                                        <li>
-                                                            <strong>Alternative 1 Change: </strong>
-                                                            Click the <FileText className="inline w-4 h-4 mr-1" /> button above the input area to select a file for change.
-                                                        </li>
-                                                        <li>
-                                                            <strong>Alternative 2 Context: </strong>
-                                                            Click the <Paperclip className="inline w-4 h-4 mr-1" /> button below the input area to select a file as context.
-                                                        </li>
-                                                        <li>
-                                                            <strong>Alternative 3 use the left panel: </strong>
-                                                            Click the upper left button to open the left panel .
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        <section>
-                                            <h2 className="text-xl font-semibold text-blue-400 my-3">Working with the AI Response</h2>
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                                <div className="p-3 border border-gray-700 rounded-lg">
-                                                    <h3 className="font-medium text-gray-200">1. Preview the Response</h3>
-                                                    <p className="text-gray-300">Click the &quot;Preview&quot; button to see the generated document in the right panel.</p>
-                                                </div>
-                                                <div className="p-3 border border-gray-700 rounded-lg">
-                                                    <h3 className="font-medium text-gray-200">2. Save the Document</h3>
-                                                    <p className="text-gray-300">Click the &quot;Save&quot; button to save the document to the library.</p>
-                                                </div>
-                                                <div className="p-3 border border-gray-700 rounded-lg">
-                                                    <h3 className="font-medium text-gray-200">3. Open Library</h3>
-                                                    <p className="text-gray-300">Click the &quot;Library&quot; button in the left panel to open library with the saved documents. Select a document to view its details.</p>
-                                                </div>
-                                                <div className="p-3 border border-gray-700 rounded-lg">
-                                                    <h3 className="font-medium text-gray-200">4. Edit the Document</h3>
-                                                    <p className="text-gray-300">
-                                                        Click the &quot;Edit&quot; button to make any changes to the document. Click the <BookmarkPlus className="inline text-bold h-4 w-4" /> button to apply your changes and save to library.
-                                                    </p>
-                                                </div>
-                                                <div className="p-3 border border-gray-700 rounded-lg">
-                                                    <h3 className="font-medium text-gray-200">5. Import a Document</h3>
-                                                    <p className="text-gray-300">
-                                                        Click the <Library className="inline w-4 h-4 mr-1" /> button and then &quot;Import&quot; to import a document from your local device.
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </section>
-
-                                        <section>
-                                            <h2 className="text-xl mt-4 font-semibold text-blue-400 mb-3">Tips for Effective Use</h2>
-                                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-                                                <div className="flex items-start gap-3">
-                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
-                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-gray-200">Be Specific</h3>
-                                                        <p className="text-gray-300">The more detailed your question or topic description, the better the AI can assist you.</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
-                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-gray-200">Use Templates Wisely</h3>
-                                                        <p className="text-gray-300">Templates can save you time and ensure you cover all necessary points.</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
-                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-gray-200">Review and Edit</h3>
-                                                        <p className="text-gray-300">Always review the generated content and make edits as needed to ensure accuracy and relevance.</p>
-                                                    </div>
-                                                </div>
-                                                <div className="flex items-start gap-3">
-                                                    <div className="rounded-full bg-blue-500/20 p-2 mt-1">
-                                                        <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-medium text-gray-200">Save and Organize</h3>
-                                                        <p className="text-gray-300">Use the library feature to keep your documents organized and easily accessible.</p>
-                                                    </div>
-                                                </div>
-                                            </div>
-                                        </section>
-                                    </div>
-                                </div>
-                            </div>
+                            <GettingStartedGuide />
                         )}
                     </div>
 
@@ -1034,63 +912,45 @@ END OF DOCUMENT: ${file.name}
                                     )}
                                 </div>
                                 <div className="text-xs text-gray-400 me-auto overflow-auto">
-                                    {message.role === 'user' ? 'You' : `Assistant(${selectedModel})`}
+                                    {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
                                 </div>
 
-
                                 {message.role === 'assistant' && (
-                                    <>
+                                    <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                        {message.role === 'assistant' && (
+                                            <>
+                                                {/* Add Save to Library button */}
+                                                <button
+                                                    title="Save to Library"
+                                                    onClick={() => handleSaveToLibrary(message.content)}
+                                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                                                >
 
-                                        {/* Add Save to Library button */}
-                                        <button
-                                            title="Save to Library"
-                                            onClick={() => handleSaveToLibrary(message.content)}
-                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                                        >
+                                                    <BookmarkPlus className="h-4 w-4" />
+                                                </button>
 
-                                            <BookmarkPlus className="h-4 w-4" />
-                                        </button>
-
-                                        <button
-                                            title="Save to File"
-                                            onClick={() => handleSaveToFile(message.content)}
-                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
-                                        >
-                                            <Save className="h-4 w-4" />
-                                        </button>
-                                        <button
-                                            title="Copy message"
-                                            onClick={() => handleCopyMessage(message.content, index)}
-                                            className="ms-2 text-xs text-gray-400 hover:text-gray-200"
-                                        >
-                                            {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                        </button>
-                                        <button
-                                            onClick={() => handleViewInMarkdown(message.content)}
-                                            className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
-                                        >
-                                            Markdown Preview
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                width="18"
-                                                height="18"
-                                                viewBox="0 0 24 24"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                className="inline-block"
-                                            >
-                                                <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
-                                                <path
-                                                    d="M8 7h9v9"
-                                                    strokeWidth="2"
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                />
-                                            </svg>
-                                        </button>
-
-                                    </>
-
+                                                <button
+                                                    title="Save to File"
+                                                    onClick={() => handleSaveToFile(message.content)}
+                                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                                >
+                                                    <Save className="h-4 w-4" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleCopyMessage(message.content, index)}
+                                                    className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                                >
+                                                    {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                                </button>
+                                                <button
+                                                    onClick={() => handleViewInMarkdown(message.content, index)}
+                                                    className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                                >
+                                                    {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
+                                                </button>
+                                            </>
+                                        )}
+                                    </div>
                                 )}
                             </div>
 
@@ -1099,7 +959,13 @@ END OF DOCUMENT: ${file.name}
                                 className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
                                 style={{ overflowWrap: 'anywhere' }}
                             >
-                                {message.content}
+                                {previewMessageIndex === index ? (
+                                    <div className="prose prose-invert custom-markdown markdown-preview w-full">
+                                        <MarkdownPreview mdPreview={message.content} />
+                                    </div>
+                                ) : (
+                                    message.content
+                                )}
                             </div>
 
                             {/*  bottom buttons */}
@@ -1131,27 +997,10 @@ END OF DOCUMENT: ${file.name}
                                                 {copiedIndex === index ? 'Copied!' : 'Copy'}
                                             </button>
                                             <button
-                                                onClick={() => handleViewInMarkdown(message.content)}
+                                                onClick={() => handleViewInMarkdown(message.content, index)}
                                                 className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                             >
-                                                Markdown Preview
-                                                <svg
-                                                    xmlns="http://www.w3.org/2000/svg"
-                                                    width="18"
-                                                    height="18"
-                                                    viewBox="0 0 24 24"
-                                                    fill="none"
-                                                    stroke="currentColor"
-                                                    className="inline-block"
-                                                >
-                                                    <path d="M17 7l-9.9 9.9" strokeWidth="2" strokeLinecap="round" />
-                                                    <path
-                                                        d="M8 7h9v9"
-                                                        strokeWidth="2"
-                                                        strokeLinecap="round"
-                                                        strokeLinejoin="round"
-                                                    />
-                                                </svg>
+                                                {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
                                             </button>
                                         </>
                                     )}

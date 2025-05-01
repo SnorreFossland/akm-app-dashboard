@@ -30,9 +30,7 @@ const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
     const [showLeftPanel, setShowLeftPanel] = useState(false);
-    const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(550);
-    const [rightPanelWidth, setRightPanelWidth] = useState(400);
     const [input, setInput] = useState<string>("");
     const [editableContent, setEditableContent] = useState('');
     const [domainContent, setDomainContent] = useState('');
@@ -132,33 +130,19 @@ const AIChatPage = () => {
                 edgeLabelBorder: '#1e3a8a',
             }
         });
-        setShowRightPanel(false);
     }, []);
 
     // Check device type on component mount'
     useEffect(() => {
         const checkDeviceType = () => {
-            // Check if it's a larger screen device
-            const isDesktop = window.innerWidth >= 768; // Typical tablet/desktop breakpoint
-            // setShowLeftPanel(isDesktop);
-            setShowLeftPanel(false);
+            // Only change panel state on initial load, not on every resize
+            if (!showLeftPanel) {
+                // You can enable this if you want panel to open on desktop initially
+                const isDesktop = window.innerWidth >= 768;
+            }
         };
         checkDeviceType();
-        // Also update on resize for orientation changes
-        window.addEventListener('resize', checkDeviceType);
-        return () => window.removeEventListener('resize', checkDeviceType);
     }, []);
-
-    // Add this useEffect to adjust right panel width when left panel visibility changes
-    useEffect(() => {
-        if (!showLeftPanel) {
-            // When left panel closes, make right panel wider
-            setRightPanelWidth(Math.min(800, window.innerWidth / 2));
-        } else {
-            // When left panel opens, set right panel to a fixed width
-            setRightPanelWidth(400);
-        }
-    }, [showLeftPanel]);
 
     useEffect(() => {
         if (mdPreview && mdPreview.includes('mermaid') && !isEditing) {
@@ -318,16 +302,12 @@ const AIChatPage = () => {
     const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
         const startX = e.clientX;
         const startLeftWidth = leftPanelWidth;
-        const startRightWidth = rightPanelWidth;
         const onMouseMove = (event: MouseEvent) => {
             const deltaX = event.clientX - startX;
 
             if (panel === 'left') {
                 const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH(), startLeftWidth + deltaX));
                 setLeftPanelWidth(newWidth);
-            } else if (panel === 'right') {
-                const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH(), startRightWidth - deltaX));
-                setRightPanelWidth(newWidth);
             }
         };
         const onMouseUp = () => {
@@ -353,7 +333,6 @@ const AIChatPage = () => {
         };
         const cleanedResponse = cleanResponse(response);
         setMdPreview(cleanedResponse);
-        setShowRightPanel(true); // Ensure the right panel is shown
         setShowLeftPanel(false); // Hide the left panel when viewing markdown
     };
 
@@ -503,19 +482,6 @@ const AIChatPage = () => {
                         </button>
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
 
-                        <button
-                            onClick={() => setShowRightPanel(!showRightPanel)}
-                            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                            title='Show Markdown'
-                        >
-                            <span>
-                                <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <line x1="10" y1="17" x2="22" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                            </span>
-                            <span className="ml-1 hidden sm:inline">{!showRightPanel}</span>
-                        </button>
 
                     </div>
                     <div className="mx-auto max-w-[1200px] h-full overflow-auto">
@@ -535,77 +501,6 @@ const AIChatPage = () => {
                         />
                     </div>
                 </div>
-
-                {/* Draggable Bar for Right Panel */}
-                {showRightPanel && (
-                    <div
-                        className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative"
-                        onMouseDown={(e) => {
-                            if (!showRightPanel) setShowRightPanel(true);
-                            handleMouseDown(e, 'right');
-                        }}
-                    >
-                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1.5 sm:w-2 mx-auto"></div>
-                    </div>
-                )}
-
-                {/* Right Panel: Markdown Preview */}
-                {showRightPanel && (
-                    <div className="flex-shrink-0 bg-primary-foreground p-1 sm:px-2 overflow-auto"
-                        style={{
-                            width: `${rightPanelWidth}px`,
-                        }}
-                    >
-                        <div className="flex items-center justify-between m-1 sm:m-2">
-                            <h2 className="text-lg sm:text-xl font-bold text-blue-400 whitespace-nowrap overflow-hidden text-ellipsis text-center flex-1">
-                                Output: Markdown Preview
-                            </h2>
-                        </div>
-
-                        <div className="flex items-center justify-end space-x-2">
-
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(mdPreview);
-                                    // You could show a temporary "Copied!" tooltip here
-                                    const button = document.activeElement as HTMLButtonElement;
-                                    const originalText = button.textContent;
-                                    button.textContent = "Copied!";
-                                    setTimeout(() => {
-                                        button.textContent = originalText;
-                                    }, 2000);
-                                }}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded flex items-center gap-1"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                                </svg>
-                                <span>Copy</span>
-                            </button>
-                            <button
-                                onClick={() => setIsEditing(!isEditing)}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded flex items-center gap-1"
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <path d="M23 4v6h-6"></path>
-                                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                                </svg>
-                                <span>{isEditing ? 'Refresh' : 'Refresh'}</span>
-                            </button>
-                        </div>
-                        {/* Either render a textarea or a preview */}
-                        {isEditing ? (
-                            <div className="prose prose-invert custom-markdown markdown-preview condensed-prose bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
-                                <MarkdownPreview mdPreview={mdPreview} />
-                            </div>
-                        ) : (
-                            <div className="prose prose-invert custom-markdown markdown-preview condensed-prose bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] whitespace-pre-wrap break-words">
-                                <MarkdownPreview mdPreview={mdPreview} />
-                            </div>
-                        )}
-                    </div>
-                )}
             </div >
             <div className="flex w-full max-h-[5px] justify-center items-center mt-1">
                 <hr className="border-gray-700 w-full" />

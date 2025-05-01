@@ -1,7 +1,7 @@
 import React, { useEffect, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-import rehypeHighlight from 'rehype-highlight';
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
+import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import rehypeRaw from 'rehype-raw';
 import mermaid from 'mermaid';
 
@@ -27,14 +27,18 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
         }
     }, [])
 
+    if (!mdPreview) {
+        return <div className="text-gray-400 p-4">No content to display</div>;
+    }
+
     return (
         <>
             {/* Add global styles for code blocks to ensure they don't expand containers */}
 
-            <div className="prose prose-invert custom-markdown markdown-preview text-card-foreground p-4 rounded-md overflow-auto max-h-[80vh] max-w-[800px] mx-auto whitespace-pre-wrap break-words break-all">
+            <div className="prose prose-invert custom-markdown markdown-preview text-card-foreground p-4 rounded-md overflow-auto max-h-[80vh] max-w-[800px] mx-auto whitespace-pre-wrap break-words break-all leading-tight">
                 <ReactMarkdown
-                    remarkPlugins={[remarkGfm]} // Enables GitHub-flavored Markdown
-                    rehypePlugins={[rehypeHighlight, rehypeRaw]} // Added rehypeRaw to process HTML
+                    remarkPlugins={[/* Your plugins here */]}
+                    rehypePlugins={[rehypeRaw]}
                     components={{
                         code: ({ node, inline, className, children, ...props }: any) => {
                             const match = /language-(\w+)/.exec(className || '');
@@ -46,14 +50,16 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
                                     </div>
                                 );
                             }
-
                             // Handle other code blocks with proper formatting
                             return !inline && match ? (
-                                <pre className={`language-${match[1]} overflow-auto`}>
-                                    <code className={`${className} break-all`} {...props}>
-                                        {children}
-                                    </code>
-                                </pre>
+                                <SyntaxHighlighter
+                                    {...props}
+                                    style={atomDark}
+                                    language={match[1]}
+                                    PreTag="div"
+                                >
+                                    {String(children).replace(/\n$/, '')}
+                                </SyntaxHighlighter>
                             ) : (
                                 <code className={`${className || ''} break-all`} {...props}>
                                     {children}
@@ -65,29 +71,6 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
                     {mdPreview}
                 </ReactMarkdown>
             </div>
-            <style jsx global>{`
-                .markdown-preview pre {
-                    max-width: 100%;
-                    overflow-x: auto;
-                    white-space: pre-wrap;
-                    word-break: break-word;
-                }
-                .markdown-preview code {
-                    word-break: break-all;
-                    white-space: pre-wrap;
-                }
-                .markdown-preview table {
-                    display: block;
-                    max-width: 100%;
-                    overflow-x: auto;
-                }
-                .markdown-preview pre > code {
-                    display: block;
-                    padding: 1em;
-                    background-color: #1e1e1e;
-                    border-radius: 0.3em;
-                }
-            `}</style>
         </>
     );
 };
