@@ -20,6 +20,7 @@ import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from './DigitalRainIntro';
 import GettingStartedGuide from './GettingStartedGuide';
+import { REFINE_TEMPLATES } from './refineTemplates'
 // import { API_BASE_URL } from '@/config/apiConfig';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -99,11 +100,13 @@ export default function ChatComponent({
     const previousModelRef = useRef<string | null>(null);
     const mdFileInputRef = useRef<HTMLInputElement>(null);
     const [docRefine, setDocRefine] = useState(false);
+    const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
+    const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
 
     const containerRef = useRef<HTMLDivElement>(null);
     // Add right after your state definitions
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
-    const [selectedCategory, setSelectedCategory] = useState<string>('Business');
+    const [selectedCategory, setSelectedCategory] = useState<string>('Personal');
     const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('');
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
 
@@ -125,39 +128,8 @@ export default function ChatComponent({
         ? PROMPT_TEMPLATES
         : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
     // Define templates for document refinement
-    const refineTemplates = {
-        "Translate Document": `Please translate the content below accurately while preserving the meaning, tone, and format.
-Maintain all original paragraph breaks, bullet points, and document structure.
-Keep specialized terminology intact or provide appropriate equivalents in the target language.
-If you encounter culturally specific references, provide appropriate context or alternatives. 
-Target language: [specify language here]
-        `,
-        "Summarize Document": `Please provide a summary of the content below.
-Highlight any conclusions or recommendations presented in the document.
+    const refineTemplates = REFINE_TEMPLATES;
 
-`,
-        "General Refinement": `Please revise the content below for clarity, style, and grammar.
-Your task is to improve and refine the text, not to analyze it.
-Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-`,
-
-        "Academic Style": `Please refine the content below to follow academic writing standards.
-Ensure proper citations, formal language, logical structure, and reduce redundancy. 
-Make the arguments more rigorous and well-supported.
-`,
-        "Technical Documentation": `Transform this content below into professional technical documentation.
-Improve clarity, use consistent terminology, add proper headings and structure.
-Make sure explanations are precise and easy to follow for technical readers.
-`,
-        "Marketing Copy": `Revise this content below to be more persuasive and engaging marketing copy.
-Enhance customer benefits, use action-oriented language, create emotional appeal.
-Make it more concise and impactful for potential customers.
-`,
-        "Check Grammar & Spelling": `Revise the content below. Focus only on correcting grammar, spelling, and punctuation errors in the text below.
-Do not alter the content, structure, or meaning of the text.
-Just fix linguistic errors and improve readability where necessary.
-`
-    };
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
         if (inactivityTimerRef.current) {
@@ -357,6 +329,105 @@ Just fix linguistic errors and improve readability where necessary.
         }
     }, []);
 
+    // Function to detect placeholders in the format [placeholder]
+    useEffect(() => {
+        if (!input) {
+            setTemplatePlaceholders([]);
+            return;
+        }
+
+        const placeholderRegex = /\[([^\[\]]+)\]/g;
+        const placeholders: { text: string, start: number, end: number }[] = [];
+        let match;
+
+        while ((match = placeholderRegex.exec(input)) !== null) {
+            placeholders.push({
+                text: match[1],
+                start: match.index,
+                end: match.index + match[0].length
+            });
+        }
+
+        setTemplatePlaceholders(placeholders);
+    }, [input]);
+
+    // Function to select and jump to a placeholder
+    const selectTemplatePlaceholder = (idx: number) => {
+        if (!textareaRef.current) return;
+
+        const placeholder = templatePlaceholders[idx];
+        if (!placeholder) return;
+
+        // Focus the textarea
+        textareaRef.current.focus();
+
+        // Set selection range to highlight the placeholder
+        textareaRef.current.setSelectionRange(
+            placeholder.start,
+            placeholder.end
+        );
+
+        // Scroll the placeholder into view if needed
+        const textarea = textareaRef.current;
+
+        // Get character position information
+        const charInfo = getCaretCoordinates(textarea, placeholder.start);
+
+        // Calculate scroll position
+        if (charInfo) {
+            const scrollTop = textarea.scrollTop;
+            const offsetTop = charInfo.top;
+            const textareaHeight = textarea.clientHeight;
+
+            // Adjust scroll if needed to ensure the placeholder is visible
+            if (offsetTop < scrollTop || offsetTop > scrollTop + textareaHeight - 30) {
+                textarea.scrollTop = Math.max(0, offsetTop - textareaHeight / 2);
+            }
+        }
+    };
+
+    // Helper function to get caret coordinates in a textarea
+    function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
+        // Create a dummy element to measure text dimensions
+        const div = document.createElement('div');
+        // Copy styles that affect dimensions
+        const styles = window.getComputedStyle(element);
+        const props = [
+            'fontFamily', 'fontSize', 'fontWeight', 'letterSpacing',
+            'paddingLeft', 'paddingTop', 'paddingRight', 'paddingBottom',
+            'width', 'lineHeight', 'textAlign', 'wordSpacing', 'whiteSpace'
+        ];
+
+        props.forEach(prop => {
+            const value = styles[prop as keyof typeof styles];
+            div.style[prop as any] = value !== null ? value.toString() : '';
+        });
+
+        // Set content up to the caret position
+        div.textContent = element.value.substring(0, position);
+
+        // Create a span where the caret would be
+        const span = document.createElement('span');
+        span.textContent = element.value.charAt(position) || '.';
+        div.appendChild(span);
+
+        // Position absolutely out of view
+        div.style.position = 'absolute';
+        div.style.visibility = 'hidden';
+        document.body.appendChild(div);
+
+        // Measure position
+        const rect = span.getBoundingClientRect();
+        const result = {
+            top: rect.top - div.getBoundingClientRect().top,
+            left: rect.left - div.getBoundingClientRect().left,
+            height: rect.height
+        };
+
+        document.body.removeChild(div);
+        return result;
+    }
+
     // open md picker
     const handleAddMD = () => {
         mdFileInputRef.current?.click();
@@ -368,7 +439,6 @@ Just fix linguistic errors and improve readability where necessary.
 Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
 Your task is to improve and refine the text, not to analyze it.
 Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-
 `
     )
 
@@ -464,24 +534,13 @@ Do not use its contents as contextual input for other questions--I want it impro
         //         return `[Failed to extract text from PDF file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
         //     }
         // }
-
         // For other binary files, provide a more explicit message about limitations
         return `[File: ${fileName}
 Type: ${fileType.toUpperCase()} (Binary file)
 Size: ${(file.size / 1024).toFixed(1)} KB
-
-IMPORTANT NOTE FOR AI: This is a binary file and its contents CANNOT be directly accessed or analyzed. 
-When users upload binary files like PDF, you MUST explicitly inform them that:
-"I'm sorry, but I'm unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
-
-Then offer to help them if they provide the text in another way:
-"However, I can help if you copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
-
-UNDER NO CIRCUMSTANCES should you pretend to have read or analyzed the contents of this binary file.
-
-File type: ${fileType.toUpperCase()} 
-File size: ${(file.size / 1024).toFixed(1)} KB
-Last modified: ${new Date(file.lastModified).toLocaleString()}]`;
+"I'm sorry, but AI unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
+"However, you can copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
+`;
     };
 
     const handleSaveToLibrary = (content: string) => {
@@ -773,7 +832,7 @@ END OF DOCUMENT: ${file.name}
         if (docRefine) {
             userMessageContent = `${userMessageContent} #content:\n ${mdContent}`;
         } else {
-            userMessageContent = `${userMessageContent} #context:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} ${mdContent}`;
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
@@ -1211,6 +1270,24 @@ END OF DOCUMENT: ${file.name}
 
             {/* START FORM */}
             <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
+                {/* Add placeholder jump buttons */}
+                {templatePlaceholders.length > 0 && (
+                    <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                        <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                        {templatePlaceholders.map((placeholder, idx) => (
+                            <button
+                                key={idx}
+                                type="button" // Add this to prevent form submission
+                                onClick={() => selectTemplatePlaceholder(idx)}
+                                className={buttonAccent}
+                            >
+                                {placeholder.text.length > 50
+                                    ? `${placeholder.text.substring(0, 49)}...`
+                                    : placeholder.text}
+                            </button>
+                        ))}
+                    </div>
+                )}
                 <TextareaAutosize
                     ref={textareaRef}
                     value={input || ''}
@@ -1227,6 +1304,27 @@ END OF DOCUMENT: ${file.name}
                                 textarea.lastEnterTime = 0;
                             } else {
                                 textarea.lastEnterTime = now;
+                            }
+                        }
+
+                        // Add tab key navigation for placeholders
+                        if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                            e.preventDefault(); // Prevent default tab behavior
+
+                            // Get current cursor position
+                            const cursorPos = e.currentTarget.selectionStart;
+
+                            // Find the next placeholder after cursor position
+                            let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                            // If no next placeholder, loop back to the first one
+                            if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                nextPlaceholder = templatePlaceholders[0];
+                            }
+
+                            // Select the placeholder if found
+                            if (nextPlaceholder) {
+                                selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
                             }
                         }
                     }}

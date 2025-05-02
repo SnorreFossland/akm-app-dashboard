@@ -8,7 +8,7 @@ export interface PromptTemplate {
 
 // Export the templates array
 export const PROMPT_TEMPLATES: PromptTemplate[] = [
-    { title: "Brainstorming Ideas", category: "Brainstorming", usage: "Personal", content: "Generate ideas for the topic described in the context below" },
+    { title: "Brainstorming Ideas", category: "Brainstorming", usage: "Business", content: "Generate ideas for the topic described in the context below" },
     {title: "Task List", category: "Task Management", usage: "Personal",content: "Create a task list for the topic described in the context below." },
     { title: "Project Plan", category: "Planning",usage: "Business", content:
 `Make a project plan for a project within the domain/topic described in the context below.
@@ -43,6 +43,12 @@ Include the following sections:
 6. Dependencies & Risks
 7. Stakeholders & Owners
 ` 
+    },
+    {
+        title: "SWOT Analysis",
+        category: "Analysis",
+        usage: "Business",
+        content: "Conduct a SWOT analysis for the business described in the context below."
     },
 
     {title: "Learning Plan",
@@ -121,7 +127,7 @@ Include the following sections:
         usage: "Business",
         content: "Outline a marketing strategy for the following product:\n\n**[Describe product here]**"
     },
-    {title: "Press Release",
+    { title: "Press Release",
         category: "Marketing",
         usage: "Business",
         content: "Draft a press release for the following event:\n\n**[Describe event here]** about the topic in the domain/topic described in the context below."
@@ -136,11 +142,7 @@ Include the following sections:
         usage: "Business",
         content: "Create a user journey map for the user experience described in the context below."
     },
-    {title: "SWOT Analysis",
-        category: "Analysis",
-        usage: "Business",
-        content: "Conduct a SWOT analysis for the business described in the context below."
-    },
+
     {title: "Competitive Analysis",
         category: "Analysis",
         usage: "Business",
@@ -219,28 +221,40 @@ Include the following sections:
         content: "Please review the following code and provide feedback:\n\n**[Paste code here]**"
     },
     {
-        title: "Custom",
-        category: "Custom",
-        usage: "Personal",
-        content: ""
-    },
-    {
         title: "Plan a walk",
         category: "Exercise",
         usage: "Personal",
         content:
-`
-Plan a walk for the with focus on the context below.
-Include:
-1.  Location: [Insert location]
-2.  Distance: [Insert distance]
-3.  Duration: [Insert duration]
-4.  Time of day: [Insert time of day]
-5. Landmarks: [Insert any specific landmarks or points of interest]
-Include  map search links to locations, trails, or routes
-Make sure the links are clickable and works
-Make the walk fun and engaging but as choose the shortest continous route possible
+`Plan a walk with the following context:
+1. Location: [Insert location]
+2. Distance: [Insert distance]
+3. Duration: [Insert duration]
+4. Time of day: [Insert time of day]
+5. Landmarks: [Insert landmarks]
+6. Include a list of interesting places to visit along the way.
+Make the walk fun and engaging, choosing the shortest continuous route possible.
+Include a map link to nearby locations, and complete route.
+Make sure its only local routes, not long-distance travel or car and public transport.
+Output all map links as raw HTML anchor tags, for example:
+<a className="text-blue-500" href="https://maps.google.com/?q=Oslo" target="_blank" rel="noopener noreferrer">View on Google Maps</a>
+Ensure every link uses target="_blank".
+Do not include long-distance travel or public transport.
     `
+    },
+    {
+        title: "Plan a run",
+        category: "Exercise",
+        usage: "Personal",
+        content:
+`Plan a local run:
+1.  Location: [Insert location]
+2.  Duration: [Insert duration]
+Check for nearby locality for any running trails or parks.
+Include a map link for the local route, do not include long-distance travel or car and public transport.
+Output all map links as raw HTML anchor tags, for example:
+<a className="text-blue-500" href="https://maps.google.com/?q=Oslo" target="_blank" rel="noopener noreferrer">View on Google Maps</a>
+Ensure every link uses target="_blank".
+`
     },
     {
         title: "Domain",
@@ -261,57 +275,46 @@ Outline existing constraints, limitations, and boundaries (technical, organizati
 Success criteria 
 Define clear, measurable, and achievable indicators of success
 `
-    },
-    {
-        title: "Plan a run",
-        category: "Exercise",
-        usage: "Personal",
-        content:
-`
-Plan a run for the with focus on the context below.
-Include:
-1.  Location: [Insert location]
-2.  Distance: [Insert distance]
-3.  Duration: [Insert duration]
-Include search map search links to locations, trails, or routes.
-`
-    },
-    {
-        title: "Domain/Topic3",
-        category: "Domain Definition",
-        usage: "Test",
-        content: `Help me define describe and scope the domain/topic described in the context below.:
-`
-    },
-    {
-        title: "Domain/Topic2",
-        category: "Planning",
-        usage: "Test",
-        content:
-            `
-Help me define and scope the following domain/topic:
-Domain Identification:
-	•	Domain Name: **[Insert concise and specific name]**
-	•	Domain Description: **[Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]**
-Domain scope: 
-	•	In-Scope: **[Explicitly list the elements, activities, or areas included within the domain.]**
-	•	Out-of-Scope: **[Clearly specify what aspects are explicitly excluded from the domain.]**
-Key Domain Concepts and Terms
-	•	Core Concepts: **[List critical concepts fundamental to understanding the domain.]**
-	•	Relevant Keywords: **[Provide key terminologies, acronyms, and types relevant to the domain.]**
-Primary objectives: **[Clearly define the main goals or outcomes this domain aims to achieve]**
-Key stakeholders:
-Identify and categorize stakeholders by their roles or involvement:
-	•	Primary Stakeholders: **[Directly involved individuals or groups]**
-	•	Secondary Stakeholders: **[Indirectly impacted individuals or groups]**
-Current limitations and Boundaries:
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-    •	Constraint/Boundary 1
-	•	Constraint/Boundary 2
-Success criteria: 
-Define clear, measurable, and achievable indicators of success:
-	•	**[Success Criterion 1]** (Measurable)
-	•	**[Success Criterion 2]** (Measurable)
-`
     }
-];
+]
+
+
+//     {
+//         title: "Domain/Topic3",
+//         category: "Domain Definition",
+//         usage: "Test",
+//         content: `Help me define describe and scope the domain/topic described in the context below.:
+// `
+//     },
+//     {
+//         title: "Domain/Topic2",
+//         category: "Planning",
+//         usage: "Test",
+//         content:
+//             `
+// Help me define and scope the following domain/topic:
+// Domain Identification:
+// 	•	Domain Name: **[Insert concise and specific name]**
+// 	•	Domain Description: **[Provide a clear, concise summary (2-3 sentences) that captures the essence and significance of the domain.]**
+// Domain scope: 
+// 	•	In-Scope: **[Explicitly list the elements, activities, or areas included within the domain.]**
+// 	•	Out-of-Scope: **[Clearly specify what aspects are explicitly excluded from the domain.]**
+// Key Domain Concepts and Terms
+// 	•	Core Concepts: **[List critical concepts fundamental to understanding the domain.]**
+// 	•	Relevant Keywords: **[Provide key terminologies, acronyms, and types relevant to the domain.]**
+// Primary objectives: **[Clearly define the main goals or outcomes this domain aims to achieve]**
+// Key stakeholders:
+// Identify and categorize stakeholders by their roles or involvement:
+// 	•	Primary Stakeholders: **[Directly involved individuals or groups]**
+// 	•	Secondary Stakeholders: **[Indirectly impacted individuals or groups]**
+// Current limitations and Boundaries:
+// Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+//     •	Constraint/Boundary 1
+// 	•	Constraint/Boundary 2
+// Success criteria: 
+// Define clear, measurable, and achievable indicators of success:
+// 	•	**[Success Criterion 1]** (Measurable)
+// 	•	**[Success Criterion 2]** (Measurable)
+// `
+//     }
+// ];

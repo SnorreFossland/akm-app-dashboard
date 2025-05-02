@@ -34,7 +34,7 @@ export async function getModelResponse(messages: Message[], model: string, tempe
     "```\n",
     `\nThe current timestamp is: ${new Date().toISOString()}`
   ];
-
+  console.log(`Model: ${model} - Temperature: ${temperature} - Messages: ${JSON.stringify(messages)}`);
   if (model.startsWith('gpt')) {
     return callOpenAI(messages, model, temperature);
   } else if (model.startsWith('llama')) {

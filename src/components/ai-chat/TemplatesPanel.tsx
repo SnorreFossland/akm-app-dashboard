@@ -92,59 +92,80 @@ export default function TemplatesPanel({
     }, []);
     // Find all placeholders when content changes, but exclude those within mermaid diagrams
     useEffect(() => {
-        let content = '';
-        if (editableContent && editableContent !== initialDomainContent.current) {
-            content = editableContent;
-        } else if (importedFile) {
-            content = importedFile;
-        } else if (editableContent) {
-            content = editableContent;
-        }
-        // If the content is empty, reset placeholders and return
-        if (!content) {
-            setPlaceholders([]);
-            return;
-        }
+        // Process domain content first
+        if (domainContent) {
+            // First identify all mermaid diagram blocks
+            const mermaidBlockRegex = /```mermaid[\s\S]*?```/g;
+            const mermaidBlocks: { start: number, end: number }[] = [];
+            let mermaidMatch;
 
-        // First identify all mermaid diagram blocks
-        const mermaidBlockRegex = /```mermaid[\s\S]*?```/g;
-        const mermaidBlocks: { start: number, end: number }[] = [];
-        let mermaidMatch;
-
-        while ((mermaidMatch = mermaidBlockRegex.exec(content)) !== null) {
-            mermaidBlocks.push({
-                start: mermaidMatch.index,
-                end: mermaidMatch.index + mermaidMatch[0].length
-            });
-        }
-
-        // Then find placeholders but exclude those in mermaid blocks
-        const regex = /\[(.*?)\]/g;
-        const newPlaceholders = [];
-        let match: RegExpExecArray | null;
-
-        while ((match = regex.exec(content)) !== null) {
-            // Check if this placeholder is inside any mermaid block
-            const isInMermaidBlock = mermaidBlocks.some(
-                block => match!.index >= block.start && match!.index < block.end
-            );
-
-            // Only add placeholders that are not in mermaid blocks
-            if (!isInMermaidBlock) {
-                newPlaceholders.push({
-                    start: match.index,
-                    end: match.index + match[0].length,
-                    text: match[0]
+            while ((mermaidMatch = mermaidBlockRegex.exec(domainContent)) !== null) {
+                mermaidBlocks.push({
+                    start: mermaidMatch.index,
+                    end: mermaidMatch.index + mermaidMatch[0].length
                 });
             }
-        }
-        // Set the placeholders state
-        if (editableContent) {
-            setTemplatePlaceholders(newPlaceholders);
-        } else {
-            setPlaceholders(newPlaceholders);
+
+            // Then find placeholders but exclude those in mermaid blocks
+            const regex = /\[(.*?)\]/g;
+            const domainPlaceholders = [];
+            let match: RegExpExecArray | null;
+
+            while ((match = regex.exec(domainContent)) !== null) {
+                // Check if this placeholder is inside any mermaid block
+                const isInMermaidBlock = mermaidBlocks.some(
+                    block => match!.index >= block.start && match!.index < block.end
+                );
+
+                // Only add placeholders that are not in mermaid blocks
+                if (!isInMermaidBlock) {
+                    domainPlaceholders.push({
+                        start: match.index,
+                        end: match.index + match[0].length,
+                        text: match[0]
+                    });
+                }
+            }
+            
+            // Update domain placeholders 
+            setPlaceholders(domainPlaceholders);
         }
 
+        // Process editable content (template content)
+        if (editableContent) {
+            // Similar placeholder detection logic for editable content
+            const mermaidBlockRegex = /```mermaid[\s\S]*?```/g;
+            const mermaidBlocks: { start: number, end: number }[] = [];
+            let mermaidMatch;
+
+            while ((mermaidMatch = mermaidBlockRegex.exec(editableContent)) !== null) {
+                mermaidBlocks.push({
+                    start: mermaidMatch.index,
+                    end: mermaidMatch.index + mermaidMatch[0].length
+                });
+            }
+
+            const regex = /\[(.*?)\]/g;
+            const templatePlaceholders = [];
+            let match: RegExpExecArray | null;
+
+            while ((match = regex.exec(editableContent)) !== null) {
+                const isInMermaidBlock = mermaidBlocks.some(
+                    block => match!.index >= block.start && match!.index < block.end
+                );
+
+                if (!isInMermaidBlock) {
+                    templatePlaceholders.push({
+                        start: match.index,
+                        end: match.index + match[0].length,
+                        text: match[0]
+                    });
+                }
+            }
+            
+            // Update template placeholders
+            setTemplatePlaceholders(templatePlaceholders);
+        }
 
     }, [editableContent, domainContent, importedFile]);
 
@@ -288,31 +309,41 @@ export default function TemplatesPanel({
         const textareaHeight = textarea.clientHeight;
         textarea.scrollTop = Math.max(0, linePosition - (textareaHeight / 2));
     };
+
     // Function to handle tab key to jump between placeholders
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Tab' && placeholders.length > 0) {
+        if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
+            const now = Date.now();
+            // Use a custom property on the event target to track the last Enter key time
+            const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+            if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                // If two returns occur within 2 seconds, submit the form
+                textarea.lastEnterTime = 0;
+            } else {
+                textarea.lastEnterTime = now;
+            }
+        }
 
-            const textarea = textareaRef.current;
-            if (!textarea) return;
+        // Add tab key navigation for placeholders
+        if (e.key === 'Tab' && placeholders.length > 0) {
+            e.preventDefault(); // Prevent default tab behavior
 
-            const cursorPosition = textarea.selectionStart;
+            // Get current cursor position
+            const cursorPos = (e.currentTarget as HTMLTextAreaElement).selectionStart;
 
-            // Find the current or next placeholder
-            let nextIndex = 0;
-            for (let i = 0; i < placeholders.length; i++) {
-                if (cursorPosition < placeholders[i].start) {
-                    nextIndex = i;
-                    break;
-                }
-                if (i === placeholders.length - 1) {
-                    nextIndex = 0; // Loop back to first placeholder
-                } else {
-                    nextIndex = i + 1;
-                }
+            // Find the next placeholder after cursor position
+            let nextPlaceholder = placeholders.find(p => p.start > cursorPos);
+
+            // If no next placeholder, loop back to the first one
+            if (!nextPlaceholder && placeholders.length > 0) {
+                nextPlaceholder = placeholders[0];
             }
 
-            selectPlaceholder(nextIndex);
+            // Select the placeholder if found
+            if (nextPlaceholder) {
+                selectPlaceholder(placeholders.indexOf(nextPlaceholder));
+            }
         }
     };
 
@@ -912,5 +943,3 @@ Now, refine the following user input into an exceptional prompt:
         </div>
     );
 }
-
-

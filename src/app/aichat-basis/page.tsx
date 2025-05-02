@@ -64,7 +64,7 @@ const AIChatPage = () => {
         const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
 
         // Create and trigger a download link
-        const exportFileName = `markdown-library-${new Date().toISOString().split('T')[0]}.json`;
+        const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
         const linkElement = document.createElement('a');
         linkElement.setAttribute('href', dataUri);
         linkElement.setAttribute('download', exportFileName);
@@ -482,7 +482,7 @@ const AIChatPage = () => {
                         </button>
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
                         <div className="flex items-center gap-2"></div>
-  
+
 
 
                     </div>
