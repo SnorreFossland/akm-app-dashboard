@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux'; // Add this import
-import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info } from 'lucide-react';
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle } from 'lucide-react';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
@@ -102,6 +102,7 @@ export default function ChatComponent({
     const [docRefine, setDocRefine] = useState(false);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
+    const [showGuideModal, setShowGuideModal] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     // Add right after your state definitions
@@ -906,74 +907,156 @@ END OF DOCUMENT: ${file.name}
             </div>
         );
     };
-    return (
-        // Changed overflow-auto to overflow-hidden on the main container
-        <div ref={containerRef} className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
-            {/* Rest of your component remains the same */}
-            <div className="flex-1 min-h-0 overflow-y-auto pb-[150px]" id="message-container">
-                {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
-                {messages.length < 1 ? (
-                    <div className="flex flex-col items-center justify-start w-full overflow-auto">
-                        {showDigitalRain ? (
-                            <DigitalRainIntro
-                                onInteraction={() => setShowDigitalRain(false)}
-                                speed={4}
-                                backgroundColor="rgba(10, 20, 10, 0.03)"
-                            />
-                        ) : (
-                            <GettingStartedGuide />
-                        )}
+
+    // Simple Modal component
+    const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+                    <button
+                        onClick={onClose}
+                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                    <div className="p-6">
+                        {children}
                     </div>
+                </div>
+            </div>
+        );
+    };
 
-                ) : null}
+    return (
+        <>
+            <button
+                onClick={() => setShowGuideModal(true)}
+                className="absolute top-4 right-2 z-10 bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
+                title="Open getting started guide"
+            >
+                <HelpCircle className="h-5 w-5" />
+            </button>
+            <div ref={containerRef} className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
+                <div className="flex-1 min-h-0 overflow-y-auto pb-[150px] w-full" id="message-container">
+                    {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
+                    {messages.length < 1 ? (
+                        <div className="flex flex-col items-center justify-start w-full overflow-auto">
+                            {showDigitalRain ? (
+                                <DigitalRainIntro
+                                    onInteraction={() => setShowDigitalRain(false)}
+                                    speed={4}
+                                    backgroundColor="rgba(10, 20, 10, 0.03)"
+                                />
+                            ) : (
+                                <GettingStartedGuide />
+                            )}
+                        </div>
 
-                <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
-                    {messages.map((message, index) => (
-                        <div key={index}
-                            className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
-                                ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
-                                : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
-                                } `}
-                        >
-                            {/* header with avatar/role */}
-                            <div className="flex items-center justify-between gap-3 ps-1">
-                                <div className="flex-shrink-0">
-                                    {message.role === 'user' ? (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="w-6 h-6 text-blue-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5.121 17.804A4 4 0 0112 15a4 4 0 016.879 2.804M12 11a4 4 0 100-8 4 4 0 000 8z"
-                                            />
-                                        </svg>
-                                    ) : (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="w-6 h-6 text-gray-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
-                                            />
-                                        </svg>
+                    ) : null}
+
+                    <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
+                        {messages.map((message, index) => (
+                            <div key={index}
+                                className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
+                                    ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
+                                    : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
+                                    } `}
+                            >
+                                {/* header with avatar/role */}
+                                <div className="flex items-center justify-between gap-3 ps-1">
+                                    <div className="flex-shrink-0">
+                                        {message.role === 'user' ? (
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="w-6 h-6 text-blue-400"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth="2"
+                                                    d="M5.121 17.804A4 4 0 0112 15a4 4 0 016.879 2.804M12 11a4 4 0 100-8 4 4 0 000 8z"
+                                                />
+                                            </svg>
+                                        ) : (
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="w-6 h-6 text-gray-400"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth="2"
+                                                    d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
+                                                />
+                                            </svg>
+                                        )}
+                                    </div>
+                                    <div className="text-xs text-gray-400 me-auto overflow-auto">
+                                        {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
+                                    </div>
+
+                                    {message.role === 'assistant' && (
+                                        <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                            {message.role === 'assistant' && (
+                                                <>
+                                                    {/* Add Save to Library button */}
+                                                    <button
+                                                        title="Save to Library"
+                                                        onClick={() => handleSaveToLibrary(message.content)}
+                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                                                    >
+
+                                                        <BookmarkPlus className="h-4 w-4" />
+                                                    </button>
+
+                                                    <button
+                                                        title="Save to File"
+                                                        onClick={() => handleSaveToFile(message.content)}
+                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                                    >
+                                                        <Save className="h-4 w-4" />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleCopyMessage(message.content, index)}
+                                                        className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                                    >
+                                                        {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleViewInMarkdown(message.content, index)}
+                                                        className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                                    >
+                                                        {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-400 me-auto overflow-auto">
-                                    {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
+
+                                {/* message content */}
+                                <div
+                                    className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
+                                    style={{ overflowWrap: 'anywhere' }}
+                                >
+                                    {previewMessageIndex === index ? (
+                                        <div className="prose prose-invert custom-markdown markdown-preview w-full">
+                                            <MarkdownPreview mdPreview={message.content} />
+                                        </div>
+                                    ) : (
+                                        message.content
+                                    )}
                                 </div>
 
+                                {/*  bottom buttons */}
                                 {message.role === 'assistant' && (
                                     <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
                                         {message.role === 'assistant' && (
@@ -1012,445 +1095,397 @@ END OF DOCUMENT: ${file.name}
                                     </div>
                                 )}
                             </div>
-
-                            {/* message content */}
-                            <div
-                                className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
-                                style={{ overflowWrap: 'anywhere' }}
-                            >
-                                {previewMessageIndex === index ? (
-                                    <div className="prose prose-invert custom-markdown markdown-preview w-full">
-                                        <MarkdownPreview mdPreview={message.content} />
-                                    </div>
-                                ) : (
-                                    message.content
-                                )}
+                        ))}
+                        {isLoading && (
+                            <div className="flex justify-start my-4">
+                                <ThinkingAnimation />
+                                <div className="h-6" />
                             </div>
+                        )}
 
-                            {/*  bottom buttons */}
-                            {message.role === 'assistant' && (
-                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
-                                    {message.role === 'assistant' && (
-                                        <>
-                                            {/* Add Save to Library button */}
-                                            <button
-                                                title="Save to Library"
-                                                onClick={() => handleSaveToLibrary(message.content)}
-                                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                                            >
+                        {/* This is the end of the messages */}
 
-                                                <BookmarkPlus className="h-4 w-4" />
-                                            </button>
-
-                                            <button
-                                                title="Save to File"
-                                                onClick={() => handleSaveToFile(message.content)}
-                                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
-                                            >
-                                                <Save className="h-4 w-4" />
-                                            </button>
-                                            <button
-                                                onClick={() => handleCopyMessage(message.content, index)}
-                                                className="ms-2 text-xs text-gray-400 hover:text-gray-200"
-                                            >
-                                                {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                            </button>
-                                            <button
-                                                onClick={() => handleViewInMarkdown(message.content, index)}
-                                                className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
-                                            >
-                                                {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
-                                            </button>
-                                        </>
-                                    )}
-                                </div>
-                            )}
-                        </div>
-                    ))}
-                    {isLoading && (
-                        <div className="flex justify-start my-4">
-                            <ThinkingAnimation />
-                            <div className="h-6" />
-                        </div>
-                    )}
-
-                    {/* This is the end of the messages */}
-
-                    <div ref={messagesEndRef}></div>
+                        <div ref={messagesEndRef}></div>
+                    </div>
                 </div>
-            </div>
-            {/* <SimpleDivider
+                {/* <SimpleDivider
                 currentSize={topHeight}
                 onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
             /> */}
-            {/* Add  message display near the top */}
-            {
-                statusMsg && (
-                    <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
-                        <Info className="w-4 h-4 mr-2" />
-                        <span>{statusMsg}</span>
-                        {statusMsg.includes('timed out') && (
-                            <button
-                                onClick={() => {
-                                    const lastUserMessage = messages.findLast(m => m.role === 'user');
-                                    if (lastUserMessage) {
-                                        setStatusMsg('Retrying request... if it fails again, please try a different model.');
-                                        sendMessageToAPI([lastUserMessage]);
-                                    }
-                                }}
-                                className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
-                            >
-                                Retry
-                            </button>
-                        )}
-                    </div>
-                )
-            }
-            {/* Input area always at the bottom */}
-            <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe">
-                <div className="flex items-center justify-between p-2">
-                    {/* button row above the chat */}
-                    <div className="flex items-center gap-2">
-                        <button
-                            type="button"
-                            onClick={() => { handleAddMD(); }}
-                            className="p-2 text-gray-500 hover:text-gray-300 flex items-center gap-2"
-                            disabled={isLoading}
-                            title="Add a local file to be refined."
-                        >
-                            <FileText className="w-5 h-5" /> {!docRefine ? (mdContent ? '' : 'Refine document') : ''}
-                        </button>
-                        <input
-                            ref={mdFileInputRef}
-                            type="file"
-                            accept=".md, .txt, .markdown, .docx"
-                            style={{ display: 'none' }}
-                            className="hidden"
-                            onChange={handleMDFileSelect}
-                        />
-                        {mdContent && (
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={docRefine && !!mdContent}
-                                    disabled={!mdContent || isLoading}
-                                    onChange={() => {
-                                        if (!mdContent) {
-                                            setDocRefine(false);
-                                            setInput('');
-                                        } else {
-                                            const newRefineState = !docRefine;
-                                            setDocRefine(newRefineState);
-                                            // setInput(newRefineState ? refinePrompt : '');
+                {/* Add  message display near the top */}
+                {
+                    statusMsg && (
+                        <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
+                            <Info className="w-4 h-4 mr-2" />
+                            <span>{statusMsg}</span>
+                            {statusMsg.includes('timed out') && (
+                                <button
+                                    onClick={() => {
+                                        const lastUserMessage = messages.findLast(m => m.role === 'user');
+                                        if (lastUserMessage) {
+                                            setStatusMsg('Retrying request... if it fails again, please try a different model.');
+                                            sendMessageToAPI([lastUserMessage]);
                                         }
                                     }}
-                                    className="sr-only" // Hide default checkbox but keep it accessible
-                                />
-                                <div className={`h-5 w-5 border ${docRefine && mdContent ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                                    {docRefine && mdContent && (
-                                        <div className="h-2 w-2 bg-white rounded-full"></div>
-                                    )}
-                                </div>
-                                <span className="text-gray-500">{mdContent ? "Refine document" : "No document in the left panel"}</span>
-                            </label>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {/* Template selection */}
-                        {mdContent && docRefine &&
-                            <div className="flex items-center gap-2">
-                                <select
-                                    title="Select a style for the document"
-                                    className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
-                                    onChange={(e) => {
-                                        const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
-                                        if (selectedTemplate) {
-                                            setInput(selectedTemplate);
-                                            setDocRefine(true);
-                                        }
-                                    }}
-                                    disabled={isLoading || !mdContent}
+                                    className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
                                 >
-                                    <option value="">Select style...</option>
-                                    {Object.keys(refineTemplates).map((key) => (
-                                        <option key={key} value={key}>{key}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        }
+                                    Retry
+                                </button>
+                            )}
+                        </div>
+                    )
+                }
+                {/* Input area always at the bottom */}
+                <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe">
+                    <div className="flex items-center justify-between p-2">
+                        {/* button row above the chat */}
                         <div className="flex items-center gap-2">
-                            {!docRefine &&
-                                <div className="relative">
-                                    <button
-                                        className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
-                                        onClick={() => {
-                                            const dropdown = document.getElementById('template-dropdown');
-                                            if (dropdown) {
-                                                // Check position relative to viewport
-                                                const button = document.activeElement as HTMLElement;
-                                                const buttonRect = button.getBoundingClientRect();
-                                                const viewportHeight = window.innerHeight;
-                                                const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                const spaceAbove = buttonRect.top;
-
-                                                // First toggle visibility
-                                                dropdown.classList.toggle('hidden');
-
-                                                // If there's not enough space below, position above
-                                                if (spaceBelow < 300 && spaceAbove > 150) {
-                                                    // Position above with margin to prevent cutoff
-                                                    dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
-                                                    dropdown.style.top = 'auto';
-                                                    dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
-                                                } else {
-                                                    // Otherwise position below with margin
-                                                    dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
-                                                    dropdown.style.bottom = 'auto';
-                                                    dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                }
-
-                                                // Ensure the dropdown is fully visible within viewport
-                                                setTimeout(() => {
-                                                    const dropdownRect = dropdown.getBoundingClientRect();
-                                                    if (dropdownRect.top < 0) {
-                                                        // If still cut off at top, adjust position
-                                                        dropdown.style.top = '5px';
-                                                        dropdown.style.bottom = 'auto';
-                                                    }
-                                                }, 0);
+                            <button
+                                type="button"
+                                onClick={() => { handleAddMD(); }}
+                                className="p-2 text-gray-500 hover:text-gray-300 flex items-center gap-2"
+                                disabled={isLoading}
+                                title="Add a local file to be refined."
+                            >
+                                <FileText className="w-5 h-5" /> {!docRefine ? (mdContent ? '' : 'Refine document') : ''}
+                            </button>
+                            <input
+                                ref={mdFileInputRef}
+                                type="file"
+                                accept=".md, .txt, .markdown, .docx"
+                                style={{ display: 'none' }}
+                                className="hidden"
+                                onChange={handleMDFileSelect}
+                            />
+                            {mdContent && (
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={docRefine && !!mdContent}
+                                        disabled={!mdContent || isLoading}
+                                        onChange={() => {
+                                            if (!mdContent) {
+                                                setDocRefine(false);
+                                                setInput('');
+                                            } else {
+                                                const newRefineState = !docRefine;
+                                                setDocRefine(newRefineState);
+                                                // setInput(newRefineState ? refinePrompt : '');
                                             }
                                         }}
-                                        title="Select a template"
+                                        className="sr-only" // Hide default checkbox but keep it accessible
+                                    />
+                                    <div className={`h-5 w-5 border ${docRefine && mdContent ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                        {docRefine && mdContent && (
+                                            <div className="h-2 w-2 bg-white rounded-full"></div>
+                                        )}
+                                    </div>
+                                    <span className="text-gray-500">{mdContent ? "Refine document" : "No document in the left panel"}</span>
+                                </label>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {/* Template selection */}
+                            {mdContent && docRefine &&
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        title="Select a style for the document"
+                                        className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
+                                        onChange={(e) => {
+                                            const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
+                                            if (selectedTemplate) {
+                                                setInput(selectedTemplate);
+                                                setDocRefine(true);
+                                            }
+                                        }}
+                                        disabled={isLoading || !mdContent}
                                     >
-                                        <span>Templates</span>
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    <div
-                                        id="template-dropdown"
-                                        className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
-                                    >
-                                        <div className="p-1 border-b border-gray-600">
-                                            <select
-                                                className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
-                                                value={selectedCategory}
-                                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                            >
-                                                {CATEGORIES.map((category) => (
-                                                    <option key={category} value={category}>
-                                                        {category === "All" ? "All" : category}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="overflow-y-auto max-h-[180px]">
-                                            {filteredTemplates.map((template) => (
-                                                <button
-                                                    key={template.title}
-                                                    className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                    onClick={() => {
-                                                        setSelectedReportTemplate(template.title);
-                                                        setInput(template.content);
-                                                        document.getElementById('template-dropdown')?.classList.add('hidden');
-                                                    }}
+                                        <option value="">Select style...</option>
+                                        {Object.keys(refineTemplates).map((key) => (
+                                            <option key={key} value={key}>{key}</option>
+                                        ))}
+                                    </select>
+                                </div>
+                            }
+                            <div className="flex items-center gap-2">
+                                {!docRefine &&
+                                    <div className="relative">
+                                        <button
+                                            className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
+                                            onClick={() => {
+                                                const dropdown = document.getElementById('template-dropdown');
+                                                if (dropdown) {
+                                                    // Check position relative to viewport
+                                                    const button = document.activeElement as HTMLElement;
+                                                    const buttonRect = button.getBoundingClientRect();
+                                                    const viewportHeight = window.innerHeight;
+                                                    const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                    const spaceAbove = buttonRect.top;
+
+                                                    // First toggle visibility
+                                                    dropdown.classList.toggle('hidden');
+
+                                                    // If there's not enough space below, position above
+                                                    if (spaceBelow < 300 && spaceAbove > 150) {
+                                                        // Position above with margin to prevent cutoff
+                                                        dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
+                                                        dropdown.style.top = 'auto';
+                                                        dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
+                                                    } else {
+                                                        // Otherwise position below with margin
+                                                        dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
+                                                        dropdown.style.bottom = 'auto';
+                                                        dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
+                                                    }
+
+                                                    // Ensure the dropdown is fully visible within viewport
+                                                    setTimeout(() => {
+                                                        const dropdownRect = dropdown.getBoundingClientRect();
+                                                        if (dropdownRect.top < 0) {
+                                                            // If still cut off at top, adjust position
+                                                            dropdown.style.top = '5px';
+                                                            dropdown.style.bottom = 'auto';
+                                                        }
+                                                    }, 0);
+                                                }
+                                            }}
+                                            title="Select a template"
+                                        >
+                                            <span>Templates</span>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        <div
+                                            id="template-dropdown"
+                                            className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
+                                        >
+                                            <div className="p-1 border-b border-gray-600">
+                                                <select
+                                                    className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
+                                                    value={selectedCategory}
+                                                    onChange={(e) => setSelectedCategory(e.target.value)}
                                                 >
-                                                    {template.title}
-                                                </button>
-                                            ))}
+                                                    {CATEGORIES.map((category) => (
+                                                        <option key={category} value={category}>
+                                                            {category === "All" ? "All" : category}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="overflow-y-auto max-h-[180px]">
+                                                {filteredTemplates.map((template) => (
+                                                    <button
+                                                        key={template.title}
+                                                        className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                        onClick={() => {
+                                                            setSelectedReportTemplate(template.title);
+                                                            setInput(template.content);
+                                                            document.getElementById('template-dropdown')?.classList.add('hidden');
+                                                        }}
+                                                    >
+                                                        {template.title}
+                                                    </button>
+                                                ))}
+                                            </div>
                                         </div>
                                     </div>
-                                </div>
-                            }
-                        </div>
-                    </div>
-                </div>
-                <div className="flex items-center gap-2"></div>
-            </div>
-
-            {/* START FORM */}
-            <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
-                {/* Add placeholder jump buttons */}
-                {templatePlaceholders.length > 0 && (
-                    <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                        <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                        {templatePlaceholders.map((placeholder, idx) => (
-                            <button
-                                key={idx}
-                                type="button" // Add this to prevent form submission
-                                onClick={() => selectTemplatePlaceholder(idx)}
-                                className={buttonAccent}
-                            >
-                                {placeholder.text.length > 50
-                                    ? `${placeholder.text.substring(0, 49)}...`
-                                    : placeholder.text}
-                            </button>
-                        ))}
-                    </div>
-                )}
-                <TextareaAutosize
-                    ref={textareaRef}
-                    value={input || ''}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            const now = Date.now();
-                            // Use a custom property on the event target to track the last Enter key time
-                            const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                            if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                // If two returns occur within 2 seconds, submit the form
-                                handleSubmit(e);
-                                textarea.lastEnterTime = 0;
-                            } else {
-                                textarea.lastEnterTime = now;
-                            }
-                        }
-
-                        // Add tab key navigation for placeholders
-                        if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                            e.preventDefault(); // Prevent default tab behavior
-
-                            // Get current cursor position
-                            const cursorPos = e.currentTarget.selectionStart;
-
-                            // Find the next placeholder after cursor position
-                            let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                            // If no next placeholder, loop back to the first one
-                            if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                nextPlaceholder = templatePlaceholders[0];
-                            }
-
-                            // Select the placeholder if found
-                            if (nextPlaceholder) {
-                                selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                            }
-                        }
-                    }}
-                    placeholder="Ask anything …"
-                    className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    minRows={6}
-                    maxRows={12}
-                    disabled={isLoading}
-                />
-                <div className="flex justify-between">
-                    <div className="flex items-center gap-2 justify-end">
-                        {/* Context file input */}
-                        <button
-                            type="button"
-                            onClick={handleAddContext}
-                            className="text-gray-500 hover:text-gray-300"
-                            disabled={isLoading || isProcessingFile}
-                            title="Add context from file"
-                        >
-                            <Paperclip className="w-5 h-5" />
-                        </button>
-                        <input
-                            type="file"
-                            multiple
-                            className="hidden"
-                            onChange={handleFileSelect}
-                            accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.docx"
-                            ref={fileInputRef}
-                        />
-                        {/* Context files indicator with enhanced info */}
-                        {isContextAttached && contextFiles.length > 0 && (
-                            <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
-                                <div className="flex items-center gap-2">
-                                    {/* <Paperclip className="w-3 h-3" /> */}
-                                    <span>
-                                        {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached as context:
-                                        <span className="font-mono ml-1">
-                                            {contextFiles.map((file, idx) => {
-                                                const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                                const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                                return (
-                                                    <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
-                                                        {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
-                                                    </span>
-                                                );
-                                            })}
-                                            ({Math.round(contextContent.length / 1024)}KB)
-                                        </span>
-                                    </span>
-                                    <button
-                                        onClick={handleRemoveContext}
-                                        className="ml-auto text-gray-400 hover:text-white"
-                                    >
-                                        <X className="w-3 h-3" />
-                                    </button>
-                                </div>
-                                {/* Add guidance about binary files if any are attached */}
-                                {contextFiles.some(file => {
-                                    const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                    return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                }) && (
-                                        <div className="mt-1 text-yellow-300 text-[10px]">
-                                            ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
-                                            <button
-                                                className="ml-1 underline hover:text-white"
-                                                onClick={() => {
-                                                    const binaryFiles = contextFiles
-                                                        .filter(f => {
-                                                            const fileType = f.name.split('.').pop()?.toLowerCase() || '';
-                                                            return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                                        })
-                                                        .map(f => f.name)
-                                                        .join(", ");
-                                                    setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
-                                                    setTimeout(() => {
-                                                        if (textareaRef.current) {
-                                                            textareaRef.current.focus();
-                                                        }
-                                                    }, 100);
-                                                }}
-                                            >
-                                                Open the document and copy all text and Add the text to explain file
-                                            </button>
-                                        </div>
-                                    )}
+                                }
                             </div>
-                        )}
-
-                    </div>
-                    <div className="flex items-center text-foreground gap-1">
-                        <ModelSelector
-                            selectedModel={selectedModel}
-                            onModelChange={(newModel) => {
-                                setSelectedModel(newModel);
-                                // Persist selected model to localStorage
-                                localStorage.setItem('aiDashboard_selectedModel', newModel);
-                            }}
-                        />
-                        <TemperatureSelector />
-                    </div>
-
-                    {/* now include the send‐button here */}
-                    <div className="flex justify-between px-2 ">
-                        <div className="flex items-center gap-2 justify-end">
-                            {/* …context buttons… */}
                         </div>
-                        <button
-                            type="submit"
-                            className="p-2 text-blue-200 hover:text-blue-800"
-                            disabled={isLoading || !input?.trim()}
-                            title="Send"
-                        >
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                className="w-8 h-8"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                            </svg>
-                        </button>
                     </div>
+                    <div className="flex items-center gap-2"></div>
                 </div>
-            </form>
-        </div >
+
+                {/* START FORM */}
+                <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
+                    {/* Add placeholder jump buttons */}
+                    {templatePlaceholders.length > 0 && (
+                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                            {templatePlaceholders.map((placeholder, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button" // Add this to prevent form submission
+                                    onClick={() => selectTemplatePlaceholder(idx)}
+                                    className={buttonAccent}
+                                >
+                                    {placeholder.text.length > 50
+                                        ? `${placeholder.text.substring(0, 49)}...`
+                                        : placeholder.text}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <TextareaAutosize
+                        ref={textareaRef}
+                        value={input || ''}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                const now = Date.now();
+                                // Use a custom property on the event target to track the last Enter key time
+                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                    e.preventDefault();
+                                    // If two returns occur within 2 seconds, submit the form
+                                    handleSubmit(e);
+                                    textarea.lastEnterTime = 0;
+                                } else {
+                                    // Set the last enter time and allow the default new line insertion
+                                    textarea.lastEnterTime = now;
+                                }
+                            }
+
+                            // Add tab key navigation for placeholders
+                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                e.preventDefault(); // Prevent default tab behavior
+
+                                // Get current cursor position
+                                const cursorPos = e.currentTarget.selectionStart;
+
+                                // Find the next placeholder after cursor position
+                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                                // If no next placeholder, loop back to the first one
+                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                    nextPlaceholder = templatePlaceholders[0];
+                                }
+
+                                // Select the placeholder if found
+                                if (nextPlaceholder) {
+                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                }
+                            }
+                        }}
+                        placeholder="Ask anything …"
+                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minRows={6}
+                        maxRows={12}
+                        disabled={isLoading}
+                    />
+                    <div className="flex justify-between">
+                        <div className="flex items-center gap-2 justify-end">
+                            {/* Context file input */}
+                            <button
+                                type="button"
+                                onClick={handleAddContext}
+                                className="text-gray-500 hover:text-gray-300"
+                                disabled={isLoading || isProcessingFile}
+                                title="Add context from file"
+                            >
+                                <Paperclip className="w-5 h-5" />
+                            </button>
+                            <input
+                                type="file"
+                                multiple
+                                className="hidden"
+                                onChange={handleFileSelect}
+                                accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.docx"
+                                ref={fileInputRef}
+                            />
+                            {/* Context files indicator with enhanced info */}
+                            {isContextAttached && contextFiles.length > 0 && (
+                                <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
+                                    <div className="flex items-center gap-2">
+                                        {/* <Paperclip className="w-3 h-3" /> */}
+                                        <span>
+                                            {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached as context:
+                                            <span className="font-mono ml-1">
+                                                {contextFiles.map((file, idx) => {
+                                                    const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                                    return (
+                                                        <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
+                                                            {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
+                                                        </span>
+                                                    );
+                                                })}
+                                                ({Math.round(contextContent.length / 1024)}KB)
+                                            </span>
+                                        </span>
+                                        <button
+                                            onClick={handleRemoveContext}
+                                            className="ml-auto text-gray-400 hover:text-white"
+                                        >
+                                            <X className="w-3 h-3" />
+                                        </button>
+                                    </div>
+                                    {/* Add guidance about binary files if any are attached */}
+                                    {contextFiles.some(file => {
+                                        const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                        return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                    }) && (
+                                            <div className="mt-1 text-yellow-300 text-[10px]">
+                                                ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
+                                                <button
+                                                    className="ml-1 underline hover:text-white"
+                                                    onClick={() => {
+                                                        const binaryFiles = contextFiles
+                                                            .filter(f => {
+                                                                const fileType = f.name.split('.').pop()?.toLowerCase() || '';
+                                                                return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                                            })
+                                                            .map(f => f.name)
+                                                            .join(", ");
+                                                        setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
+                                                        setTimeout(() => {
+                                                            if (textareaRef.current) {
+                                                                textareaRef.current.focus();
+                                                            }
+                                                        }, 100);
+                                                    }}
+                                                >
+                                                    Open the document and copy all text and Add the text to explain file
+                                                </button>
+                                            </div>
+                                        )}
+                                </div>
+                            )}
+
+                        </div>
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                    // Persist selected model to localStorage
+                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                }}
+                            />
+                            <TemperatureSelector />
+                        </div>
+
+                        {/* now include the send‐button here */}
+                        <div className="flex justify-between px-2 ">
+                            <div className="flex items-center gap-2 justify-end">
+                                {/* …context buttons… */}
+                            </div>
+                            <button
+                                type="submit"
+                                className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
+                                disabled={isLoading || !input?.trim()}
+                                title="Send your question"
+                            >Send
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-8 h-8"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+                {/* Add the modal at the end of the component */}
+                <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
+                    <GettingStartedGuide />
+                </Modal>
+            </div >
+        </>
     )
 }
