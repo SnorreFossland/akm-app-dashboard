@@ -831,16 +831,20 @@ END OF DOCUMENT: ${file.name}
         let userMessageContent = input;
 
         if (docRefine) {
-            userMessageContent = `${userMessageContent} #content:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} # Content:\n ${mdContent}`;
         } else {
-            userMessageContent = `${userMessageContent} ${mdContent}`;
+            userMessageContent = `${userMessageContent} # Context:\n ${mdContent}`;
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
 
-        // Always update the messages state with the new user message
-        setMessages((prev) => [...prev, userMessage]);
-
+        if (mdContent) {
+            setMessages((prev) => [...prev.slice(-1)]);
+        } else if (contextContent && isContextAttached) {
+            setMessages((prev) => [...prev.slice(-1)]);
+        } else {
+            setMessages((prev) => [...prev]);
+        }
         // Send all messages including the new one to maintain conversation context
         await sendMessageToAPI([...messages, userMessage]);
 
