@@ -21,6 +21,7 @@ import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from './DigitalRainIntro';
 import GettingStartedGuide from './GettingStartedGuide';
 import { REFINE_TEMPLATES } from './refineTemplates'
+import { error } from 'console';
 // import { API_BASE_URL } from '@/config/apiConfig';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -823,7 +824,7 @@ END OF DOCUMENT: ${file.name}
 
         // Update for next comparison
         previousModelRef.current = selectedModel;
-    }, [selectedModel, sendMessageToAPI, modelRetryCount, messages]);
+    }, [selectedModel, sendMessageToAPI, modelRetryCount, messages, statusMsg]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
