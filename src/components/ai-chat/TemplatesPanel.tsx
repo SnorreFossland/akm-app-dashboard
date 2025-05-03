@@ -128,7 +128,7 @@ export default function TemplatesPanel({
             }
             
             // Update domain placeholders 
-            setPlaceholders(domainPlaceholders);
+            setTemplatePlaceholders(domainPlaceholders);
         }
 
         // Process editable content (template content)
