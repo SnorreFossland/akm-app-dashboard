@@ -711,10 +711,10 @@ END OF DOCUMENT: ${file.name}
                     }
                 }
 
-                console.log(`Sending context to the model (${contextContent.length} chars)`);
-                console.log('First 200 chars of context:', contextContent.substring(0, 200));
             }
 
+            console.log(`Sending context to the model (${contextContent.length} chars)`);
+            console.log('First 200 chars of context:', contextContent.substring(0, 200));
             // Build the API request body
             const requestBody: any = {
                 messages: messagesToSend,
@@ -945,7 +945,7 @@ END OF DOCUMENT: ${file.name}
             <div ref={containerRef} className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
                 <div className="flex-1 min-h-0 overflow-y-auto pb-[150px] w-full" id="message-container">
                     {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
-                    {messages.length < 1 ? (
+                    {messages.length < 1 && (!input || input.trim() === "") ? (
                         <div className="flex flex-col items-center justify-start w-full overflow-auto">
                             {showDigitalRain ? (
                                 <DigitalRainIntro
@@ -957,8 +957,16 @@ END OF DOCUMENT: ${file.name}
                                 <GettingStartedGuide />
                             )}
                         </div>
-
                     ) : null}
+                    {/* (
+                        messages.length === 0 && (
+                            <div className="flex flex-col border border-gray-600 rounded-lg p-4 gap-2 text-gray-400 text-sm h-full items-center justify-start w-full bg-secondary/40 overflow-auto">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-400">No messages yet. Start a conversation!</span>
+                                </div>
+                            </div>
+                        )
+                    )} */}
 
                     <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
                         {messages.map((message, index) => (
@@ -1462,9 +1470,6 @@ END OF DOCUMENT: ${file.name}
 
                         {/* now include the send‐button here */}
                         <div className="flex justify-between px-2 ">
-                            <div className="flex items-center gap-2 justify-end">
-                                {/* …context buttons… */}
-                            </div>
                             <button
                                 type="submit"
                                 className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
