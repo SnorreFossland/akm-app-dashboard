@@ -678,22 +678,17 @@ END OF DOCUMENT: ${file.name}
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
         try {
-            // We'll use a different approach - including content directly in messages
             let messagesToSend = [...newMessages];
 
             if (contextContent && isContextAttached) {
-                // Add a system message at the beginning with clear instructions
                 const systemMessage: Message = {
                     role: 'system',
                     content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.`
                 };
-
-                // Add context as a separate system message to ensure it's seen
                 const contextMessage: Message = {
                     role: 'system',
                     content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
                 };
-
                 // Prepend both messages to ensure they're processed first
                 messagesToSend = [systemMessage, contextMessage, ...messagesToSend];
 
@@ -730,12 +725,18 @@ END OF DOCUMENT: ${file.name}
                 messagePreview: JSON.stringify(messagesToSend.slice(0, 2))
             });
 
-            // const response = await fetch(`${API_BASE_URL}/chat`, {
+            // Add timeout handling with AbortController
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
+
             const response = await fetch('/api/chat', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody),
+                signal: controller.signal
             });
+
+            clearTimeout(timeoutId);
 
             let data;
             const contentType = response.headers.get('content-type');
