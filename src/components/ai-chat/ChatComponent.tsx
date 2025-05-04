@@ -680,7 +680,7 @@ END OF DOCUMENT: ${file.name}
         setIsLoading(true);
         try {
             // Create a new array for messages to send
-            let messagesToSend = [];
+            const messagesToSend = [];
 
             // First add system messages if context is attached
             if (contextContent && isContextAttached) {
