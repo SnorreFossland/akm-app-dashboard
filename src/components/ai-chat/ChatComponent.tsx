@@ -920,9 +920,8 @@ END OF DOCUMENT: ${file.name}
             </div>
         );
     };
-    
     // Add this retry function
-    const handleRetry = useCallback(async () => {
+    const handleRetry = useCallback(() => {
         // Find the last assistant message
         const lastAssistantMessage = messages.findLast(m => m.role === 'assistant');
         if (!lastAssistantMessage) return;
@@ -930,7 +929,7 @@ END OF DOCUMENT: ${file.name}
         // Create a more effective continuation message with context
         const continueMessage: Message = {
             role: 'user',
-            content: 'Continue'
+            content: `Your last response ended abruptly. Please continue exactly from where you left off and provide a complete answer.`
         };
 
         // Keep existing messages and add the continue message
