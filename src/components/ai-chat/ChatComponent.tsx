@@ -918,8 +918,8 @@ END OF DOCUMENT: ${file.name}
         const continueMessage: Message = { role: 'user', content: 'Continue' };
         
         // Keep existing messages and add the continue message
-        const messagesForRetry: Message[] = [continueMessage];
-        // const messagesForRetry = [...messages, continueMessage];
+        // const messagesForRetry: Message[] = [continueMessage];
+        const messagesForRetry = [...messages, continueMessage];
         
         setStatusMsg('Retrying request... please wait.');
         console.log('Retrying request with continue message');
