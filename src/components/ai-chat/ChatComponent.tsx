@@ -830,12 +830,15 @@ END OF DOCUMENT: ${file.name}
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input?.trim()) return;
+
         let userMessageContent = input;
+
         if (docRefine) {
             userMessageContent = `${userMessageContent} #Content:\n ${mdContent}`;
         } else {
             userMessageContent = `${userMessageContent} #Context:\n ${mdContent}`;
         }
+
         const userMessage: Message = { role: 'user', content: userMessageContent };
 
         if (mdContent) {
@@ -847,6 +850,7 @@ END OF DOCUMENT: ${file.name}
         }
         // Send all messages including the new one to maintain conversation context
         await sendMessageToAPI([...messages, userMessage]);
+
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed
         setShowDigitalRain(false); // Turn OFF digital rain when sending a message
@@ -909,10 +913,8 @@ END OF DOCUMENT: ${file.name}
     };
     // Add this retry function
     const handleRetry = useCallback(() => {
-        // Don't add any new messages, just retry with existing messages
-        if (messages.length === 0) {
-            setMessages([{'role': 'user', 'content': 'Continue'}]);
-        }
+        // Don't add any new messages, just retry with existing sent messages
+        setMessages([{'role': 'user', 'content': 'Continue'}]);
         setStatusMsg('Retrying request... please wait.');
         setIsLoading(true);
         retryInProgress.current = true;
@@ -923,6 +925,7 @@ END OF DOCUMENT: ${file.name}
                 setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
             });
     }, [messages, sendMessageToAPI]);
+
     // Simple Modal component
     const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
         if (!isOpen) return null;
