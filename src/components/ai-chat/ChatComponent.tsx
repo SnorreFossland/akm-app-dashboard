@@ -919,7 +919,7 @@ END OF DOCUMENT: ${file.name}
         setIsLoading(true);
         retryInProgress.current = true;
         // Just use the existing messages array for the retry
-        sendMessageToAPI([...messages])
+        sendMessageToAPI(messages)
             .catch(error => {
                 console.error('Retry failed:', error);
                 setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
