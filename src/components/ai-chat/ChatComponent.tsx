@@ -679,21 +679,38 @@ END OF DOCUMENT: ${file.name}
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
         try {
-            let messagesToSend = [...newMessages]; // this should be the last message + user message including context/content  
+            // Create a new array for messages to send
+            let messagesToSend = [];
 
-            if (contextContent && isContextAttached) { // if file is attached and context is extracted
-                const systemMessage: Message = {
-                    role: 'system',
-                    content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.`
-                };
-                const contextMessage: Message = {
-                    role: 'system',
-                    content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
-                };
-                // Prepend both messages to ensure they're processed firs
-                
-                messagesToSend = [systemMessage, contextMessage];
+            // First add system messages if context is attached
+            if (contextContent && isContextAttached) {
+                messagesToSend.push(
+                    {
+                        role: 'system',
+                        content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.`
+                    },
+                    {
+                        role: 'system',
+                        content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
+                    }
+                );
+            }
 
+            // Then add ALL conversation messages
+            messagesToSend.push(...newMessages);
+
+            // Only modify the last user message if we need to add context references
+            if (contextContent && isContextAttached) {
+                const lastUserIndex = messagesToSend.findLastIndex(m => m.role === 'user');
+                if (lastUserIndex > -1) {
+                    const lastMessage = messagesToSend[lastUserIndex];
+                    const fileNames = contextFiles.map(file => file.name).join(', ');
+                    messagesToSend[lastUserIndex] = {
+                        ...lastMessage,
+                        content: `${lastMessage.content}\n\nPlease analyze the attached documents (${fileNames}) and include specific information from them in your response.`
+                    };
+                }
+            }
                 // Enhance the last user message to explicitly reference the files
                 if (messagesToSend.length > 2) {
                     const lastUserIndex = messagesToSend.length - 1;
@@ -708,7 +725,7 @@ END OF DOCUMENT: ${file.name}
                     }
                 }
 
-            }
+            
 
             console.log(`Sending context to the model (${contextContent.length} chars)`);
             console.log('First 200 chars of context:', contextContent.substring(0, 200));
