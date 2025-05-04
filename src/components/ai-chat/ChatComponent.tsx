@@ -690,8 +690,9 @@ END OF DOCUMENT: ${file.name}
                     role: 'system',
                     content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
                 };
-                // Prepend both messages to ensure they're processed first
-                messagesToSend = [systemMessage, contextMessage, ...messagesToSend];
+                // Prepend both messages to ensure they're processed firs
+                
+                messagesToSend = [systemMessage, contextMessage];
 
                 // Enhance the last user message to explicitly reference the files
                 if (messagesToSend.length > 2) {
@@ -915,17 +916,18 @@ END OF DOCUMENT: ${file.name}
     const handleRetry = useCallback(() => {
         // Create a "Continue" message
         const continueMessage: Message = { role: 'user', content: 'Continue' };
-
+        
         // Keep existing messages and add the continue message
-        const messagesForRetry = [...messages, continueMessage];
-
+        const messagesForRetry: Message[] = [continueMessage];
+        // const messagesForRetry = [...messages, continueMessage];
+        
         setStatusMsg('Retrying request... please wait.');
         console.log('Retrying request with continue message');
         setIsLoading(true);
         retryInProgress.current = true;
-
+        
         // Send the existing messages plus the continue message
-        sendMessageToAPI(continueMessage)
+        sendMessageToAPI(messagesForRetry)
             .catch(error => {
                 console.error('Retry failed:', error);
                 setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
