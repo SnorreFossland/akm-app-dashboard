@@ -108,7 +108,7 @@ When providing information, aim to be accurate. If you're unsure about something
     const userMessage = messages[messages.length - 1]?.content || '';
 
     // Check if the input is vague or empty
-    if (userMessage.trim() === 'Continue') {
+    if (userMessage === 'Continue') {
       return NextResponse.json({
         message: `Continue`
       }, { status: 200 });
