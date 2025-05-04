@@ -700,23 +700,14 @@ END OF DOCUMENT: ${file.name}
             messagesToSend.push(...newMessages);
 
             // Only modify the last user message if we need to add context references
+            // and it's not a "Continue" message
             if (contextContent && isContextAttached) {
                 const lastUserIndex = messagesToSend.findLastIndex(m => m.role === 'user');
                 if (lastUserIndex > -1) {
                     const lastMessage = messagesToSend[lastUserIndex];
-                    const fileNames = contextFiles.map(file => file.name).join(', ');
-                    messagesToSend[lastUserIndex] = {
-                        ...lastMessage,
-                        content: `${lastMessage.content}\n\nPlease analyze the attached documents (${fileNames}) and include specific information from them in your response.`
-                    };
-                }
-            }
-                // Enhance the last user message to explicitly reference the files
-                if (messagesToSend.length > 2) {
-                    const lastUserIndex = messagesToSend.length - 1;
-                    const lastMessage = messagesToSend[lastUserIndex];
 
-                    if (lastMessage && lastMessage.role === 'user') {
+                    // Skip modifying if it's a "Continue" message
+                    if (lastMessage.content !== 'Continue') {
                         const fileNames = contextFiles.map(file => file.name).join(', ');
                         messagesToSend[lastUserIndex] = {
                             ...lastMessage,
@@ -724,7 +715,7 @@ END OF DOCUMENT: ${file.name}
                         };
                     }
                 }
-
+            }
             
 
             console.log(`Sending context to the model (${contextContent.length} chars)`);
