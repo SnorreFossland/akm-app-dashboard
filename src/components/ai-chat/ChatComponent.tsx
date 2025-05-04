@@ -922,18 +922,20 @@ END OF DOCUMENT: ${file.name}
     };
     // Add this retry function
     const handleRetry = useCallback(() => {
-        // Create a "Continue" message
-        const continueMessage: Message = { role: 'user', content: 'Continue' };
-        
+        // Create a more specific continuation message
+        const continueMessage: Message = {
+            role: 'user',
+            content: 'Your previous response was cut off. Please continue exactly where you left off and complete your previous answer without repeating information you already provided.'
+        };
+
         // Keep existing messages and add the continue message
-        // const messagesForRetry: Message[] = [continueMessage];
         const messagesForRetry = [...messages, continueMessage];
-        
+
         setStatusMsg('Retrying request... please wait.');
-        console.log('Retrying request with continue message');
+        console.log('Retrying request with continuation prompt');
         setIsLoading(true);
         retryInProgress.current = true;
-        
+
         // Send the existing messages plus the continue message
         sendMessageToAPI(messagesForRetry)
             .catch(error => {
