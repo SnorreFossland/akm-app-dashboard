@@ -783,6 +783,7 @@ END OF DOCUMENT: ${file.name}
             );
         } finally {
             setIsLoading(false);
+            retryInProgress.current = false; // Reset retry flag when complete
         }
     }, [selectedModel, contextContent, isContextAttached, contextFiles]);
 
@@ -913,6 +914,23 @@ END OF DOCUMENT: ${file.name}
             </div>
         );
     };
+
+    // Add this retry function
+    const handleRetry = useCallback(() => {
+        // Don't add any new messages, just retry with existing messages
+        if (messages.length === 0) return;
+
+        setStatusMsg('Retrying request... please wait.');
+        setIsLoading(true);
+        retryInProgress.current = true;
+
+        // Just use the existing messages array for the retry
+        sendMessageToAPI([...messages])
+            .catch(error => {
+                console.error('Retry failed:', error);
+                setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
+            });
+    }, [messages, sendMessageToAPI]);
 
     // Simple Modal component
     const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
@@ -1132,18 +1150,13 @@ END OF DOCUMENT: ${file.name}
                         <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
                             <Info className="w-4 h-4 mr-2" />
                             <span>{statusMsg}</span>
-                            {statusMsg.includes('timed out') && (
+                            {(statusMsg.includes('timed out') || statusMsg.includes('Failed to communicate')) && (
                                 <button
-                                    onClick={() => {
-                                        const lastUserMessage = messages.findLast(m => m.role === 'user');
-                                        if (lastUserMessage) {
-                                            setStatusMsg('Retrying request... if it fails again, please try a different model.');
-                                            sendMessageToAPI([lastUserMessage]);
-                                        }
-                                    }}
+                                    onClick={handleRetry}
                                     className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                                    disabled={isLoading || retryInProgress.current}
                                 >
-                                    Retry
+                                    {isLoading ? 'Retrying...' : 'Retry Request'}
                                 </button>
                             )}
                         </div>
