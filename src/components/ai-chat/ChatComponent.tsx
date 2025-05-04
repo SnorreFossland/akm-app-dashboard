@@ -1150,7 +1150,7 @@ END OF DOCUMENT: ${file.name}
                         <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
                             <Info className="w-4 h-4 mr-2" />
                             <span>{statusMsg}</span>
-                            {(statusMsg.includes('timed out') || statusMsg.includes('Failed to communicate')) && (
+                            {(statusMsg.includes('timed out') || statusMsg.includes('Failed to communicate') || statusMsg.includes('An error occurred')) && (
                                 <button
                                     onClick={handleRetry}
                                     className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
