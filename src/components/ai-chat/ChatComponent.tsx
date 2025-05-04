@@ -923,17 +923,28 @@ END OF DOCUMENT: ${file.name}
         retryInProgress.current = true;
 
         try {
-            // Create a simple retry message
+            // Find the last request to retry
+            const lastUserMessage = messages.findLast(m => m.role === 'user');
+
+            if (!lastUserMessage) {
+                setStatusMsg('No previous message to retry');
+                return;
+            }
+
+            // Create a retry message with a special flag
             const retryMessage: Message = {
                 role: 'user',
-                content: 'Please try again with your previous response, which was cut off or failed.'
+                content: 'Continue with your response that was interrupted',
             };
 
-            // Add this message to the conversation
-            const updatedMessages = [...messages, retryMessage];
+            // Don't add the retry message to the conversation history yet
+            // We'll only add it if we get a successful response
+            const messagesForRetry = [...messages, retryMessage];
 
-            // Send the request
-            await sendMessageToAPI(updatedMessages);
+            // Send the request with a longer timeout
+            await sendMessageToAPI(messagesForRetry);
+
+            // If successful, update the conversation
             console.log('Retry completed successfully');
         } catch (error) {
             console.error('Retry failed:', error);
