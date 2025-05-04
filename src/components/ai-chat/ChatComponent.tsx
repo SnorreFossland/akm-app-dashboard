@@ -679,9 +679,9 @@ END OF DOCUMENT: ${file.name}
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
         try {
-            let messagesToSend = [...newMessages];
+            let messagesToSend = [...newMessages]; // this should be the last message + user message including context/content  
 
-            if (contextContent && isContextAttached) {
+            if (contextContent && isContextAttached) { // if file is attached and context is extracted
                 const systemMessage: Message = {
                     role: 'system',
                     content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.`
@@ -713,7 +713,7 @@ END OF DOCUMENT: ${file.name}
             console.log('First 200 chars of context:', contextContent.substring(0, 200));
             // Build the API request body
             const requestBody: any = {
-                messages: messagesToSend,
+                messages: messagesToSend,  // User message + context/content 
                 model: selectedModel,
                 temperature: temperature
             };
@@ -833,17 +833,17 @@ END OF DOCUMENT: ${file.name}
         let userMessageContent = input;
 
         if (docRefine) {
-            userMessageContent = `${userMessageContent} # Content:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} #Content:\n ${mdContent}`;
         } else {
-            userMessageContent = `${userMessageContent} # Context:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} #Context:\n ${mdContent}`;
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
 
         if (mdContent) {
-            setMessages((prev) => [...prev.slice(-1)]);
+            setMessages((prev) => [...prev.slice(-1)]); // Keep only the last message
         } else if (contextContent && isContextAttached) {
-            setMessages((prev) => [...prev.slice(-1)]);
+            setMessages((prev) => [...prev.slice(-1)]); // Keep only the last message
         } else {
             setMessages((prev) => [...prev]);
         }
