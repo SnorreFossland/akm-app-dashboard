@@ -70,7 +70,6 @@ Make sure the syntax is correct and the diagram renders properly.
   \`\`\`
       `}
 
-
     // Define system prompt
     const systemPrompt = {
       role: 'system',
@@ -106,14 +105,13 @@ When providing information, aim to be accurate. If you're unsure about something
 
     // Extract the latest user message
     const userMessage = messages[messages.length - 1]?.content || '';
-
+    console.log('109 User message:', userMessage);
     // Check if the input is vague or empty
     if (userMessage === 'Continue') {
       return NextResponse.json({
         message: `Continue`
       }, { status: 200 });
-    } else {
-      if (!userMessage.trim() || isInputVague(userMessage)) {
+    } else if (!userMessage.trim() || isInputVague(userMessage)) {
         // Provide a more helpful prompt for vague inputs
         return NextResponse.json({
           message: `I'd be happy to help! Your question seems quite broad. To provide a more helpful response, could you:   
@@ -122,7 +120,6 @@ When providing information, aim to be accurate. If you're unsure about something
 - Ask a more focused question
 This will help me give you a more relevant and useful answer.`
       }, { status: 200 });
-    }
     }
 
     // Prepend the system prompt to the messages array
