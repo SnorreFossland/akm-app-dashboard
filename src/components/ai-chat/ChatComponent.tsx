@@ -914,8 +914,9 @@ END OF DOCUMENT: ${file.name}
     // Add this retry function
     const handleRetry = useCallback(() => {
         // Don't add any new messages, just retry with existing sent messages
-        setMessages([{'role': 'user', 'content': 'Continue'}]);
+        setMessages([{ role: 'user', content: 'Continue' }]);
         setStatusMsg('Retrying request... please wait.');
+        console.log('Retrying request with existing messages:', messages);
         setIsLoading(true);
         retryInProgress.current = true;
         // Just use the existing messages array for the retry
