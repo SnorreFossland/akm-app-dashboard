@@ -108,15 +108,21 @@ When providing information, aim to be accurate. If you're unsure about something
     const userMessage = messages[messages.length - 1]?.content || '';
 
     // Check if the input is vague or empty
-    if (!userMessage.trim() || isInputVague(userMessage)) {
-      // Provide a more helpful prompt for vague inputs
+    if (userMessage.trim() === 'Continue') {
       return NextResponse.json({
-        message: `I'd be happy to help! Your question seems quite broad. To provide a more helpful response, could you:   
+        message: `Continue`
+      }, { status: 200 });
+    } else {
+      if (!userMessage.trim() || isInputVague(userMessage)) {
+        // Provide a more helpful prompt for vague inputs
+        return NextResponse.json({
+          message: `I'd be happy to help! Your question seems quite broad. To provide a more helpful response, could you:   
 - Be more specific about what you're looking for
 - Provide some context or background information
 - Ask a more focused question
 This will help me give you a more relevant and useful answer.`
       }, { status: 200 });
+    }
     }
 
     // Prepend the system prompt to the messages array
