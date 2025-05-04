@@ -921,7 +921,7 @@ END OF DOCUMENT: ${file.name}
         );
     };
     // Add this retry function
-    const handleRetry = useCallback(() => {
+    const handleRetry = useCallback(async () => {
         // Find the last assistant message
         const lastAssistantMessage = messages.findLast(m => m.role === 'assistant');
         if (!lastAssistantMessage) return;
