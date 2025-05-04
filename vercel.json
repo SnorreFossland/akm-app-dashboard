@@ -1,21 +1,15 @@
 {
     "functions": {
-        "api/**/*": {
+        "app/api/**/route.js": {
             "maxDuration": 60
         },
-        "pages/api/**/*": {
+        "app/api/**/route.ts": {
             "maxDuration": 60
         },
-        "src/pages/api/**/*": {
+        "src/app/api/**/route.js": {
             "maxDuration": 60
         },
-        ".next/server/pages/api/**/*": {
-            "maxDuration": 60
-        },
-        "app/api/**/*": {
-            "maxDuration": 60
-        },
-        ".next/server/app/api/**/*": {
+        "src/app/synchronous/api/route.ts": {
             "maxDuration": 60
         }
     },
