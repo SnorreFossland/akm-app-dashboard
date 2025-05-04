@@ -850,13 +850,8 @@ END OF DOCUMENT: ${file.name}
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
 
-        if (mdContent) {
-            setMessages((prev) => [...prev.slice(-1)]); // Keep only the last message
-        } else if (contextContent && isContextAttached) {
-            setMessages((prev) => [...prev.slice(-1)]); // Keep only the last message
-        } else {
-            setMessages((prev) => [...prev]);
-        }
+        // Add the user message to conversation history without truncating it
+        setMessages((prev) => [...prev, userMessage]);
         // Send all messages including the new one to maintain conversation context
         await sendMessageToAPI([...messages, userMessage]);
 
@@ -922,32 +917,27 @@ END OF DOCUMENT: ${file.name}
     };
     // Add this retry function
     const handleRetry = useCallback(async () => {
-        // Find the last assistant message
-        const lastAssistantMessage = messages.findLast(m => m.role === 'assistant');
-        if (!lastAssistantMessage) return;
-
-        // Create a more effective continuation message with context
-        const continueMessage: Message = {
-            role: 'user',
-            content: `Your last response ended abruptly. Please continue exactly from where you left off and provide a complete answer.`
-        };
-
-        // Keep existing messages and add the continue message
-        const messagesForRetry = [...messages, continueMessage];
-
-        setStatusMsg('Retrying request... please wait.');
-        console.log('Retrying request with continue message');
+        setStatusMsg('Retrying last request... please wait.');
+        console.log('Retrying request');
         setIsLoading(true);
         retryInProgress.current = true;
 
         try {
-            // IMPORTANT: Actually await the API call
-            await sendMessageToAPI(messagesForRetry);
+            // Create a simple retry message
+            const retryMessage: Message = {
+                role: 'user',
+                content: 'Please try again with your previous response, which was cut off or failed.'
+            };
+
+            // Add this message to the conversation
+            const updatedMessages = [...messages, retryMessage];
+
+            // Send the request
+            await sendMessageToAPI(updatedMessages);
             console.log('Retry completed successfully');
         } catch (error) {
             console.error('Retry failed:', error);
             setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
-            // Make sure we reset loading state on error
             setIsLoading(false);
             retryInProgress.current = false;
         }
