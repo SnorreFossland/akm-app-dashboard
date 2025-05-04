@@ -1,6 +1,21 @@
 {
     "functions": {
-        "api/**/*.js": {
+        "api/**/*": {
+            "maxDuration": 60
+        },
+        "pages/api/**/*": {
+            "maxDuration": 60
+        },
+        "src/pages/api/**/*": {
+            "maxDuration": 60
+        },
+        ".next/server/pages/api/**/*": {
+            "maxDuration": 60
+        },
+        "app/api/**/*": {
+            "maxDuration": 60
+        },
+        ".next/server/app/api/**/*": {
             "maxDuration": 60
         }
     },
