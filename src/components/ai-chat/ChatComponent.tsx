@@ -913,14 +913,19 @@ END OF DOCUMENT: ${file.name}
     };
     // Add this retry function
     const handleRetry = useCallback(() => {
-        // Don't add any new messages, just retry with existing sent messages
-        setMessages([{ role: 'user', content: 'Continue' }]);
+        // Create a "Continue" message
+        const continueMessage: Message = { role: 'user', content: 'Continue' };
+
+        // Keep existing messages and add the continue message
+        const messagesForRetry = [...messages, continueMessage];
+
         setStatusMsg('Retrying request... please wait.');
-        console.log('Retrying request with existing messages:', messages);
+        console.log('Retrying request with continue message');
         setIsLoading(true);
         retryInProgress.current = true;
-        // Just use the existing messages array for the retry
-        sendMessageToAPI(messages)
+
+        // Send the existing messages plus the continue message
+        sendMessageToAPI(continueMessage)
             .catch(error => {
                 console.error('Retry failed:', error);
                 setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
