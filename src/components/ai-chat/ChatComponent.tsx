@@ -920,8 +920,9 @@ END OF DOCUMENT: ${file.name}
             </div>
         );
     };
+    
     // Add this retry function
-    const handleRetry = useCallback(() => {
+    const handleRetry = useCallback(async () => {
         // Find the last assistant message
         const lastAssistantMessage = messages.findLast(m => m.role === 'assistant');
         if (!lastAssistantMessage) return;
@@ -929,7 +930,7 @@ END OF DOCUMENT: ${file.name}
         // Create a more effective continuation message with context
         const continueMessage: Message = {
             role: 'user',
-            content: `Your last response ended abruptly. Please continue exactly from where you left off with your previous answer without repeating information. Your last message ended with: "${lastAssistantMessage.content.slice(-100)}"`
+            content: 'Continue'
         };
 
         // Keep existing messages and add the continue message
@@ -940,12 +941,17 @@ END OF DOCUMENT: ${file.name}
         setIsLoading(true);
         retryInProgress.current = true;
 
-        // Send the existing messages plus the continue message
-        sendMessageToAPI(messagesForRetry)
-            .catch(error => {
-                console.error('Retry failed:', error);
-                setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
-            });
+        try {
+            // IMPORTANT: Actually await the API call
+            await sendMessageToAPI(messagesForRetry);
+            console.log('Retry completed successfully');
+        } catch (error) {
+            console.error('Retry failed:', error);
+            setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
+            // Make sure we reset loading state on error
+            setIsLoading(false);
+            retryInProgress.current = false;
+        }
     }, [messages, sendMessageToAPI]);
 
     // Simple Modal component
