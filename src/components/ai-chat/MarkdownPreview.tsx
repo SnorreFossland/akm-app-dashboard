@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import rehypeRaw from 'rehype-raw';
+import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
 
 interface MarkdownPreviewProps {
@@ -37,7 +38,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
 
             <div className="prose prose-invert custom-markdown markdown-preview text-card-foreground p-4 rounded-md overflow-auto max-h-[80vh] max-w-[800px] mx-auto whitespace-pre-wrap break-words break-all leading-tight">
                 <ReactMarkdown
-                    remarkPlugins={[/* Your plugins here */]}
+                    remarkPlugins={[remarkGfm]}  
                     rehypePlugins={[rehypeRaw]}
                     components={{
                         code: ({ node, inline, className, children, ...props }: any) => {

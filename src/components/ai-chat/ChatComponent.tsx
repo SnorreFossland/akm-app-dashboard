@@ -1261,9 +1261,7 @@ END OF DOCUMENT: ${file.name}
                                 <div className="h-6" />
                             </div>
                         )}
-
                         {/* This is the end of the messages */}
-
                         <div ref={messagesEndRef}></div>
                     </div>
                 </div>

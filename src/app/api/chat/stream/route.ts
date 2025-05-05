@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
                 return new Response(
                     JSON.stringify({
                         error: 'Invalid JSON format in messages parameter',
-                        details: parseError.message
+                        details: parseError instanceof Error ? parseError.message : String(parseError)
                     }),
                     {
                         status: 400,
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest) {
             return new Response(
                 JSON.stringify({
                     error: 'Failed to process messages',
-                    details: error.message
+                    details: error instanceof Error ? error.message : String(error)
                 }),
                 {
                     status: 500,

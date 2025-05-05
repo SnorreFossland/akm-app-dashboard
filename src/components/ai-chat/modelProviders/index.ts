@@ -94,7 +94,9 @@ export async function getModelResponseStream(
         await streamDeepseek(messages, model, temperature, onChunk);
       } catch (error) {
         console.error(`Error with Deepseek model, falling back to dummy:`, error);
-        await onChunk("\n\n⚠️ Deepseek API error: " + error.message + "\n\nFalling back to dummy model...\n\n");
+        await onChunk("\n\n⚠️ Deepseek API error: " +
+          (error instanceof Error ? error.message : String(error)) +
+          "\n\nFalling back to dummy model...\n\n");
         // Fall back to dummy model
         await streamDummy(messages, "dummy-fallback", temperature, onChunk);
       }
@@ -108,8 +110,9 @@ export async function getModelResponseStream(
     }
   } catch (error) {
     console.error(`Error streaming with model ${model}:`, error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
     // Send error message as a chunk so user sees it
-    await onChunk(`\n\n⚠️ Error: ${error.message}\n\nPlease try again or choose a different model.`);
+    await onChunk(`\n\n⚠️ Error: ${errorMessage}\n\nPlease try again or choose a different model.`);
   }
 }
 
