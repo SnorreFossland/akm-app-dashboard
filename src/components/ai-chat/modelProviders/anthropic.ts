@@ -40,3 +40,86 @@ export async function callClaude(messages: Message[], model: string, temperature
     responseHandler: (data) => data.content[0].text
   });
 }
+
+
+/**
+ * Stream Claude API response with provided messages and model
+ */
+export async function streamClaude(
+  messages: Message[],
+  model: string,
+  temperature: number,
+  onChunk: (chunk: string) => Promise<void>
+): Promise<void> {
+  console.log('Streaming Claude API with model:', model);
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    throw new Error('ANTHROPIC_API_KEY not configured');
+  }
+
+  try {
+    // Convert messages array to Anthropic format
+    const formattedMessages = messages.map(msg => ({
+      role: msg.role === 'user' ? 'user' : msg.role === 'assistant' ? 'assistant' : 'system',
+      content: msg.content
+    }));
+
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01'
+      },
+      body: JSON.stringify({
+        model: model,
+        messages: formattedMessages,
+        temperature: temperature || 0.7,
+        stream: true,
+        max_tokens: 4096
+      })
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json();
+      throw new Error(`Claude API error: ${response.status} ${JSON.stringify(errorData)}`);
+    }
+
+    if (!response.body) {
+      throw new Error('Response body is null');
+    }
+    const reader = (response.body as ReadableStream<Uint8Array>).getReader();
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() || '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ') && line !== 'data: [DONE]') {
+          try {
+            const data = JSON.parse(line.substring(6));
+            // Claude returns content in the delta field
+            if (data.type === 'content_block_delta') {
+              const content = data.delta?.text || '';
+              if (content) {
+                await onChunk(content);
+              }
+            }
+          } catch (e) {
+            console.error('Error parsing Claude chunk:', e);
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error streaming from Claude:', error);
+    throw error;
+  }
+}

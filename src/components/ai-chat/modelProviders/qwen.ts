@@ -50,3 +50,77 @@ export async function callQwen(messages: Message[], model: string, temperature: 
         return `Error calling Qwen API: ${error.message}`;
     }
 }
+
+
+export async function streamQwen(
+    messages: Message[],
+    model: string,
+    temperature: number,
+    onChunk: (chunk: string) => Promise<void>
+): Promise<void> {
+    console.log('Streaming Qwen API with model:', model);
+
+    if (!process.env.QWEN_API_KEY) {
+        throw new Error('QWEN_API_KEY not configured');
+    }
+
+    try {
+        const response = await fetch('https://dashscope.aliyuncs.com/v1/services/aigc/text-generation/generation', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${process.env.QWEN_API_KEY}`
+            },
+            body: JSON.stringify({
+                model: model,
+                input: {
+                    messages: messages
+                },
+                parameters: {
+                    temperature: temperature || 0.7
+                },
+                stream: true
+            })
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(`Qwen API error: ${response.status} ${JSON.stringify(errorData)}`);
+        }
+
+        if (!response.body) {
+            throw new Error('Response body is null');
+        }
+        const reader = (response.body as ReadableStream<Uint8Array>).getReader();
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line && line !== '[DONE]') {
+                    try {
+                        const data = JSON.parse(line);
+                        // Extract content based on Qwen's API response format
+                        const content = data.output?.text || '';
+                        if (content) {
+                            await onChunk(content);
+                        }
+                    } catch (e) {
+                        console.error('Error parsing Qwen chunk:', e);
+                    }
+                }
+            }
+        }
+    } catch (error) {
+        console.error('Error streaming from Qwen:', error);
+        throw error;
+    }
+  }

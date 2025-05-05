@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getModelResponse } from '@/components/ai-chat/modelProviders';
+import { getModelResponseStream } from '@/components/ai-chat/modelProviders';
 
-export const runtime = 'edge'; // This enables Edge runtime
+// export const runtime = 'edge'; // This enables Edge runtime
 
 export async function POST(request: Request) {
   try {
@@ -127,9 +127,36 @@ This will help me give you a more relevant and useful answer.`
     const updatedMessages = [systemPrompt, ...messages];
 
     // Get response from the appropriate model
-    const response = await getModelResponse(updatedMessages, model, temperature);
+    // const response = await getModelResponse(updatedMessages, model, temperature);
 
-    return NextResponse.json({ message: response }, { status: 200 });
+    // Set up streaming response
+    const encoder = new TextEncoder();
+    const stream = new TransformStream();
+    const writer = stream.writable.getWriter();
+
+    // Process stream
+    getModelResponseStream(
+      [systemPrompt, ...messages],
+      model,
+      temperature || 0.7,
+      async (chunk) => {
+        await writer.write(encoder.encode(`data: ${JSON.stringify({ content: chunk })}\n\n`));
+      }
+    ).then(() => {
+      writer.write(encoder.encode('data: [DONE]\n\n'));
+      writer.close();
+    }).catch((error) => {
+      console.error('Error streaming response:', error);
+      writer.abort(error);
+    });
+
+    return new Response(stream.readable, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+      }
+    });
   } catch (error) {
     console.error('Error in chat API:', error);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
