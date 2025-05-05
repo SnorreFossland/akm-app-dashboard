@@ -1,18 +1,22 @@
 import { NextResponse } from 'next/server';
 import { getModelResponse } from '@/components/ai-chat/modelProviders';
-import type { Message } from '@/components/ai-chat/modelApiHandler';
+
+export const runtime = 'edge'; // This enables Edge runtime
 
 export async function POST(request: Request) {
   try {
     // Extract request data
     const { messages = [], model, temperature } = await request.json();
+
     // Input validation
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Messages must be an array' }, { status: 400 });
     }
+
     if (!model || typeof model !== 'string') {
       return NextResponse.json({ error: 'Model must be specified' }, { status: 400 });
     }
+
     // Define prompt this is used as system common prompt for all prompts. 
     const systemPrompt2 = {
       role: 'system',
@@ -66,6 +70,7 @@ Make sure the syntax is correct and the diagram renders properly.
       D --> E
   \`\`\`
       `}
+
     // Define system prompt
     const systemPrompt = {
       role: 'system',
@@ -98,6 +103,7 @@ Error & Uncertainty Handling:
 When providing information, aim to be accurate. If you're unsure about something, acknowledge it rather than making up facts.
 `
     };
+
     // Extract the latest user message
     const userMessage = messages[messages.length - 1]?.content || '';
     console.log('109 User message:', userMessage);
@@ -116,10 +122,13 @@ When providing information, aim to be accurate. If you're unsure about something
 This will help me give you a more relevant and useful answer.`
       }, { status: 200 });
     }
+
     // Prepend the system prompt to the messages array
     const updatedMessages = [systemPrompt, ...messages];
+
     // Get response from the appropriate model
     const response = await getModelResponse(updatedMessages, model, temperature);
+
     return NextResponse.json({ message: response }, { status: 200 });
   } catch (error) {
     console.error('Error in chat API:', error);
@@ -129,22 +138,25 @@ This will help me give you a more relevant and useful answer.`
     if (errorMessage.toLowerCase().includes('timed out')) {
       userErrorMsg = 'The request timed out. Please try again.';
     }
+
     return NextResponse.json(
       { error: userErrorMsg },
       { status: 500 }
     );
   }
 }
+
 // Helper function to check if input is vague
 function isInputVague(input: string): boolean {
   const vaguePhrases = [
     'hi', 'hello', 'hey', 'test', 'help', 'who are you',
     'what can you do', 'what do you do', '?'
   ];
-  
+
   const normalizedInput = input.toLowerCase().trim();
 
   return normalizedInput.length < 5 ||
     vaguePhrases.includes(normalizedInput) ||
     normalizedInput.split(' ').length < 2;
 }
+
