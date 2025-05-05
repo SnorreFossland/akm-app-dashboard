@@ -23,6 +23,9 @@ export async function callDeepseek(messages: Message[], model: string, temperatu
   });
 }
 
+/**
+ * Stream Deepseek API response with provided messages and model
+ */
 export async function streamDeepseek(
   messages: Message[],
   model: string,
@@ -35,7 +38,21 @@ export async function streamDeepseek(
     throw new Error('DEEPSEEK_API_KEY not configured');
   }
 
+  // Validate messages before sending request
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    throw new Error('Invalid or empty messages array provided to Deepseek API');
+  }
+
+  // Log the messages for debugging
+  console.log(`Sending ${messages.length} messages to Deepseek`);
+
   try {
+    // Format messages to ensure they match Deepseek's expected format
+    const formattedMessages = messages.map(msg => ({
+      role: msg.role,
+      content: msg.content || '' // Ensure content is never undefined
+    }));
+
     const response = await fetch('https://api.deepseek.com/v1/chat/completions', {
       method: 'POST',
       headers: {
@@ -44,7 +61,7 @@ export async function streamDeepseek(
       },
       body: JSON.stringify({
         model: model,
-        messages: messages,
+        messages: formattedMessages,
         temperature: temperature || 0.7,
         stream: true
       })

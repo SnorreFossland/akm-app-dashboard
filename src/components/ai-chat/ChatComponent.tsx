@@ -111,6 +111,8 @@ export default function ChatComponent({
     const [selectedCategory, setSelectedCategory] = useState<string>('Personal');
     const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('');
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
+    const [streamedContent, setStreamedContent] = useState<string>('');
+    const [isStreaming, setIsStreaming] = useState<boolean>(false);
 
     // // Generate categories list dynamically from templates
     // const CATEGORIES = ["All", ...Array.from(
@@ -678,16 +680,20 @@ END OF DOCUMENT: ${file.name}
     // Function to send messages to the API
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
+        setIsStreaming(false);
+        setStreamedContent('');
+
         try {
-            // Create a new array for messages to send
-            const messagesToSend = [];
+            // Create messagesToSend array as you did before
+            const messagesToSend: Message[] = [];
 
             // First add system messages if context is attached
             if (contextContent && isContextAttached) {
                 messagesToSend.push(
                     {
                         role: 'system',
-                        content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.`
+                        content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, 
+                        ALWAYS analyze and refer to the content of these documents.`
                     },
                     {
                         role: 'system',
@@ -695,34 +701,27 @@ END OF DOCUMENT: ${file.name}
                     }
                 );
             }
-
-            // Then add ALL conversation messages
-            messagesToSend.push(...newMessages);
-
-            // Only modify the last user message if we need to add context references
-            // and it's not a "Continue" message
-            if (contextContent && isContextAttached) {
-                const lastUserIndex = messagesToSend.findLastIndex(m => m.role === 'user');
-                if (lastUserIndex > -1) {
-                    const lastMessage = messagesToSend[lastUserIndex];
-
-                    // Skip modifying if it's a "Continue" message
-                    if (lastMessage.content !== 'Continue') {
-                        const fileNames = contextFiles.map(file => file.name).join(', ');
-                        messagesToSend[lastUserIndex] = {
-                            ...lastMessage,
-                            content: `${lastMessage.content}\n\nPlease analyze the attached documents (${fileNames}) and include specific information from them in your response.`
-                        };
-                    }
-                }
-            }
-            
-
             console.log(`Sending context to the model (${contextContent.length} chars)`);
-            console.log('First 200 chars of context:', contextContent.substring(0, 200));
+            // Add conversation messages
+            // Add conversation messages
+            if (newMessages && newMessages.length > 0) {
+                messagesToSend.push(...newMessages);
+            } else {
+                console.error('No messages in newMessages array');
+                setStatusMsg('Error: No prompt detected. Please enter a question or message.');
+                return; // Exit early if no messages
+            }
+
+            // Final safety check
+            if (messagesToSend.length === 0) {
+                console.error('messagesToSend is empty after all processing');
+                setStatusMsg('Error: Unable to create a valid message for the AI. Please try again.');
+                return;
+            }
+
             // Build the API request body
             const requestBody: any = {
-                messages: messagesToSend,  // User message + context/content 
+                messages: messagesToSend,
                 model: selectedModel,
                 temperature: temperature
             };
@@ -735,56 +734,126 @@ END OF DOCUMENT: ${file.name}
                 messagePreview: JSON.stringify(messagesToSend.slice(0, 2))
             });
 
-            // Add timeout handling with AbortController
-            const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 50000); // 50 second timeout
+            // Set up event source for streaming
+            setIsStreaming(true);
+            // First, create a session ID for this request
+            const sessionId = Date.now().toString();
 
-            const response = await fetch('/api/chat', {
+            // Store the messages in session storage temporarily
+            sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
+
+            // Before creating the EventSource, validate messages
+            if (!messagesToSend || messagesToSend.length === 0) {
+                console.error('No messages to send');
+                setStatusMsg('Error: No messages to send. Please enter a prompt.');
+                setIsLoading(false);
+                setIsStreaming(false);
+                return;
+            }
+
+            // Send the messages via POST
+            fetch('/api/chat/create-stream', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody),
-                signal: controller.signal
-            });
-
-            clearTimeout(timeoutId);
-
-            let data;
-            const contentType = response.headers.get('content-type');
-
-            // Handle different response types
-            if (contentType && contentType.includes('application/json')) {
-                data = await response.json();
-            } else {
-                // Handle text response
-                const textResponse = await response.text();
-                try {
-                    // Try to parse as JSON anyway in case Content-Type is incorrect
-                    data = JSON.parse(textResponse);
-                } catch (e) {
-                    // If not valid JSON, create a data object with the text
-                    data = { message: textResponse };
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sessionId,
+                    messages: messagesToSend,  // Add messages here
+                    model: selectedModel,
+                    temperature: temperature
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
                 }
-            }
 
-            if (!response.ok) {
-                // Set error message if response fails
-                setStatusMsg(data.error || 'An error occurred');
-                console.error('API error response:', data);
-            } else {
-                // Clear any previous errors if successful
-                setStatusMsg('');
-                setMessages((prev) => [...prev, { role: 'assistant', content: data.message }]);
-            }
+                // Now create EventSource with sessionId AND messages
+                const encodedMessages = encodeURIComponent(JSON.stringify(messagesToSend));
+                const eventSource = new EventSource(
+                    `/api/chat/stream?sessionId=${sessionId}&messages=${encodedMessages}&model=${selectedModel}&temperature=${temperature}`
+                );
+
+                let accumulatedResponse = '';
+
+                eventSource.onmessage = (event) => {
+                    try {
+                        // Check for end of stream
+                        if (event.data === "[DONE]") {
+                            console.log('Stream complete, adding full response to messages');
+                            // Stream complete, add the assistant message with the full response
+                            setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
+                            setIsLoading(false);
+                            setIsStreaming(false);
+                            eventSource.close();
+                            return;
+                        }
+
+                        const data = JSON.parse(event.data);
+                        if (data.content) {
+                            // Check if this is a rate limit message
+                            if (data.content.includes('rate limit')) {
+                                setStatusMsg(`Rate limit reached for ${selectedModel}. Consider waiting a minute or switching models.`);
+                            }
+
+                            accumulatedResponse += data.content;
+                            setStreamedContent(accumulatedResponse);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing SSE message:', error);
+                    }
+                };
+
+                // Enhanced error handler
+                eventSource.onerror = (error) => {
+                    // Enhanced error logging with context
+                    const errorDetails = {
+                        readyState: eventSource.readyState, // 0=connecting, 1=open, 2=closed
+                        url: eventSource.url,
+                        timestamp: new Date().toISOString(),
+                        model: selectedModel,
+                        messageCount: messagesToSend.length
+                    };
+
+                    console.error('EventSource error:', errorDetails);
+
+                    // User-friendly error handling based on readyState
+                    let errorMessage = 'Error connecting to AI. ';
+
+                    if (eventSource.readyState === 2) { // CLOSED
+                        errorMessage += 'The connection was closed unexpectedly.';
+                    } else if (eventSource.readyState === 0) { // CONNECTING
+                        errorMessage += 'Unable to establish connection. The server may be unavailable.';
+                    }
+
+                    setStatusMsg(errorMessage);
+                    setIsLoading(false);
+                    setIsStreaming(false);
+                    eventSource.close();
+
+                    // If we have accumulated some content, still show it
+                    if (accumulatedResponse) {
+                        setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
+                    }
+                };
+            }).catch(error => {
+                console.error('Failed to initiate streaming:', error);
+                setStatusMsg(`Failed to start AI response: ${error.message}`);
+                setIsLoading(false);
+                setIsStreaming(false);
+            });
         } catch (error) {
             console.error('Error sending message:', error);
             const errorMessage = error instanceof Error
                 ? error.message
                 : String(error);
+
             // Check if it's a timeout error
             const isTimeout =
                 errorMessage.includes('timeout') ||
                 errorMessage.includes('timed out') ||
                 errorMessage.includes('AbortError');
+
             setStatusMsg(
                 isTimeout
                     ? `Request timed out. AI is taking too long to respond. ${selectedModel} might be busy. Try again or switch models.`
@@ -792,7 +861,7 @@ END OF DOCUMENT: ${file.name}
             );
         } finally {
             setIsLoading(false);
-            retryInProgress.current = false; // Reset retry flag when complete
+            retryInProgress.current = false;
         }
     }, [selectedModel, contextContent, isContextAttached, contextFiles]);
 
@@ -835,6 +904,7 @@ END OF DOCUMENT: ${file.name}
         // Update for next comparison
         previousModelRef.current = selectedModel;
     }, [selectedModel, sendMessageToAPI, modelRetryCount, messages, statusMsg]);
+
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -915,6 +985,7 @@ END OF DOCUMENT: ${file.name}
             </div>
         );
     };
+
     // Add this retry function
     const handleRetry = useCallback(async () => {
         setStatusMsg('Retrying last request... please wait.');
@@ -1150,6 +1221,40 @@ END OF DOCUMENT: ${file.name}
                                 )}
                             </div>
                         ))}
+                        {/* Display the currently streaming message */}
+                        {isStreaming && streamedContent && (
+                            <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary">
+                                <div className="flex items-center justify-between gap-3 ps-1">
+                                    <div className="flex-shrink-0">
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="w-6 h-6 text-gray-400"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
+                                            />
+                                        </svg>
+                                    </div>
+                                    <div className="text-xs text-gray-400 me-auto overflow-auto">
+                                        {`Assistant (${selectedModel}) - Accumulating response...`}
+                                    </div>
+                                </div>
+
+                                <div
+                                    className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
+                                    style={{ overflowWrap: 'anywhere' }}
+                                >
+                                    {streamedContent}
+                                </div>
+                            </div>
+                        )}
+
                         {isLoading && (
                             <div className="flex justify-start my-4">
                                 <ThinkingAnimation />

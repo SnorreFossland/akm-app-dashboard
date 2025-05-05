@@ -55,13 +55,23 @@ export async function streamMistral(
 
     if (!response.ok) {
       const errorData = await response.json();
+
+      // Special handling for rate limits
+      if (response.status === 429) {
+        // Check if the response includes retry-after header
+        const retryAfter = response.headers.get('retry-after');
+        const waitTime = retryAfter ? parseInt(retryAfter) : 60;
+
+        throw new Error(`Rate limit exceeded. Please wait ${waitTime} seconds before trying again.`);
+      }
+
       throw new Error(`Mistral API error: ${response.status} ${JSON.stringify(errorData)}`);
     }
 
     if (!response.body) {
       throw new Error('Response body is null');
     }
-    
+
     const reader = response.body.getReader();
     const decoder = new TextDecoder();
     let buffer = '';

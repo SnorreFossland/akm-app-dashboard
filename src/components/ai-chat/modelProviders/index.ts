@@ -69,39 +69,65 @@ export async function getModelResponseStream(
     throw new Error('No model specified');
   }
 
+  // Validate messages input
+  if (!messages || !Array.isArray(messages) || messages.length === 0) {
+    await onChunk("Error: No valid messages provided. Please try again with a proper prompt.");
+    return;
+  }
+
   console.log(`Streaming - Model: ${model} - Temperature: ${temperature}`);
 
-  if (model.startsWith('gpt')) {
-    await streamOpenAI(messages, model, temperature, onChunk);
-  } else if (model.startsWith('claude')) {
-    await streamClaude(messages, model, temperature, onChunk);
-  } else if (model.startsWith('mistral')) {
-    await streamMistral(messages, model, temperature, onChunk);
-  } else if (model.startsWith('llama')) {
-    await streamALLama(messages, model, temperature, onChunk);
-  } else if (model.startsWith('gemini')) {
-    await streamGemini(messages, model, temperature, onChunk);
-  } else if (model.startsWith('deepseek')) {
-    await streamDeepseek(messages, model, temperature, onChunk);
-  } else if (model.startsWith('qwen')) {
-    await streamQwen(messages, model, temperature, onChunk);
-  } else if (model.startsWith('dummy')) {
-    // Dummy streaming model for testing
-    const dummy = [
-      `[DUMMY STREAMING] This is a test response from the dummy model (${model}).\n`,
-      `\nI received your message and am streaming a response...\n`,
-      `\nThis is a simulated streaming response for UI testing purposes.`,
-      `\nThe current timestamp is: ${new Date().toISOString()}`
-    ];
-
-    // Simulate streaming with delays
-    for (const chunk of dummy) {
-      await onChunk(chunk);
-      // Add a small delay between chunks to simulate streaming
-      await new Promise(resolve => setTimeout(resolve, 300));
+  try {
+    if (model.startsWith('gpt')) {
+      await streamOpenAI(messages, model, temperature, onChunk);
+    } else if (model.startsWith('claude')) {
+      await streamClaude(messages, model, temperature, onChunk);
+    } else if (model.startsWith('mistral')) {
+      await streamMistral(messages, model, temperature, onChunk);
+    } else if (model.startsWith('llama')) {
+      await streamALLama(messages, model, temperature, onChunk);
+    } else if (model.startsWith('gemini')) {
+      await streamGemini(messages, model, temperature, onChunk);
+    } else if (model.startsWith('deepseek')) {
+      // Add try-catch specifically for Deepseek
+      try {
+        await streamDeepseek(messages, model, temperature, onChunk);
+      } catch (error) {
+        console.error(`Error with Deepseek model, falling back to dummy:`, error);
+        await onChunk("\n\n⚠️ Deepseek API error: " + error.message + "\n\nFalling back to dummy model...\n\n");
+        // Fall back to dummy model
+        await streamDummy(messages, "dummy-fallback", temperature, onChunk);
+      }
+    } else if (model.startsWith('qwen')) {
+      await streamQwen(messages, model, temperature, onChunk);
+    } else if (model.startsWith('dummy')) {
+      // Implement a simple dummy streaming model for testing
+      await streamDummy(messages, model, temperature, onChunk);
+    } else {
+      throw new Error(`Unsupported model: ${model}`);
     }
-  } else {
-    throw new Error(`Unsupported model: ${model}`);
+  } catch (error) {
+    console.error(`Error streaming with model ${model}:`, error);
+    // Send error message as a chunk so user sees it
+    await onChunk(`\n\n⚠️ Error: ${error.message}\n\nPlease try again or choose a different model.`);
   }
+}
+
+// Add a dummy streaming function for fallbacks
+async function streamDummy(
+  messages: Message[],
+  model: string,
+  temperature: number,
+  onChunk: (chunk: string) => Promise<void>
+): Promise<void> {
+  await onChunk(`[DUMMY FALLBACK MODEL]\n\nYour request to ${model} couldn't be processed.\n\n`);
+
+  // Get the user's last message
+  const lastUserMessage = messages.slice().reverse().find(m => m.role === 'user');
+  if (lastUserMessage) {
+    await onChunk(`You asked: "${lastUserMessage.content}"\n\n`);
+  }
+
+  await onChunk(`This is a simulated response as the original model encountered an error. Please try again or select a different model.`);
 }
 

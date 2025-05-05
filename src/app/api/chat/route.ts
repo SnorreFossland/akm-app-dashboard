@@ -136,7 +136,7 @@ This will help me give you a more relevant and useful answer.`
 
     // Process stream
     getModelResponseStream(
-      [systemPrompt, ...messages],
+      messages,
       model,
       temperature || 0.7,
       async (chunk) => {
@@ -158,18 +158,8 @@ This will help me give you a more relevant and useful answer.`
       }
     });
   } catch (error) {
-    console.error('Error in chat API:', error);
-    const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-
-    let userErrorMsg = 'Failed to process your request: ' + errorMessage;
-    if (errorMessage.toLowerCase().includes('timed out')) {
-      userErrorMsg = 'The request timed out. Please try again.';
-    }
-
-    return NextResponse.json(
-      { error: userErrorMsg },
-      { status: 500 }
-    );
+    console.error('Error in chat stream API:', error);
+    return NextResponse.json({ error: 'Failed to process request' }, { status: 500 });
   }
 }
 
