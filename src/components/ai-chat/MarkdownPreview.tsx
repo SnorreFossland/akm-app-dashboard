@@ -36,7 +36,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
         <>
             {/* Add global styles for code blocks to ensure they don't expand containers */}
 
-            <div className="prose prose-invert custom-markdown markdown-preview text-card-foreground p-4 rounded-md overflow-auto max-h-[80vh] max-w-[800px] mx-auto whitespace-pre-wrap break-words break-all leading-tight">
+            <div className="prose prose-invert condensed-prose custom-markdown markdown-preview bg-primary-foreground text-primary p-4 rounded-md overflow-auto max-w-[800px] mx-auto whitespace-pre-wrap break-words break-all leading-tight">
                 <ReactMarkdown
                     remarkPlugins={[remarkGfm]}  
                     rehypePlugins={[rehypeRaw]}

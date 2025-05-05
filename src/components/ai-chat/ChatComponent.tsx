@@ -1169,7 +1169,7 @@ END OF DOCUMENT: ${file.name}
 
                                 {/* message content */}
                                 <div
-                                    className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
+                                    className={`flex w-full p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
                                     style={{ overflowWrap: 'anywhere' }}
                                 >
                                     {previewMessageIndex === index ? (

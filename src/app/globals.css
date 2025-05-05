@@ -250,6 +250,43 @@
     line-height: 1 !important;
 }
 
+.prose.prose-invert.custom-markdown.condensed-prose ul>li,
+.condensed-prose ul>li {
+    display: list-item !important;
+    line-height: 1 !important;
+    margin: 0 !important;
+    /* Ensure no extra margins */
+    padding-top: 0.2em !important;
+    /* Remove any top padding */
+    padding-bottom: 0.2em !important;
+    /* Remove any bottom padding */
+}
+
+/* Fix for nested lists alignment */
+.prose.prose-invert.custom-markdown.condensed-prose li ul,
+.condensed-prose li ul,
+.prose.prose-invert.custom-markdown.condensed-prose li ol,
+.condensed-prose li ol {
+    margin-top: 0.5em !important;
+    margin-bottom: 0 !important;
+}
+
+/* Ensure list items and their content stay together */
+.prose.prose-invert.custom-markdown.condensed-prose li,
+.condensed-prose li {
+    white-space: normal !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+}
+
+/* Fix for bullet alignment with text */
+.prose.prose-invert.custom-markdown.condensed-prose li::before,
+.condensed-prose li::before {
+    line-height: inherit !important;
+    vertical-align: top !important;
+}
+
 
 
 /* Sidebar styles */
