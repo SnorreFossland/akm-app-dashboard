@@ -6,16 +6,13 @@ export async function POST(request: Request) {
   try {
     // Extract request data
     const { messages = [], model, temperature } = await request.json();
-
     // Input validation
     if (!messages || !Array.isArray(messages)) {
       return NextResponse.json({ error: 'Messages must be an array' }, { status: 400 });
     }
-
     if (!model || typeof model !== 'string') {
       return NextResponse.json({ error: 'Model must be specified' }, { status: 400 });
     }
-
     // Define prompt this is used as system common prompt for all prompts. 
     const systemPrompt2 = {
       role: 'system',
@@ -69,7 +66,6 @@ Make sure the syntax is correct and the diagram renders properly.
       D --> E
   \`\`\`
       `}
-
     // Define system prompt
     const systemPrompt = {
       role: 'system',
@@ -102,7 +98,6 @@ Error & Uncertainty Handling:
 When providing information, aim to be accurate. If you're unsure about something, acknowledge it rather than making up facts.
 `
     };
-
     // Extract the latest user message
     const userMessage = messages[messages.length - 1]?.content || '';
     console.log('109 User message:', userMessage);
@@ -121,13 +116,10 @@ When providing information, aim to be accurate. If you're unsure about something
 This will help me give you a more relevant and useful answer.`
       }, { status: 200 });
     }
-
     // Prepend the system prompt to the messages array
     const updatedMessages = [systemPrompt, ...messages];
-
     // Get response from the appropriate model
     const response = await getModelResponse(updatedMessages, model, temperature);
-
     return NextResponse.json({ message: response }, { status: 200 });
   } catch (error) {
     console.error('Error in chat API:', error);
@@ -137,84 +129,22 @@ This will help me give you a more relevant and useful answer.`
     if (errorMessage.toLowerCase().includes('timed out')) {
       userErrorMsg = 'The request timed out. Please try again.';
     }
-
     return NextResponse.json(
       { error: userErrorMsg },
       { status: 500 }
     );
   }
 }
-
 // Helper function to check if input is vague
 function isInputVague(input: string): boolean {
   const vaguePhrases = [
     'hi', 'hello', 'hey', 'test', 'help', 'who are you',
     'what can you do', 'what do you do', '?'
   ];
-
+  
   const normalizedInput = input.toLowerCase().trim();
 
   return normalizedInput.length < 5 ||
     vaguePhrases.includes(normalizedInput) ||
     normalizedInput.split(' ').length < 2;
 }
-
-
-// # Example Mermaid Gantt Chart:
-//   \`\`\`mermaid
-//   gantt
-//     %%{ init: {
-//         "theme": "base",
-//         "themeVariables": {
-//           "lineColor": "#dddddd",
-//           "arrowColor": "#dddddd",
-//           "ganttAxisTextColor": "#dddddd",
-//           "ganttAxisFontSize": 12,
-//           "ganttAxisFontFamily": "Arial, sans-serif",
-//           "ganttTaskTextColor": "#dddddd",
-//         }
-//       } }%%
-//       title Project Timeline
-//       dateFormat YYYY-MM-DD
-//       axisFormat %Y-%m-%d
-//       Start: milestone, 2025-01-01, 0d
-//       section Planning
-//       Task1: 10d
-//       Task2: 20d
-//   \`\`\`
-
-// All factual claims must come from either (a) the user's supplied context, or (b) an explicit source verification step. 
-// # Final Instructions
-// You are an assistant that only provides fully verified biographical and other information. For each claim about something or someone:
-// You are an agent that *never* invents facts.  
-// 1. Treat user context as sole ground truth.  
-// 2. For every claim, perform a verification step against named sources.  
-// 4. If you cannot verify, reply exactly:  
-//    “I don't have reliable information that [claim].”  
-// `
-// };
-
-// // 1. Verify against at least one authoritative source.
-// // 2. Provide a citation(e.g., URL) for each confirmed fact.
-// // 3. If you cannot confirm a claim(for example, a persons involvement with a project), respond: 'No verifiable evidence that the person has any connection to this project.'
-// // 4. Do not hallucinate; if information is unknown, state 'I don't have reliable information on this point.'"
-// // 7. NEVER lie, hallucinate or make things up.If you don't know the answer, say 'I don't know' or 'I'm not sure.'
-// // 8. If uncertain about a detail, reply: 'I don't have reliable information on that point.' Do not attempt to guess or invent information."
-
-// const assistantStartPrompt = {
-//   role: 'assistant',
-//   content: `Hello! How can I assist you today?
-//       You can ask me anything related to a topic you choose.
-//       Please provide as much detail as possible for the best results.
-//       If you're unsure where to start, here are some suggestions:
-//       - Ask for a summary of a specific topic.
-//       - Request a list of resources or references.
-//       - Seek clarification on a concept or term.
-//       If you have a specific question or task, feel free to ask!\n
-//       You can also click on template or library. If you don't know the answer, say 'I dont know' or 'Im not sure'.`
-// };
-
-// const assistantPrompt = {
-//   role: 'assistant',
-//   content: 'Please provide as detailed response as possible to the user\'s query.'
-// };

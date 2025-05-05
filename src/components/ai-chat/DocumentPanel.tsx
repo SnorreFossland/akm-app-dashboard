@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-react';
@@ -33,6 +33,9 @@ export default function DocumentPanel({
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(mdContent);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
+    const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
 
     useEffect(() => {
         if (!mdContent) {
@@ -45,19 +48,27 @@ export default function DocumentPanel({
         setEditContent(mdContent);
     }, [mdContent]);
 
-    // const handleSave = () => {
-    //     // Save to Redux store using the proper action creator
-    //     dispatch(saveMarkdownDocument({
-    //         id: documentId || Date.now().toString(),
-    //         name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
-    //         content: editContent,
-    //         createdAt: new Date().toISOString()
-    //     }));
+    // Function to detect placeholders in the format [placeholder]
+    useEffect(() => {
+        if (!editContent) {
+            setTemplatePlaceholders([]);
+            return;
+        }
 
-    //     // Also call the prop callback for parent components
-    //     onSave(editContent);
-    //     setIsEditing(false);
-    // };
+        const placeholderRegex = /\[([^\[\]]+)\]/g;
+        const placeholders: { text: string, start: number, end: number }[] = [];
+        let match;
+
+        while ((match = placeholderRegex.exec(editContent)) !== null) {
+            placeholders.push({
+                text: match[1],
+                start: match.index,
+                end: match.index + match[0].length
+            });
+        }
+
+        setTemplatePlaceholders(placeholders);
+    }, [editContent]);
 
     const handleCancel = () => {
         setEditContent('');
@@ -87,7 +98,6 @@ export default function DocumentPanel({
     };
 
     const handleSave = () => {
-
         dispatch(saveMarkdownDocument({
             id: documentId || Date.now().toString(),
             name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
@@ -95,33 +105,89 @@ export default function DocumentPanel({
             createdAt: new Date().toISOString()
         }));
 
-
         onSave(editContent);
         setIsEditing(false);
     };
 
-    // const handleSaveToRedux = () => {
-    //     if (!docName.trim()) return;
-    //     console.log('Saving to Redux:', {
-    //         id: Date.now().toString(),
-    //         name: docName,
-    //         content: mdPreview
-    //     });
-    //     dispatch(saveMarkdownDocument({
-    //         id: Date.now().toString(),
-    //         name: docName,
-    //         content: mdPreview,
-    //         createdAt: new Date().toISOString()
-    //     }));
-    //     // Show success notification
-    //     alert('Document saved to library');
-    //     // Add this to check if documents are updated after dispatch
-    //     console.log('Documents after save:', documents);
-    // };
+    // Function to select and jump to a placeholder
+    const selectTemplatePlaceholder = (idx: number) => {
+        if (!textareaRef.current) return;
+
+        const placeholder = templatePlaceholders[idx];
+        if (!placeholder) return;
+
+        // Focus the textarea
+        textareaRef.current.focus();
+
+        // Set selection range to highlight the placeholder
+        textareaRef.current.setSelectionRange(
+            placeholder.start,
+            placeholder.end
+        );
+
+        // Scroll the placeholder into view if needed
+        const textarea = textareaRef.current;
+
+        // Get character position information
+        const charInfo = getCaretCoordinates(textarea, placeholder.start);
+
+        // Calculate scroll position
+        if (charInfo) {
+            const scrollTop = textarea.scrollTop;
+            const offsetTop = charInfo.top;
+            const textareaHeight = textarea.clientHeight;
+
+            // Adjust scroll if needed to ensure the placeholder is visible
+            if (offsetTop < scrollTop || offsetTop > scrollTop + textareaHeight - 30) {
+                textarea.scrollTop = Math.max(0, offsetTop - textareaHeight / 2);
+            }
+        }
+    };
+
+    // Helper function to get caret coordinates in a textarea
+    function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
+        // Create a dummy element to measure text dimensions
+        const div = document.createElement('div');
+        // Copy styles that affect dimensions
+        const styles = window.getComputedStyle(element);
+        const props = [
+            'fontFamily', 'fontSize', 'fontWeight', 'letterSpacing',
+            'paddingLeft', 'paddingTop', 'paddingRight', 'paddingBottom',
+            'width', 'lineHeight', 'textAlign', 'wordSpacing', 'whiteSpace'
+        ];
+
+        props.forEach(prop => {
+            const value = styles[prop as keyof typeof styles];
+            div.style[prop as any] = value !== null ? value.toString() : '';
+        });
+
+        // Set content up to the caret position
+        div.textContent = element.value.substring(0, position);
+
+        // Create a span where the caret would be
+        const span = document.createElement('span');
+        span.textContent = element.value.charAt(position) || '.';
+        div.appendChild(span);
+
+        // Position absolutely out of view
+        div.style.position = 'absolute';
+        div.style.visibility = 'hidden';
+        document.body.appendChild(div);
+
+        // Measure position
+        const rect = span.getBoundingClientRect();
+        const result = {
+            top: rect.top - div.getBoundingClientRect().top,
+            left: rect.left - div.getBoundingClientRect().left,
+            height: rect.height
+        };
+
+        document.body.removeChild(div);
+        return result;
+    }
 
     return (
         <div className="p-2">
-            {/* {mdContent && ( */}
             <>
                 <div className="flex items-center justify-between mb-2 px-1">
                     <div className="text-sm text-gray-400">Current context</div>
@@ -169,15 +235,69 @@ export default function DocumentPanel({
                     </div>
                 </div>
             </>
-            {/* )} */}
             {isEditing ? (
-                <textarea
-                    autoFocus
-                    placeholder='Type here..., or paste your content..., or open library'
-                    value={editContent}
-                    onChange={(e) => setEditContent(e.target.value)}
-                    className="w-full h-[80vh] bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
-                />
+                <div className="relative">
+                    {/* Add placeholder jump buttons */}
+                    {templatePlaceholders.length > 0 && (
+                        <div className="flex gap-2 mb-2 flex-wrap">
+                            <span className="text-sm text-gray-400">Edit placeholders: </span>
+                            {templatePlaceholders.map((placeholder, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button"
+                                    onClick={() => selectTemplatePlaceholder(idx)}
+                                    className={buttonAccent}
+                                >
+                                    {placeholder.text.length > 50
+                                        ? `${placeholder.text.substring(0, 49)}...`
+                                        : placeholder.text}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <textarea
+                        ref={textareaRef}
+                        autoFocus
+                        placeholder='Type here..., or paste your content..., or open library'
+                        value={editContent}
+                        onChange={(e) => setEditContent(e.target.value)}
+                        onKeyDown={(e) => {
+                            // Add tab key navigation for placeholders
+                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                e.preventDefault(); // Prevent default tab behavior
+
+                                // Get current cursor position
+                                const cursorPos = e.currentTarget.selectionStart;
+
+                                // Find the next placeholder after cursor position
+                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                                // If no next placeholder, loop back to the first one
+                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                    nextPlaceholder = templatePlaceholders[0];
+                                }
+
+                                // Select the placeholder if found
+                                if (nextPlaceholder) {
+                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                }
+                            }
+                        }}
+                        className="w-full h-[80vh] bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
+                    />
+                    <button
+                        className="absolute bottom-3 right-3 bg-gray-700 hover:bg-gray-600 text-gray-300 p-1.5 rounded-md text-xs flex items-center gap-1 opacity-70 hover:opacity-100"
+                        onClick={() => {
+                            navigator.clipboard.readText().then(
+                                text => setEditContent(prev => prev + text),
+                                err => console.error('Failed to read clipboard:', err)
+                            );
+                        }}
+                    >
+                        <Clipboard className="h-3.5 w-3.5" />
+                        <span>Paste</span>
+                    </button>
+                </div>
             ) : (
                 <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
                     <MarkdownPreview mdPreview={mdContent} />

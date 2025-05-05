@@ -69,7 +69,7 @@ export default function TemplatesPanel({
 
 
     // find the global index of the Domain/Topic Scoping template
-    const domainIndex = PROMPT_TEMPLATES.findIndex(t => t.title === 'Domain');
+    const domainIndex = PROMPT_TEMPLATES.findIndex(t => t.title === 'Domain Definition');
 
 
 
@@ -146,7 +146,7 @@ export default function TemplatesPanel({
             }
 
             const regex = /\[(.*?)\]/g;
-            const templatePlaceholders = [];
+            const placeholders = [];
             let match: RegExpExecArray | null;
 
             while ((match = regex.exec(editableContent)) !== null) {
@@ -155,7 +155,7 @@ export default function TemplatesPanel({
                 );
 
                 if (!isInMermaidBlock) {
-                    templatePlaceholders.push({
+                    placeholders.push({
                         start: match.index,
                         end: match.index + match[0].length,
                         text: match[0]
@@ -164,7 +164,7 @@ export default function TemplatesPanel({
             }
             
             // Update template placeholders
-            setTemplatePlaceholders(templatePlaceholders);
+            setPlaceholders(placeholders);
         }
 
     }, [editableContent, domainContent, importedFile]);
@@ -604,10 +604,10 @@ Now, refine the following user input into an exceptional prompt:
                     <div className="flex flex-col gap-2 rounded-md h-[92%] overflow-y-auto">
 
                         {/* Add placeholder jump buttons */}
-                        {placeholders.length > 0 && (
+                        {templatePlaceholders.length > 0 && (
                             <div className="flex gap-2 mt-2 mb-2 flex-wrap">
                                 <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                                {placeholders.map((placeholder, idx) => (
+                                {templatePlaceholders.map((placeholder, idx) => (
                                     <button
                                         key={idx}
                                         onClick={() => selectPlaceholder(idx)}
@@ -621,12 +621,7 @@ Now, refine the following user input into an exceptional prompt:
                             </div>
                         )}
 
-                        {/* URL Import Section */}
                         {/* Domain Content Section */}
-
-                        {/* <label className="block text-sm font-medium mb-1">you can type or paste you topic here :</label> */}
-
-
                         <TextareaAutosize
                             ref={textareaRef}
                             value={domainContent}
@@ -823,10 +818,10 @@ Now, refine the following user input into an exceptional prompt:
                     </h3>
 
                     {/* Add placeholder jump buttons */}
-                    {templatePlaceholders.length > 0 && (
+                    {placeholders.length > 0 && (
                         <div className="flex gap-2 mt-2 mb-2 flex-wrap">
                             <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                            {templatePlaceholders.map((placeholder, idx) => (
+                            {placeholders.map((placeholder, idx) => (
                                 <button
                                     key={idx}
                                     onClick={() => selectTemplatePlaceholder(idx)}
