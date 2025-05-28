@@ -334,9 +334,14 @@ const AIChatPage = () => {
                 setLeftPanelWidth(newWidth);
             } else if (panel === 'right') {
                 // For right panel, moving left increases width, moving right decreases width
+                // Calculate maximum allowed width considering left panel and minimum middle width
+                const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0; // +8 for drag bar
+                const minimumMiddleWidth = 320; // From your inline style
+                const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 20; // -20 for margins/padding
+
                 const newWidth = Math.max(
                     MIN_PANEL_WIDTH,
-                    Math.min(MAX_PANEL_WIDTH(), startRightWidth - deltaX)
+                    Math.min(maxRightWidth, startRightWidth - deltaX)
                 );
                 setRightPanelWidth(newWidth);
             }
@@ -357,6 +362,8 @@ const AIChatPage = () => {
         document.addEventListener('mouseup', onMouseUp, { capture: true });
         document.addEventListener('contextmenu', onMouseUp, { capture: true }); // Handle right-click
     };
+
+
     const handleApplyTemplate = (content: string) => {
         console.log('93 Template content inserted:', content);
         setChatInput(content); // Update the chat input field
@@ -436,7 +443,7 @@ const AIChatPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('document')}
                             >
-                                Context
+                                Document
                             </li>
                         </ul>
 
@@ -577,18 +584,46 @@ const AIChatPage = () => {
                         style={{
                             width: `${rightPanelWidth}px`,
                             minWidth: '200px',
-                            maxWidth: '75vw'
+                            maxWidth: '65%'
                         }}>
                         <div className="flex justify-between items-center mb-2">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400">AI Output: Markdown Preview</h2>
-                            <button
-                                onClick={() => setShowRightPanel(false)}
-                                className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-                            >
-                                Close
-                            </button>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleSaveToRedux}
+                                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded"
+                                    disabled={!mdPreview || mdPreview === '.' || !docName.trim()}
+                                >
+                                    Save to Library
+                                </button>
+                                <button
+                                    onClick={() => setShowRightPanel(false)}
+                                    className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
-                        <DocumentPanel mdContent={``} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} panelType='right'/>
+                        {(mdPreview)
+                        ?
+                        <DocumentPanel
+                            mdContent={mdPreview}
+                            setMdContent={setMdPreview}
+                            setIsLibraryOpen={setIsLibraryOpen}
+                            isLibraryOpen={isLibraryOpen}
+                            panelType='right'
+                        />
+                        :
+                        <>
+                            <DocumentPanel
+                                mdContent={``}
+                                setMdContent={setMdPreview}
+                                setIsLibraryOpen={setIsLibraryOpen}
+                                isLibraryOpen={isLibraryOpen}
+                                panelType='right'
+                            />
+                        </>
+                        }
                     </div>
                 )}
                 {/* <div className="flex w-full justify-between items-center p-2 bg-primary-foreground">
