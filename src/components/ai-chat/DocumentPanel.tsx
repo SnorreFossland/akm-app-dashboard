@@ -16,6 +16,7 @@ interface DocumentPanelProps {
     setIsLibraryOpen?: (isOpen: boolean) => void;
     isLibraryOpen?: boolean;
     documentId?: string; // Optional document ID for updates
+    panelType?: 'left' | 'right'; // Optional panel type for layout
 }
 
 export default function DocumentPanel({
@@ -29,6 +30,7 @@ export default function DocumentPanel({
     documentId,
     setIsLibraryOpen = () => { },
     isLibraryOpen = false,
+    panelType = 'left' // Default to 'left' panel type
 }: DocumentPanelProps) {
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
@@ -107,6 +109,21 @@ export default function DocumentPanel({
 
         onSave(editContent);
         setIsEditing(false);
+    };
+
+    // Define placeholders based on panel type
+    const getPlaceholder = () => {
+        if (panelType === 'left') {
+            return 'Type, paste content, or load from library. This will be used as context for AI chat.';
+        }
+        return '' // 'Click Markdown Preview to view or edit your document.';
+    };
+
+    const getEmptyMessage = () => {
+        if (panelType === 'left') {
+            return 'No response document. Click Edit to start writing or Library to load content.';
+        }
+        return 'No document selected!';
     };
 
     // Function to select and jump to a placeholder
@@ -190,8 +207,8 @@ export default function DocumentPanel({
         <div className="p-2">
             <>
                 <div className="flex items-center justify-between mb-2 px-1">
-                    {/* <div className="text-sm text-gray-400">Current context</div> */}
-                    <div className="flex items-center gap-2">
+                    <div className="text-sm text-gray-400">{ (panelType === 'left' ? 'Current context' : 'Markdown Preview')}</div>
+                    <div className="flex gap-2">
                         <button
                             onClick={() => setIsLibraryOpen(true)}
                             className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
@@ -258,7 +275,7 @@ export default function DocumentPanel({
                     <textarea
                         ref={textareaRef}
                         autoFocus
-                        placeholder='Type here..., or paste your content..., or open library'
+                        placeholder={getPlaceholder()}
                         value={editContent}
                         onChange={(e) => setEditContent(e.target.value)}
                         onKeyDown={(e) => {
@@ -305,7 +322,7 @@ export default function DocumentPanel({
                 </div>
             )}
             <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                {(!mdContent && !editContent) && <div className="text-sm">No document selected!</div>}
+                {(!mdContent && !editContent) && <div className="text-sm">{getEmptyMessage()}</div>}
             </div>
         </div>
     );

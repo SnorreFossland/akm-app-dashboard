@@ -28,7 +28,8 @@ const AIChatPage = () => {
     const dispatch = useDispatch();
     const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document' | 'conversations'>('document');
     const [chatInput, setChatInput] = useState('');
-    const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
+    const [mdPreview, setMdPreview] = useState<string>('.'); // Markdown preview state
+    const [mdContent, setMdContent] = useState<string>('')
     const [showLeftPanel, setShowLeftPanel] = useState(true);
     const [showRightPanel, setShowRightPanel] = useState(true);
     const [leftPanelWidth, setLeftPanelWidth] = useState(550);
@@ -43,7 +44,6 @@ const AIChatPage = () => {
 
     // replace your single openLibraryButtonRef with two refs:
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-    const [mdContent, setMdContent] = useState<string>('')
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
     const mdFileInputRef = useRef<HTMLInputElement>(null)
@@ -427,7 +427,7 @@ const AIChatPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('templates')}
                             >
-                                Refine Prompts
+                                Refine Prompt
                             </li>
                             <li
                                 className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'document'
@@ -436,7 +436,7 @@ const AIChatPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('document')}
                             >
-                                Document Context
+                                Context
                             </li>
                         </ul>
 
@@ -479,6 +479,7 @@ const AIChatPage = () => {
                                     setMdContent={setMdContent}
                                     setIsLibraryOpen={setIsLibraryOpen}
                                     isLibraryOpen={isLibraryOpen}
+                                    panelType='left'
                                 />
                                 :
                                 <>
@@ -487,6 +488,7 @@ const AIChatPage = () => {
                                         setMdContent={setMdContent}
                                         setIsLibraryOpen={setIsLibraryOpen}
                                         isLibraryOpen={isLibraryOpen}
+                                        panelType='left'
                                     />
                                 </>
                         )}
@@ -578,7 +580,7 @@ const AIChatPage = () => {
                             maxWidth: '75vw'
                         }}>
                         <div className="flex justify-between items-center mb-2">
-                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">Markdown Preview</h2>
+                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">AI Output: Markdown Preview</h2>
                             <button
                                 onClick={() => setShowRightPanel(false)}
                                 className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
@@ -586,7 +588,7 @@ const AIChatPage = () => {
                                 Close
                             </button>
                         </div>
-                        <DocumentPanel mdContent={``} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} />
+                        <DocumentPanel mdContent={``} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} panelType='right'/>
                     </div>
                 )}
                 {/* <div className="flex w-full justify-between items-center p-2 bg-primary-foreground">
