@@ -190,7 +190,7 @@ export default function DocumentPanel({
         <div className="p-2">
             <>
                 <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="text-sm text-gray-400">Current context</div>
+                    {/* <div className="text-sm text-gray-400">Current context</div> */}
                     <div className="flex items-center gap-2">
                         <button
                             onClick={() => setIsLibraryOpen(true)}
@@ -300,6 +300,7 @@ export default function DocumentPanel({
                 </div>
             ) : (
                 <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                    {/* <MarkdownPreview mdPreview={mdPreview} /> */}
                     <MarkdownPreview mdPreview={mdContent} />
                 </div>
             )}

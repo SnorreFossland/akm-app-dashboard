@@ -56,80 +56,80 @@ const data = {
     avatar: "/avatar.png",
   },
   navMain: [
-    // {
-    //   title: "AKM AI Playground",
-    //   url: "#",
-    //   icon: SquareTerminal,
-    //   isActive: true,
-    //   items: [
-    //     {
-    //       title: "0 AI chat basis",
-    //       url: "/aichat-basis",
-    //       icon: Star,
-    //       description: "Prompt Builder",
-    //     },
-    //     {
-    //       title: "1 Prompt builder",
-    //       url: "/prompt-builder",
-    //       icon: Star,
-    //       description: "Prompt Builder",
-    //     },
-    //     {
-    //       title: "2 Domain Builder",
-    //       url: "/domain-builder",
-    //       icon: Star,
-    //       description: "Domain Builder",
-    //     },
-    //     {
-    //       title: "3 Ontology Builder.",
-    //       url: "/concept-builder",
-    //       icon: Star,
-    //       description: "Concept Knowledge Modelling",
-    //     },
-    //     {
-    //       title: "4 POPS Model Builder.",
-    //       url: "/streaming",
-    //       icon: Star,
-    //       description: "Product, Organisation, Process, System (POPS) Modelling",
-    //     },
-    //     {
-    //       title: "4 IRTV Model Builder",
-    //       url: "/model-builder",
-    //       icon: Star,
-    //       description: "Active Knowledge Modelling with IRTV",
-    //     },
-    //     {
-    //       title: "5 Modelview Builder ",
-    //       url: "/model-universe",
-    //       icon: Star,
-    //       description: "Active Knowledge Modelling with IRTV",
-    //     },
-    //     {
-    //       title: "streaming test",
-    //       url: "/streaming",
-    //       icon: Star,
-    //       description: "Streaming",
-    //     },
-    //     // {
-    //     //   title: "History",
-    //     //   url: "#",
-    //     //   icon: History,
-    //     //   description: "View your recent prompts",
-    //     // },
-    //     // {
-    //     //   title: "Starred",
-    //     //   url: "#",
-    //     //   icon: Star,
-    //     //   description: "Browse your starred prompts",
-    //     // },
-    //     // {
-    //     //   title: "Settings",
-    //     //   url: "#",
-    //     //   icon: Settings2,
-    //     //   description: "Configure your playground",
-    //     // },
-    //   ],
-    // },
+    {
+      title: "Mimris AI Playground",
+      url: "#",
+      icon: SquareTerminal,
+      isActive: true,
+      items: [
+        {
+          title: "0 AI Chat Basic",
+          url: "/aichat-basis",
+          icon: Star,
+          description: "Prompt Builder",
+        },
+        {
+          title: "1 Prompt Builder",
+          url: "/prompt-builder",
+          icon: Star,
+          description: "Prompt Builder",
+        },
+        {
+          title: "2 Domain Builder",
+          url: "/domain-builder",
+          icon: Star,
+          description: "Domain Builder",
+        },
+        {
+          title: "3 Ontology Builder.",
+          url: "/concept-builder",
+          icon: Star,
+          description: "Concept Knowledge Modelling",
+        },
+        {
+          title: "4 POPS Model Builder.",
+          url: "/streaming",
+          icon: Star,
+          description: "Product, Organisation, Process, System (POPS) Modelling",
+        },
+        {
+          title: "4 IRTV Model Builder",
+          url: "/model-builder",
+          icon: Star,
+          description: "Active Knowledge Modelling with IRTV",
+        },
+        {
+          title: "5 Modelview Builder ",
+          url: "/model-universe",
+          icon: Star,
+          description: "Active Knowledge Modelling with IRTV",
+        },
+        // {
+        //   title: "streaming test",
+        //   url: "/streaming",
+        //   icon: Star,
+        //   description: "Streaming",
+        // },
+        // {
+        //   title: "History",
+        //   url: "#",
+        //   icon: History,
+        //   description: "View your recent prompts",
+        // },
+        // {
+        //   title: "Starred",
+        //   url: "#",
+        //   icon: Star,
+        //   description: "Browse your starred prompts",
+        // },
+        // {
+        //   title: "Settings",
+        //   url: "#",
+        //   icon: Settings2,
+        //   description: "Configure your playground",
+        // },
+      ],
+    },
     // {
     //   title: "Models",
     //   url: "#",
@@ -319,7 +319,7 @@ export function AppSidebar({ ...props }) {
               <SidebarGroupLabel>Navigation</SidebarGroupLabel>
               <div className="space-y-1">
                 <Link
-                  href="/aichat-basis"
+                  href="/"
                   className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
                   title="Home"
                 >
@@ -329,18 +329,18 @@ export function AppSidebar({ ...props }) {
                 <Link
                   href="/modelling"
                   className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
-                  title="AKM Modeller"
+                  title="Mimris Modelling"
                 >
                   <Atom className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-sm sidebar-item-content">AKM Modeller</span>
+                  <span className="text-sm sidebar-item-content">Mimris Modelling</span>
                 </Link>
               </div>
             </SidebarGroup>
 
-            {/* <SidebarGroup className="sidebar-group">
+            <SidebarGroup className="sidebar-group">
           <SidebarGroupLabel>AI Chat</SidebarGroupLabel>
           <NavMain items={data.navMain} searchResults={data.searchResults} />
-        </SidebarGroup> */}
+        </SidebarGroup>
 
             <div className="flex flex-col gap-4">
 

@@ -3,11 +3,11 @@ import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
-import TemplatesPanel from '@/components/ai-chat/TemplatesPanel';
 import mermaid from 'mermaid';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
+import TemplatesPanel from '@/components/ai-chat/PromptRefinementPanel';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 
@@ -29,8 +29,10 @@ const AIChatPage = () => {
     const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document' | 'conversations'>('document');
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>(''); // Markdown preview state
-    const [showLeftPanel, setShowLeftPanel] = useState(false);
+    const [showLeftPanel, setShowLeftPanel] = useState(true);
+    const [showRightPanel, setShowRightPanel] = useState(true);
     const [leftPanelWidth, setLeftPanelWidth] = useState(550);
+    const [rightPanelWidth, setRightPanelWidth] = useState(360); // Initial width
     const [input, setInput] = useState<string>("");
     const [editableContent, setEditableContent] = useState('');
     const [domainContent, setDomainContent] = useState('');
@@ -41,10 +43,10 @@ const AIChatPage = () => {
 
     // replace your single openLibraryButtonRef with two refs:
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+    const [mdContent, setMdContent] = useState<string>('')
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
     const mdFileInputRef = useRef<HTMLInputElement>(null)
-    const [mdContent, setMdContent] = useState<string>('')
     const [forceRefresh, setForceRefresh] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -296,28 +298,65 @@ const AIChatPage = () => {
         alert(`Conversation "${title}" saved successfully!`);
     };
 
-    const MIN_PANEL_WIDTH = 80;
-    const MAX_PANEL_WIDTH = () => window.innerWidth - 320; // leave at least 320px for the middle
+    const MIN_PANEL_WIDTH = 20;
+    const MAX_PANEL_WIDTH = () => window.innerWidth - 120; // leave at least 120px for the middle
 
     const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
+        // Check for primary (left) mouse button on initial click
+        if (e.button !== 0) return;
+
+        e.preventDefault();
+        e.stopPropagation(); // Prevent event bubbling
+
         const startX = e.clientX;
         const startLeftWidth = leftPanelWidth;
+        const startRightWidth = rightPanelWidth;
+
+        // Prevent text selection during drag
+        document.body.style.userSelect = 'none';
+        document.body.style.cursor = panel === 'left' ? 'col-resize' : 'col-resize';
+
         const onMouseMove = (event: MouseEvent) => {
+            // Only proceed if left button is still pressed (buttons bitmask check)
+            if (!(event.buttons & 1)) {
+                onMouseUp();
+                return;
+            }
+
+            // Calculate distance moved
             const deltaX = event.clientX - startX;
 
             if (panel === 'left') {
-                const newWidth = Math.max(MIN_PANEL_WIDTH, Math.min(MAX_PANEL_WIDTH(), startLeftWidth + deltaX));
+                const newWidth = Math.max(
+                    MIN_PANEL_WIDTH,
+                    Math.min(MAX_PANEL_WIDTH(), startLeftWidth + deltaX)
+                );
                 setLeftPanelWidth(newWidth);
+            } else if (panel === 'right') {
+                // For right panel, moving left increases width, moving right decreases width
+                const newWidth = Math.max(
+                    MIN_PANEL_WIDTH,
+                    Math.min(MAX_PANEL_WIDTH(), startRightWidth - deltaX)
+                );
+                setRightPanelWidth(newWidth);
             }
         };
-        const onMouseUp = () => {
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-        };
-        document.addEventListener('mousemove', onMouseMove);
-        document.addEventListener('mouseup', onMouseUp);
-    };
 
+        const onMouseUp = () => {
+            // Restore body styles
+            document.body.style.userSelect = '';
+            document.body.style.cursor = '';
+
+            document.removeEventListener('mousemove', onMouseMove, { capture: true });
+            document.removeEventListener('mouseup', onMouseUp, { capture: true });
+            document.removeEventListener('contextmenu', onMouseUp, { capture: true });
+        };
+
+        // Add event listeners with capture
+        document.addEventListener('mousemove', onMouseMove, { capture: true });
+        document.addEventListener('mouseup', onMouseUp, { capture: true });
+        document.addEventListener('contextmenu', onMouseUp, { capture: true }); // Handle right-click
+    };
     const handleApplyTemplate = (content: string) => {
         console.log('93 Template content inserted:', content);
         setChatInput(content); // Update the chat input field
@@ -338,13 +377,17 @@ const AIChatPage = () => {
 
     // #region Main Layout
     return (
-        <div className="flex flex-col items-center justify-center w-full h-full bg-background text-gray-100">
-            <div className="flex flex-row flex-nowrap h-[100dvh] min-w-[450px] w-full max-w-full bg-background text-gray-100 overflow-hidden">
-                {/* Left Panel: Templates */}
+        <div className="w-full h-full bg-background text-gray-100">
+            <div className="flex flex-row flex-nowrap h-[100dvh] w-full bg-background text-gray-100">
+
+                {/* Left Panel: Templates ------------------------------------------------------------------------------ */}
                 {showLeftPanel && (
                     <div
-                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 min-w-[460px] sm:min-w-[360px] max-w-[95vw] overflow-auto"
-                        style={{ width: `${leftPanelWidth}px` }}
+                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 max-w-[95vw] overflow-auto"
+                        style={{
+                            width: `${leftPanelWidth}px`,
+                            minWidth: '300px' // Use inline style instead of conflicting Tailwind classes
+                        }}
                     >
                         <div className="flex justify-between items-center m-1 sm:m-2">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400">
@@ -384,7 +427,7 @@ const AIChatPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('templates')}
                             >
-                                Templates
+                                Refine Prompts
                             </li>
                             <li
                                 className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'document'
@@ -393,7 +436,7 @@ const AIChatPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('document')}
                             >
-                                Document
+                                Document Context
                             </li>
                         </ul>
 
@@ -449,24 +492,21 @@ const AIChatPage = () => {
                         )}
                     </div>
                 )}
-
                 {/* Draggable Bar for Left Panel */}
                 {showLeftPanel && (
-                    <div className="w-2 sm:w-3 bg-gray-700 cursor-col-resize relative min-w-[8px]"
-                        onMouseDown={(e) => {
-                            if (!showLeftPanel) setShowLeftPanel(true);
-                            handleMouseDown(e, 'left');
-                        }}
+                    <div className="w-2 bg-gray-700 cursor-col-resize relative flex-shrink-0"
+                        onMouseDown={(e) => handleMouseDown(e, 'left')}
                     >
-                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1.5 sm:w-2 mx-auto max-w-full "></div>
+                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
                     </div>
                 )}
 
-
-                {/* Middle Panel: AI Chat */}
-                <div className="flex-1 p-1 min-w-[450px] sm:min-w-[0] sm:px-2">
-                    {/* <div className="flex-1 min-w-0 px-1 sm:px-2 overflow-hidden"></div> */}
-                    <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2 ">
+                {/* Middle Panel: AI Chat ------------------------------------------------------------------------------- */}
+                <div className="flex p-1 sm:px-2 flex-col flex-grow"
+                    style={{
+                        minWidth: '320px' // Ensure minimum usable width
+                    }}>
+                    <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2">
                         <button
                             onClick={() => setShowLeftPanel(!showLeftPanel)}
                             className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
@@ -481,12 +521,24 @@ const AIChatPage = () => {
                             <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
                         </button>
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
-                        <div className="flex items-center gap-2"></div>
-
-
-
+                        <div className="flex items-center gap-2">
+                            {/* Add right panel toggle button */}
+                            <button
+                                onClick={() => setShowRightPanel(!showRightPanel)}
+                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                                title='Show Right pane'
+                            >
+                                <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
+                                <span>
+                                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                        <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                        <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                    </svg>
+                                </span>
+                            </button>
+                        </div>
                     </div>
-                    <div className="mx-auto max-w-[1200px] h-full overflow-auto">
+                    <div className="flex-1 h-full overflow-auto">
                         <ChatComponent
                             input={input}
                             setInput={setInput}
@@ -499,92 +551,108 @@ const AIChatPage = () => {
                             onAddMD={handleAddMD}
                             mdContent={mdContent}
                             setMdContent={setMdContent}
+                            mdPreview={mdPreview}
+                            setMdPreview={setMdPreview}
                             setCurrentMessages={setCurrentMessages}
                         />
                     </div>
                 </div>
-            </div >
-            <div className="flex w-full max-h-[5px] justify-center items-center mt-1">
-                <hr className="border-gray-700 w-full" />
-            </div>
-            <>
-                {/* Library Modal */}
-                {isLibraryOpen && (
-                    <div
-                        className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
-                        onClick={() => setIsLibraryOpen(false)}
-                    >
-                        <div
-                            className="bg-background rounded-lg p-4 w-[600px]"
-                            onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
-                        >
-                            <div className="flex justify-between items-center mb-4">
-                                <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                                <div className="flex space-x-2">
 
-                                    <button
-                                        onClick={handleExportLibrary}
-                                        className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                                        disabled={documents.length === 0}
-                                    >
-                                        Export Library
-                                    </button>
-                                    <input
-                                        type="file"
-                                        ref={fileInputRef}
-                                        onChange={handleFileSelection}
-                                        accept=".json"
-                                        style={{ display: 'none' }}
-                                    />
-                                    <button
-                                        onClick={handleImportLibrary}
-                                        className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                                    >
-                                        <span>Import Library</span>
-                                    </button>
-                                    <button
-                                        onClick={() => setIsLibraryOpen(false)}
-                                        className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                            {/* Pass export functionality to library component */}
-                            <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
-                                <MarkdownLibrary
-                                    onSelect={handleSelectFromLibrary}
-                                    hideExportLibraryButton={true}
-                                />
-                            </div>
-                        </div>
+                {/* Draggable Bar for Right Panel */}
+                {showRightPanel && (
+                    <div
+                        className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize relative flex-shrink-0"
+                        onMouseDown={(e) => handleMouseDown(e, 'right')}
+                        style={{ zIndex: 10 }}
+                    >
+                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
                     </div>
                 )}
-            </>
+
+                {/* Right Panel: Markdown Preview ------------------------------------------------------------------------*/}
+                {showRightPanel && (
+                    <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
+                        style={{
+                            width: `${rightPanelWidth}px`,
+                            minWidth: '200px',
+                            maxWidth: '75vw'
+                        }}>
+                        <div className="flex justify-between items-center mb-2">
+                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">Markdown Preview</h2>
+                            <button
+                                onClick={() => setShowRightPanel(false)}
+                                className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            >
+                                Close
+                            </button>
+                        </div>
+                        <DocumentPanel mdContent={``} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} />
+                    </div>
+                )}
+                {/* <div className="flex w-full justify-between items-center p-2 bg-primary-foreground">
+                </div > */}
+                <div className="max-h-[5px] mt-1">
+                    <hr className="border-gray-700" />
+                </div>
+                <>
+                    {/* Library Modal */}
+                    {isLibraryOpen && (
+                        <div
+                            className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
+                            onClick={() => setIsLibraryOpen(false)}
+                        >
+                            <div
+                                className="bg-background rounded-lg p-4 w-[600px]"
+                                onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
+                            >
+                                <div className="flex justify-between items-center mb-4">
+                                    <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
+                                    <div className="flex space-x-2">
+
+                                        <button
+                                            onClick={handleExportLibrary}
+                                            className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
+                                            disabled={documents.length === 0}
+                                        >
+                                            Export Library
+                                        </button>
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            onChange={handleFileSelection}
+                                            accept=".json"
+                                            style={{ display: 'none' }}
+                                        />
+                                        <button
+                                            onClick={handleImportLibrary}
+                                            className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
+                                        >
+                                            <span>Import Library</span>
+                                        </button>
+                                        <button
+                                            onClick={() => setIsLibraryOpen(false)}
+                                            className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                                {/* Pass export functionality to library component */}
+                                <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
+                                    <MarkdownLibrary
+                                        onSelect={handleSelectFromLibrary}
+                                        hideExportLibraryButton={true}
+                                    />
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </>
+
+            </div>
         </div>
     );
 };
 // #endregion
 
 export default AIChatPage;
-
-// <div className="flex space-x-2 items-center border border-gray-500 rounded p-1">
-//     <div className="text-xs">Name: </div>
-
-//     <input
-//         type="text"
-//         value={(docName || mdPreview.split('\n')[0] || '').replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')}
-//         onChange={(e) =>
-//             setDocName(e.target.value.replace(/[^a-zA-Z0-9 ]/g, '_'))
-//         }
-//         placeholder="Document Name"
-//         className="text-xs bg-background border border-gray-600 text-white px-2 py-1 rounded"
-//     />
-//     <button
-//         onClick={handleSaveToRedux}
-//         className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
-//         disabled={!((docName || mdPreview.split('\n')[0]).replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_')).trim()}
-//     >
-//         <span>Save</span>
-//     </button>
-// </div>

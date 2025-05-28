@@ -72,7 +72,7 @@ export default function VercelAiPage() {
     const [lastEnterPress, setLastEnterPress] = useState<number>(0);
     // State for selected model
     const [selectedModel, setSelectedModel] = useState<string>("gpt-4");
-    const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
+    const [dividerPosition, setDividerPosition] = useState(100); // 40% default width for left panel
     const [isDragging, setIsDragging] = useState(false);
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -124,30 +124,7 @@ export default function VercelAiPage() {
         );
     };
 
-    // Reusable ActionCardTitleButton component
 
-
-    const ActionCardTitleButton: React.FC<ActionCardTitleButtonProps> = ({ title, done, onClick, icon }) => {
-        return (
-            <CardTitle className="flex justify-center m-1 mb-auto bg-gray-700 border border-gray-500">
-                <div className={`flex justify-between items-center flex-grow ps-2 ${done ? "text-green-600" : "text-green-200"}`}>
-                    {title}
-                    <div className="flex items-center ml-auto">
-                        {!done ? (
-                            <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                <LoadingCircularProgress />
-                            </div>
-                        ) : (
-                            <div style={{ marginLeft: 8, marginRight: 8, color: done ? "green" : "gray" }}>
-                                <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                            </div>
-                        )}
-                        <IconButton onClick={onClick} icon={icon} />
-                    </div>
-                </div>
-            </CardTitle>
-        );
-    };
 
     // Dispatch component updated to use the final prompt
 
@@ -418,43 +395,11 @@ The assistant will provide structured responses with:
         setActiveTab("existing-prompt");
     };
 
-    // Dispatch the edited prompt to the Redux store
-    const handleDispatchEditedPrompt = () => {
-        if (!editedPrompt.trim()) {
-            alert("No edited prompt available to dispatch.");
-            return;
-        }
-        console.log("205 Dispatching Edited Prompt:", editedPrompt);
-
-        // Get current domain data
-        const currentDomainData = data?.phData?.domain || {};
-
-        // Create updated domain data with new prompt
-        const updatedData = {
-            ...currentDomainData,
-            prompt: editedPrompt
-        };
-
-        // Use setDomainData instead of setDomainPrompt
-        dispatch(setDomainData(updatedData));
-        setDispatchDone(true);
-        setEditedPrompt("");
-    };
-
-    // Delete the prompt from the Redux store
-    const handleDeletePrompt = () => {
-        dispatch(deleteDomainPrompt());
-        setEditedPrompt("");
-        setFinalPrompt("");
-        setDomainInput("");
-        setPhase("initial");
-    };
-
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-800 w-full bg-transparent">
             <CardTitle className="flex justify-start items-center text-gray-400 text-xl">
-                <span className="text-active-item me-auto px-2">Prompt Builder</span>
-                <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span>
+                {/* <span className="text-active-item me-auto px-2">Prompt Builder</span>
+                <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span> */}
                 <div className="flex items-center gap-2 ml-auto">
                     <span className="text-sm">Model:</span>
                     <select
@@ -478,9 +423,9 @@ The assistant will provide structured responses with:
                     <div className="h-full w-full overflow-y-hidden">
                         {(phase === "initial") && (
                             <div className="p-1 w-full h-full flex flex-col">
-                                <div className="flex flex-col h-full w-full">
+                                <div className="flex h-full w-full">
                                     {/* Chat welcome message */}
-                                    <div className="flex-grow overflow-y-auto p- flex flex-col">
+                                    <div className="flex flex-col flex-grow overflow-y-auto ">
                                         <div className="bg-background rounded-lg px-4">
                                             <div className="flex items-center mb-1">
                                                 <FontAwesomeIcon icon={faRobot} className="mr-1 text-green-500 text-xs" />
@@ -581,7 +526,7 @@ The assistant will provide structured responses with:
                                                 «The Answer to the Ultimate Question of Life, the Universe, and Everything is»:
                                             </span>
                                             <span className="text-3xl font-bold text-emerald-400 tracking-wide inline-block animate-pulse mt-1">
-                                                &quot42&quot
+                                                &quot;42&quot;
                                             </span>
                                         </div>
                                         <div className="h-px bg-gradient-to-r from-transparent via-teal-400 to-transparent mb-5 opacity-60">
@@ -748,126 +693,13 @@ The assistant will provide structured responses with:
                         )}
                     </div>
                 </div>
-
                 {/* Draggable divider */}
-                <div
+                {/* <div
                     className="cursor-col-resize w-1 bg-green-600 hover:bg-green-400 active:bg-green-300 h-full flex items-center justify-center"
                     onMouseDown={startDragging}
                 >
                     <div className="h-8 w-1 bg-green-300 rounded-full"></div>
-                </div>
-
-                <div className="border-solid rounded border-1 border-green-900 h-full overflow-y-hidden" style={{ width: `${100 - dividerPosition}%` }} ref={containerRef}>
-                    <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-                            <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                                <TabsTrigger value="introduction" className="pb-2 mt-3">
-                                    ...
-                                </TabsTrigger>
-                                {/* <TabsTrigger value="final-suggested-prompt" className="pb-2 mt-3">
-                                    AI Suggested Prompt
-                                </TabsTrigger> */}
-                                <TabsTrigger value="existing-prompt" className="pb-2 mt-3">
-                                    Stored Prompt
-                                </TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="introduction" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="m-2 p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
-                                    <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Prompt Builder</h2>
-
-                                    <p className="text-white mb-3">
-                                        The Prompt Builder is an AI-powered tool that helps you create perfect prompts for domain-specific knowledge models.
-                                        Its about asking the right questions to ask AI to give the best definition of a subject  (The Domain we want to explore).
-                                    </p>
-
-                                    <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
-
-                                    <ol className="text-white list-decimal ml-5 space-y-2">
-                                        <li><span className="font-bold">Start with a Subject :</span> Enter a domain, topic, or theme you want to create a prompt for.</li>
-                                        <li><span className="font-bold">Answer Clarifying Questions:</span> The AI will ask questions to refine your requirements.</li>
-                                        <li><span className="font-bold">Review & Edit:</span> Examine the suggested prompt and make any necessary edits.</li>
-                                        <li><span className="font-bold">Keep:</span> When satisfied, save your prompt to use with your knowledge models. </li>
-                                    </ol>
-                                    <div className="text-sm font-bold mt-4 mb-2">
-                                        <span className="text-green-400">Note: </span> You can run the prompt in next step
-                                    </div>
-                                    <div className="mt-6 p-3 border border-green-700 rounded bg-background">
-                                        <h4 className="text-green-400 font-bold mb-2">Tips for best results:</h4>
-                                        <ul className="text-white list-disc ml-5 space-y-1">
-                                            <li>Be specific about your domain</li>
-                                            <li>Provide detailed answers to the clarification questions</li>
-                                            <li>Don&apos;t hesitate to iterate through multiple rounds of refinement</li>
-                                            <li>Edit the final prompt to add any missing details</li>
-                                        </ul>
-                                    </div>
-                                    {/* 
-                                    <div className="mt-6 text-center">
-                                        <button onClick={() => setActiveTab("final-suggested-prompt")}
-                                            className="bg-green-700 hover:bg-green-600 text-white py-2 px-4 rounded">
-                                            Get Started
-                                        </button>
-                                    </div> */}
-                                </div>
-                            </TabsContent>
-                            {/* <TabsContent value="final-suggested-prompt" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className=" py-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
-                                    <ReactMarkdown className="prose prose-sm p-2 text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
-                                        {finalPrompt}
-                                    </ReactMarkdown>
-                                </div>
-                                <div className="mb-auto min-w-[50%]">
-                                    <DispatchCardTitle
-                                        dispatchDone={dispatchDone}
-                                        handleDispatchFinalPrompt={handleDispatchFinalPrompt}
-                                        extraClassName="float-bottom"
-                                    />
-                                </div>
-                            </TabsContent> */}
-                            <TabsContent value="existing-prompt" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="m-2 p-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                                    <div className="text-white px-2 bg-gray-900 max-h-[calc(100vh-21rem)] overflow-y-auto">
-                                        {!editedPrompt ? (
-                                            <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
-                                                {`${data?.phData?.domain.prompt || "No prompt in store."}`}
-                                            </ReactMarkdown>
-                                        ) : (
-                                            <Textarea
-                                                className="p-2 bg-gray-900 text-lg text-gray-300"
-                                                value={editedPrompt}
-                                                onChange={(e) => setEditedPrompt(e.target.value)}
-                                                rows={20}
-                                                placeholder="Edit the stored prompt here..."
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="flex justify-between bg-gray-700">
-                                        <IconButton
-                                            onClick={() => { setEditedPrompt(data?.phData?.domain.prompt || ""); setPhase("final"); }}
-                                            icon={faEdit}
-                                            className="mr-2 w-full"
-                                        />
-                                        <IconButton
-                                            onClick={handleDispatchEditedPrompt}
-                                            icon={faPaperPlane}
-                                            className="mr-2 w-full"
-                                        />
-                                        <IconButton
-                                            onClick={handleDeletePrompt}
-                                            icon={faTrash}
-                                            className="ml-2 bg-red-700 w-full"
-                                        />
-                                    </div>
-                                    <ActionCardTitleButton
-                                        title="Next step:  Go to Domain Builder"
-                                        done={true}
-                                        onClick={() => window.location.href = "/domain-builder"}
-                                        icon={faLink}
-                                    />
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                    </Card>
-                </div>
+                </div> */}
             </div>
         </div>
     );

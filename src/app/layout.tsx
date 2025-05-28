@@ -18,8 +18,8 @@ import { cookies } from 'next/headers';
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "AKM AI Assisted Modelling App",
-  description: "AI assisted Active Knowledge Modelling app",
+  title: "AI Assisted Mimris Modelling",
+  description: "AI assisted Mimris Modelling app",
 };
 
 export default async function RootLayout({

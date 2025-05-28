@@ -2,8 +2,8 @@
 
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux'; // Add this import
-import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle } from 'lucide-react';
-import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
+import MarkdownPreview from './MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
@@ -22,6 +22,7 @@ import DigitalRainIntro from './DigitalRainIntro';
 import GettingStartedGuide from './GettingStartedGuide';
 import { REFINE_TEMPLATES } from './refineTemplates'
 import { error } from 'console';
+import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 // import { API_BASE_URL } from '@/config/apiConfig';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -43,7 +44,10 @@ export interface ChatComponentProps {
     onAddMD: () => void;
     mdContent: string;
     setMdContent: (content: string) => void;
+    mdPreview: string;
+    setMdPreview: (content: string) => void;
     setCurrentMessages: (messages: any[]) => void;
+    previewMessageIndex?: number | null;
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -74,6 +78,8 @@ export default function ChatComponent({
     onAddMD,
     mdContent,
     setMdContent,
+    mdPreview,
+    setMdPreview,
     setCurrentMessages,
 }: ChatComponentProps) {
     const dispatch = useDispatch();
@@ -114,6 +120,20 @@ export default function ChatComponent({
     const [streamedContent, setStreamedContent] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
 
+    // New state for system prompt modal
+    const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
+    const [systemPrompt, setSystemPrompt] = useState<string>(`You are a helpful AI assistant that provides clear, concise, and accurate responses.
+You are provided with following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.
+    `);
+ 
+    const refinePrompt = (
+        `Please revise the content below for clarity, style, and grammar.
+Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
+Your task is to improve and refine the text, not to analyze it.
+Do not use its contents as contextual input for other questions--I want it improved not analyzed:
+    `
+    )
+    
     // // Generate categories list dynamically from templates
     // const CATEGORIES = ["All", ...Array.from(
     //     new Set(PROMPT_TEMPLATES.map(template => template.category))
@@ -438,13 +458,6 @@ export default function ChatComponent({
         setDocRefine(true);
     };
 
-    const refinePrompt = (
-        `Please revise the content below for clarity, style, and grammar.
-Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
-Your task is to improve and refine the text, not to analyze it.
-Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-`
-    )
 
     // load .md file into input
     const handleMDFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -692,8 +705,7 @@ END OF DOCUMENT: ${file.name}
                 messagesToSend.push(
                     {
                         role: 'system',
-                        content: `You are an AI assistant that has been provided with the following documents for reference. When answering the user's questions, 
-                        ALWAYS analyze and refer to the content of these documents.`
+                        content: systemPrompt
                     },
                     {
                         role: 'system',
@@ -780,11 +792,13 @@ END OF DOCUMENT: ${file.name}
                     try {
                         // Check for end of stream
                         if (event.data === "[DONE]") {
-                            console.log('Stream complete, adding full response to messages');
+                            console.log('794 Stream complete, adding full response to messages', accumulatedResponse);
                             // Stream complete, add the assistant message with the full response
+                            console.log('797 ',((prev: Message[]) => [...prev, { role: 'assistant', content: accumulatedResponse }]));
                             setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
                             setIsLoading(false);
                             setIsStreaming(false);
+                            console.log('801EventSource closed after completion', messages);
                             eventSource.close();
                             return;
                         }
@@ -815,7 +829,7 @@ END OF DOCUMENT: ${file.name}
                         messageCount: messagesToSend.length
                     };
 
-                    console.error('EventSource error:', errorDetails);
+                    // console.error('EventSource error:', errorDetails);
 
                     // User-friendly error handling based on readyState
                     let errorMessage = 'Error connecting to AI. ';
@@ -860,6 +874,7 @@ END OF DOCUMENT: ${file.name}
                     : `Failed to communicate with AI ${selectedModel}: ${errorMessage}`
             );
         } finally {
+            console.log('876 AI request completed', messages);
             setIsLoading(false);
             retryInProgress.current = false;
         }
@@ -939,15 +954,7 @@ END OF DOCUMENT: ${file.name}
                 console.error('Failed to copy text: ', err);
             });
     };
-    const handleViewInMarkdown = (content: string, index: number) => {
-        if (previewMessageIndex === index) {
-            // Toggle off preview mode if clicking the same message
-            setPreviewMessageIndex(null);
-        } else {
-            // Set this message to preview mode
-            setPreviewMessageIndex(index);
-        }
-    };
+    
     // Add this function for the thinking animation
     const ThinkingAnimation = () => {
         return (
@@ -1046,16 +1053,115 @@ END OF DOCUMENT: ${file.name}
         );
     };
 
+   
+    // Function to open system prompt modal
+    const handleSystemPromptClick = () => {
+        setIsSystemPromptOpen(true);
+    };
+
     return (
         <>
-            <button
-                onClick={() => setShowGuideModal(true)}
-                className="absolute top-4 right-2 z-10 bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
-                title="Open getting started guide"
-            >
-                <HelpCircle className="h-5 w-5" />
-            </button>
-            <div ref={containerRef} className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
+            <div className="flex flex-row items-center gap-2">
+                <button
+                    onClick={() => setShowGuideModal(true)}
+                    className="relative top-4 right-2 z-10 bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
+                    title="Open getting started guide"
+                >
+                    <HelpCircle className="h-5 w-5" />
+                </button>
+            </div>
+            <div className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
+                <div className="flex items-center justify-between gap-2 bg-secondary border-b border-gray-600">
+                    <div
+                        className="flex items-center gap-2 px-3 py-2 cursor-pointer hover:bg-gray-700 rounded"
+                        onClick={handleSystemPromptClick}
+                        title="Click to view system prompt"
+                    >
+                        <span className="flex items-center gap-1 text-gray-400 text-xs">
+                            <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
+                            System Prompt
+                            <Info className="h-3 w-3 ml-1" />
+                        </span>
+                    </div>
+                    {/* Context file input */}
+                    <button
+                        type="button"
+                        onClick={handleAddContext}
+                        className="text-gray-500 hover:text-gray-300"
+                        disabled={isLoading || isProcessingFile}
+                        title="Add context from file"
+                    >
+                        <span className='flex items-center gap-2'> <Paperclip className="w-5 h-5" />Add context from file</span>
+
+                    </button>
+                    <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleFileSelect}
+                        accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.docx"
+                        ref={fileInputRef}
+                    />
+                    {/* Context files indicator with enhanced info */}
+                    {isContextAttached && contextFiles.length > 0 && (
+                        <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
+                            <div className="flex items-center gap-2">
+                                {/* <Paperclip className="w-3 h-3" /> */}
+                                <span>
+                                    {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached as context:
+                                    <span className="font-mono ml-1">
+                                        {contextFiles.map((file, idx) => {
+                                            const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                            const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                            return (
+                                                <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
+                                                    {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
+                                                </span>
+                                            );
+                                        })}
+                                        ({Math.round(contextContent.length / 1024)}KB)
+                                    </span>
+                                </span>
+                                <button
+                                    onClick={handleRemoveContext}
+                                    className="ml-auto text-gray-400 hover:text-white"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            </div>
+                            {/* Add guidance about binary files if any are attached */}
+                            {contextFiles.some(file => {
+                                const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+                                return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                            }) && (
+                                    <div className="mt-1 text-yellow-300 text-[10px]">
+                                        ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
+                                        <button
+                                            className="ml-1 underline hover:text-white"
+                                            onClick={() => {
+                                                const binaryFiles = contextFiles
+                                                    .filter(f => {
+                                                        const fileType = f.name.split('.').pop()?.toLowerCase() || '';
+                                                        return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
+                                                    })
+                                                    .map(f => f.name)
+                                                    .join(", ");
+                                                setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
+                                                setTimeout(() => {
+                                                    if (textareaRef.current) {
+                                                        textareaRef.current.focus();
+                                                    }
+                                                }, 100);
+                                            }}
+                                        >
+                                            Open the document and copy all text and Add the text to explain file
+                                        </button>
+                                    </div>
+                                )}
+                        </div>
+                    )}
+                </div>
+                {/* Message container with scrollable area */}
                 <div className="flex-1 min-h-0 overflow-y-auto pb-[150px] w-full" id="message-container">
                     {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
                     {messages.length < 1 && (!input || input.trim() === "") ? (
@@ -1156,7 +1262,16 @@ END OF DOCUMENT: ${file.name}
                                                         {copiedIndex === index ? 'Copied!' : 'Copy'}
                                                     </button>
                                                     <button
-                                                        onClick={() => handleViewInMarkdown(message.content, index)}
+                                                        onClick={() => {
+                                                            console.log('Previewing message in markdown:', message.content);
+                                                            onViewInMarkdown(message.content);
+                                                            // Toggle preview state locally
+                                                            if (previewMessageIndex === index) {
+                                                                setPreviewMessageIndex(null);
+                                                            } else {
+                                                                setPreviewMessageIndex(index);
+                                                            }
+                                                        }}
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
                                                         {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
@@ -1174,7 +1289,7 @@ END OF DOCUMENT: ${file.name}
                                 >
                                     {previewMessageIndex === index ? (
                                         <div className="prose prose-invert custom-markdown markdown-preview w-full">
-                                            <MarkdownPreview mdPreview={message.content} />
+                                            <MarkdownPreview mdPreview={mdPreview} />
                                         </div>
                                     ) : (
                                         message.content
@@ -1187,6 +1302,7 @@ END OF DOCUMENT: ${file.name}
                                         {message.role === 'assistant' && (
                                             <>
                                                 {/* Add Save to Library button */}
+
                                                 <button
                                                     title="Save to Library"
                                                     onClick={() => handleSaveToLibrary(message.content)}
@@ -1210,11 +1326,22 @@ END OF DOCUMENT: ${file.name}
                                                     {copiedIndex === index ? 'Copied!' : 'Copy'}
                                                 </button>
                                                 <button
-                                                    onClick={() => handleViewInMarkdown(message.content, index)}
+                                                    onClick={() => {
+                                                        console.log('Previewing message in markdown:', message.content);
+                                                        onViewInMarkdown(message.content);
+                                                        // Toggle preview state locally
+                                                        if (previewMessageIndex === index) {
+                                                            setPreviewMessageIndex(null);
+                                                        } else {
+                                                            setPreviewMessageIndex(index);
+                                                        }
+                                                    }}
                                                     className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                 >
                                                     {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
                                                 </button>
+                                                
+
                                             </>
                                         )}
                                     </div>
@@ -1403,7 +1530,7 @@ END OF DOCUMENT: ${file.name}
                                             }}
                                             title="Select a template"
                                         >
-                                            <span>Templates</span>
+                                            <span>Prompt Templates</span>
                                             <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                                             </svg>
@@ -1517,85 +1644,7 @@ END OF DOCUMENT: ${file.name}
                         disabled={isLoading}
                     />
                     <div className="flex justify-between">
-                        <div className="flex items-center gap-2 justify-end">
-                            {/* Context file input */}
-                            <button
-                                type="button"
-                                onClick={handleAddContext}
-                                className="text-gray-500 hover:text-gray-300"
-                                disabled={isLoading || isProcessingFile}
-                                title="Add context from file"
-                            >
-                                <Paperclip className="w-5 h-5" />
-                            </button>
-                            <input
-                                type="file"
-                                multiple
-                                className="hidden"
-                                onChange={handleFileSelect}
-                                accept=".txt,.md,.json,.csv,.js,.ts,.html,.css,.docx"
-                                ref={fileInputRef}
-                            />
-                            {/* Context files indicator with enhanced info */}
-                            {isContextAttached && contextFiles.length > 0 && (
-                                <div className="flex flex-col px-3 py-2 bg-blue-900/20 text-xs border-t border-blue-800">
-                                    <div className="flex items-center gap-2">
-                                        {/* <Paperclip className="w-3 h-3" /> */}
-                                        <span>
-                                            {contextFiles.length} file{contextFiles.length !== 1 ? 's' : ''} attached as context:
-                                            <span className="font-mono ml-1">
-                                                {contextFiles.map((file, idx) => {
-                                                    const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                                    const isTextFile = ['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                                    return (
-                                                        <span key={file.name} className={isTextFile ? "" : "text-yellow-400"}>
-                                                            {file.name}{!isTextFile && " (⚠️ limited)"}{idx < contextFiles.length - 1 ? ", " : ""}
-                                                        </span>
-                                                    );
-                                                })}
-                                                ({Math.round(contextContent.length / 1024)}KB)
-                                            </span>
-                                        </span>
-                                        <button
-                                            onClick={handleRemoveContext}
-                                            className="ml-auto text-gray-400 hover:text-white"
-                                        >
-                                            <X className="w-3 h-3" />
-                                        </button>
-                                    </div>
-                                    {/* Add guidance about binary files if any are attached */}
-                                    {contextFiles.some(file => {
-                                        const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-                                        return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                    }) && (
-                                            <div className="mt-1 text-yellow-300 text-[10px]">
-                                                ⚠️ IMPORTANT: Binary files (like PDF) cannot be read by the AI.
-                                                <button
-                                                    className="ml-1 underline hover:text-white"
-                                                    onClick={() => {
-                                                        const binaryFiles = contextFiles
-                                                            .filter(f => {
-                                                                const fileType = f.name.split('.').pop()?.toLowerCase() || '';
-                                                                return !['txt', 'md', 'js', 'ts', 'html', 'csv', 'docx'].includes(fileType);
-                                                            })
-                                                            .map(f => f.name)
-                                                            .join(", ");
-                                                        setInput(`${input}\n\nI've attached ${binaryFiles}, but I understand you can't access its content directly. Here's a summary of what it contains: [Add or paste your summary here]`);
-                                                        setTimeout(() => {
-                                                            if (textareaRef.current) {
-                                                                textareaRef.current.focus();
-                                                            }
-                                                        }, 100);
-                                                    }}
-                                                >
-                                                    Open the document and copy all text and Add the text to explain file
-                                                </button>
-                                            </div>
-                                        )}
-                                </div>
-                            )}
-
-                        </div>
+                        <div className="flex items-center gap-2"></div>
                         <div className="flex items-center text-foreground gap-1">
                             <ModelSelector
                                 selectedModel={selectedModel}
@@ -1633,6 +1682,43 @@ END OF DOCUMENT: ${file.name}
                 {/* Add the modal at the end of the component */}
                 <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
                     <GettingStartedGuide />
+                </Modal>
+
+                {/* System Prompt Modal */}
+                <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
+                    <div>
+                        <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
+                        <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
+                            <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
+                        </div>
+
+                        {contextContent && isContextAttached && (
+                            <>
+                                <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
+                                <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
+                                    <p className="mb-2 text-sm text-gray-300">
+                                        {contextFiles.length} file(s) attached as context:
+                                    </p>
+                                    <ul className="list-disc pl-5 text-sm">
+                                        {contextFiles.map((file) => (
+                                            <li key={file.name} className="mb-1">
+                                                {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setIsSystemPromptOpen(false)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
                 </Modal>
             </div >
         </>

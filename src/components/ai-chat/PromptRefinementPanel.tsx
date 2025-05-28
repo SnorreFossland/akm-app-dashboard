@@ -589,10 +589,10 @@ Now, refine the following user input into an exceptional prompt:
     };
 
     return (
-        <div className="p-3 h-[99vh] sm:h-[90vh] flex flex-col gap-2 overflow-y-auto bg-secondary text-gray-100 shadow-lg">
-            <div className={`border border-gray-400 p-3 rounded-md`}>
+        <div className="flex flex-col gap-2 overflow-y-auto bg-secondary text-gray-100 shadow-lg h-[calc(100vh-9rem)]"> 
+            <div className={`h-full border border-gray-400 p-3 rounded-md`}>
                 <div className="flex justify-between items-center mb-2 ">
-                    <h2 className="text-secondary-foreground text-lg font-bold">1. What topic would you like to chat about? </h2>
+                    <h2 className="text-secondary-foreground text-lg font-bold">1. What topic would you like to make a prompt about ? </h2>
                     <button
                         onClick={() => setIsTopicVisible(prev => !prev)}
                         className={`${buttonOutline} text-sm text-foreground bg-background hover:bg-secondary/80`}
@@ -601,7 +601,7 @@ Now, refine the following user input into an exceptional prompt:
                     </button>
                 </div>
                 {isTopicVisible && (
-                    <div className="flex flex-col gap-2 rounded-md h-[92%] overflow-y-auto">
+                    <div className="flex flex-col gap-2 rounded-md">
 
                         {/* Add placeholder jump buttons */}
                         {templatePlaceholders.length > 0 && (
@@ -628,7 +628,7 @@ Now, refine the following user input into an exceptional prompt:
                             onChange={(e) => setDomainContent(e.target.value)}
                             onKeyDown={handleKeyDown}
                             minRows={4}
-                            maxRows={9}
+                            maxRows={20}
                             className="w-full p-2 border border-gray-700 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground text-base"
                             placeholder="You can type or paste your topic here... or click the + button to add a template or file from library"
                             id="editable-domain-textarea"
@@ -677,7 +677,6 @@ Now, refine the following user input into an exceptional prompt:
                                     )}
                                 </div>
                             </div>
-
                             <div className="flex gap-2 justify-between text-foreground items-start ">
                                 {domainContent !== initialDomainContent.current && (
                                     <>
@@ -722,13 +721,12 @@ Now, refine the following user input into an exceptional prompt:
                                     </>
                                 )}
                             </div>
-
                         </div>
-
                     </div>
                 )}
             </div>
             {/* Template Selection Section */}
+            { (false) &&
             <div className="flex flex-col gap-2 border border-gray-400 rounded h-[60%]">
                 <div className="shadow-lg overflow-y-auto">
                     <div className="flex justify-between items-center p-2 bg-secondary text-secondary-foreground">
@@ -863,6 +861,7 @@ Now, refine the following user input into an exceptional prompt:
                     </div>
                 </div>
             </div>
+            }
             {/* Library Modal */}
             {isLibraryOpen && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
