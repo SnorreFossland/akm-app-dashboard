@@ -44,7 +44,6 @@ export default function DocumentPanel({
             setIsEditing(true);
         }
     }, []);
-
     // Update editContent when mdContent changes from parent
     useEffect(() => {
         setEditContent(mdContent);
@@ -207,7 +206,7 @@ export default function DocumentPanel({
         <div className="p-2">
             <>
                 <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="text-sm text-gray-400">{ (panelType === 'left' ? 'Current context' : 'Markdown Preview')}</div>
+                    <div className="text-sm text-gray-400">{ (panelType === 'left' ? 'Current text' : 'Markdown Preview')}</div>
                     <div className="flex gap-2">
                         <button
                             onClick={() => setIsLibraryOpen(true)}

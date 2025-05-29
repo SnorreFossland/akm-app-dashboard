@@ -2,14 +2,16 @@
 import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import ChatComponent from '@/components/ai-chat/ChatComponent';
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import mermaid from 'mermaid';
+import ChatComponent from '@/components/ai-chat/ChatComponent';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import TemplatesPanel from '@/components/ai-chat/PromptRefinementPanel';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
+import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 
 export interface ChatComponentProps {
     onResponseChange: (response: string) => void;
@@ -53,6 +55,7 @@ const AIChatPage = () => {
     // New state variables for conversations
     const [conversations, setConversations] = useState<any[]>([]);
     const [currentMessages, setCurrentMessages] = useState<any[]>([]);
+    const [showGuideModal, setShowGuideModal] = useState(false);
 
     const handleAddMD = () => {
         mdFileInputRef.current?.click()
@@ -179,6 +182,28 @@ const AIChatPage = () => {
             }
         }
     }, []);
+
+    // Simple Modal component
+    const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+                    <button
+                        onClick={onClose}
+                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                    <div className="p-6">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
 
     const handleSaveToRedux = () => {
         if (!docName.trim()) return;
@@ -515,7 +540,7 @@ const AIChatPage = () => {
                     style={{
                         minWidth: '320px' // Ensure minimum usable width
                     }}>
-                    <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2">
+                    <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 sm:p-2">
                         <button
                             onClick={() => setShowLeftPanel(!showLeftPanel)}
                             className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
@@ -531,6 +556,18 @@ const AIChatPage = () => {
                         </button>
                         <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
                         <div className="flex items-center gap-2">
+                            <div className="flex items-center justify-between">
+
+                                {/* <div className="flex flex-row items-center gap-2"> */}
+                                <button
+                                    onClick={() => setShowGuideModal(true)}
+                                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
+                                    title="Open getting started guide"
+                                >
+                                    <HelpCircle className="h-5 w-5" />
+                                </button>
+                                {/* </div> */}
+                            </div>
                             {/* Add right panel toggle button */}
                             <button
                                 onClick={() => setShowRightPanel(!showRightPanel)}
@@ -605,24 +642,24 @@ const AIChatPage = () => {
                             </div>
                         </div>
                         {(mdPreview)
-                        ?
-                        <DocumentPanel
-                            mdContent={mdPreview}
-                            setMdContent={setMdPreview}
-                            setIsLibraryOpen={setIsLibraryOpen}
-                            isLibraryOpen={isLibraryOpen}
-                            panelType='right'
-                        />
-                        :
-                        <>
+                            ?
                             <DocumentPanel
-                                mdContent={``}
+                                mdContent={mdPreview}
                                 setMdContent={setMdPreview}
                                 setIsLibraryOpen={setIsLibraryOpen}
                                 isLibraryOpen={isLibraryOpen}
                                 panelType='right'
                             />
-                        </>
+                            :
+                            <>
+                                <DocumentPanel
+                                    mdContent={``}
+                                    setMdContent={setMdPreview}
+                                    setIsLibraryOpen={setIsLibraryOpen}
+                                    isLibraryOpen={isLibraryOpen}
+                                    panelType='right'
+                                />
+                            </>
                         }
                     </div>
                 )}
@@ -687,6 +724,10 @@ const AIChatPage = () => {
                 </>
 
             </div>
+            {/* Add the modal at the end of the component */}
+            <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
+                <GettingStartedGuide />
+            </Modal>
         </div>
     );
 };
