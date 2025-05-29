@@ -32,8 +32,8 @@ const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     const [mdContent, setMdContent] = useState<string>('')
-    const [showLeftPanel, setShowLeftPanel] = useState(true);
-    const [showRightPanel, setShowRightPanel] = useState(true);
+    const [showLeftPanel, setShowLeftPanel] = useState(false);
+    const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(360);
     const [rightPanelWidth, setRightPanelWidth] = useState(360); // Initial width
     const [input, setInput] = useState<string>("");
@@ -42,14 +42,14 @@ const AIChatPage = () => {
     const [selectedModel, setSelectedModel] = useState('mistral-small-latest'); // Default model
     const [lastResponse, setLastResponse] = useState<string>('');
     const documents = useSelector((state: RootState) => state.markdown.documents);
-    const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
+    // const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
 
     // replace your single openLibraryButtonRef with two refs:
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
     const mdFileInputRef = useRef<HTMLInputElement>(null)
-    const [forceRefresh, setForceRefresh] = useState(0);
+    // const [forceRefresh, setForceRefresh] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // New state variables for conversations
@@ -404,7 +404,8 @@ const AIChatPage = () => {
         };
         const cleanedResponse = cleanResponse(response);
         setMdPreview(cleanedResponse);
-        setShowLeftPanel(false); // Hide the left panel when viewing markdown
+        setShowRightPanel(true); // Show the right panel with markdown preview
+        // setShowLeftPanel(false); // Hide the left panel when viewing markdown
     };
 
     // #region Main Layout
@@ -426,11 +427,18 @@ const AIChatPage = () => {
                                 Input: {activeLeftTab === 'templates' ? 'Domain Topic' : 'Document'}
                             </h2>
                             <div className="markdown-preview-header">
+                                {/*
                                 <button
                                     onClick={() => setIsLibraryOpen(prev => !prev)}
                                     className="flex items-center text-xs bg-blue-800 hover:bg-blue-600 text-white px-2 py-1 whitespace-nowrap rounded"
                                 >
                                     Library
+                                </button>*/}
+                                <button
+                                    onClick={() => setShowLeftPanel(false)}
+                                    className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                >
+                                    Close
                                 </button>
                             </div>
                             {/* <button
@@ -626,13 +634,13 @@ const AIChatPage = () => {
                         <div className="flex justify-between items-center mb-2">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400">AI Output: Markdown Preview</h2>
                             <div className="flex items-center gap-2">
-                                <button
+                                {/* <button
                                     onClick={handleSaveToRedux}
                                     className="text-xs bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded"
                                     disabled={!mdPreview || mdPreview === '.' || !docName.trim()}
                                 >
                                     Save to Library
-                                </button>
+                                </button> */}
                                 <button
                                     onClick={() => setShowRightPanel(false)}
                                     className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
