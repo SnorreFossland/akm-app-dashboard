@@ -1062,7 +1062,7 @@ END OF DOCUMENT: ${file.name}
 
     return (
         <>
-            <div className="flex flex-col min-h-0 h-[90%] rounded-lg sm:h-[90%] sm:min-w-[460px] overflow-hidden relative">
+            <div className="flex flex-col min-h-0 h-[96%] rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
                 {/* Message container with scrollable area */}
                 <div className="flex-1 min-h-0 overflow-y-auto pb-[150px] w-full" id="message-container">
                     {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
@@ -1632,7 +1632,7 @@ END OF DOCUMENT: ${file.name}
                     </div>
                 </div>
             </Modal>
-        </div >
+            </div >
         </>
     )
 }

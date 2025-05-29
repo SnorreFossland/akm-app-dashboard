@@ -30,11 +30,11 @@ const AIChatPage = () => {
     const dispatch = useDispatch();
     const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document' | 'conversations'>('document');
     const [chatInput, setChatInput] = useState('');
-    const [mdPreview, setMdPreview] = useState<string>('.'); // Markdown preview state
+    const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     const [mdContent, setMdContent] = useState<string>('')
     const [showLeftPanel, setShowLeftPanel] = useState(true);
     const [showRightPanel, setShowRightPanel] = useState(true);
-    const [leftPanelWidth, setLeftPanelWidth] = useState(550);
+    const [leftPanelWidth, setLeftPanelWidth] = useState(360);
     const [rightPanelWidth, setRightPanelWidth] = useState(360); // Initial width
     const [input, setInput] = useState<string>("");
     const [editableContent, setEditableContent] = useState('');
@@ -418,7 +418,7 @@ const AIChatPage = () => {
                         className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 max-w-[95vw] overflow-auto"
                         style={{
                             width: `${leftPanelWidth}px`,
-                            minWidth: '300px' // Use inline style instead of conflicting Tailwind classes
+                            minWidth: '200px' // Use inline style instead of conflicting Tailwind classes
                         }}
                     >
                         <div className="flex justify-between items-center m-1 sm:m-2">
@@ -450,7 +450,7 @@ const AIChatPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('conversations')}
                             >
-                                Conversations
+                                Saved AI Chat conversations
                             </li>
                             <li
                                 className={`px-3 py-1 cursor-pointer ${activeLeftTab === 'templates'
