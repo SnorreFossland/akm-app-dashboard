@@ -93,13 +93,13 @@ const data = {
           description: "Product, Organisation, Process, System (POPS) Modelling",
         },
         {
-          title: "4 IRTV Model Builder",
-          url: "/model-builder",
+          title: "5 IRTV Model Builder",
+          url: "/IRTV-builder",
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",
         },
         {
-          title: "5 Modelview Builder ",
+          title: "6 Modelview Builder ",
           url: "/model-universe",
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",

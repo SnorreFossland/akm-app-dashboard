@@ -1,4 +1,3 @@
-
 // ModelSelector.tsx
 // This component allows users to select an AI model from a dropdown list.
 // It is a client component, as it uses state and effects.
@@ -59,3 +58,15 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
         </div>
     );
 }
+
+// Add dummy option to the model list
+const models = [
+    { value: 'dummy', label: 'Dummy Model (Testing)', category: 'test' },
+    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', category: 'openai' },
+    { value: 'gpt-4', label: 'GPT-4', category: 'openai' },
+    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', category: 'openai' },
+    { value: 'deepseek-chat', label: 'Deepseek Chat', category: 'deepseek' },
+    { value: 'deepseek-coder', label: 'Deepseek Coder', category: 'deepseek' },
+    { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet', category: 'anthropic' },
+    { value: 'claude-3-haiku', label: 'Claude 3 Haiku', category: 'anthropic' },
+];

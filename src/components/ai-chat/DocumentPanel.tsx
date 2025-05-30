@@ -32,6 +32,10 @@ export default function DocumentPanel({
     isLibraryOpen = false,
     panelType = 'left' // Default to 'left' panel type
 }: DocumentPanelProps) {
+    // Add debugging
+    console.log('DocumentPanel render - mdContent:', mdContent?.substring(0, 100) || 'empty');
+    console.log('DocumentPanel render - mdContent length:', mdContent?.length || 0);
+
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(mdContent);
@@ -72,8 +76,8 @@ export default function DocumentPanel({
     }, [editContent]);
 
     const handleCancel = () => {
-        setEditContent('');
-        setMdContent('');
+        // Don't clear mdContent when canceling, just reset editContent to original
+        setEditContent(mdContent || '');
         setIsEditing(false);
     };
 
@@ -225,22 +229,41 @@ export default function DocumentPanel({
                                 >
                                     <Library className="h-4 w-4" />
                                 </button>
+                                <button
+                                    onClick={handleSaveToLibrary}
+                                    className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
+                                    title="Save to library"
+                                >
+                                    <BookmarkPlus className="h-4 w-4" />
+                                </button>
                                 {isEditing ? (
-                                <button
-                                    onClick={() => { setMdContent(editContent); setIsEditing(false); }}
-                                    className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
-                                    title="Apply changes"
-                                >
-                                    <Check className="h-4 w-4" />
-                                </button>
+                                    <button
+                                        onClick={() => {
+                                            console.log('Applying changes:', editContent.substring(0, 100)); // Debug log
+                                            console.log('Before setMdContent - current mdContent:', mdContent?.substring(0, 100) || 'empty');
+
+                                            // Update parent component's state
+                                            setMdContent(editContent);
+                                            setIsEditing(false);
+
+                                            // Also call onSave to notify parent components
+                                            onSave(editContent);
+
+                                            console.log('After setMdContent - editContent applied:', editContent.substring(0, 100) || 'empty');
+                                        }}
+                                        className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
+                                        title="Apply changes"
+                                    >
+                                        <Check className="h-4 w-4" />
+                                    </button>
                                 ) : (
-                                <button
-                                    onClick={() => setIsEditing(true)}
-                                    className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
-                                    title="Edit document"
-                                >
-                                    <Edit className="h-4 w-4" />
-                                </button>
+                                    <button
+                                        onClick={() => setIsEditing(true)}
+                                        className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
+                                        title="Edit document"
+                                    >
+                                        <Edit className="h-4 w-4" />
+                                    </button>
                                 )}
                                 <button
                                     onClick={handleCancel}
@@ -320,14 +343,16 @@ export default function DocumentPanel({
                     </div>
                 ) : (
                     <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
-                        {/* <MarkdownPreview mdPreview={mdPreview} /> */}
-                        <MarkdownPreview mdPreview={mdContent} />
+                        {mdContent ? (
+                            <MarkdownPreview mdPreview={mdContent} />
+                        ) : (
+                            <div className="text-sm text-gray-400 p-4">
+                                {getEmptyMessage()}
+                            </div>
+                        )}
                     </div>
                 )
             }
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                {(!mdContent && !editContent) && <div className="text-sm">{getEmptyMessage()}</div>}
-            </div>
         </div >
     );
 }

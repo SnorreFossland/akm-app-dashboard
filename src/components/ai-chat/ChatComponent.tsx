@@ -1469,9 +1469,9 @@ END OF DOCUMENT: ${file.name}
                                             </select>
                                         </div>
                                         <div className="overflow-y-auto max-h-[180px]">
-                                            {filteredTemplates.map((template) => (
+                                            {filteredTemplates.map((template, index) => (
                                                 <button
-                                                    key={template.title}
+                                                    key={index}
                                                     className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
                                                     onClick={() => {
                                                         setSelectedReportTemplate(template.title);
