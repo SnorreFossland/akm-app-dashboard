@@ -12,8 +12,8 @@
 
 // Define available models
 const AI_MODELS = [
-    { id: 'mistral-small-latest', name: 'Mistral Small Latest' },
     { id: 'deepseek-chat', name: 'Deepseek-Chat' },
+    { id: 'mistral-small-latest', name: 'Mistral Small Latest' },
     { id: 'gpt-4o-mini', name: 'GPT-4o mini' },
     // { id: 'qwen3', name: 'Qwen3' },
     // { id: 'mistral-7b', name: 'Mistral 7B' },
@@ -38,11 +38,10 @@ interface ModelSelectorProps {
 }
 
 export default function ModelSelector({ selectedModel, onModelChange }: ModelSelectorProps) {
-    const model = validModels.includes(selectedModel) ? selectedModel : 'mistral-small-latest'; // Fallback to 'gpt-4'
+    const model = validModels.includes(selectedModel) ? selectedModel : 'deepseek-chat'; // Fallback to Deepseek model
 
     return (
         <div className="flex items-center">
-            {/* <label htmlFor="model-select" className="mr-2 text-sm hidden sm:inline">Model:</label> */}
             <select
                 id="model-select"
                 value={model}
@@ -60,13 +59,13 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
 }
 
 // Add dummy option to the model list
-const models = [
-    { value: 'dummy', label: 'Dummy Model (Testing)', category: 'test' },
-    { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', category: 'openai' },
-    { value: 'gpt-4', label: 'GPT-4', category: 'openai' },
-    { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', category: 'openai' },
-    { value: 'deepseek-chat', label: 'Deepseek Chat', category: 'deepseek' },
-    { value: 'deepseek-coder', label: 'Deepseek Coder', category: 'deepseek' },
-    { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet', category: 'anthropic' },
-    { value: 'claude-3-haiku', label: 'Claude 3 Haiku', category: 'anthropic' },
-];
+// const models = [
+//     { value: 'dummy', label: 'Dummy Model (Testing)', category: 'test' },
+//     { value: 'gpt-3.5-turbo', label: 'GPT-3.5 Turbo', category: 'openai' },
+//     { value: 'gpt-4', label: 'GPT-4', category: 'openai' },
+//     { value: 'gpt-4-turbo', label: 'GPT-4 Turbo', category: 'openai' },
+//     { value: 'deepseek-chat', label: 'Deepseek Chat', category: 'deepseek' },
+//     { value: 'deepseek-coder', label: 'Deepseek Coder', category: 'deepseek' },
+//     { value: 'claude-3-sonnet', label: 'Claude 3 Sonnet', category: 'anthropic' },
+//     { value: 'claude-3-haiku', label: 'Claude 3 Haiku', category: 'anthropic' },
+// ];

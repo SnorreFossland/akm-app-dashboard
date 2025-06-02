@@ -713,7 +713,13 @@ END OF DOCUMENT: ${file.name}
                         content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
                     }
                 );
+            } else {
+                messagesToSend.push({
+                    role: 'system',
+                    content: systemPrompt
+                });
             }
+            
             console.log(`Sending context to the model (${contextContent.length} chars)`);
             // Add conversation messages
             // Add conversation messages
@@ -945,6 +951,7 @@ END OF DOCUMENT: ${file.name}
         onResponseChange(''); // Clear parent state if needed
         setShowDigitalRain(false); // Turn OFF digital rain when sending a message
     };
+
     const handleCopyMessage = (content: string, index: number) => {
         navigator.clipboard.writeText(content)
             .then(() => {

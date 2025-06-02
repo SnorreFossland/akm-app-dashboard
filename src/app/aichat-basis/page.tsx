@@ -39,7 +39,7 @@ const AIChatPage = () => {
     const [input, setInput] = useState<string>("");
     const [editableContent, setEditableContent] = useState('');
     const [domainContent, setDomainContent] = useState('');
-    const [selectedModel, setSelectedModel] = useState('mistral-small-latest'); // Default model
+    const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
     const [lastResponse, setLastResponse] = useState<string>('');
     const documents = useSelector((state: RootState) => state.markdown.documents);
     // const [documentPanelOpen, setDocumentPanelOpen] = useState(false);

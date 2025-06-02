@@ -25,7 +25,7 @@ import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, U
 const debug = false;
 
 const Modelbuilder = () => {
-    const data = useSelector((state: RootState) => state.modelUniverse);
+    const data = {} //useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
     const [dispatchDone, setDispatchDone] = useState(false);
     const [isLoading, setIsLoading] = useState(false);

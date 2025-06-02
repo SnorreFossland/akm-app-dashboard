@@ -29,7 +29,7 @@ const IRTVBuilderPage = () => {
     const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
-    const [activeLeftTab, setActiveLeftTab] = useState<'conversations' | 'templates' | 'document'>('templates');
+    const [activeLeftTab, setActiveLeftTab] = useState<'conversations' | 'templates' | 'document'>('document');
 
     // IRTV Builder specific state
     const [irtvContent, setIrtvContent] = useState('');
@@ -213,7 +213,7 @@ const IRTVBuilderPage = () => {
                     >
                         <div className="flex justify-between items-center m-1 sm:m-2">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400">
-                                IRTV Tools: {activeLeftTab === 'templates' ? 'Templates' : activeLeftTab === 'document' ? 'Document' : 'Conversations'}
+                                IRTV Input: {activeLeftTab === 'templates' ? 'Templates' : activeLeftTab === 'document' ? 'Document' : 'Conversations'}
                             </h2>
                             <div className="markdown-preview-header">
                                 <button
@@ -329,7 +329,7 @@ const IRTVBuilderPage = () => {
                             </span>
                             <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
                         </button>
-                        <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">IRTV Builder</h1>
+                        <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">IRTV Model Builder</h1>
                         <div className="flex items-center gap-2">
                             <div className="flex items-center justify-between">
                                 <button

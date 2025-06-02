@@ -232,24 +232,24 @@ function ModelComponent() {
             {data ? (
               <div className='model-universe-a-data text-left p-1 bg-gray-700 w-full'>
                 <div className='grid grid-cols-2 gap-4 w-full'>
-                  <h5>{data?.phData?.metis?.name}</h5>
+                  {/* <h5>{data?.phData?.metis?.name}</h5> */}
                   <div className='text-left text-gray p-4 bg-background w-full'>
                     <h5>Models: </h5>
                     <ul>
-                      {data?.phData?.metis?.models?.map((model: any) => (
+                      {/* {data?.phData?.metis?.models?.map((model: any) => (
                         <li key={model.name} className="mb-2">
                           <span className="font-bold">{model.name}</span><span className="italic"> - {model.description}</span> <span className="text-gray-400 float-right"> {model?.objects?.length} objects</span>
                         </li>
-                      ))}
+                      ))} */}
                     </ul>
                   </div>
                   <div className='text-left text-gray p-4 bg-background w-full'>
                     <h6>Metamodels: </h6>
-                    {data?.phData?.metis?.metamodels?.map((metamodel: any) => (
+                    {/* {data?.phData?.metis?.metamodels?.map((metamodel: any) => (
                       <li key={metamodel.name} className="mb-2">
                         <span className="font-bold">{metamodel.name}</span><span className="italic"> - {metamodel.description}</span> <span className="text-gray-400 float-right"> | {metamodel?.objecttypes?.length} object types</span>
                       </li>
-                    ))}
+                    ))} */}
                   </div>
                 </div>
               </div>

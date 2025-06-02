@@ -260,7 +260,7 @@ Looking ahead, we can expect...`
                     >
                         <option value="deepseek-coder">Deepseek Coder</option>
                         <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                        <option value="mistral-large">Mistral Large</option>
+                        <option value="mistral-small-latest">Mistral Small Latest</option>
                         <option value="dummy">Dummy (Testing)</option>
                     </select>
                 </div>
