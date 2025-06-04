@@ -21,21 +21,33 @@ const MODEL_PROVIDERS = {
 };
 
 // Create clients for different providers
+// Update the createClient function with better error handling
 function createClient(provider: string) {
   switch (provider) {
     case 'openai':
+      if (!process.env.OPENAI_API_KEY) {
+        throw new Error('OPENAI_API_KEY environment variable is not set');
+      }
       return new OpenAI({
         apiKey: process.env.OPENAI_API_KEY
       });
     case 'deepseek':
+      if (!process.env.DEEPSEEK_API_KEY) {
+        throw new Error('DEEPSEEK_API_KEY environment variable is not set');
+      }
       return new OpenAI({
         apiKey: process.env.DEEPSEEK_API_KEY,
-        baseURL: 'https://api.deepseek.com'
+        baseURL: 'https://api.deepseek.com/v1', // Add /v1 to the URL
+        timeout: 60000, // 60 second timeout
       });
     case 'mistral':
+      if (!process.env.MISTRAL_API_KEY) {
+        throw new Error('MISTRAL_API_KEY environment variable is not set');
+      }
       return new OpenAI({
         apiKey: process.env.MISTRAL_API_KEY,
-        baseURL: 'https://api.mistral.ai/v1'
+        baseURL: 'https://api.mistral.ai/v1',
+        timeout: 60000, // 60 second timeout
       });
     default:
       throw new Error(`Unsupported provider: ${provider}`);
@@ -57,7 +69,7 @@ export async function POST(req: Request) {
 
     // Get the request body as text first to debug
     const bodyText = await req.text();
-    console.log('Request body text:', bodyText);
+    console.log('72 Request body text:', bodyText);
 
     // Check if body is empty
     if (!bodyText || bodyText.trim() === '') {
@@ -91,11 +103,12 @@ export async function POST(req: Request) {
       contextMetamodel
     } = parsedBody;
 
-    console.log('Parsed request data:', {
+    console.log('106 Parsed request data:', {
       aiModelName,
       schemaName,
       systemPrompt: systemPrompt?.substring(0, 100) + '...',
-      userPrompt: userPrompt?.substring(0, 100) + '...'
+      userPrompt: userPrompt?.substring(0, 100) + '...',
+      parsedBody // For debugging, log the first 100 characters of systemPrompt and userPrompt
     });
 
     // Handle dummy model
@@ -229,28 +242,31 @@ export async function POST(req: Request) {
           // Add other required fields for ModelviewSchema
         }, null, 2);
       } else {
-        // Fallback example
+        // Simplified fallback for other schemas
         schemaExample = JSON.stringify({
           name: "Example Model Name",
-          description: "Example description"
+          description: "Example description",
+          objects: [],
+          relships: []
         }, null, 2);
       }
 
-      const jsonInstructions = `\n\nCRITICAL: You MUST respond with ONLY valid JSON matching this EXACT structure. Every field shown is REQUIRED:
+//       const jsonInstructions = `\n\nCRITICAL: You MUST respond with ONLY valid JSON matching this EXACT structure. Every field shown is REQUIRED:
 
-${schemaExample}
+// ${schemaExample}
 
-MANDATORY REQUIREMENTS:
-1. Root level MUST have: "name" (string), "description" (string), "objects" (array), "relships" (array)
-2. Both "objects" and "relships" arrays are REQUIRED even if empty: []
-3. Every object MUST have: "id", "name", "description", "typeRef", "typeName", "proposedType", "properties" (array)
-4. Every property MUST have: "id", "name", "description", "type"
-5. Every relationship MUST have: "id", "name", "description", "from", "to", "type"
-6. NO missing fields allowed
-7. NO explanatory text - ONLY the JSON object
-8. NO markdown formatting or code blocks
+// MANDATORY REQUIREMENTS:
+// 1. Root level MUST have: "name" (string), "description" (string), "objects" (array), "relships" (array)
+// 2. Both "objects" and "relships" arrays are REQUIRED even if empty: []
+// 3. Every object MUST have: "id", "name", "description", "typeRef", "typeName", "proposedType", "properties" (array)
+// 4. Every property MUST have: "id", "name", "description", "type"
+// 5. Every relationship MUST have: "id", "name", "description", "from", "to", "type"
+// 6. NO missing fields allowed
+// 7. NO explanatory text - ONLY the JSON object
+// 8. NO markdown formatting or code blocks
 
-RESPOND WITH THE JSON OBJECT ONLY - START WITH { and END WITH }`;
+// RESPOND WITH THE JSON OBJECT ONLY - START WITH { and END WITH }`;
+      const jsonInstructions = `\n\nIMPORTANT: Respond with ONLY valid JSON matching this structure:\n\n${schemaExample}\n\nNo explanatory text, just the JSON object.`;
 
       // Add instructions to the last user message
       const lastMessage = messages[messages.length - 1];
@@ -258,17 +274,69 @@ RESPOND WITH THE JSON OBJECT ONLY - START WITH { and END WITH }`;
         lastMessage.content += jsonInstructions;
       }
 
-      // For non-OpenAI providers, don't use streaming to ensure we get complete JSON
-      const completionResponse = await client.chat.completions.create({
-        model: aiModelName,
-        messages: messages,
-        temperature: 0.1,
-        stream: false, // Don't stream for non-OpenAI to ensure complete JSON
-      });
+      let completionResponse;
+      try {
+        // For non-OpenAI providers, don't use streaming to ensure we get complete JSON
+        completionResponse = await client.chat.completions.create({
+          model: aiModelName,
+          messages: messages,
+          temperature: 0.3,
+          max_tokens: 2000, // Add token limit
+          stream: false,
+        });
+      } catch (apiError) {
+        console.error('API call failed:', apiError);
+
+        // If Deepseek fails, try to fall back to a basic OpenAI model
+        if (provider === 'deepseek' || provider === 'mistral') {
+          console.log('Falling back to OpenAI due to provider error');
+
+          try {
+            const fallbackClient = new OpenAI({
+              apiKey: process.env.OPENAI_API_KEY
+            });
+
+            completionResponse = await fallbackClient.chat.completions.create({
+              model: 'gpt-4o-mini',
+              messages: messages,
+              temperature: 0.3,
+              max_tokens: 2000,
+              stream: false,
+            });
+          } catch (fallbackError) {
+            console.error('Fallback to OpenAI also failed:', fallbackError);
+
+            // Return a basic error response
+            const errorResponse = {
+              name: "Error: API Unavailable",
+              description: `Unable to connect to ${provider} API. Please try again later or use a different model.`,
+              objects: [],
+              relships: []
+            };
+
+            const stream = new ReadableStream({
+              start(controller) {
+                controller.enqueue(new TextEncoder().encode(JSON.stringify(errorResponse)));
+                controller.close();
+              }
+            });
+
+            return new NextResponse(stream);
+          }
+        } else {
+          throw apiError; // Re-throw if not a provider we can fallback from
+        }
+      }
 
       const content = completionResponse.choices[0]?.message?.content || "";
 
-      // Try to extract JSON from the response
+      console.log('Raw response from provider:', content);
+
+      if (!content || content.trim() === '') {
+        throw new Error('Empty response from AI provider');
+      }
+
+      // Continue with the existing JSON processing logic...
       let jsonContent = content.trim();
 
       // Remove markdown code blocks if present
@@ -285,8 +353,14 @@ RESPOND WITH THE JSON OBJECT ONLY - START WITH { and END WITH }`;
         if (jsonMatch) {
           jsonContent = jsonMatch[0];
         } else {
-          console.error('No JSON found in response:', content);
-          throw new Error('No valid JSON found in response');
+          // Create a fallback response from the text
+          const fallbackResponse = {
+            name: "Generated Model",
+            description: content.substring(0, 500),
+            objects: [],
+            relships: []
+          };
+          jsonContent = JSON.stringify(fallbackResponse);
         }
       }
 
@@ -294,75 +368,66 @@ RESPOND WITH THE JSON OBJECT ONLY - START WITH { and END WITH }`;
       let parsedJson;
       try {
         parsedJson = JSON.parse(jsonContent);
-        console.log('Parsed JSON from provider:', parsedJson);
-        
-        // Attempt to fix missing required fields
-        if (!parsedJson.name) {
-          parsedJson.name = "Generated Model";
-          console.log('Added missing name field');
-        }
-        if (!parsedJson.description) {
-          parsedJson.description = "AI-generated model description";
-          console.log('Added missing description field');
-        }
-        
-        // Ensure required arrays exist
-        if (!parsedJson.objects) {
-          parsedJson.objects = [];
-          console.log('Added missing objects array');
-        }
-        if (!parsedJson.relships) {
-          parsedJson.relships = [];
-          console.log('Added missing relships array');
-        }
-        
-        // Fix missing fields in objects
-        if (parsedJson.objects) {
-          parsedJson.objects.forEach((obj: any, index: number) => {
-            if (!obj.id) obj.id = `obj_${index + 1}`;
-            if (!obj.name) obj.name = `Object${index + 1}`;
-            if (!obj.description) obj.description = `Description for object ${index + 1}`;
-            if (!obj.typeRef) obj.typeRef = "entity";
-            if (!obj.typeName) obj.typeName = `${obj.name}Type`;
-            if (!obj.proposedType) obj.proposedType = `${obj.name}ProposedType`;
-            
-            // Ensure properties array exists
-            if (!obj.properties) {
-              obj.properties = [];
-            }
-            
-            // Fix properties
-            if (obj.properties) {
-              obj.properties.forEach((prop: any, propIndex: number) => {
-                if (!prop.id) prop.id = `prop_${index}_${propIndex + 1}`;
-                if (!prop.name) prop.name = `property${propIndex + 1}`;
-                if (!prop.description) prop.description = `Description for property ${propIndex + 1}`;
-                if (!prop.type) prop.type = "string";
-              });
-            }
-          });
-        }
-        
-        // Fix missing fields in relationships
-        if (parsedJson.relships) {
-          parsedJson.relships.forEach((rel: any, index: number) => {
-            if (!rel.id) rel.id = `rel_${index + 1}`;
-            if (!rel.name) rel.name = `Relationship${index + 1}`;
-            if (!rel.description) rel.description = `Description for relationship ${index + 1}`;
-            if (!rel.from) rel.from = "obj_1";
-            if (!rel.to) rel.to = "obj_1";
-            if (!rel.type) rel.type = "association";
-          });
-        }
-        
-        // Re-encode the fixed JSON
-        jsonContent = JSON.stringify(parsedJson);
-        
+        console.log('Successfully parsed JSON:', Object.keys(parsedJson));
       } catch (parseError) {
-        console.error('Invalid JSON from provider:', jsonContent);
-        console.error('Parse error:', parseError);
-        throw new Error(`Provider returned invalid JSON: ${parseError.message}`);
+        console.error('JSON parse error:', parseError);
+        console.error('Attempted to parse:', jsonContent);
+
+        // Last resort: create a minimal valid response
+        const fallbackResponse = {
+          name: "Error Recovery Model",
+          description: "Model created due to JSON parsing error. Original response: " + content.substring(0, 200),
+          objects: [],
+          relships: []
+        };
+
+        parsedJson = fallbackResponse;
+        jsonContent = JSON.stringify(fallbackResponse);
+        console.log('Using fallback response due to parse error');
       }
+
+      // Ensure all required fields are present
+      if (!parsedJson.name) parsedJson.name = "Generated Model";
+      if (!parsedJson.description) parsedJson.description = "AI-generated model description";
+      if (!parsedJson.objects) parsedJson.objects = [];
+      if (!parsedJson.relships) parsedJson.relships = [];
+
+      // Fix missing fields in objects
+      if (parsedJson.objects) {
+        parsedJson.objects.forEach((obj: any, index: number) => {
+          if (!obj.id) obj.id = `obj_${index + 1}`;
+          if (!obj.name) obj.name = `Object${index + 1}`;
+          if (!obj.description) obj.description = `Description for object ${index + 1}`;
+          if (!obj.typeRef) obj.typeRef = "entity";
+          if (!obj.typeName) obj.typeName = `${obj.name}Type`;
+          if (!obj.proposedType) obj.proposedType = `${obj.name}ProposedType`;
+          if (!obj.properties) obj.properties = [];
+
+          // Fix properties
+          obj.properties.forEach((prop: any, propIndex: number) => {
+            if (!prop.id) prop.id = `prop_${index}_${propIndex + 1}`;
+            if (!prop.name) prop.name = `property${propIndex + 1}`;
+            if (!prop.description) prop.description = `Description for property ${propIndex + 1}`;
+            if (!prop.type) prop.type = "string";
+          });
+        });
+      }
+
+      // Fix missing fields in relationships
+      if (parsedJson.relships) {
+        parsedJson.relships.forEach((rel: any, index: number) => {
+          if (!rel.id) rel.id = `rel_${index + 1}`;
+          if (!rel.name) rel.name = `Relationship${index + 1}`;
+          if (!rel.description) rel.description = `Description for relationship ${index + 1}`;
+          if (!rel.from) rel.from = parsedJson.objects[0]?.id || "obj_1";
+          if (!rel.to) rel.to = parsedJson.objects[0]?.id || "obj_1";
+          if (!rel.type) rel.type = "association";
+        });
+      }
+
+      // Re-encode the fixed JSON
+      jsonContent = JSON.stringify(parsedJson);
+      console.log('Final JSON to return:', jsonContent.substring(0, 300));
 
       // Create a stream with the complete JSON response
       const stream = new ReadableStream({

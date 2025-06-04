@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -62,7 +62,7 @@ const ConceptBuilder = () => {
     const [domainDesc, setDomainDesc] = useState("");
     const [descrString, setDescrString] = useState("");
     const [suggestedOntologyData, setSuggestedOntologyData] = useState<Ontology | null>(null);
-    const [ontologyDataList, setOntologyDataList] = useState<Ontology | null>(null);
+    // const [ontologyDataList, setOntologyDataList] = useState<Ontology | null>(null);
     const [suggestedConceptData, setSuggestedConceptData] = useState("");
     const [step, setStep] = useState(0);
     const [activeTab, setActiveTab] = useState('suggested-concepts');
@@ -71,29 +71,100 @@ const ConceptBuilder = () => {
     const handleCloseModal = () => setIsModalOpen(false);
 
     const ontologyReduxData = data.phData.ontology || null;
-    const ontologyConcepts = ontologyReduxData?.concepts;
-    const ontologyRelationships = ontologyReduxData?.relationships;
-    const modelConceptss = data.phData.metis?.models.map((model) => (model.objects.length > 0) && model.objects?.filter(o => o.typeName === "information"));
-    const modelConcepts = modelConceptss?.flat().filter(Boolean);
-    const modelRelationshipss = data.phData.metis?.models.map((model) =>
-        (model as any).relationships?.length > 0 &&
-        (model as any).relationships?.map((r: any) => {
-            const found = modelConcepts.find(o => o && o.id === r.fromObj);
-            return found ? r : null;
-        }).filter(Boolean));
 
-    const modelRelationships = modelRelationshipss?.flat().filter(Boolean);
-    const existingConcepts = ontologyConcepts?.concat(
-        modelConcepts?.filter(c => typeof c === 'object').map(c => ({ name: c.name, description: c.description })) || []
-    );
-    const existingRelationships = ontologyRelationships?.concat(modelRelationships);
+    // Memoize complex computed values to prevent unnecessary re-renders
+    const existingConcepts = useMemo(() => {
+        const ontologyConcepts = ontologyReduxData?.concepts;
+        const modelConceptss = data.phData.metis?.models.map((model) =>
+            (model.objects.length > 0) && model.objects?.filter(o => o.typeName === "information")
+        );
+        const modelConcepts = modelConceptss?.flat().filter(Boolean);
 
+        return ontologyConcepts?.concat(
+            modelConcepts?.filter(c => typeof c === 'object').map(c => ({ name: c.name, description: c.description })) || []
+        );
+    }, [ontologyReduxData?.concepts, data.phData.metis?.models]);
 
+    const existingRelationships = useMemo(() => {
+        const ontologyRelationships = ontologyReduxData?.relationships;
+        const modelConceptss = data.phData.metis?.models.map((model) =>
+            (model.objects.length > 0) && model.objects?.filter(o => o.typeName === "information")
+        );
+        const modelConcepts = modelConceptss?.flat().filter(Boolean);
+
+        const modelRelationshipss = data.phData.metis?.models.map((model) =>
+            (model as any).relationships?.length > 0 &&
+            (model as any).relationships?.map((r: any) => {
+                const found = modelConcepts?.find(o => o && o.id === r.fromObj);
+                return found ? r : null;
+            }).filter(Boolean)
+        );
+        const modelRelationships = modelRelationshipss?.flat().filter(Boolean);
+
+        return ontologyRelationships?.concat(modelRelationships);
+    }, [ontologyReduxData?.relationships, data.phData.metis?.models]);
 
     useEffect(() => {
         setDescrString(data.phData.domain?.description || "");
         setTopicDescr(data.phData.domain?.presentation || "");
     }, [data.phData.domain?.description, data.phData.domain?.presentation]);
+
+
+    // Memoize the prompt building logic
+    const promptData = useMemo(() => {
+        let conceptString = '';
+        if (existingConcepts && existingRelationships) {
+            conceptString += `**Concepts**\n\n${existingConcepts?.map((c) => (c) && `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
+            conceptString += `**Relationships**\n\n${existingRelationships?.map((r) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
+        }
+
+        const userPrompt = `${UserPrompt} \n\n **Domain name:**  ${data.phData.domain?.name} \\ **Domain description:** ${data.phData.domain?.description || ""}`;
+        const userInput = `${UserInput} \n\n ${topicDescr}`;
+        const newSystemPrompt = SystemPrompt;
+        const newSystemBehaviorGuidelines = SystemBehaviorGuidelines;
+        const newContextOntology = (impOntologyString) ? `${ExistingOntology} ${impOntologyString}` : "";
+        const newContextItems = (conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "";
+        const newContextMetamodel = `${MetamodelPrompt}`;
+
+        return {
+            userPrompt,
+            userInput,
+            newSystemPrompt,
+            newSystemBehaviorGuidelines,
+            newContextOntology,
+            newContextItems,
+            newContextMetamodel
+        };
+    }, [topicDescr, existingConcepts, existingRelationships, data.phData.domain?.name, data.phData.domain?.description, impOntologyString]);
+    // Update state only when promptData changes
+    useEffect(() => {
+        setSystemPrompt(promptData.newSystemPrompt);
+        setSystemBehaviorGuidelines(promptData.newSystemBehaviorGuidelines);
+        setContextOntology(promptData.newContextOntology);
+        setUserPrompt(promptData.userPrompt);
+        setUserInput(promptData.userInput);
+        setContextItems(promptData.newContextItems);
+        setContextMetamodel(promptData.newContextMetamodel);
+
+        setPrintPromptsDiv(
+            <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                <DialogTitle>---- System Prompt</DialogTitle>
+                <ReactMarkdown>{promptData.newSystemPrompt}</ReactMarkdown>
+                <DialogTitle>---- System behaviour Guidelines Prompt</DialogTitle>
+                <ReactMarkdown>{promptData.newSystemBehaviorGuidelines}</ReactMarkdown>
+                <DialogTitle>---- Ontology Prompt</DialogTitle>
+                <ReactMarkdown>{promptData.newContextOntology}</ReactMarkdown>
+                <DialogTitle>---- User Prompt</DialogTitle>
+                <ReactMarkdown>{promptData.userPrompt}</ReactMarkdown>
+                <DialogTitle>---- User Input</DialogTitle>
+                <ReactMarkdown>{promptData.userInput}</ReactMarkdown>
+                <DialogTitle>---- Context Prompt</DialogTitle>
+                <ReactMarkdown>{promptData.newContextItems}</ReactMarkdown>
+                <DialogTitle>---- Metamodel Prompt</DialogTitle>
+                <ReactMarkdown>{promptData.newContextMetamodel}</ReactMarkdown>
+            </div>
+        );
+    }, [promptData]);
 
     const handleFetchOntology = async () => {
         try {
@@ -152,49 +223,6 @@ const ConceptBuilder = () => {
         setDispatchDone(true);
     };
 
-    useEffect(() => {
-        let conceptString = '';
-        if (existingConcepts && existingRelationships) {
-            conceptString += `**Concepts**\n\n${existingConcepts?.map((c) => (c) && `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-            conceptString += `**Relationships**\n\n${existingRelationships?.map((r) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
-        }
-        const userPrompt = `${UserPrompt} \n\n **Domain name:**  ${data.phData.domain.name} \\ **Domain description:** ${data.phData.domain.description || ""}`;
-        const userInput = `${UserInput} \n\n ${topicDescr}`;
-
-        // ## Domain name: \n\n ${data.phData.domain?.name || ""} \n\n 
-        // ## Domain description: \n\n ${data.phData.domain?.description || ""} \n\n
-        // ## Domain presentation: \n\n ${data.phData.domain?.presentation || ""} \n\n
-        // `;
-
-
-        setSystemPrompt(SystemPrompt);
-        setSystemBehaviorGuidelines(SystemBehaviorGuidelines);
-        setContextOntology((impOntologyString) ? `${ExistingOntology} ${impOntologyString}` : "");
-        setUserPrompt(userPrompt);
-        setUserInput(userInput);  // TODO: Is this and previous the same??
-        setContextItems((conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "");
-        setContextMetamodel(`${MetamodelPrompt}`);
-
-        setPrintPromptsDiv(
-            <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                <DialogTitle>---- System Prompt</DialogTitle>
-                <ReactMarkdown>{systemPrompt}</ReactMarkdown>
-                <DialogTitle>---- System behaviour Guidelines Prompt</DialogTitle>
-                <ReactMarkdown>{systemBehaviorGuidelines}</ReactMarkdown>
-                <DialogTitle>---- Ontology Prompt</DialogTitle>
-                <ReactMarkdown>{contextOntology}</ReactMarkdown>
-                <DialogTitle>---- User Prompt</DialogTitle>
-                <ReactMarkdown>{userPrompt}</ReactMarkdown>
-                <DialogTitle>---- User Input</DialogTitle>
-                <ReactMarkdown>{userInput}</ReactMarkdown>
-                <DialogTitle>---- Context Prompt</DialogTitle>
-                <ReactMarkdown>{contextItems}</ReactMarkdown>
-                <DialogTitle>---- Metamodel Prompt</DialogTitle>
-                <ReactMarkdown>{contextMetamodel}</ReactMarkdown>
-            </div>
-        );
-    }, [topicDescr, existingConcepts, existingRelationships, data.phData.domain?.name, data.phData.domain?.description, impOntologyString, contextItems, contextOntology, contextMetamodel, systemPrompt, systemBehaviorGuidelines, userPrompt, userInput]);
-
     const handleConceptBuilder = async () => {
         setIsLoading(true);
         setStep(1);
@@ -209,14 +237,42 @@ const ConceptBuilder = () => {
             - Financial services for Car rental in Scandinavia\n
         `);
             setIsLoading(false);
+            return; // Add return here to exit early
+        }
+
+        // Add validation for required fields
+        if (!systemPrompt || !userPrompt || !userInput) {
+            console.error("Missing required prompt data:", {
+                systemPrompt: !!systemPrompt,
+                userPrompt: !!userPrompt,
+                userInput: !!userInput
+            });
+            alert("Required prompt data is missing. Please wait for the prompts to load.");
+            setIsLoading(false);
+            return;
         }
 
         try {
-            const res = (systemPrompt) && await fetch("/api/genmodel", {
+            console.log("Sending request with data:", {
+                aiModelName: "gpt-4o",
+                schemaName: 'OntologySchema',
+                systemPrompt: systemPrompt?.substring(0, 100) + "...", // Log first 100 chars
+                systemBehaviorGuidelines: !!systemBehaviorGuidelines,
+                userPrompt: userPrompt?.substring(0, 100) + "...",
+                userInput: userInput?.substring(0, 100) + "...",
+                contextItems: !!contextItems,
+                contextOntology: !!contextOntology,
+                contextMetamodel: !!contextMetamodel
+            });
+
+            const res = await fetch("/api/genmodel", {
                 method: "POST",
-                headers: { 'Content-Type': 'application/json' },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
                 body: JSON.stringify({
-                    aiModelName: "gpt-4o-2024-08-06",
+                    aiModelName: "gpt-4o",
                     schemaName: 'OntologySchema',
                     systemPrompt: systemPrompt || "",
                     systemBehaviorGuidelines: systemBehaviorGuidelines || "",
@@ -228,71 +284,107 @@ const ConceptBuilder = () => {
                 })
             });
 
-            if (res instanceof Response && !res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("API Error Response:", {
+                    status: res.status,
+                    statusText: res.statusText,
+                    body: errorText
+                });
+                throw new Error(`Failed to fetch: ${res.status} ${res.statusText} - ${errorText}`);
+            }
 
-            const reader = (res instanceof Response) ? res.body?.getReader() : null;
+            const reader = res.body?.getReader();
             if (!reader) throw new Error("No reader available");
+
             const decoder = new TextDecoder();
             let data = "";
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 data += decoder.decode(value, { stream: true });
             }
 
+            console.log("Raw API Response:", data);
+
             const parsed = JSON.parse(data);
-            if (parsed.ontologyData.concepts && Array.isArray(parsed.ontologyData.concepts)) {
+            if (parsed.ontologyData?.concepts && Array.isArray(parsed.ontologyData.concepts)) {
                 setSuggestedOntologyData(parsed.ontologyData);
-                // setDescrString(parsed.ontologyData.description);
                 setIsLoading(false);
                 setStep(0);
             } else {
-                console.error("Parsed data does not contain concepts or concepts is not an array");
+                console.error("Parsed data does not contain concepts or concepts is not an array:", parsed);
                 setStep(0);
             }
         } catch (e) {
             console.error("Validation failed:", e instanceof Error ? e.message : e);
+            alert(`Error: ${e instanceof Error ? e.message : 'Unknown error occurred'}`);
+            setStep(0);
+        } finally {
+            setIsLoading(false);
         }
-        setIsLoading(false);
     };
 
-    useEffect(() => {
+
+    // Update the ontologyDataList useMemo to ensure clean data:
+
+    const ontologyDataList = useMemo(() => {
         const graySuggestedOntologyData = () => {
-            const retval = (suggestedOntologyData)
-                ? {
-                    ...ontologyReduxData,
-                    name: suggestedOntologyData?.name || ontologyReduxData.name,
-                    description: suggestedOntologyData?.description || ontologyReduxData.description,
-                    presentation: suggestedOntologyData?.presentation || ontologyReduxData.presentation,
-                    concepts: [
-                        ...(suggestedOntologyData?.concepts || []).map((concept: Concept) => ({
-                            ...concept,
-                            color: 'gray'
-                        })),
-                        ...(ontologyReduxData?.concepts || []),
-                    ],
-                    relationships: [
-                        ...(suggestedOntologyData?.relationships || []).map((rel: Relationship) => ({
-                            ...rel,
-                            name: rel.name || '',
-                            description: rel.description || '',
-                            nameFrom: rel.nameFrom || '',
-                            nameTo: rel.nameTo || '',
-                            color: 'gray'
-                        })),
-                        ...(ontologyReduxData?.relationships || []),
-                    ] as Relationship[],
-                }
-                : ontologyReduxData;
-            return retval;
+            if (!suggestedOntologyData) return ontologyReduxData;
+
+            // Validate and clean the data before merging
+            const validConcepts = (suggestedOntologyData?.concepts || []).filter(concept =>
+                concept &&
+                typeof concept.name === 'string' &&
+                concept.name.trim() !== '' &&
+                typeof concept.description === 'string'
+            );
+
+            const validRelationships = (suggestedOntologyData?.relationships || []).filter(rel =>
+                rel &&
+                typeof rel.name === 'string' &&
+                rel.name.trim() !== '' &&
+                typeof rel.nameFrom === 'string' &&
+                rel.nameFrom.trim() !== '' &&
+                typeof rel.nameTo === 'string' &&
+                rel.nameTo.trim() !== ''
+            );
+
+            return {
+                ...ontologyReduxData,
+                name: suggestedOntologyData?.name || ontologyReduxData?.name || 'Untitled Ontology',
+                description: suggestedOntologyData?.description || ontologyReduxData?.description || '',
+                presentation: suggestedOntologyData?.presentation || ontologyReduxData?.presentation || '',
+                concepts: [
+                    ...validConcepts.map((concept: Concept) => ({
+                        ...concept,
+                        name: concept.name.trim(),
+                        description: concept.description || '',
+                        color: 'gray'
+                    })),
+                    ...(ontologyReduxData?.concepts || []),
+                ],
+                relationships: [
+                    ...validRelationships.map((rel: Relationship) => ({
+                        ...rel,
+                        name: rel.name.trim() || `${rel.nameFrom}-${rel.nameTo}`,
+                        description: rel.description || '',
+                        nameFrom: rel.nameFrom.trim(),
+                        nameTo: rel.nameTo.trim(),
+                        color: 'gray'
+                    })),
+                    ...(ontologyReduxData?.relationships || []),
+                ] as Relationship[],
+            };
         };
 
-        if (suggestedOntologyData) {
-            setOntologyDataList(graySuggestedOntologyData());
-        } else {
-            setOntologyDataList(ontologyReduxData);
-        }
+        return graySuggestedOntologyData();
     }, [suggestedOntologyData, ontologyReduxData]);
+
+    const isPromptDataReady = useMemo(() => {
+        return !!(systemPrompt && userPrompt && userInput);
+    }, [systemPrompt, userPrompt, userInput]);
 
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] w-full bg-transparent">
@@ -416,11 +508,13 @@ const ConceptBuilder = () => {
                                         <FontAwesomeIcon icon={faCheckCircle} size="2x" />
                                     </div>
                                 )}
-                                <Button onClick={() => {
-                                    handleConceptBuilder();
-                                    setActiveTab('suggested-concepts');
-                                }}
-                                    className="rounded text-xl p-4 bg-green-700 text-white"
+                                <Button
+                                    onClick={() => {
+                                        handleConceptBuilder();
+                                        setActiveTab('suggested-concepts');
+                                    }}
+                                    disabled={!isPromptDataReady || isLoading}
+                                    className="rounded text-xl p-4 bg-green-700 text-white disabled:bg-gray-500"
                                 >
                                     <FontAwesomeIcon icon={faRobot} size="1x" />
                                 </Button>
@@ -469,7 +563,13 @@ const ConceptBuilder = () => {
                             </TabsList>
                             <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
                                 <div className="mx-1 bg-gray-700 ">
-                                    <OntologyCard ontologyData={data.phData.ontology} />
+                                    {data.phData.ontology ? (
+                                        <OntologyCard ontologyData={data.phData.ontology} />
+                                    ) : (
+                                        <div className="p-4 text-center text-gray-400">
+                                            No existing ontology data available
+                                        </div>
+                                    )}
                                 </div>
                             </TabsContent>
                             <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
@@ -496,7 +596,15 @@ const ConceptBuilder = () => {
                                         </Dialog>
                                     </div>
                                     <div className="mx-1 bg-gray-700 ">
-                                        <OntologyCard ontologyData={ontologyDataList} />
+                                        {ontologyDataList &&
+                                            ontologyDataList.concepts &&
+                                            ontologyDataList.concepts.length > 0 ? (
+                                            <OntologyCard ontologyData={ontologyDataList} />
+                                        ) : (
+                                            <div className="p-4 text-center text-gray-400">
+                                                {isLoading ? 'Generating suggestions...' : 'No suggested concepts available. Click the robot button to generate suggestions.'}
+                                            </div>
+                                        )}
                                     </div>
                                 </>
                             </TabsContent>

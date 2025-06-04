@@ -33,8 +33,8 @@ export default function DocumentPanel({
     panelType = 'left' // Default to 'left' panel type
 }: DocumentPanelProps) {
     // Add debugging
-    console.log('DocumentPanel render - mdContent:', mdContent?.substring(0, 100) || 'empty');
-    console.log('DocumentPanel render - mdContent length:', mdContent?.length || 0);
+    // console.log('DocumentPanel render - mdContent:', mdContent?.substring(0, 100) || 'empty');
+    // console.log('DocumentPanel render - mdContent length:', mdContent?.length || 0);
 
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);

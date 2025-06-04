@@ -96,11 +96,11 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
                     className="max-w-sm"
                 />
                 <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
+                    {/* <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">
                             Columns
                         </Button>
-                    </DropdownMenuTrigger>
+                    </DropdownMenuTrigger> */}
                     <DropdownMenuContent align="end">
                         {table
                             .getAllColumns()

@@ -14,7 +14,11 @@
 const AI_MODELS = [
     { id: 'deepseek-chat', name: 'Deepseek-Chat' },
     { id: 'mistral-small-latest', name: 'Mistral Small Latest' },
+    { id: 'mistral', name: 'Mistral' },
+    { id: 'deepseek-coder', name: 'Deepseek Coder' },
     { id: 'gpt-4o-mini', name: 'GPT-4o mini' },
+    { id: 'gpt-4o-2024-08-06', name: 'GPT-4o 2024-08-06' },
+    { id: 'gpt-4o', name: 'GPT-4o' },
     // { id: 'qwen3', name: 'Qwen3' },
     // { id: 'mistral-7b', name: 'Mistral 7B' },
     // { id: 'gpt-4-16k', name: 'GPT-4 16k' },

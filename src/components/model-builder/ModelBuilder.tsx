@@ -25,7 +25,7 @@ import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, U
 const debug = false;
 
 const Modelbuilder = () => {
-    const data = {} //useSelector((state: RootState) => state.modelUniverse);
+    const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
     const [dispatchDone, setDispatchDone] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -55,6 +55,7 @@ const Modelbuilder = () => {
     const [contextOntology, setContextOntology] = useState("");
     const [contextMetamodel, setContextMetamodel] = useState("");
     const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
+    const [isClient, setIsClient] = useState(false);
     // const [modelviewSystemPrompt, setNewModelviewSystemPrompt] = useState("");
     // const [modelviewUserPrompt, setNewModelviewUserPrompt] = useState("");
     // const [modelviewUserInput, setNewModelviewUserInput] = useState("");
@@ -102,6 +103,10 @@ const Modelbuilder = () => {
     };
 
     useEffect(() => {
+        setIsClient(true);
+    }, []);
+
+    useEffect(() => {
         if (data) {
             const metis = data.phData?.metis;
             if (!metis) {
@@ -135,63 +140,59 @@ const Modelbuilder = () => {
             );
 
             const metatypesString = (curMetamodel) && `**${curMetamodel.name}**\n
-                ${filteredObjTypes?.map(objtype => `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`).join('\n')}\n\n
-                ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`).join('\n')}\n\n
-                ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
-            `   // TODO: from to use name instead of id, the same for objecttypeviews and typeName instead of typeviewRef
+            ${filteredObjTypes?.map(objtype => `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`).join('\n')}\n\n
+            ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`).join('\n')}\n\n
+            ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
+        `;
 
-            const contextmetatypesString = `## **Metamodel**\n\n ${metatypesString}`
+            const contextmetatypesString = `## **Metamodel**\n\n ${metatypesString}`;
 
             if (!debug) console.log('122 metatypesString:', curMetamodel);
 
             const models = metis.models;
-            const irtvmod = models?.find(model => curMetamodel && (model.metamodelRef === curMetamodel.id))//|| model.name.includes('IRTV')));
-            if (irtvmod) {
+            const irtvmod = models?.find(model => curMetamodel && (model.metamodelRef === curMetamodel.id));
+            if (irtvmod && (!curmod || curmod.id !== irtvmod.id)) {
                 setCurmod(irtvmod);
-                dispatch(setFocusModel({ id: irtvmod.id, name: irtvmod.name }));
+                if (!data.phFocus?.focusModel || data.phFocus.focusModel.id !== irtvmod.id) {
+                    dispatch(setFocusModel({ id: irtvmod.id, name: irtvmod.name }));
+                }
             }
+
+            // Initialize the prompts here
+            if (curMetamodel && irtvmod) {
+                // Set up existing info objects for context
+                const existingObjects = irtvmod.objects?.map((obj: any) => ({
+                    id: obj.id,
+                    name: obj.name,
+                    description: obj.description,
+                    typeName: obj.typeName
+                })) || [];
+
+                const existingRelships = irtvmod.relships?.map((rel: any) => ({
+                    id: rel.id,
+                    name: rel.name,
+                    nameFrom: rel.nameFrom,
+                    nameTo: rel.nameTo
+                })) || [];
+
+                setExistingInfoObjects({ objects: existingObjects, relships: existingRelships });
+
+                // Initialize prompt variables
+                setSystemPrompt(SystemPrompt || "You are an AI assistant that helps create domain models.");
+                setSystemBehaviorGuidelines(SystemBehaviorGuidelines || "Follow best practices for model creation.");
+                setUserPrompt(UserPrompt || "Create a comprehensive model for the given domain.");
+                setUserInput(UserInput || "Please analyze the current model and suggest improvements.");
+                setContextItems(ExistingContext || JSON.stringify({ objects: existingObjects, relships: existingRelships }, null, 2));
+                setContextOntology(ExistingOntology || "No ontology data available.");
+                setContextMetamodel(contextmetatypesString);
+            }
+
             console.log('127 Curmod:', curmod, irtvmod, models);
-
-            const filteredRelationships = curmod?.relships?.filter(rel => {
-                const fromObject = curmod?.objects?.find(obj => obj.id === rel.fromobjectRef);
-                const toObject = curmod?.objects?.find(obj => obj.id === rel.toobjectRef);
-                return fromObject?.typeName === 'Information' && toObject?.typeName === 'Information' && rel;
-            }) || [];
-
-            const existingObjects = curmod?.objects?.map(obj => ({ id: obj.id, name: obj.name, description: obj.description, typeName: obj.typeName })) || [];
-            const existingRelationships = filteredRelationships?.map(rel => ({ id: rel.id, name: rel.name, nameFrom: rel.nameFrom, nameTo: rel.nameTo })) || [];
-
-            setExistingInfoObjects({
-                objects: existingObjects?.filter(obj => obj && obj.typeName === 'Information') || [],
-                relships: existingRelationships.filter(rel =>
-                    existingObjects.some(obj => obj.id === rel.nameFrom || obj.id === rel.nameTo)
-                ) || []
-            });
-
-            const existInfoConcepts = ({
-                concepts: existingInfoObjects.objects.map((obj: any) => ({ name: obj.name, description: obj.description })),
-                relships: existingInfoObjects.relships.map((rel: any) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
-            });
-
-            let conceptString = `**Objects**\n\n ${data.phData.ontology?.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-            if (existInfoConcepts.concepts.length > 0) {
-                conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-                conceptString += `**Relationships**\n\n${existInfoConcepts.relships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
-            }
-            // setExistingConcepts(conceptString);
-            setSystemPrompt(SystemPrompt);
-            setSystemBehaviorGuidelines(SystemBehaviorGuidelines);
-            setContextOntology(ExistingOntology);
-            setUserPrompt(UserPrompt);
-            setUserInput(UserInput);
-            setContextItems((conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "");
-            setContextMetamodel(`${MetamodelPrompt} \n\n ${contextmetatypesString}`);
-            if (debug) console.log('159 Context Items:', contextmetatypesString);
 
         } else {
             console.error('Data does not contain data:', data);
         }
-    }, [data, curMetamodel, curmod, existingInfoObjects]);
+    }, [data, curMetamodel, dispatch]);
 
     useEffect(() => {
         setPrintPromptsDiv(
@@ -220,24 +221,31 @@ const Modelbuilder = () => {
         setActiveTab('model');
 
         try {
+            const requestBody = {
+                aiModelName: "gpt-4o",
+                schemaName: 'ObjectSchema',
+                systemPrompt: systemPrompt || "",
+                systemBehaviorGuidelines: systemBehaviorGuidelines || "",
+                userPrompt: userPrompt || "",
+                userInput: userInput || "",
+                contextItems: contextItems || "",
+                contextOntology: contextOntology || "",
+                contextMetamodel: contextMetamodel || ""
+            };
+
+            console.log('Request body:', requestBody); // Debug log
+
             const res = await fetch("/api/genmodel", {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    aiModelName: "gpt-4o",
-                    // aiModelName: "gpt-4o-2024-08-06",
-                    schemaName: 'ObjectSchema',
-                    systemPrompt: systemPrompt || "",
-                    systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                    userPrompt: userPrompt || "",
-                    userInput: userInput || "",
-                    contextItems: contextItems || "",
-                    contextOntology: contextOntology || "",
-                    contextMetamodel: contextMetamodel || ""
-                })
+                body: JSON.stringify(requestBody)
             });
 
-            if (!res.ok) throw new Error(`Failed to fetch: ${res.statusText}`);
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error('API Error:', res.status, res.statusText, errorText);
+                throw new Error(`Failed to fetch: ${res.status} ${res.statusText} - ${errorText}`);
+            }
 
             const reader = res.body?.getReader();
             if (!reader) throw new Error("No reader available");
@@ -249,24 +257,24 @@ const Modelbuilder = () => {
                 if (done) break;
                 data += decoder.decode(value, { stream: true });
             }
-            console.log('205 Data:', data, curmod); // Add this line to log the data
+            console.log('205 Data:', data, curmod);
             const parsed = JSON.parse(data);
-            console.log('206 Parsed:', parsed); // Add this line to log the parsed data
+            console.log('206 Parsed:', parsed);
             const validatedData = ObjectSchema.parse(parsed);
-            console.log('209 Validated data:', validatedData, curmod); // Add this line to log the validated data
+            console.log('209 Validated data:', validatedData, curmod);
 
             setModel({ ...validatedData, id: curmod?.id });
-            console.log('212 Model set:', validatedData, model); // Add this line to confirm the model is set
+            console.log('212 Model set:', validatedData, model);
 
             setStep(3);
         } catch (e) {
             console.error("Validation failed:", e instanceof Error ? e.message : e);
+            setStep(0); // Reset step on error
+            alert(`Error: ${e instanceof Error ? e.message : 'Unknown error occurred'}`);
+        } finally {
+            setIsLoading(false);
         }
-
-        setIsLoading(false);
-        setStep(3);
     };
-
 
     return (
         <div className="flex flex-col h-[calc(100vh-9rem)] border-solid rounded border-4 border-green-700 w-full bg-transparent">
@@ -406,16 +414,31 @@ const Modelbuilder = () => {
                                                         <>
                                                             <div className="flex justify-left items-center py-2 text-left">
                                                                 <h4 className="px-2 text-gray-400 font-bold">AKM File</h4>
-                                                                <h4 className="px-2 mb-1 font-bold whitespace-nowrap bg-gray-700">{data.phSource}.json</h4>
+                                                                <h4 className="px-2 mb-1 font-bold whitespace-nowrap bg-gray-700">
+                                                                    {isClient && data?.phSource
+                                                                        ? `${data.phSource}.json`
+                                                                        : 'unknown.json'
+                                                                    }
+                                                                </h4>
                                                             </div>
                                                             <div className="flex flex-wrap">
                                                                 <div className="px-2 col text-left mb-4 w-1/3">
                                                                     <h4 className="text-gray-400 font-bold">Model Suite:</h4>
                                                                     <div className="border border-gray-600 p-2">
                                                                         <h5 className="text-gray-400 font-bold">Name</h5>
-                                                                        <h4 className="font-bold whitespace-nowrap bg-background p-1">{data.phData.metis.name}</h4>
+                                                                        <h4 className="font-bold whitespace-nowrap bg-background p-1">
+                                                                            {isClient && data?.phData?.metis?.name
+                                                                                ? data.phData.metis.name
+                                                                                : ''
+                                                                            }
+                                                                        </h4>
                                                                         <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                                                        <h4 className=" bg-background p-1">{data.phData.metis.description}</h4>
+                                                                        <h4 className=" bg-background p-1">
+                                                                            {isClient && data?.phData?.metis?.description
+                                                                                ? data.phData.metis.description
+                                                                                : ''
+                                                                            }
+                                                                        </h4>
                                                                     </div>
                                                                     <div className="col text-left">
                                                                         <h4 className="text-gray-400 font-bold">Project:</h4>

@@ -7,9 +7,8 @@ import { ConceptTable } from "@/components/concept-builder/concept-table";
 import { RelshipTable } from "@/components/concept-builder/relship-table";
 import { ColumnDef } from "@tanstack/react-table";
 import ReactMarkdown from 'react-markdown';
-import 'tailwindcss/tailwind.css'; // Ensure Tailwind CSS is imported
-// import '@fortawesome/fontawesome-free/css/all.min.css';
-// import '@fortawesome/fontawesome-free/js/all.js';
+import 'tailwindcss/tailwind.css';
+
 interface OntologyCardProps {
     ontologyData: {
         name: string;
@@ -19,10 +18,12 @@ interface OntologyCardProps {
         presentation: string;
     } | null;
 }
+
 interface Concept {
     name: string;
     description: string;
 }
+
 interface Relationship {
     name: string;
     nameFrom: string;
@@ -37,53 +38,95 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
-
-    const [activeTab, setActiveTab] = useState('concepts'); // concepts, diagram
-    const [regen, setRegen] = useState(true);
-
+    const [activeTab, setActiveTab] = useState('concepts');
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
 
     if (debug) console.log('35 ontology-card', ontologyData);
 
-    const generateMermaidDiagram = useCallback((regen: boolean) => {
+    // Memoize the diagram generation to prevent infinite loops
+    const generateMermaidDiagram = useCallback(() => {
+        if (!ontologyData || !ontologyData.concepts || ontologyData.concepts.length === 0) {
+            setMermaidDiagram('');
+            return;
+        }
+
         try {
-            let diagram = (regen) ? 'graph LR;\n' : 'graph LR;\n\n';
-            ontologyData?.concepts?.forEach((object) => {
-                const nodeId = object.name.replace(/[\s()]+/g, '_');
-                diagram += `${nodeId}["${object.name}"];\n`;
-                // diagram += `${nodeId}["<i class='fab fa-youtube'></i> ${object.name}"];\n`;
-                // diagram += `style ${nodeId} fill:#f9f,stroke:#333,stroke-width:2px;\n`; // Set custom color for the object
+            let diagram = 'graph TD;\n';
+            const validNodes = new Set();
+
+            // Add concepts as nodes with better sanitization
+            ontologyData.concepts.forEach((concept, index) => {
+                if (concept && concept.name && concept.name.trim()) {
+                    // Create a more robust node ID
+                    const nodeId = concept.name
+                        .replace(/[^a-zA-Z0-9]/g, '_')
+                        .replace(/_+/g, '_')
+                        .replace(/^_|_$/g, '') || `concept_${index}`;
+
+                    const nodeName = concept.name.replace(/"/g, "'"); // Escape quotes
+                    diagram += `    ${nodeId}["${nodeName}"];\n`;
+                    validNodes.add(concept.name);
+                }
             });
-            ontologyData?.relationships?.forEach((r) => {
-                diagram += `${r.nameFrom.replace(/[\s()]+/g, '_')} -->|${r.name.replace(/[\s()]+/g, '_')}| ${r.nameTo.replace(/[\s()]+/g, '_')};\n`;
-            });
+
+            // Add relationships as edges only for valid nodes
+            if (ontologyData.relationships && ontologyData.relationships.length > 0) {
+                ontologyData.relationships.forEach((rel, index) => {
+                    if (rel && rel.nameFrom && rel.nameTo && rel.name &&
+                        validNodes.has(rel.nameFrom) && validNodes.has(rel.nameTo)) {
+
+                        const fromId = rel.nameFrom
+                            .replace(/[^a-zA-Z0-9]/g, '_')
+                            .replace(/_+/g, '_')
+                            .replace(/^_|_$/g, '') || `from_${index}`;
+
+                        const toId = rel.nameTo
+                            .replace(/[^a-zA-Z0-9]/g, '_')
+                            .replace(/_+/g, '_')
+                            .replace(/^_|_$/g, '') || `to_${index}`;
+
+                        const relationName = rel.name.replace(/"/g, "'"); // Escape quotes
+                        diagram += `    ${fromId} -->|"${relationName}"| ${toId};\n`;
+                    }
+                });
+            }
+
+            console.log('Generated Mermaid diagram:', diagram);
             setMermaidDiagram(diagram);
+
         } catch (error) {
             console.error('Error generating Mermaid diagram:', error);
+            setMermaidDiagram('');
         }
     }, [ontologyData]);
 
+    // Debug effect - separate from diagram generation
+    useEffect(() => {
+        if (ontologyData && debug) {
+            console.log('69 Ontology data being passed to OntologyCard:', {
+                name: ontologyData.name,
+                concepts: ontologyData.concepts?.length || 0,
+                relationships: ontologyData.relationships?.length || 0,
+                conceptsData: ontologyData.concepts,
+                relationshipsData: ontologyData.relationships
+            });
+        }
+    }, [ontologyData]);
+
+    // Zoom and scroll handling
     useEffect(() => {
         const container = containerRef.current;
         if (!container) return;
 
         const handleWheel = (e: WheelEvent) => {
             if (e.shiftKey) {
-                // Horizontal scroll with Shift key
                 e.preventDefault();
-
-                // Increase sensitivity for more noticeable movement
                 const scrollAmount = e.deltaY * 2;
-
-                // Direct scrollLeft modification (more reliable)
                 container.scrollLeft += scrollAmount;
-
                 console.log('Horizontal scroll', scrollAmount);
             } else if (isZoomMode) {
-                // Zoom mode
                 e.preventDefault();
-
                 const zoomSensitivity = 0.1;
                 if (e.deltaY < 0) {
                     setZoom((prev) => Math.min(prev + zoomSensitivity, 5));
@@ -91,10 +134,8 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                     setZoom((prev) => Math.max(prev - zoomSensitivity, 0.5));
                 }
             }
-            // If neither condition is met, let the natural scrolling occur
         };
 
-        // Add wheel event listener
         if (isZoomMode) {
             container.addEventListener('wheel', handleWheel, { passive: false });
         }
@@ -102,49 +143,65 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
         return () => {
             container.removeEventListener('wheel', handleWheel);
         };
-    }, [isZoomMode, setZoom]);
+    }, [isZoomMode]);
 
-    // Remove the external handleContainerWheel function since we now define it inside useEffect
-
+    // Generate diagram when ontologyData changes or when switching to diagram tab
     useEffect(() => {
-        if (activeTab === 'diagram') {
-            generateMermaidDiagram(true);
-            setRegen(!regen);
-            // Optional: reset zoom, or any other state changes
+        if (activeTab === 'diagram' || ontologyData) {
+            generateMermaidDiagram();
         }
-    }, [activeTab, generateMermaidDiagram, regen]);
+    }, [ontologyData, activeTab, generateMermaidDiagram]);
 
+    // Initialize Mermaid when diagram content changes
     useEffect(() => {
-        generateMermaidDiagram(regen);
-    }, [ontologyData, generateMermaidDiagram, regen]);
+        const renderDiagram = async () => {
+            if (mermaidDiagram && diagramRef.current && activeTab === 'diagram') {
+                try {
+                    // Clear previous content
+                    diagramRef.current.innerHTML = '';
 
-    useEffect(() => {
-        if (mermaidDiagram && diagramRef.current) {
-            try {
-                mermaid.initialize({
-                    startOnLoad: true,
-                    theme: 'dark',
-                    themeVariables: {
-                        primaryColor: '#224444',
-                        edgeLabelBackground: '#22557715',
-                        secondaryColor: '#8888ff',
-                        tertiaryColor: '#ddddff',
-                        primaryTextColor: '#ffdddd',
-                        secondaryTextColor: '#00ff00',
-                        tertiaryTextColor: '#0000ff',
-                        lineColor: '#dddddd',
-                        background: '#ffffff',
-                        nodeBorderRadius: '25px',
-                        rough: false, // Enable rough visualization
-                    },
-                    securityLevel: 'loose', // Allow raw HTML if needed
-                });
-                mermaid.contentLoaded();
-            } catch (error) {
-                console.error('Error initializing Mermaid:', error);
+                    // Initialize mermaid
+                    mermaid.initialize({
+                        startOnLoad: false,
+                        theme: 'dark',
+                        themeVariables: {
+                            primaryColor: '#224444',
+                            edgeLabelBackground: '#22557715',
+                            secondaryColor: '#8888ff',
+                            tertiaryColor: '#ddddff',
+                            primaryTextColor: '#ffdddd',
+                            secondaryTextColor: '#00ff00',
+                            tertiaryTextColor: '#0000ff',
+                            lineColor: '#dddddd',
+                            background: '#ffffff',
+                            nodeBorderRadius: '25px',
+                            rough: false,
+                        },
+                        securityLevel: 'loose',
+                    });
+
+                    // Generate unique ID for this diagram
+                    const diagramId = `mermaid-diagram-${Date.now()}`;
+
+                    // Render the diagram
+                    const { svg } = await mermaid.render(diagramId, mermaidDiagram);
+
+                    // Insert the SVG into the container
+                    diagramRef.current.innerHTML = svg;
+
+                } catch (error) {
+                    console.error('Error rendering Mermaid diagram:', error);
+                    if (diagramRef.current) {
+                        diagramRef.current.innerHTML = `<div class="p-4 text-center text-red-400">Error rendering diagram: ${error.message}</div>`;
+                    }
+                }
             }
+        };
+
+        if (activeTab === 'diagram') {
+            renderDiagram();
         }
-    }, [mermaidDiagram]);
+    }, [mermaidDiagram, activeTab]);
 
     const handleAuxClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.button === 1) {
@@ -158,7 +215,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
             return (
                 <div
                     ref={diagramRef}
-                    className="mermaid min-w-[1200px]" // Force a wider minimum width
+                    className="mermaid min-w-[1200px]"
                     style={{
                         transform: `scale(${zoom})`,
                         transformOrigin: '0 0',
@@ -170,17 +227,19 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                 </div>
             );
         }
-        return null;
+        return <div className="p-4 text-center text-gray-400">No diagram data available</div>;
     };
 
     return (
         <>
             <div className="p-1 w-100 rounded overflow-hidden">
                 <div className="bg-gray-700 px-1">
-                    <h3 className="flex pl-1 font-bold  bg-gray-700 text-gray-00 inline-block">Domain name: <span className="mx-1 px-1 inline-block bg-background"> {ontologyData?.name}</span></h3>
+                    <h3 className="flex pl-1 font-bold bg-gray-700 text-gray-00 inline-block">
+                        Domain name: <span className="mx-1 px-1 inline-block bg-background">{ontologyData?.name}</span>
+                    </h3>
                     <details>
-                        <summary className="mx-1 text-gray-400 w-full cursor-pointe">Description...</summary>
-                        <div className="mx-1 p-1 inline-block"> {ontologyData?.description}</div>
+                        <summary className="mx-1 text-gray-400 w-full cursor-pointer">Description...</summary>
+                        <div className="mx-1 p-1 inline-block">{ontologyData?.description}</div>
                     </details>
                 </div>
                 <div className="">
@@ -191,25 +250,18 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                             <TabsTrigger value="relationships" className='pb-2 mt-3'>Relationship List</TabsTrigger>
                             <TabsTrigger value="diagram" className='pb-2 mt-3'>Ontology Map</TabsTrigger>
                         </TabsList>
-                        <TabsContent value="summary" className="flex p-1 m-0 rounded bg-background  ">
+
+                        <TabsContent value="summary" className="flex p-1 m-0 rounded bg-background">
                             <Card className="p-1 w-full border-gray-700 h-[calc(100vh-25rem)]">
-                                {/* <CardHeader> */}
-                                {/* <CardTitle className="bg-background px-2 m-0 font-bold">Short Summary </CardTitle> */}
-                                {/* <div className="mx-2">{ontologyData?.description}</div> */}
-                                {/* </CardHeader> */}
                                 <CardContent>
-                                    <div
-                                        className="prose prose-sm bg-background p-2 divide-y divide-gray-600 max-h-[calc(100vh-26rem)] 
-                                                overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"
-                                    >
-                                        <ReactMarkdown>
-                                            {ontologyData?.presentation}
-                                        </ReactMarkdown>
+                                    <div className="prose prose-sm bg-background p-2 divide-y divide-gray-600 max-h-[calc(100vh-26rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                        <ReactMarkdown>{ontologyData?.presentation}</ReactMarkdown>
                                     </div>
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                        <TabsContent value="concepts" className=" m-0 px-1 py-1 rounded bg-background">
+
+                        <TabsContent value="concepts" className="m-0 px-1 py-1 rounded bg-background">
                             <Card className="">
                                 <CardHeader className="px-3 pt-3 pb-0">
                                     <CardTitle className="bg-background px-2 text-1xl rounded">Concepts</CardTitle>
@@ -219,7 +271,8 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                 </CardContent>
                             </Card>
                         </TabsContent>
-                        <TabsContent value="relationships" className=" m-0 px-1 py-1 rounded bg-background">
+
+                        <TabsContent value="relationships" className="m-0 px-1 py-1 rounded bg-background">
                             <Card className="mt-1">
                                 <CardHeader className="px-3 pt-3 pb-0">
                                     <CardTitle className="bg-background px-2 text-1xl rounded">Relations</CardTitle>
@@ -229,17 +282,16 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                 </CardContent>
                             </Card>
                         </TabsContent>
+
                         <TabsContent value="diagram" className="m-0 px-1 rounded bg-background h-[calc(100vh-22rem)] overflow-hidden">
                             <>
                                 <div className="flex justify-between items-center mx-2 mb-2">
                                     <div className="flex items-center gap-2">
                                         <button
-                                            onClick={() => {
-                                                generateMermaidDiagram(!regen);
-                                            }}
+                                            onClick={() => generateMermaidDiagram()}
                                             className="px-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-700"
                                         >
-                                            Show Mermaid Code
+                                            Regenerate Diagram
                                         </button>
 
                                         <button
@@ -270,7 +322,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                         className="h-[calc(100vh-24rem)] overflow-auto bg-gray-600 rounded border relative"
                                         style={{
                                             maxWidth: '100%',
-                                            overflowX: 'auto',  // Explicitly set horizontal overflow
+                                            overflowX: 'auto',
                                         }}
                                     >
                                         <div className="text-xs text-gray-400 ml-2">
