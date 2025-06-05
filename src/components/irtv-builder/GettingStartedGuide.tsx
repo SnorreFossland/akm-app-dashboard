@@ -59,31 +59,7 @@ const GettingStartedGuide: React.FC = () => {
                                 <h3 className="font-medium text-secondary-foreground/50">2. Save the Document</h3>
                                 <p className="text-secondary-foreground/70">Click the <BookmarkPlus className="inline w-4 h-4 mr-1" /> button to save the response text to the library.</p>
                             </div>
-                            <div className="p-3 border border-gray-700 rounded-lg">
-                                <h3 className="font-medium text-secondary-foreground/50">3. Open Library</h3>
-                                <p className="text-secondary-foreground/70">
-                                    Click the <Library className="inline w-6 h-6 mb-2" /> button in the left panel to open the library with the saved documents. Select a document to view its details.
-                                </p>
-                            </div>
-                            <div className="p-3 border border-gray-700 rounded-lg">
-                                <h3 className="font-medium text-secondary-foreground/50">4. Edit the Document</h3>
-                                <p className="text-secondary-foreground/70">
-                                    Click the <Edit className="inline w-4 h-4 mr-1" /> button to make any changes to the document. Click the <Check className="inline text-bold h-4 w-4" /> button to apply your changes,
-                                    and <BookmarkPlus className="inline text-bold h-4 w-4" /> button to save to library.
-                                </p>
-                            </div>
-                            <div className="p-3 border border-gray-700 rounded-lg">
-                                <h3 className="font-medium text-secondary-foreground/50">5. View a document</h3>
-                                <p className="text-secondary-foreground/70">
-                                    Click the <Library className="inline w-4 h-4 mr-1" /> button and then click on a document to view its details.
-                                </p>
-                            </div>
-                            <div className="p-3 border border-gray-700 rounded-lg">
-                                <h3 className="font-medium text-secondary-foreground/50">6. Import a Document from local file</h3>
-                                <p className="text-secondary-foreground/70">
-                                    Click the <Library className="inline w-4 h-4 mr-1" /> button and then &quot;Import File&quot; to import a document from your local device.
-                                </p>
-                            </div>
+
                         </div>
                     </section>
 
@@ -99,33 +75,7 @@ const GettingStartedGuide: React.FC = () => {
                                     <p className="text-secondary-foreground/70">The more detailed your question or topic description, the better the AI can assist you.</p>
                                 </div>
                             </div>
-                            <div className="flex items-start gap-3">
-                                <div className="rounded-full bg-blue-500/20 p-2 mt-1">
-                                    <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                                </div>
-                                <div>
-                                    <h3 className="font-medium text-secondary-foreground/50">Use Templates Wisely</h3>
-                                    <p className="text-secondary-foreground/70">Templates can save you time and ensure you cover all necessary points.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <div className="rounded-full bg-blue-500/20 p-2 mt-1">
-                                    <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                                </div>
-                                <div>
-                                    <h3 className="font-medium text-secondary-foreground/50">Review and Edit</h3>
-                                    <p className="text-secondary-foreground/70">Always review the generated content and make edits as needed to ensure accuracy and relevance.</p>
-                                </div>
-                            </div>
-                            <div className="flex items-start gap-3">
-                                <div className="rounded-full bg-blue-500/20 p-2 mt-1">
-                                    <div className="w-4 h-4 bg-blue-400 rounded-full"></div>
-                                </div>
-                                <div>
-                                    <h3 className="font-medium text-secondary-foreground/50">Save and Organize</h3>
-                                    <p className="text-secondary-foreground/70">Use the library feature to keep your documents organized and easily accessible.</p>
-                                </div>
-                            </div>
+    
                         </div>
                     </section>
                 </div>

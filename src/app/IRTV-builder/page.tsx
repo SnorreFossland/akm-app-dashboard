@@ -18,6 +18,9 @@ import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
 // import IRTVTemplatesPanel from '@/components/irtv-builder/IRTVTemplatesPanel';
+// Uncomment and fix these imports at the top of your file
+import { ObjectCard } from '@/components/object-card';
+import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
 
 
 // Types
@@ -26,6 +29,17 @@ interface IRTVConversation {
     title: string;
     messages: any[];
     timestamp: number;
+}
+
+// Add these type definitions near the top of your file
+interface Model {
+    id: string;
+    name: string;
+    description: string;
+    objects?: any[];
+    relships?: any[];
+    metamodelRef?: string;
+    modelviews?: any[];
 }
 
 const IRTVBuilderPage = () => {
@@ -361,12 +375,12 @@ const IRTVBuilderPage = () => {
                 )}
 
                 {/* Middle Panel: IRTV Builder */}
-                <div className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden p-1 sm:p-2"
+                <div className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden flex-col"
                     style={{
                         minWidth: '320px'
                     }}>
 
-                    <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 sm:p-2">
+                    <div className="flex justify-between items-center rounded-md bg-primary-foreground px-1 sm:px-1">
                         <button
                             onClick={() => setShowLeftPanel(!showLeftPanel)}
                             className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
@@ -406,137 +420,63 @@ const IRTVBuilderPage = () => {
                             </button>
                         </div>
                     </div>
-
-                    {/* IRTV Accordion */}
-                    {!isIrtvOpen && (
-                        <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground py-1 px-1 sm:px-2">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => { setIsIrtvOpen(!isIrtvOpen); setIsModelOpen(false); }}
-                                    className="flex items-center gap-1 text-xs bg-muted hover:bg-gray-600 text-white px-0.5 py-0.5 rounded"
-                                    title='Toggle IRTV'
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
-                                        className={`transform transition-transform ${isIrtvOpen ? 'rotate-90' : ''}`}>
-                                        <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </button>
-                                <h1 className="text-xs sm:text-sm font-bold text-blue-400 px-1">IRTV</h1>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* IRTV Content */}
-                    {isIrtvOpen && (
-                        <>
-                            <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 sm:p-2 mt-2">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setIsIrtvOpen(!isIrtvOpen)}
-                                        className="flex items-center gap-1 text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                        title='Toggle IRTV'
+                    {/* Middle Content */}
+                    <div className="flex flex-col flex-grow bg-background text-gray-100 ">
+                        {/* Tab Structure */}
+                        <Tabs defaultValue="irtv" className="flex flex-col my-0 h-full">
+                            <TabsList className="grid w-full grid-cols-2 bg-primary-foreground my-0 h-6">
+                                <TabsTrigger value="irtv" className="text-xs sm:text-sm mt-0">IRTV
+                                    <span
+                                        onClick={() => setShowGuideModal(true)}
+                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
+                                        title="Open IRTV guide"
                                     >
-                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
-                                            className={`transform transition-transform ${isIrtvOpen ? 'rotate-90' : ''}`}>
-                                            <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                    <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">IRTV</h1>
+                                        <HelpCircle className="h-4 w-4" />
+                                    </span>
+                                </TabsTrigger>
+                                <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">Model
+                                    <span
+                                        onClick={() => setShowGuideModal(true)}
+                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
+                                        title="Open model guide"
+                                    >
+                                        <HelpCircle className="h-3 w-3" />
+                                    </span>
+                                </TabsTrigger>
+                            </TabsList>
+
+                            <TabsContent value="irtv" className="flex-1 px-1 mt-1">
+                                <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600">
+                                    <IRTVBuilderComponent
+                                        input={irtvInput}
+                                        setInput={setIrtvInput}
+                                        selectedModel={selectedIrtvModel}
+                                        setSelectedModel={setSelectedIrtvModel}
+                                        onResponseChange={handleIrtvResponseChange}
+                                        onViewInPreview={handleViewInIrtvPreview}
+                                        setShowLeftPanel={setShowLeftPanel}
+                                        onAddContent={handleAddContent}
+                                        irtvContent={irtvContent}
+                                        setIrtvContent={setIrtvContent}
+                                        irtvPreview={irtvPreview}
+                                        setIrtvPreview={setIrtvPreview}
+                                        setCurrentMessages={setCurrentMessages}
+                                    />
                                 </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <button
-                                            onClick={() => setShowGuideModal(true)}
-                                            className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
-                                            title="Open IRTV guide"
-                                        >
-                                            <HelpCircle className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex-1 h-full overflow-auto bg-gray-800/20 rounded border border-gray-600 p-2">
-                                <IRTVBuilderComponent
-                                    input={irtvInput}
-                                    setInput={setIrtvInput}
-                                    selectedModel={selectedIrtvModel}
-                                    setSelectedModel={setSelectedIrtvModel}
-                                    onResponseChange={handleIrtvResponseChange}
-                                    onViewInPreview={handleViewInIrtvPreview}
-                                    setShowLeftPanel={setShowLeftPanel}
-                                    onAddContent={handleAddContent}
-                                    irtvContent={irtvContent}
-                                    setIrtvContent={setIrtvContent}
-                                    irtvPreview={irtvPreview}
-                                    setIrtvPreview={setIrtvPreview}
-                                    setCurrentMessages={setCurrentMessages}
+                            </TabsContent>
+
+                            <TabsContent value="model" className="flex-1">
+                                <iframe
+                                    ref={iframeRef}
+                                    src="http://localhost:3000/modelling"
+                                    className="w-full h-full border-none rounded"
+                                    title="Embedded Mimris Modeller"
+                                    allow="clipboard-read; clipboard-write"
+                                    sandbox="allow-same-origin allow-scripts"
                                 />
-                            </div>
-                        </>
-                    )}
-
-                    {/* Model Accordion */}
-                    {!isModelOpen && (
-                        <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground py-1 px-1 sm:px-2">
-                            <div className="flex items-center gap-2">
-                                <button
-                                    onClick={() => { setIsModelOpen(!isModelOpen); setIsIrtvOpen(false); }}
-                                    className="flex items-center gap-1 text-xs bg-muted hover:bg-gray-600 text-white px-0.5 py-0.5 rounded"
-                                    title='Toggle IRTV'
-                                >
-                                    <svg width="14" height="14" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
-                                        className={`transform transition-transform ${isModelOpen ? 'rotate-90' : ''}`}>
-                                        <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                    </svg>
-                                </button>
-                                <h1 className="text-xs sm:text-sm font-bold text-blue-400 px-1">Model</h1>
-                            </div>
-                        </div>
-                    )}
-                    {/* IRTV Model */}
-                    {isModelOpen && (
-                        <>
-                            <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 sm:p-2 mt-2">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setIsModelOpen(!isModelOpen)}
-                                        className="flex items-center gap-1 text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                        title='Toggle IRTV'
-                                    >
-                                        <svg width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg"
-                                            className={`transform transition-transform ${isIrtvOpen ? 'rotate-90' : ''}`}>
-                                            <path d="M6 8l4 4 4-4" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
-                                        </svg>
-                                    </button>
-                                    <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">Model</h1>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <div className="flex items-center justify-between">
-                                        <button
-                                            onClick={() => setShowGuideModal(true)}
-                                            className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
-                                            title="Open IRTV guide"
-                                        >
-                                            <HelpCircle className="h-5 w-5" />
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                            <div className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden p-1 sm:p-2">
-                                <div className="w-full h-screen m-0 p-0">
-                                    <iframe
-                                        ref={iframeRef}
-                                        src="http://localhost:3000/modelling"
-                                        className="w-full h-full border-none"
-                                        title="Embedded Page"
-                                        allow="clipboard-read; clipboard-write"
-                                        sandbox="allow-same-origin allow-scripts"
-                                    ></iframe>
-                                </div>
-                            </div>
-                        </>
-                    )}
-
+                            </TabsContent>
+                        </Tabs>
+                    </div>
                 </div>
 
                 {/* Draggable Bar for Right Panel */}

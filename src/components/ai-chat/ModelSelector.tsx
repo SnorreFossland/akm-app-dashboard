@@ -50,7 +50,8 @@ export default function ModelSelector({ selectedModel, onModelChange }: ModelSel
                 id="model-select"
                 value={model}
                 onChange={(e) => onModelChange(e.target.value)}
-                className=" py-1 text-sm text-muted-foreground "
+                className=" py-1 text-sm text-muted-foreground bg-secondary/50 border border-secondary rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                aria-label="Select AI Model"
             >
                 {AI_MODELS.map((model) => (
                     <option key={model.id} value={model.id}>

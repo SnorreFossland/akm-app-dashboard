@@ -19,11 +19,11 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { LoadingCircularProgress } from '@/components/loading';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 import ReactMarkdown from 'react-markdown';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
 import { PROMPT_TEMPLATES, PromptTemplate } from '@/components/irtv-builder/promptTemplates';
 import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';
-import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 
 import { ObjectSchema } from "@/objectSchema";
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
@@ -852,7 +852,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
         <>
             <div className="flex flex-col min-h-0 h-[96%] rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
                 {/* Message container with scrollable area */}
-                <div className="flex-1 min-h-0 overflow-y-auto pb-[150px] w-full" id="message-container">
+                <div className="flex-1 min-h-0 max-h-[calc(100vh-20rem)] overflow-y-auto pb-[150px] w-full" id="message-container">
                     {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
                     {messages.length < 1 && (!input || input.trim() === "") ? (
                         <div className="flex flex-col items-center justify-start w-full overflow-auto">
@@ -1097,7 +1097,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                 }
                 {/* Input area always at the bottom */}
                 <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg">
-                    <div className="flex items-center justify-between p-2">
+                    <div className="flex items-center justify-between p-1">
                         {/* button row above the chat */}
                         <div className="flex items-center gap-2">
                             {/* System Prompt Button */}
@@ -1117,7 +1117,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                             <button
                                 type="button"
                                 onClick={handleAddMD}
-                                className={`p-2 flex items-center gap-2 hover:text-gray-300 ${irtvContent ? 'text-green-500' : 'text-gray-500'}`}
+                                className={`flex items-center gap-2 hover:text-gray-300 ${irtvContent ? 'text-green-500' : 'text-gray-500'}`}
                                 disabled={isLoading}
                                 title="Add a local file to be refined."
                             >
@@ -1272,10 +1272,10 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                 </div>
 
                 {/* START FORM */}
-                <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
+                <form onSubmit={handleSubmit} className="p-1 bg-popover rounded-lg">
                     {/* Add placeholder jump buttons */}
                     {templatePlaceholders.length > 0 && (
-                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                        <div className="flex gap-2 flex-wrap">
                             <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
                             {templatePlaceholders.map((placeholder, idx) => (
                                 <button
@@ -1341,9 +1341,11 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                     <div className="flex flex-row justify-between rounded gap-1 ">
                         <div className="flex items-center gap-2"></div>
                         <div className="flex flex-row items-center text-foreground gap-1">
-                            <div className="text-xs text-gray-400 border rounded bg-gray-800">
+                            <span className="text-xs text-gray-400">
+                                Model:
+                            </span>
+                            <div className="texts bg-gray-800 border border-gray-600 rounded text-sm px-2">
                                 <ModelSelector
-
                                     selectedModel={selectedModel}
                                     onModelChange={(newModel) => {
                                         setSelectedModel(newModel);
