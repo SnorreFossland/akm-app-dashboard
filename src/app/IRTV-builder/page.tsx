@@ -425,7 +425,7 @@ const IRTVBuilderPage = () => {
                         {/* Tab Structure */}
                         <Tabs defaultValue="irtv" className="flex flex-col my-0 h-full">
                             <TabsList className="grid w-full grid-cols-2 bg-primary-foreground my-0 h-6">
-                                <TabsTrigger value="irtv" className="text-xs sm:text-sm mt-0">IRTV
+                                <TabsTrigger value="irtv" className="text-xs sm:text-sm mt-0">AI IRTV Builder
                                     <span
                                         onClick={() => setShowGuideModal(true)}
                                         className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"

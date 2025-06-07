@@ -87,8 +87,14 @@ const data = {
           description: "Concept Knowledge Modelling",
         },
         {
+          title: "4 META Model Builder.",
+          url: "/model-builder",
+          icon: Star,
+          description: "Product, Organisation, Process, System (POPS) Modelling",
+        },
+        {
           title: "4 POPS Model Builder.",
-          url: "/streaming",
+          url: "/",
           icon: Star,
           description: "Product, Organisation, Process, System (POPS) Modelling",
         },
@@ -98,12 +104,12 @@ const data = {
           icon: Star,
           description: "Active Knowledge Modelling with IRTV",
         },
-        {
-          title: "6 Modelview Builder ",
-          url: "/model-universe",
-          icon: Star,
-          description: "Active Knowledge Modelling with IRTV",
-        },
+        // {
+        //   title: "6 Modelview Builder ",
+        //   url: "/model-universe",
+        //   icon: Star,
+        //   description: "Active Knowledge Modelling with IRTV",
+        // },
         // {
         //   title: "streaming test",
         //   url: "/streaming",

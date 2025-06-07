@@ -124,6 +124,7 @@ export default function ChatComponent({
     const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a helpful AI assistant that provides clear, concise, and accurate responses.
 You are provided with following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.
+Begin your response with the name of the Template used.
     `);
 
     const refinePrompt = (
@@ -1148,7 +1149,7 @@ END OF DOCUMENT: ${file.name}
                                             {message.role === 'assistant' && (
                                                 <>
                                                     {/* Add Save to Library button */}
-                                                    <button
+                                                    {/* <button
                                                         title="Save to Library"
                                                         onClick={() => handleSaveToLibrary(message.content)}
                                                         className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
@@ -1163,7 +1164,7 @@ END OF DOCUMENT: ${file.name}
                                                         className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
                                                     >
                                                         <Save className="h-4 w-4" />
-                                                    </button>
+                                                    </button> */}
                                                     <button
                                                         onClick={() => handleCopyMessage(message.content, index)}
                                                         className="ms-2 text-xs text-gray-400 hover:text-gray-200"
@@ -1183,7 +1184,8 @@ END OF DOCUMENT: ${file.name}
                                                         }}
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
-                                                        {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
+                                                        Show Markdown Preview
+                                                        {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                     </button>
                                                 </>
                                             )}
@@ -1196,13 +1198,13 @@ END OF DOCUMENT: ${file.name}
                                     className={`flex w-full p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
                                     style={{ overflowWrap: 'anywhere' }}
                                 >
-                                    {previewMessageIndex === index ? (
+                                    {/* {previewMessageIndex === index ? (
                                         <div className="prose prose-invert custom-markdown markdown-preview w-full">
                                             <MarkdownPreview mdPreview={mdPreview} />
                                         </div>
-                                    ) : (
-                                        message.content
-                                    )}
+                                    ) : ( */}
+                                        {message.content}
+                                    {/* )} */}
                                 </div>
 
                                 {/*  bottom buttons */}
@@ -1211,23 +1213,6 @@ END OF DOCUMENT: ${file.name}
                                         {message.role === 'assistant' && (
                                             <>
                                                 {/* Add Save to Library button */}
-
-                                                <button
-                                                    title="Save to Library"
-                                                    onClick={() => handleSaveToLibrary(message.content)}
-                                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                                                >
-
-                                                    <BookmarkPlus className="h-4 w-4" />
-                                                </button>
-
-                                                <button
-                                                    title="Save to File"
-                                                    onClick={() => handleSaveToFile(message.content)}
-                                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
-                                                >
-                                                    <Save className="h-4 w-4" />
-                                                </button>
                                                 <button
                                                     onClick={() => handleCopyMessage(message.content, index)}
                                                     className="ms-2 text-xs text-gray-400 hover:text-gray-200"
@@ -1247,7 +1232,8 @@ END OF DOCUMENT: ${file.name}
                                                     }}
                                                     className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                 >
-                                                    {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
+                                                    Show Markdown Preview
+                                                    {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                 </button>
 
 

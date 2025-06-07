@@ -336,7 +336,7 @@ export default function VercelAiPage() {
                   <div className="text-white px-2 bg-gray-900 max-h-[calc(100vh-21rem)] overflow-y-auto">
                     {!editedPrompt ? (
                       <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
-                        {`${data?.phData?.domain.prompt || "No prompt in store."}`}
+                        {`${data?.phData?.domain?.prompt || "No prompt in store."}`}
                       </ReactMarkdown>
                     ) : (
                       <Textarea
@@ -350,7 +350,7 @@ export default function VercelAiPage() {
                   </div>
                   <div className="flex justify-between bg-gray-700">
                     <IconButton
-                      onClick={() => { setEditedPrompt(data?.phData?.domain.prompt || ""); setPhase("final"); }}
+                      onClick={() => { setEditedPrompt(data?.phData?.domain?.prompt || ""); setPhase("final"); }}
                       icon={faEdit}
                       className="mr-2 w-full"
                     />

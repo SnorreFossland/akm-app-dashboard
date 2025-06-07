@@ -272,7 +272,8 @@ Make sure its only local routes, not long-distance travel or car and public tran
 Output all map links as raw HTML anchor tags, for example:
 <a className="text-blue-500" href="https://maps.google.com/?q=Oslo" target="_blank" rel="noopener noreferrer">View on Google Maps</a>
 Ensure every link uses target="_blank".
-Do not include long-distance travel or public transport.
+Do not include long-distance travel by car or public transport.
+Make sure Only walking routes are shown in the map.
 `
     },
     {

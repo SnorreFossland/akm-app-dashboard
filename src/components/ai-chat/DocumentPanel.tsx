@@ -42,6 +42,8 @@ export default function DocumentPanel({
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
+    const message = { content: mdContent || '' }; // Default message content
+    const [statusMsg, setStatusMsg] = useState(''); // <-- error state
 
     useEffect(() => {
         if (!mdContent) {
@@ -75,6 +77,36 @@ export default function DocumentPanel({
         setTemplatePlaceholders(placeholders);
     }, [editContent]);
 
+
+    // Add this function with your other handler functions
+    const handleSaveToFile = (content: string) => {
+        // Create a blob with the content
+        const blob = new Blob([content], { type: 'text/markdown' });
+
+        // Create a URL for the blob
+        const url = URL.createObjectURL(blob);
+
+        // Extract title from first line for filename
+        const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+        const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
+        const fileName = `${cleanTitle || 'document'}.md`;
+
+        // Create a temporary anchor element
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+
+        // Trigger download
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Show confirmation
+        setStatusMsg(`Saved "${fileName}" to downloads`);
+        setTimeout(() => setStatusMsg(''), 30000);
+    };
+
     const handleCancel = () => {
         // Don't clear mdContent when canceling, just reset editContent to original
         setEditContent(mdContent || '');
@@ -85,6 +117,27 @@ export default function DocumentPanel({
         setIsEditing(true);
         onEdit();
     };
+
+
+    // const handleSaveToLibrary = (content: string) => {
+    //     // Extract title from first line of content
+    //     const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+    //     const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
+
+    //     const documentTitle = cleanTitle || 'Untitled Document';
+
+    //     // Save to Redux store
+    //     dispatch(saveMarkdownDocument({
+    //         id: Date.now().toString(),
+    //         name: documentTitle,
+    //         content: content,
+    //         createdAt: new Date().toISOString()
+    //     }));
+
+    //     // Show confirmation to user
+    //     setStatusMsg(`Saved "${documentTitle}" to library`);
+    //     setTimeout(() => setStatusMsg(''), 30000);
+    // };
 
     const handleSaveToLibrary = () => {
         // Save to library in Redux store
@@ -213,13 +266,31 @@ export default function DocumentPanel({
                     <div className="text-sm text-gray-400">{(panelType === 'left' ? 'Current text' : 'Markdown Preview')}</div>
                     <div className="flex gap-2">
                         {(panelType === 'right') ? (
-                            <button
-                                onClick={handleSaveToLibrary}
-                                className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
-                                title="Save to library"
-                            >
-                                <BookmarkPlus className="h-4 w-4" />
-                            </button>
+                            <>
+                                <button
+                                    title="Save to Library"
+                                    onClick={handleSaveToLibrary}
+                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                                >
+
+                                    <BookmarkPlus className="h-4 w-4" />
+                                </button>
+
+                                <button
+                                    title="Save to File"
+                                    onClick={() => handleSaveToFile(message.content)}
+                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                >
+                                    <Save className="h-4 w-4" />
+                                </button>
+                                {/* <button
+                                    onClick={handleSaveToLibrary}
+                                    className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
+                                    title="Save to library"
+                                >
+                                    <BookmarkPlus className="h-4 w-4" />
+                                </button> */}
+                            </>
                         ) : (
                             <>
                                 <button
