@@ -13,6 +13,7 @@ const PromptDialog = ({ open, onOpenChange, prompts }: PromptDialogProps) => (
     <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent className="max-w-5xl">
             <DialogHeader>
+                <DialogTitle className="text-2xl font-bold">Prompts</DialogTitle>
                 <DialogDescription>
                     <div>
                         <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">

@@ -3,6 +3,7 @@ import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import mermaid from 'mermaid';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
@@ -410,7 +411,7 @@ const AIChatPage = () => {
 
     // #region Main Layout
     return (
-        <div className="w-full h-full bg-background text-gray-100">
+        <div className="w-full h-full bg-background text-gray-100 overflow-hidden">
             <div className="flex flex-row flex-nowrap h-[100dvh] w-full bg-background text-gray-100">
 
                 {/* Left Panel: Templates ------------------------------------------------------------------------------ */}
@@ -422,33 +423,6 @@ const AIChatPage = () => {
                             minWidth: '200px' // Use inline style instead of conflicting Tailwind classes
                         }}
                     >
-                        <div className="flex justify-between items-center m-1 sm:m-2">
-                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">
-                                Input: {activeLeftTab === 'templates' ? 'Domain Topic' : 'Document'}
-                            </h2>
-                            <div className="markdown-preview-header">
-                                {/*
-                                <button
-                                    onClick={() => setIsLibraryOpen(prev => !prev)}
-                                    className="flex items-center text-xs bg-blue-800 hover:bg-blue-600 text-white px-2 py-1 whitespace-nowrap rounded"
-                                >
-                                    Library
-                                </button>*/}
-                                <button
-                                    onClick={() => setShowLeftPanel(false)}
-                                    className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                >
-                                    Close
-                                </button>
-                            </div>
-                            {/* <button
-                                onClick={() => setShowLeftPanel(!showLeftPanel)}
-                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 rounded"
-                            >
-                                <span className="text-lg">{showLeftPanel ? '←' : '→'}</span>
-                            </button> */}
-                        </div>
-
                         {/* tabs */}
                         <ul className="flex border-b border-gray-600 mb-2 text-sm">
                             <li
@@ -476,8 +450,14 @@ const AIChatPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('document')}
                             >
-                                Document
+                                Context
                             </li>
+                            <button
+                                onClick={() => setShowLeftPanel(false)}
+                                className="text-xs bg-muted hover:bg-gray-600 text-white ms-auto px-2 py-1 rounded"
+                            >
+                                Close
+                            </button>
                         </ul>
 
                         {/* tab content */}
@@ -546,131 +526,144 @@ const AIChatPage = () => {
                 {/* Middle Panel: AI Chat ------------------------------------------------------------------------------- */}
                 <div className="flex p-1 sm:px-2 flex-col flex-grow"
                     style={{
-                        minWidth: '320px' // Ensure minimum usable width
+                        minWidth: '320px', // Ensure middle panel has a minimum width
                     }}>
-                    <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 sm:p-2">
-                        <button
-                            onClick={() => setShowLeftPanel(!showLeftPanel)}
-                            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                            title='Show Left pane'
-                        >
-                            <span>
-                                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                            </span>
-                            <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
-                        </button>
-                        <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AIChat</h1>
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center justify-between">
+                    <div className="flex justify-between items-center rounded-md bg-primary-foreground px-1 sm:px-1">
+                        <div className="flex flex-col flex-grow bg-background text-gray-100">
+                            <Tabs defaultValue="chat" className="flex flex-col my-0 h-full">
+                                <div className="flex items-center justify-between">
+                                    {/* Left Panel Button */}
+                                    <button
+                                        onClick={() => setShowLeftPanel(!showLeftPanel)}
+                                        className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                                        title='Show Left pane'
+                                    >
+                                        <span>
+                                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                            </svg>
+                                        </span>
+                                        <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
+                                    </button>
 
-                                {/* <div className="flex flex-row items-center gap-2"> */}
-                                <button
-                                    onClick={() => setShowGuideModal(true)}
-                                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
-                                    title="Open getting started guide"
-                                >
-                                    <HelpCircle className="h-5 w-5" />
-                                </button>
-                                {/* </div> */}
-                            </div>
-                            {/* Add right panel toggle button */}
-                            <button
-                                onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                                title='Show Right pane'
-                            >
-                                <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
-                                <span>
-                                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                        <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    </svg>
-                                </span>
-                            </button>
+                                    {/* Tabs */}
+                                    <TabsList className="grid grid-cols-2 bg-primary-foreground my-0 h-6 flex-1 mx-2">
+                                        <TabsTrigger value="chat" className="text-xs sm:text-sm mt-0">AI Chat
+                                            <span
+                                                onClick={() => setShowGuideModal(true)}
+                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
+                                                title="Open IRTV guide"
+                                            >
+                                                <HelpCircle className="h-3 w-3 ms-5" />
+                                            </span>
+                                        </TabsTrigger>
+                                    </TabsList>
+
+                                    {/* Right Panel Button */}
+                                    <button
+                                        onClick={() => setShowRightPanel(!showRightPanel)}
+                                        className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                                        title='Show Right pane'
+                                    >
+                                        <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
+                                        <span>
+                                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </div>
+                                {/* Chat Component */}
+                                <TabsContent value="chat" className="flex-1 px-1 mt-1">
+                                    <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600">
+                                        <ChatComponent
+                                            input={input}
+                                            setInput={setInput}
+                                            selectedModel={selectedModel}
+                                            setSelectedModel={setSelectedModel}
+                                            onResponseChange={handleResponseChange}
+                                            onViewInMarkdown={handleViewInMarkdown}
+                                            setShowLeftPanel={setShowLeftPanel}
+                                            chatInput={chatInput}
+                                            onAddMD={handleAddMD}
+                                            mdContent={mdContent}
+                                            setMdContent={setMdContent}
+                                            mdPreview={mdPreview}
+                                            setMdPreview={setMdPreview}
+                                            setCurrentMessages={setCurrentMessages}
+                                        />
+                                    </div>
+                                </TabsContent>
+                            </Tabs>
                         </div>
-                    </div>
-                    <div className="flex-1 h-full overflow-auto">
-                        <ChatComponent
-                            input={input}
-                            setInput={setInput}
-                            selectedModel={selectedModel}
-                            setSelectedModel={setSelectedModel}
-                            onResponseChange={handleResponseChange}
-                            onViewInMarkdown={handleViewInMarkdown}
-                            setShowLeftPanel={setShowLeftPanel}
-                            chatInput={chatInput}
-                            onAddMD={handleAddMD}
-                            mdContent={mdContent}
-                            setMdContent={setMdContent}
-                            mdPreview={mdPreview}
-                            setMdPreview={setMdPreview}
-                            setCurrentMessages={setCurrentMessages}
-                        />
-                    </div>
-                </div>
+                    </div >
+                </div >
 
                 {/* Draggable Bar for Right Panel */}
-                {showRightPanel && (
-                    <div
-                        className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize relative flex-shrink-0"
-                        onMouseDown={(e) => handleMouseDown(e, 'right')}
-                        style={{ zIndex: 10 }}
-                    >
-                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
-                    </div>
-                )}
+                {
+                    showRightPanel && (
+                        <div
+                            className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize relative flex-shrink-0"
+                            onMouseDown={(e) => handleMouseDown(e, 'right')}
+                            style={{ zIndex: 10 }}
+                        >
+                            <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
+                        </div>
+                    )
+                }
 
                 {/* Right Panel: Markdown Preview ------------------------------------------------------------------------*/}
-                {showRightPanel && (
-                    <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
-                        style={{
-                            width: `${rightPanelWidth}px`,
-                            minWidth: '200px',
-                            maxWidth: '65%'
-                        }}>
-                        <div className="flex justify-between items-center mb-2">
-                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">AI Output: Markdown Preview</h2>
-                            <div className="flex items-center gap-2">
-                                {/* <button
+                {
+                    showRightPanel && (
+                        <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
+                            style={{
+                                width: `${rightPanelWidth}px`,
+                                minWidth: '200px',
+                                maxWidth: '65%'
+                            }}>
+                            <div className="flex justify-between items-center mb-2">
+                                <h2 className="text-lg sm:text-xl font-bold text-blue-400">Output Preview</h2>
+                                <div className="flex items-center gap-2">
+                                    {/* <button
                                     onClick={handleSaveToRedux}
                                     className="text-xs bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded"
                                     disabled={!mdPreview || mdPreview === '.' || !docName.trim()}
                                 >
                                     Save to Library
                                 </button> */}
-                                <button
-                                    onClick={() => setShowRightPanel(false)}
-                                    className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                >
-                                    Close
-                                </button>
+                                    <button
+                                        onClick={() => setShowRightPanel(false)}
+                                        className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
                             </div>
-                        </div>
-                        {(mdPreview)
-                            ?
-                            <DocumentPanel
-                                mdContent={mdPreview}
-                                setMdContent={setMdPreview}
-                                setIsLibraryOpen={setIsLibraryOpen}
-                                isLibraryOpen={isLibraryOpen}
-                                panelType='right'
-                            />
-                            :
-                            <>
+                            {(mdPreview)
+                                ?
                                 <DocumentPanel
-                                    mdContent={``}
+                                    mdContent={mdPreview}
                                     setMdContent={setMdPreview}
                                     setIsLibraryOpen={setIsLibraryOpen}
                                     isLibraryOpen={isLibraryOpen}
                                     panelType='right'
                                 />
-                            </>
-                        }
-                    </div>
-                )}
+                                :
+                                <>
+                                    <DocumentPanel
+                                        mdContent={``}
+                                        setMdContent={setMdPreview}
+                                        setIsLibraryOpen={setIsLibraryOpen}
+                                        isLibraryOpen={isLibraryOpen}
+                                        panelType='right'
+                                    />
+                                </>
+                            }
+                        </div>
+                    )
+                }
                 {/* <div className="flex w-full justify-between items-center p-2 bg-primary-foreground">
                 </div > */}
                 <div className="max-h-[5px] mt-1">
@@ -731,12 +724,12 @@ const AIChatPage = () => {
                     )}
                 </>
 
-            </div>
+            </div >
             {/* Add the modal at the end of the component */}
-            <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
+            < Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
                 <GettingStartedGuide />
-            </Modal>
-        </div>
+            </Modal >
+        </div >
     );
 };
 // #endregion

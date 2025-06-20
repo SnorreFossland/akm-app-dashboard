@@ -1,5 +1,5 @@
 "use client";
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "@/store";
 import { Card, CardTitle } from "@/components/ui/card";
@@ -43,9 +43,11 @@ interface DispatchCardTitleProps {
 export default function VercelAiPage() {
   const data = useSelector((state: RootState) => state.modelUniverse);
   const dispatch = useDispatch();
-  const [leftPanelWidth, setLeftPanelWidth] = useState(450);
   const [middlePanelWidth, setMiddlePanelWidth] = useState(600);
   const [showLeftPanel, setShowLeftPanel] = useState(true);
+  const [showRightPanel, setShowRightPanel] = useState(true);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(360);
+  const [rightPanelWidth, setRightPanelWidth] = useState(360); // Initial width
   const [activeTab, setActiveTab] = useState("introduction");
   const [editedPrompt, setEditedPrompt] = useState<string>('')
   const [phase, setPhase] = useState("initial");
@@ -179,30 +181,106 @@ export default function VercelAiPage() {
     setDomainInput("");
     setPhase("initial");
   };
-    // Reusable ActionCardTitleButton component
+    // Check device type on component mount'
+    useEffect(() => {
+        const checkDeviceType = () => {
+            // Only change panel state on initial load, not on every resize
+            if (!showLeftPanel) {
+                // You can enable this if you want panel to open on desktop initially
+                const isDesktop = window.innerWidth >= 768;
+            }
+        };
+        checkDeviceType();
+    }, []);
 
+  const MIN_PANEL_WIDTH = 20;
+  const MAX_PANEL_WIDTH = () => window.innerWidth - 120; // leave at least 120px for the middle
 
-    const ActionCardTitleButton: React.FC<ActionCardTitleButtonProps> = ({ title, done, onClick, icon }) => {
-        return (
-            <CardTitle className="flex justify-center m-1 mb-auto bg-gray-700 border border-gray-500">
-                <div className={`flex justify-between items-center flex-grow ps-2 ${done ? "text-green-600" : "text-green-200"}`}>
-                    {title}
-                    <div className="flex items-center ml-auto">
-                        {!done ? (
-                            <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                <LoadingCircularProgress />
-                            </div>
-                        ) : (
-                            <div style={{ marginLeft: 8, marginRight: 8, color: done ? "green" : "gray" }}>
-                                <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                            </div>
-                        )}
-                        <IconButton onClick={onClick} icon={icon} />
-                    </div>
-                </div>
-            </CardTitle>
+  const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
+    // Check for primary (left) mouse button on initial click
+    if (e.button !== 0) return;
+
+    e.preventDefault();
+    e.stopPropagation(); // Prevent event bubbling
+
+    const startX = e.clientX;
+    const startLeftWidth = leftPanelWidth;
+    const startRightWidth = rightPanelWidth;
+
+    // Prevent text selection during drag
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = panel === 'left' ? 'col-resize' : 'col-resize';
+
+    const onMouseMove = (event: MouseEvent) => {
+      // Only proceed if left button is still pressed (buttons bitmask check)
+      if (!(event.buttons & 1)) {
+        onMouseUp();
+        return;
+      }
+
+      // Calculate distance moved
+      const deltaX = event.clientX - startX;
+
+      if (panel === 'left') {
+        const newWidth = Math.max(
+          MIN_PANEL_WIDTH,
+          Math.min(MAX_PANEL_WIDTH(), startLeftWidth + deltaX)
         );
+        setLeftPanelWidth(newWidth);
+      } else if (panel === 'right') {
+        // For right panel, moving left increases width, moving right decreases width
+        // Calculate maximum allowed width considering left panel and minimum middle width
+        const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0; // +8 for drag bar
+        const minimumMiddleWidth = 320; // From your inline style
+        const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 20; // -20 for margins/padding
+
+        const newWidth = Math.max(
+          MIN_PANEL_WIDTH,
+          Math.min(maxRightWidth, startRightWidth - deltaX)
+        );
+        setRightPanelWidth(newWidth);
+      }
     };
+
+    const onMouseUp = () => {
+      // Restore body styles
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+
+      document.removeEventListener('mousemove', onMouseMove, { capture: true });
+      document.removeEventListener('mouseup', onMouseUp, { capture: true });
+      document.removeEventListener('contextmenu', onMouseUp, { capture: true });
+    };
+
+    // Add event listeners with capture
+    document.addEventListener('mousemove', onMouseMove, { capture: true });
+    document.addEventListener('mouseup', onMouseUp, { capture: true });
+    document.addEventListener('contextmenu', onMouseUp, { capture: true }); // Handle right-click
+  };
+
+
+
+  const ActionCardTitleButton: React.FC<ActionCardTitleButtonProps> = ({ title, done, onClick, icon }) => {
+    return (
+      <CardTitle className="flex justify-center m-1 mb-auto bg-gray-700 border border-gray-500">
+        <div className={`flex justify-between items-center flex-grow ps-2 ${done ? "text-green-600" : "text-green-200"}`}>
+          {title}
+          <div className="flex items-center ml-auto">
+            {!done ? (
+              <div style={{ marginLeft: 8, marginRight: 8 }}>
+                <LoadingCircularProgress />
+              </div>
+            ) : (
+              <div style={{ marginLeft: 8, marginRight: 8, color: done ? "green" : "gray" }}>
+                <FontAwesomeIcon icon={faCheckCircle} size="2x" />
+              </div>
+            )}
+            <IconButton onClick={onClick} icon={icon} />
+          </div>
+        </div>
+      </CardTitle>
+    );
+  };
 
   return (
     <div className="flex w-full h-full overflow-hidden">
@@ -228,12 +306,16 @@ export default function VercelAiPage() {
       )}
 
       {/* Middle Panel */}
-      <div className="flex flex-col h-full overflow-hidden" style={{ width: middlePanelWidth + "px", minWidth: "300px" }}>
-        <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2 ">
+      {/* <div className="flex flex-col h-full overflow-hidden" style={{ width: middlePanelWidth + "px", minWidth: "300px" }}> */}
+      <div className="flex p-1 sm:px-2 flex-col flex-grow"
+        style={{
+          minWidth: '320px' // Ensure minimum usable width
+        }}>
+        <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2">
           <button
             onClick={() => setShowLeftPanel(!showLeftPanel)}
-            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-            title='Show Left pane'
+            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+            title={showLeftPanel ? 'Hide Left Panel' : 'Show Left Panel'}
           >
             <span>
               <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -241,83 +323,124 @@ export default function VercelAiPage() {
                 <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
               </svg>
             </span>
-            <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
+            {/* <span className="ml-1 hidden sm:inline">
+              {showLeftPanel ? 'Hide' : 'Show'}
+            </span> */}
           </button>
+
           <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AI Prompt Builder</h1>
-          <div className="flex items-center">
+
+          <div className="flex items-center gap-2">
             <div className="text-orange-700">AI-Powered Dashboard</div>
             <FontAwesomeIcon icon={faRobot} className="fa-2lg text-orange-700" />
+            {/* Right Panel Button - moved here */}
+            <button
+              onClick={() => setShowRightPanel(!showRightPanel)}
+              className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded ml-2"
+              title={showRightPanel ? 'Hide Right Panel' : 'Show Right Panel'}
+            >
+              {/* <span className="mr-1 hidden sm:inline">
+                {showRightPanel ? 'Hide' : 'Show'}
+              </span> */}
+              <span>
+                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                  <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                </svg>
+              </span>
+            </button>
           </div>
         </div>
-        {/* <ModelComponent /> */}
-        <div className="flex flex-1 overflow-hidden">
+
+        <div className="flex-1 overflow-hidden">
           <PromptBuilder />
         </div>
       </div>
-
-      {/* Draggable Bar between Middle and Right panels */}
-      <DraggableBar
-        onResize={handleMiddleResize}
-        initialWidth={middlePanelWidth}
-        minWidth={300}
-      />
+      {/* Draggable Bar for Right Panel */}
+      {showRightPanel && (
+        <div
+          className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize relative flex-shrink-0"
+          onMouseDown={(e) => handleMouseDown(e, 'right')}
+          style={{ zIndex: 10 }}
+        >
+          <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
+        </div>
+      )}
 
       {/* Right Panel */}
-      <div className="flex-1 h-full overflow-hidden">
-        <div className="border-solid rounded border-1 border-green-900 h-full overflow-y-hidden" style={{ width: `${110 - dividerPosition}%` }} ref={containerRef}>
-          <ModelComponent />
-          <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-              <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                <TabsTrigger value="introduction" className="pb-2 mt-3">
-                  ...
-                </TabsTrigger>
-                {/* <TabsTrigger value="final-suggested-prompt" className="pb-2 mt-3">
+      {showRightPanel && (
+        // <div className="flex-1 h-full overflow-hidden">
+          <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
+            style={{
+              width: `${rightPanelWidth}px`,
+              minWidth: '200px',
+              maxWidth: '65%'
+            }}>
+
+          <div className="flex justify-between items-center mb-2">
+            <h2 className="text-lg sm:text-xl font-bold text-blue-400">AI Output: Markdown Preview</h2>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setShowRightPanel(false)}
+                className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+            <ModelComponent />
+            <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
+                <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
+                  <TabsTrigger value="introduction" className="pb-2 mt-3">
+                    ...
+                  </TabsTrigger>
+                  {/* <TabsTrigger value="final-suggested-prompt" className="pb-2 mt-3">
                                     AI Suggested Prompt
                                 </TabsTrigger> */}
-                <TabsTrigger value="existing-prompt" className="pb-2 mt-3">
-                  Stored Prompt
-                </TabsTrigger>
-              </TabsList>
-              <TabsContent value="introduction" className="m-0 px-1 py-2 rounded bg-background">
-                <div className="m-2 p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
-                  <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Prompt Builder</h2>
+                  <TabsTrigger value="existing-prompt" className="pb-2 mt-3">
+                    Stored Prompt
+                  </TabsTrigger>
+                </TabsList>
+                <TabsContent value="introduction" className="m-0 px-1 py-2 rounded bg-background">
+                  <div className="m-2 p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
+                    <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Prompt Builder</h2>
 
-                  <p className="text-white mb-3">
-                    The Prompt Builder is an AI-powered tool that helps you create perfect prompts for domain-specific knowledge models.
-                    Its about asking the right questions to ask AI to give the best definition of a subject  (The Domain we want to explore).
-                  </p>
+                    <p className="text-white mb-3">
+                      The Prompt Builder is an AI-powered tool that helps you create perfect prompts for domain-specific knowledge models.
+                      Its about asking the right questions to ask AI to give the best definition of a subject  (The Domain we want to explore).
+                    </p>
 
-                  <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
+                    <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
 
-                  <ol className="text-white list-decimal ml-5 space-y-2">
-                    <li><span className="font-bold">Start with a Subject :</span> Enter a domain, topic, or theme you want to create a prompt for.</li>
-                    <li><span className="font-bold">Answer Clarifying Questions:</span> The AI will ask questions to refine your requirements.</li>
-                    <li><span className="font-bold">Review & Edit:</span> Examine the suggested prompt and make any necessary edits.</li>
-                    <li><span className="font-bold">Keep:</span> When satisfied, save your prompt to use with your knowledge models. </li>
-                  </ol>
-                  <div className="text-sm font-bold mt-4 mb-2">
-                    <span className="text-green-400">Note: </span> You can run the prompt in next step
-                  </div>
-                  <div className="mt-6 p-3 border border-green-700 rounded bg-background">
-                    <h4 className="text-green-400 font-bold mb-2">Tips for best results:</h4>
-                    <ul className="text-white list-disc ml-5 space-y-1">
-                      <li>Be specific about your domain</li>
-                      <li>Provide detailed answers to the clarification questions</li>
-                      <li>Don&apos;t hesitate to iterate through multiple rounds of refinement</li>
-                      <li>Edit the final prompt to add any missing details</li>
-                    </ul>
-                  </div>
-                  {/* 
+                    <ol className="text-white list-decimal ml-5 space-y-2">
+                      <li><span className="font-bold">Start with a Subject :</span> Enter a domain, topic, or theme you want to create a prompt for.</li>
+                      <li><span className="font-bold">Answer Clarifying Questions:</span> The AI will ask questions to refine your requirements.</li>
+                      <li><span className="font-bold">Review & Edit:</span> Examine the suggested prompt and make any necessary edits.</li>
+                      <li><span className="font-bold">Keep:</span> When satisfied, save your prompt to use with your knowledge models. </li>
+                    </ol>
+                    <div className="text-sm font-bold mt-4 mb-2">
+                      <span className="text-green-400">Note: </span> You can run the prompt in next step
+                    </div>
+                    <div className="mt-6 p-3 border border-green-700 rounded bg-background">
+                      <h4 className="text-green-400 font-bold mb-2">Tips for best results:</h4>
+                      <ul className="text-white list-disc ml-5 space-y-1">
+                        <li>Be specific about your domain</li>
+                        <li>Provide detailed answers to the clarification questions</li>
+                        <li>Don&apos;t hesitate to iterate through multiple rounds of refinement</li>
+                        <li>Edit the final prompt to add any missing details</li>
+                      </ul>
+                    </div>
+                    {/* 
                                     <div className="mt-6 text-center">
                                         <button onClick={() => setActiveTab("final-suggested-prompt")}
                                             className="bg-green-700 hover:bg-green-600 text-white py-2 px-4 rounded">
                                             Get Started
                                         </button>
                                     </div> */}
-                </div>
-              </TabsContent>
-              {/* <TabsContent value="final-suggested-prompt" className="m-0 px-1 py-2 rounded bg-background">
+                  </div>
+                </TabsContent>
+                {/* <TabsContent value="final-suggested-prompt" className="m-0 px-1 py-2 rounded bg-background">
                                 <div className=" py-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
                                     <ReactMarkdown className="prose prose-sm p-2 text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
                                         {finalPrompt}
@@ -331,62 +454,56 @@ export default function VercelAiPage() {
                                     />
                                 </div>
                             </TabsContent> */}
-              <TabsContent value="existing-prompt" className="m-0 px-1 py-2 rounded bg-background">
-                <div className="m-2 p-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                  <div className="text-white px-2 bg-gray-900 max-h-[calc(100vh-21rem)] overflow-y-auto">
-                    {!editedPrompt ? (
-                      <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
-                        {`${data?.phData?.domain?.prompt || "No prompt in store."}`}
-                      </ReactMarkdown>
-                    ) : (
-                      <Textarea
-                        className="p-2 bg-gray-900 text-lg text-gray-300"
-                        value={editedPrompt}
-                        onChange={(e) => setEditedPrompt(e.target.value)}
-                        rows={20}
-                        placeholder="Edit the stored prompt here..."
+                <TabsContent value="existing-prompt" className="m-0 px-1 py-2 rounded bg-background">
+                  <div className="m-2 p-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
+                    <div className="text-white px-2 bg-gray-900 max-h-[calc(100vh-21rem)] overflow-y-auto">
+                      {!editedPrompt ? (
+                        <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
+                          {`${data?.phData?.domain?.prompt || "No prompt in store."}`}
+                        </ReactMarkdown>
+                      ) : (
+                        <Textarea
+                          className="p-2 bg-gray-900 text-lg text-gray-300"
+                          value={editedPrompt}
+                          onChange={(e) => setEditedPrompt(e.target.value)}
+                          rows={20}
+                          placeholder="Edit the stored prompt here..."
+                        />
+                      )}
+                    </div>
+                    <div className="flex justify-between bg-gray-700">
+                      <IconButton
+                        onClick={() => { setEditedPrompt(data?.phData?.domain?.prompt || ""); setPhase("final"); }}
+                        icon={faEdit}
+                        className="mr-2 w-full"
                       />
-                    )}
+                      <IconButton
+                        onClick={handleDispatchEditedPrompt}
+                        icon={faPaperPlane}
+                        className="mr-2 w-full"
+                      />
+                      <IconButton
+                        onClick={handleDeletePrompt}
+                        icon={faTrash}
+                        className="ml-2 bg-red-700 w-full"
+                      />
+                    </div>
+                    <ActionCardTitleButton
+                      title="Next step:  Go to Domain Builder"
+                      done={true}
+                      onClick={() => window.location.href = "/domain-builder"}
+                      icon={faLink}
+                    />
                   </div>
-                  <div className="flex justify-between bg-gray-700">
-                    <IconButton
-                      onClick={() => { setEditedPrompt(data?.phData?.domain?.prompt || ""); setPhase("final"); }}
-                      icon={faEdit}
-                      className="mr-2 w-full"
-                    />
-                    <IconButton
-                      onClick={handleDispatchEditedPrompt}
-                      icon={faPaperPlane}
-                      className="mr-2 w-full"
-                    />
-                    <IconButton
-                      onClick={handleDeletePrompt}
-                      icon={faTrash}
-                      className="ml-2 bg-red-700 w-full"
-                    />
-                  </div>
-                  <ActionCardTitleButton
-                    title="Next step:  Go to Domain Builder"
-                    done={true}
-                    onClick={() => window.location.href = "/domain-builder"}
-                    icon={faLink}
-                  />
-                </div>
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
-      </div>
+                </TabsContent>
+              </Tabs>
+            </Card>
+          </div>
+        // </div>
+      )}
 
-      {/* Toggle button for left panel */}
-      <button
-        onClick={() => setShowLeftPanel(!showLeftPanel)}
-        className="fixed left-2 bottom-2 flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-        title={showLeftPanel ? 'Hide Left Panel' : 'Show Left Panel'}
-      >
-        <span className="text-lg">{showLeftPanel ? '←' : '→'}</span>
-      </button>
-      {/* Pass export functionality to library component */}
+      {/* Draggable Bar between Right and Bottom panels */}
+
       <>
         {/* Library Modal */}
         {isLibraryOpen && (

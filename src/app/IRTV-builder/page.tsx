@@ -8,19 +8,24 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 
 import { LoadingCircularProgress } from "@/components/loading";
 
 // Import components (note the correct file name)
 
+import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import IRTVBuilderComponent from '@/components/irtv-builder/IrtvBuildercomponent';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
-import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
+import OutputPanel from '@/components/irtv-builder/OutputPanel';
+import ConversationsPanel from '@/components/irtv-builder/ConversationsPanel';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
 // import IRTVTemplatesPanel from '@/components/irtv-builder/IRTVTemplatesPanel';
 // Uncomment and fix these imports at the top of your file
 import { ObjectCard } from '@/components/object-card';
 import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
+import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
+
 
 
 // Types
@@ -31,20 +36,12 @@ interface IRTVConversation {
     timestamp: number;
 }
 
-// Add these type definitions near the top of your file
-interface Model {
-    id: string;
-    name: string;
-    description: string;
-    objects?: any[];
-    relships?: any[];
-    metamodelRef?: string;
-    modelviews?: any[];
-}
+
 
 const IRTVBuilderPage = () => {
-    const data = {} //useSelector((state: RootState) => state.modelUniverse);
+    const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch();
+    const [dispatchDone, setDispatchDone] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
     // const documents = useSelector((state: RootState) => state.documents.documents);
     const documents = useSelector((state: RootState) => state.markdown.documents);
@@ -55,26 +52,34 @@ const IRTVBuilderPage = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isIrtvOpen, setIsIrtvOpen] = useState(true);
     const [isModelOpen, setIsModelOpen] = useState(false);
+    const [mdContent, setMdContent] = useState('');
+    const [statusMsg, setStatusMsg] = useState('');
 
-    const [showModel, setShowModel] = useState(true);
+    const [currentOntology, setCurrentOntology] = useState<any>(data.phData?.ontology || null);
+    const [currentDomain, setCurrentDomain] = useState<any>(data.phData?.domain || null);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
     // const [metis, setMetis] = useState<Metis | null >(null);
-    const [model, setModel] = useState<{ id?: string; name?: string; description?: string; objects?: any[]; relships?: any[] } | null>(null);
+    const [currentModel, setCurrentModel] = useState<Model | null>(null);
+    const [currentModelview, setCurrentModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
+    const [model, setModel] = useState<Model>(currentModel ?? { id: '', name: '', description: '', objects: [], relships: [], metamodelRef: '', modelviews: [] });
     const [curmod, setCurmod] = useState<Model | null>(null);
-    const [modelview, setModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
+    const [isModelviewOpen, setIsModelviewOpen] = useState(false);
+    const [isModelviewEditOpen, setIsModelviewEditOpen] = useState(false);
 
+    const [showModel, setShowModel] = useState(true);
+    const [modelview, setModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(currentModelview ?? { id: '', name: '', description: '', objectviews: [], relshipviews: [] });
 
     // Panel state
     const [showLeftPanel, setShowLeftPanel] = useState(true);
     const [showRightPanel, setShowRightPanel] = useState(true);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
-    const [activeLeftTab, setActiveLeftTab] = useState<'conversations' | 'templates' | 'document'>('document');
+    const [activeLeftTab, setActiveLeftTab] = useState<'conversations' | 'model' | 'other-context'>('other-context');
 
     // IRTV Builder specific state
-    const [irtvContent, setIrtvContent] = useState('');
+    const [irtvContent, setIrtvContent] = useState<Model | null>(null);
     const [irtvPreview, setIrtvPreview] = useState('');
-    const [selectedIrtvModel, setSelectedIrtvModel] = useState('deepseek-chat');
+    const [selectedIrtvModel, setSelectedIrtvModel] = useState('gpt-4o');
     const [irtvInput, setIrtvInput] = useState('');
     const [currentMessages, setCurrentMessages] = useState<any[]>([]);
     const [conversations, setConversations] = useState<IRTVConversation[]>([]);
@@ -94,7 +99,7 @@ const IRTVBuilderPage = () => {
 
     // Panel sizing constants
     const MIN_PANEL_WIDTH = 200;
-    const MAX_PANEL_WIDTH = () => window.innerWidth * 0.6;
+    const MAX_PANEL_WIDTH = () => Math.min(window.innerWidth * 0.5, 800); // Cap at 50% of window or 800px
 
     // Refs for touch/drag handling
     const leftPanelWidthRef = useRef(leftPanelWidth);
@@ -104,6 +109,11 @@ const IRTVBuilderPage = () => {
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
+
+    useEffect(() => {
+        setCurrentModel(data?.phData.metis.models.find(model => model.id === data.phFocus?.focusModel?.id) || null);
+        currentModel && setModel(currentModel);
+    });
 
     // Update refs when state changes
     useEffect(() => {
@@ -117,6 +127,34 @@ const IRTVBuilderPage = () => {
     useEffect(() => {
         showLeftPanelRef.current = showLeftPanel;
     }, [showLeftPanel]);
+
+    // Handle window resize to keep panels within bounds
+    useEffect(() => {
+        const handleResize = () => {
+            const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0;
+            const minimumMiddleWidth = 320;
+            const dragBarWidth = 8;
+            const padding = 80;
+            const maxRightWidth = Math.max(
+                MIN_PANEL_WIDTH,
+                window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - dragBarWidth - padding
+            );
+
+            // Adjust right panel if it's too wide
+            if (rightPanelWidth > maxRightWidth) {
+                setRightPanelWidth(maxRightWidth);
+            }
+
+            // Adjust left panel if it's too wide
+            const maxLeftWidth = Math.min(window.innerWidth * 0.5, 800);
+            if (leftPanelWidth > maxLeftWidth) {
+                setLeftPanelWidth(maxLeftWidth);
+            }
+        };
+
+        window.addEventListener('resize', handleResize);
+        return () => window.removeEventListener('resize', handleResize);
+    }, [leftPanelWidth, rightPanelWidth, showLeftPanel]);
 
     const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
         if (!isOpen) return null;
@@ -171,7 +209,12 @@ const IRTVBuilderPage = () => {
             } else if (panel === 'right') {
                 const leftPanelActualWidth = showLeftPanelRef.current ? leftPanelWidthRef.current + 8 : 0;
                 const minimumMiddleWidth = 320;
-                const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 20;
+                const dragBarWidth = 8; // Width of the draggable bar
+                const padding = 40; // Additional padding for safety
+                const maxRightWidth = Math.max(
+                    MIN_PANEL_WIDTH,
+                    window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - dragBarWidth - padding
+                );
 
                 const newWidth = Math.max(
                     MIN_PANEL_WIDTH,
@@ -239,7 +282,6 @@ const IRTVBuilderPage = () => {
 
     const handleSaveCurrentConversation = () => {
         if (currentMessages.length === 0) return;
-
         const newConversation: IRTVConversation = {
             id: Date.now().toString(),
             title: `IRTV Conversation ${new Date().toLocaleDateString()}`,
@@ -258,18 +300,99 @@ const IRTVBuilderPage = () => {
         // Handle library export logic
     };
 
-    const handleSaveToRedux = () => {
-        // Handle saving to Redux store
+
+    const handleSaveToFile = (content: string) => {
+        // Create a blob with the content
+        const blob = new Blob([content], { type: 'text/markdown' });
+
+        // Create a URL for the blob
+        const url = URL.createObjectURL(blob);
+
+        // Extract title from first line for filename
+        const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+        const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
+        const fileName = `${cleanTitle || 'document'}.md`;
+
+        // Create a temporary anchor element
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = fileName;
+
+        // Trigger download
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+
+        // Show confirmation
+        setStatusMsg(`Saved "${fileName}" to downloads`);
+        setTimeout(() => setStatusMsg(''), 30000);
     };
 
+    const handleSaveToLibrary = () => {
+        console.log('69 HandleDispatch:', dispatchDone, modelview, model);
+        if (!model && !modelview) {
+            alert('No IRTV to dispatch');
+            return;
+        }
+        const metamodRef = curMetamodel?.id;
+        const curmod = data.phData.metis.models[0];
+        console.log('75 Curmod:', curmod, model);
+
+        const newMod = {
+            ...curmod,
+            ...(model || {})
+        }
+        console.log('82 NewMod:', newMod);
+        setCurmod(newMod);
+        dispatch(setNewModel(newMod));
+
+        if (modelview) {
+            const completeModelview = {
+                ...modelview,
+                id: modelview.id || crypto.randomUUID(),
+                name: modelview.name || 'Default View',
+                description: modelview.description || '',
+                modelRef: curmod?.id || '',
+                modified: false,
+                markedAsDeleted: false,
+                objectviews: modelview.objectviews || [],
+                relshipviews: modelview.relshipviews || []
+            };
+            dispatch(setNewModelview([completeModelview]));
+        }
+
+        setDispatchDone(true);
+    };
+
+    const [windowWidth, setWindowWidth] = useState(800); // default fallback
+
+    useEffect(() => {
+        const handleResize = () => {
+            setWindowWidth(window.innerWidth);
+        };
+
+        // Set initial width
+        if (typeof window !== 'undefined') {
+            setWindowWidth(window.innerWidth);
+            window.addEventListener('resize', handleResize);
+        }
+
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('resize', handleResize);
+            }
+        };
+    }, []);
+
     return (
-        <div className="w-full h-full bg-background text-gray-100">
-            <div className="flex flex-row flex-nowrap h-[100dvh] w-full bg-background text-gray-100">
+        <div className=" h-full bg-background text-gray-100 overflow-hidden">
+            <div className="flex flex-row flex-nowrap h-[calc(100dvh-2px)] w-full bg-background text-gray-100">
 
                 {/* Left Panel: Templates & Tools */}
                 {showLeftPanel && (
                     <div
-                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 max-w-[95vw] overflow-auto"
+                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 max-w-[95vw] overflow-hidden"
                         style={{
                             width: `${leftPanelWidth}px`,
                             minWidth: '200px'
@@ -277,7 +400,7 @@ const IRTVBuilderPage = () => {
                     >
                         <div className="flex justify-between items-center m-1 sm:m-2">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400">
-                                IRTV Input: {activeLeftTab === 'templates' ? 'Templates' : activeLeftTab === 'document' ? 'Document' : 'Conversations'}
+                                IRTV Input: {activeLeftTab === 'model' ? 'model' : activeLeftTab === 'other-context' ? 'other-context' : 'Conversations'}
                             </h2>
                             <div className="markdown-preview-header">
                                 <button
@@ -298,31 +421,31 @@ const IRTVBuilderPage = () => {
                                     }`}
                                 onClick={() => setActiveLeftTab('conversations')}
                             >
-                                Saved IRTV Sessions
+                                Saved conversations
                             </li>
                             <li
-                                className={`px-3 py-1 cursor-pointer ${activeLeftTab === 'templates'
+                                className={`px-3 py-1 cursor-pointer ${activeLeftTab === 'model'
                                     ? 'border-b-2 border-blue-400 font-semibold'
                                     : 'text-gray-400'
                                     }`}
-                                onClick={() => setActiveLeftTab('templates')}
+                                onClick={() => setActiveLeftTab('model')}
                             >
-                                IRTV Templates
+                                Model context
                             </li>
                             <li
-                                className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'document'
+                                className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'other-context'
                                     ? 'border-b-2 border-blue-400 font-semibold'
                                     : 'text-gray-400'
                                     }`}
-                                onClick={() => setActiveLeftTab('document')}
+                                onClick={() => setActiveLeftTab('other-context')}
                             >
-                                Document
+                                Other context
                             </li>
                         </ul>
 
                         {/* Tab Content */}
                         {activeLeftTab === 'conversations' ? (
-                            <div className="p-2">
+                            <div className="p-2 bg-background h-[calc(100vh-6rem)]">
                                 <ConversationsPanel
                                     conversations={conversations}
                                     onSelectConversation={handleSelectConversation}
@@ -331,25 +454,28 @@ const IRTVBuilderPage = () => {
                                     currentMessages={currentMessages}
                                 />
                             </div>
-                        ) : activeLeftTab === 'templates' ? (
-                            <>
-                                <input
-                                    ref={mdFileInputRef}
-                                    type="file"
-                                    accept=".md"
-                                    className="hidden"
-                                />
-                                {/* <IRTVTemplatesPanel
-                                    onApplyTemplate={handleApplyTemplate}
-                                    editableContent={editableContent}
-                                    setEditableContent={setEditableContent}
-                                    domainContent={domainContent}
-                                    setDomainContent={setDomainContent}
-                                    selectedModel={selectedIrtvModel}
-                                    onAddContent={handleAddContent}
-                                    irtvContent={irtvContent}
-                                /> */}
-                            </>
+                        ) : activeLeftTab === 'model' ? (
+                            <div className="mt-2 text-xs h-[calc(100vh-5rem)] overflow-hidden">
+                                {currentModel && (
+                                    <ObjectCard model={{
+                                        id: currentModel.id,
+                                        name: currentModel.name,
+                                        description: currentModel.description,
+                                        objects: currentModel.objects?.map(obj => ({
+                                            id: obj.id || '',
+                                            name: obj.name || '',
+                                            description: obj.description || '',
+                                            proposedType: obj.proposedType || '',
+                                            typeRef: obj.typeRef || '',
+                                            typeName: obj.typeName || '',
+                                            category: obj.category || ''
+                                        })) || [],
+                                        relships: currentModel.relships || [],
+                                        metamodelRef: currentModel.metamodelRef || '',
+                                        modelviews: currentModel.modelviews || []
+                                    }} />
+                                )}
+                            </div>
                         ) : (
                             <DocumentPanel
                                 mdContent={irtvContent}
@@ -375,110 +501,123 @@ const IRTVBuilderPage = () => {
                 )}
 
                 {/* Middle Panel: IRTV Builder */}
-                <div className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden flex-col"
+                <div className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden flex-col "
                     style={{
                         minWidth: '320px'
                     }}>
-
                     <div className="flex justify-between items-center rounded-md bg-primary-foreground px-1 sm:px-1">
-                        <button
-                            onClick={() => setShowLeftPanel(!showLeftPanel)}
-                            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                            title='Show Left pane'
-                        >
-                            <span>
-                                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                </svg>
-                            </span>
-                            <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
-                        </button>
-                        <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">IRTV Model Builder</h1>
-                        <div className="flex items-center gap-2">
-                            <div className="flex items-center justify-between">
-                                <button
-                                    onClick={() => setShowGuideModal(true)}
-                                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full p-2"
-                                    title="Open IRTV guide"
-                                >
-                                    <HelpCircle className="h-5 w-5" />
-                                </button>
-                            </div>
-                            <button
-                                onClick={() => setShowRightPanel(!showRightPanel)}
-                                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                                title='Show Right pane'
-                            >
-                                <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
-                                <span>
-                                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                        <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                        <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                    </svg>
-                                </span>
-                            </button>
+                        {/* Middle Content */}
+                        <div className="flex flex-col flex-grow bg-background text-gray-100 ">
+                            <Tabs defaultValue="irtv" className="flex flex-col my-0">
+                                {/* Tab Structure with Left and Right buttons */}
+                                <div className="flex items-center justify-between">
+                                    {/* Left Panel toggle button */}
+                                    <button
+                                        onClick={() => setShowLeftPanel(!showLeftPanel)}
+                                        className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                                        title='Show Left pane'
+                                    >
+                                        <span>
+                                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                            </svg>
+                                        </span>
+                                        <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
+                                    </button>
+                                    <span className="self-center inline-block w-auto text-xs sm:text-sm ml-4 pt-1 text-blue-400">IRTV Builder:</span>
+
+                                    {/* Tabs */}
+                                    <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-6 flex-1 mx-2">
+                                        <TabsTrigger value="irtv" className="text-xs sm:text-sm mt-0">AI Assistant
+                                            <span className="mx-1"></span>
+                                            <span
+                                                onClick={() => setShowGuideModal(true)}
+                                                className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
+                                                title="Open domain guide"
+                                            >
+                                                <HelpCircle className="h-4 w-4" />
+                                            </span>
+                                        </TabsTrigger>
+                                        <TabsTrigger value="current-domain" className="text-xs sm:text-sm mt-0">Domain: {currentDomain.name || 'Domain name'}
+                                            <span className="mx-1"></span>
+                                            <span
+                                                onClick={() => setShowGuideModal(true)}
+                                                className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
+                                                title="Open domain guide"
+                                            >
+                                                <HelpCircle className="h-4 w-4" />
+                                            </span>
+                                        </TabsTrigger>
+                                        <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">Model:
+                                            <span className="mx-1"></span>
+                                            <span
+                                                onClick={() => setShowGuideModal(true)}
+                                                className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
+                                                title="Open domain guide"
+                                            >
+                                                <HelpCircle className="h-4 w-4" />
+                                            </span>
+                                        </TabsTrigger>
+                                    </TabsList>
+
+                                    {/* Right Panel Button */}
+                                    <button
+                                        onClick={() => setShowRightPanel(!showRightPanel)}
+                                        className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                                        title='Show Right pane'
+                                    >
+                                        <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
+                                        <span>
+                                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                            </svg>
+                                        </span>
+                                    </button>
+                                </div>
+                                {/* AI Assistant */}
+                                <TabsContent value="irtv" className="flex-1 px-1 mt-1">
+                                    <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600">
+                                        <IRTVBuilderComponent
+                                            input={irtvInput}
+                                            setInput={setIrtvInput}
+                                            selectedModel={selectedIrtvModel}
+                                            setSelectedModel={setSelectedIrtvModel}
+                                            onResponseChange={handleIrtvResponseChange}
+                                            onViewInPreview={handleViewInIrtvPreview}
+                                            setShowLeftPanel={setShowLeftPanel}
+                                            onAddContent={handleAddContent}
+                                            irtvContent={irtvContent}
+                                            setIrtvContent={setIrtvContent}
+                                            irtvPreview={irtvPreview}
+                                            setIrtvPreview={setIrtvPreview}
+                                            setCurrentMessages={setCurrentMessages}
+                                        />
+                                    </div>
+                                </TabsContent>
+                                {/* Current Domain */}
+                                <TabsContent value="current-domain" className="flex-1 px-1 mt-1">
+                                    <div className="flex-1 overflow-auto bg-gray-800/20 p-1 overflow-hidden">
+                                        <ModelComponent />
+                                    </div>
+                                </TabsContent>
+                                {/* Model */}
+                                <TabsContent value="model" className="flex-1">
+                                    <iframe
+                                        style={{ height: "calc(100vh - 2.3rem)", width: "100%" }}
+                                        ref={iframeRef}
+                                        src="http://localhost:3000/modelling"
+                                        className="w-full h-full border-none rounded"
+                                        title="Embedded Mimris Modeller"
+                                        allow="clipboard-read; clipboard-write"
+                                        sandbox="allow-same-origin allow-scripts"
+                                    />
+                                </TabsContent>
+                            </Tabs>
                         </div>
                     </div>
-                    {/* Middle Content */}
-                    <div className="flex flex-col flex-grow bg-background text-gray-100 ">
-                        {/* Tab Structure */}
-                        <Tabs defaultValue="irtv" className="flex flex-col my-0 h-full">
-                            <TabsList className="grid w-full grid-cols-2 bg-primary-foreground my-0 h-6">
-                                <TabsTrigger value="irtv" className="text-xs sm:text-sm mt-0">AI IRTV Builder
-                                    <span
-                                        onClick={() => setShowGuideModal(true)}
-                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                                        title="Open IRTV guide"
-                                    >
-                                        <HelpCircle className="h-4 w-4" />
-                                    </span>
-                                </TabsTrigger>
-                                <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">Model
-                                    <span
-                                        onClick={() => setShowGuideModal(true)}
-                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                                        title="Open model guide"
-                                    >
-                                        <HelpCircle className="h-3 w-3" />
-                                    </span>
-                                </TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="irtv" className="flex-1 px-1 mt-1">
-                                <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600">
-                                    <IRTVBuilderComponent
-                                        input={irtvInput}
-                                        setInput={setIrtvInput}
-                                        selectedModel={selectedIrtvModel}
-                                        setSelectedModel={setSelectedIrtvModel}
-                                        onResponseChange={handleIrtvResponseChange}
-                                        onViewInPreview={handleViewInIrtvPreview}
-                                        setShowLeftPanel={setShowLeftPanel}
-                                        onAddContent={handleAddContent}
-                                        irtvContent={irtvContent}
-                                        setIrtvContent={setIrtvContent}
-                                        irtvPreview={irtvPreview}
-                                        setIrtvPreview={setIrtvPreview}
-                                        setCurrentMessages={setCurrentMessages}
-                                    />
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="model" className="flex-1">
-                                <iframe
-                                    ref={iframeRef}
-                                    src="http://localhost:3000/modelling"
-                                    className="w-full h-full border-none rounded"
-                                    title="Embedded Mimris Modeller"
-                                    allow="clipboard-read; clipboard-write"
-                                    sandbox="allow-same-origin allow-scripts"
-                                />
-                            </TabsContent>
-                        </Tabs>
-                    </div>
                 </div>
-
                 {/* Draggable Bar for Right Panel */}
                 {showRightPanel && (
                     <div
@@ -490,14 +629,13 @@ const IRTVBuilderPage = () => {
                         <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
                     </div>
                 )}
-
                 {/* Right Panel: IRTV Preview */}
                 {showRightPanel && (
-                    <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
+                    <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col max-h-[calc(100vh-7px)] overflow-hidden"
                         style={{
-                            width: `${rightPanelWidth}px`,
+                            width: `${Math.min(rightPanelWidth, windowWidth * 0.5)}px`,
                             minWidth: '200px',
-                            maxWidth: '65%'
+                            maxWidth: '50vw'
                         }}>
                         <div className="flex justify-between items-center mb-2">
                             <h2 className="text-lg sm:text-xl font-bold text-blue-400">IRTV Preview</h2>
@@ -510,213 +648,16 @@ const IRTVBuilderPage = () => {
                                 </button>
                             </div>
                         </div>
-                        {/* <DocumentPanel
-                            mdContent={irtvPreview}
-                            setMdContent={setIrtvPreview}
+                        <OutputPanel
+                            irtvPreview={irtvPreview}
+                            setIrtvPreview={setIrtvPreview}
+                            irtvContent={irtvContent}
+                            setIrtvContent={setIrtvContent}
                             setIsLibraryOpen={setIsLibraryOpen}
                             isLibraryOpen={isLibraryOpen}
                             panelType='right'
-                        /> */}
-                        <div className="border-solid rounded border-4 border-blue-800 h-full w-full">
-                            {data
-                                ? <Card className="p-1">
-                                    <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                        <TabsList className="m-1 mb-0 bg-transparent">
-                                            <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Current Knowledge</TabsTrigger>
-                                            <TabsTrigger value="model" className='pb-2 mt-3'>GPT Suggested Model</TabsTrigger>
-                                            <TabsTrigger value="modelview" className='pb-2 mt-3'>GPT Suggested Modelview</TabsTrigger>
-                                        </TabsList>
+                        />
 
-                                        <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background">
-                                            <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="bg-gray-700 mx-1 px-1 mt-0">
-                                                <TabsList className=" mb-0 bg-gray-700 mt-0">
-                                                    <TabsTrigger value="model-summary" className='pb-2 mt-3'>Current Model Summary</TabsTrigger>
-                                                    <TabsTrigger value="model-objects" className='pb-2 mt-3'>Current Model</TabsTrigger>
-                                                    <TabsTrigger value="model-modelviews" className='pb-2 mt-3'>Current Modelview</TabsTrigger>
-                                                </TabsList>
-                                                <TabsContent value="model-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200">
-                                                    <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                        <div className="">
-                                                            {data && data.phData && data.phData.metis && data.phData.metis.models && (
-                                                                <>
-                                                                    <div className="flex justify-left items-center py-2 text-left">
-                                                                        <h4 className="px-2 text-gray-400 font-bold">AKM File</h4>
-                                                                        <h4 className="px-2 mb-1 font-bold whitespace-nowrap bg-gray-700">{data.phSource}.json</h4>
-                                                                    </div>
-                                                                    <div className="flex flex-wrap">
-                                                                        <div className="px-2 col text-left mb-4 w-1/3">
-                                                                            <h4 className="text-gray-400 font-bold">Model Suite:</h4>
-                                                                            <div className="border border-gray-600 p-2">
-                                                                                <h5 className="text-gray-400 font-bold">Name</h5>
-                                                                                <h4 className="font-bold whitespace-nowrap bg-background p-1">{data.phData.metis.name}</h4>
-                                                                                <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                                                                <h4 className=" bg-background p-1">{data.phData.metis.description}</h4>
-                                                                            </div>
-                                                                            <div className="col text-left">
-                                                                                <h4 className="text-gray-400 font-bold">Project:</h4>
-                                                                                <div className="border border-gray-600 p-2">
-                                                                                    {data.phFocus && 'focusProj' in data.phFocus ? (
-                                                                                        <>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.id}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.projectNumber}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.name}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.org}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.repo}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.path}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.file}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.branch}</h5>
-                                                                                            <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                                                                            <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.username}</h5>
-                                                                                        </>
-                                                                                    ) : (
-                                                                                        <p className="text-gray-400">No project information available</p>
-                                                                                    )}
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="px-4 col text-left w-2/3">
-                                                                            <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
-                                                                            <div className="border border-gray-600 p-2">
-                                                                                {data.phData.metis.models.map((model: any, index) => (
-                                                                                    <div key={model.id} className="flex flex-col">
-                                                                                        <h5 className="text-gray-400 font-bold">Name</h5>
-                                                                                        <h4 className="bg-background p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
-                                                                                        <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                                                                        <h4 className="bg-background p-2">{model.description}</h4>
-                                                                                        <hr className="my-1" />
-                                                                                    </div>
-                                                                                ))}
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                </TabsContent>
-                                                <TabsContent value="model-objects" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                                    <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                    </div>
-                                                    {curmod && (
-                                                        <ObjectCard model={{
-                                                            id: curmod.id,
-                                                            name: curmod.name,
-                                                            description: curmod.description,
-                                                            objects: curmod.objects?.map(obj => ({
-                                                                id: obj.id || '',
-                                                                name: obj.name || '',
-                                                                description: obj.description || '',
-                                                                proposedType: obj.proposedType || '',
-                                                                typeRef: obj.typeRef || '',
-                                                                typeName: obj.typeName || '',
-                                                                category: obj.category || ''
-                                                            })) || [],
-                                                            relships: curmod.relships || [],
-                                                            metamodelRef: curmod.metamodelRef,
-                                                            modelviews: curmod.modelviews
-                                                        }} />
-                                                    )}
-                                                </TabsContent>
-                                                {/* <TabsContent value="model-modelviews" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                                                    <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                                        <ModelviewCard modelviews={data?.phData?.metis?.models[0].modelviews.map((modelview: any) => ({
-                                                                            ...modelview,
-                                                                            objectviews: Array.isArray(modelview.objectviews) ? modelview.objectviews : [modelview.objectviews]
-                                                                        }))} />
-                                                                    </div>
-                                                                </TabsContent> */}
-                                            </Tabs>
-                                        </TabsContent>
-
-                                        <TabsContent value="model" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                            {showModel && model && (
-                                                <>
-                                                    <div className="flex justify-end pb-1 pt-0 mx-2">
-                                                        <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                                                            Show Prompt
-                                                        </button>
-                                                    </div>
-                                                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                                        <DialogContent className="max-w-5xl">
-                                                            <DialogHeader>
-                                                                <DialogDescription>
-                                                                    {printPromptsDiv}
-                                                                </DialogDescription>
-                                                            </DialogHeader>
-                                                            <ObjectCard model={{
-                                                                id: model.id || crypto.randomUUID(),
-                                                                name: model.name || 'Generated Model',
-                                                                description: model.description || '',
-                                                                objects: model.objects?.map(obj => ({
-                                                                    id: obj.id || crypto.randomUUID(),
-                                                                    name: obj.name || '',
-                                                                    description: obj.description || '',
-                                                                    proposedType: obj.proposedType || '',
-                                                                    typeRef: obj.typeRef || '',
-                                                                    typeName: obj.typeName || '',
-                                                                    category: obj.category || ''
-                                                                })) || [],
-                                                                relships: model.relships || [],
-                                                                metamodelRef: curmod?.metamodelRef || '',
-                                                                modelviews: curmod?.modelviews || []
-                                                            }} />
-                                                        </DialogContent>
-                                                        <DialogFooter>
-                                                            <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                                Close
-                                                            </Button>
-                                                        </DialogFooter>
-                                                    </Dialog>
-                                                </>
-                                            )}
-                                        </TabsContent>
-                                        <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                            <>
-                                                <div className="flex justify-end pb-1 pt-0 mx-2">
-                                                    <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                                                        Show Prompt
-                                                    </button>
-                                                </div>
-                                                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                                    <DialogContent className="max-w-5xl">
-                                                        <DialogHeader>
-                                                            <DialogDescription>
-                                                                {printPromptsDiv}
-                                                            </DialogDescription>
-                                                        </DialogHeader>
-                                                        <DialogFooter>
-                                                            <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                                Close
-                                                            </Button>
-                                                        </DialogFooter>
-                                                    </DialogContent>
-                                                </Dialog>
-                                                <div className="mx-1 ">
-                                                    {modelview && <ModelviewCard modelviews={[{
-                                                        // Use type assertion to match what ModelviewCard expects
-                                                        name: modelview.name || 'Default View',
-                                                        description: modelview.description || '',
-                                                        objectviews: modelview.objectviews || [],
-                                                        relshipviews: modelview.relshipviews || []
-                                                    } as any]} />}
-                                                </div>
-                                            </>
-                                        </TabsContent>
-                                    </Tabs>
-                                </Card>
-                                : <div className="flex justify-center items-center h-screen">
-                                    <LoadingCircularProgress />
-                                </div>
-                            }
-                        </div>
                     </div>
                 )}
 
@@ -758,11 +699,12 @@ const IRTVBuilderPage = () => {
                     </div>
                 )}
 
+
+                {/* Add the modal at the end of the component */}
+                <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
+                    <GettingStartedGuide />
+                </Modal>
             </div>
-            {/* Add the modal at the end of the component */}
-            <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
-                <GettingStartedGuide />
-            </Modal>
         </div>
     );
 };

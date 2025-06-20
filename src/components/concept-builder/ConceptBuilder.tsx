@@ -387,49 +387,28 @@ const ConceptBuilder = () => {
     }, [systemPrompt, userPrompt, userInput]);
 
     return (
-        <div className="flex flex-col h-[calc(100vh-8rem)] w-full bg-transparent">
-            <CardTitle className="flex justify-start text-gray-400 text-xl">
+        <div className="flex flex-col h-[calc(100vh-4rem)] w-full bg-transparent">
+            {/* <CardTitle className="flex justify-start text-gray-400 text-xl">
                 <span className="text-active-item me-auto px-2">Ontology Builder</span>
                 <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span>
-            </CardTitle>
-            <div className="flex h-[calc(100vh-5rem)] w-full overflow-hidden">
-                <div className="border-solid rounded border-4 border-green-700 w-1/4 flex flex-col overflow-y-auto">
-                    <div className="m-1 mb-5">
-                        <details>
-                            <summary>
-                                <FontAwesomeIcon icon={faQuestionCircle} width="16" height="16" />
-                            </summary>
-                            <div className="bg-gray-600 p-2">
-                                <p>Explore the Concepts or Terms for a Domain assisted by AI</p>
-                                <p>This process involves several key steps, each contributing to the development of a structured and comprehensive model for a given domain.
-                                    The goal is to build a  Model that leverages AI to facilitate the creation and integration of concepts within the domain.
-                                </p>
-                                <p><strong>Establish the Concept Ontology (Conceptual Framework) for the Domain:</strong></p>
-                                <p style={{ marginLeft: '20px' }}>The Concept Ontology refers to the foundational structure that defines the essential concepts, theories, models, and frameworks within a specific domain or field. It serves as a shared vocabulary that enables clear communication and collaboration among practitioners. This ontology includes:
-                                    It encompasses the concepts, principles, and relationships that are essential for practitioners within the field to communicate effectively and advance knowledge.</p>
-                                <ul>
-                                    <li><strong>• Core Concepts: </strong>Fundamental ideas and categories that are central to the domain.</li>
-                                    <li><strong>• Principles and Theories: </strong>The underlying rules and logical structures that guide the domain’s knowledge and practices.</li>
-                                    <li><strong>• Relationships: </strong>The connections and interactions between concepts that help explain how they relate to one another.</li>
-                                </ul>
-                                <p style={{ marginLeft: '20px' }}>By establishing this ontology, you create a well-organized framework that supports knowledge sharing, problem-solving, and further advancement within the field.</p>
-                            </div>
-                        </details>
-                    </div>
-                    <div className="flex justify-between items-center flex-gro ps-1 bg-gray-600 border border-gray-700">
+            </CardTitle> */}
+            <div className="flex h-[calc(100vh-1rem)] w-full overflow-hidden">
+                <div className="border-solid flex flex-col overflow-y-auto">
+                    {/* <div className="flex justify-between items-center flex-gro ps-1 bg-gray-600 border border-gray-700">
                         <CardTitle className="flex justify-between items-center flex-grow ps-1">
                             Define Domain Ontology:
                         </CardTitle>
-                    </div>
+                    </div> */}
                     <div className="flex flex-wrap items-start m-1">
-                        <label htmlFor="chatOutput" className="text-white mt-2">Domain Summary</label>
+                        <label htmlFor="chatOutput" className="text-white mt-2">Current Domain Definition:</label>
                         <Textarea
+                            style={{ width: "100%", minWidth: "500px" }}
                             id="chatOutput"
                             className="flex-grow p-1 rounded bg-background"
                             value={`${descrString} \n\n ${topicDescr}`}
                             disabled={isLoading}
                             onChange={(e) => setDescrString(e.target.value)}
-                            rows={12}
+                            rows={22}
                             placeholder="Domain Summary"
                         />
                         {/* <label htmlFor="topicDescr" className="text-white">Domain Topic</label>
@@ -495,7 +474,7 @@ const ConceptBuilder = () => {
                             </div>
                         </details>
                         <CardTitle
-                            className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(suggestedOntologyData) ? 'text-green-600' : 'text-green-200'}`}
+                            className={`flex justify-between items-center flex-grow ps-1 mt-auto bg-gray-600 border border-gray-700 ${(suggestedOntologyData) ? 'text-green-600' : 'text-green-200'}`}
                         >
                             Ask GPT to suggest Concepts
                             <div className="flex items-center ml-auto">
@@ -552,66 +531,6 @@ const ConceptBuilder = () => {
                         </CardTitle>
                     </div>
                 </div>
-                {/* ------------- */}
-                {/* <div className="border-solid rounded border-4 border-blue-800 w-3/4 h-full"> */}
-                <div className="border-solid rounded border-4 border-blue-800  w-full overflow-y-none">
-                    <Card className="p-1 h-full">
-                        <Tabs value={activeTab} onValueChange={setActiveTab}>
-                            <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                                <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Ontology Concepts</TabsTrigger>
-                                <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Ontology Concepts</TabsTrigger>
-                            </TabsList>
-                            <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="mx-1 bg-gray-700 ">
-                                    {data.phData.ontology ? (
-                                        <OntologyCard ontologyData={data.phData.ontology} />
-                                    ) : (
-                                        <div className="p-4 text-center text-gray-400">
-                                            No existing ontology data available
-                                        </div>
-                                    )}
-                                </div>
-                            </TabsContent>
-                            <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                                <>
-                                    <div className="flex justify-end pb-1 pt-0 mx-2">
-                                        <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs hover:bg-blue-700">
-                                            Show Prompt
-                                        </button>
-                                        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                            <DialogContent className="max-w-5xl">
-                                                <DialogHeader>
-                                                    <DialogDescription>
-                                                        {/* <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
-                                                        {printPromptsDiv}
-                                                        {/* </div> */}
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                <DialogFooter>
-                                                    <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                        Close
-                                                    </Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </div>
-                                    <div className="mx-1 bg-gray-700 ">
-                                        {ontologyDataList &&
-                                            ontologyDataList.concepts &&
-                                            ontologyDataList.concepts.length > 0 ? (
-                                            <OntologyCard ontologyData={ontologyDataList} />
-                                        ) : (
-                                            <div className="p-4 text-center text-gray-400">
-                                                {isLoading ? 'Generating suggestions...' : 'No suggested concepts available. Click the robot button to generate suggestions.'}
-                                            </div>
-                                        )}
-                                    </div>
-                                </>
-                            </TabsContent>
-                        </Tabs>
-                    </Card>
-                </div>
-
             </div>
         </div>
     );

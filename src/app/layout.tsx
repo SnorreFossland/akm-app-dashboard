@@ -39,7 +39,8 @@ export default async function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.2"></meta>
 
       </head>
-      <body className={`${inter.className}`}>
+      <body className={`${inter.className}  overflow-auto bg-background text-foreground antialiased`}>
+      {/* <body className={`${inter.className}  overflow-hidden bg-background text-foreground antialiased`}> */}
         <ReduxProvider>
           <ThemeProvider
             attribute="class"

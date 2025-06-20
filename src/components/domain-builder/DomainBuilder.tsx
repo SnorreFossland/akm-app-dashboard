@@ -17,6 +17,9 @@ export default function DomainBuilder() {
     const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
     const dispatch = useDispatch();
 
+    // Add mounted state to prevent hydration mismatch
+    const [mounted, setMounted] = useState(false);
+
     // UI State
     const [activeTab, setActiveTab] = useState("instructions");
     const [isLoading, setIsLoading] = useState(false);
@@ -87,52 +90,45 @@ export default function DomainBuilder() {
         }
     }, [data?.phData?.domain]);
 
-    // Reusable IconButton component
-    interface IconButtonProps {
-        onClick: () => void;
-        icon: any;
-        className?: string;
-        iconWidth?: string;
-        iconSize?: SizeProp;
-    }
+    // Set mounted to true and initialize data after component mounts
+    useEffect(() => {
+        setMounted(true);
+        // Initialize state with data after mounting to prevent hydration mismatch
+        if (data?.phData?.domain) {
+            setDomainName(data.phData.domain.name || "");
+            setDomainDescription(data.phData.domain.description || "");
+            setDomainPresentationState(data.phData.domain.presentation || "");
+            setPromptText(data.phData.domain.prompt || "");
+        }
+    }, []);
 
-    const IconButton: React.FC<IconButtonProps> = ({ onClick, icon, className = "", iconWidth = "26px", iconSize = "1x" as SizeProp }) => {
-        return (
-            <Button onClick={onClick} className={`rounded text-xl p-4 bg-green-700 text-white ${className}`}>
-                <FontAwesomeIcon icon={icon} width={iconWidth} size={iconSize} />
-            </Button>
-        );
-    };
+    // Update state when data changes (but only after mounted)
+    useEffect(() => {
+        if (mounted && data?.phData?.domain) {
+            setDomainName(data.phData.domain.name || "");
+            setDomainDescription(data.phData.domain.description || "");
+            setDomainPresentationState(data.phData.domain.presentation || "");
+            setPromptText(data.phData.domain.prompt || "");
+        }
+    }, [data?.phData?.domain, mounted]);
 
-    // Reusable ActionCardTitleButton component
-    interface ActionCardTitleButtonProps {
-        title: string;
-        done: boolean;
-        onClick: () => void;
-        icon: any;
-    }
+    // // Reusable IconButton component
+    // interface IconButtonProps {
+    //     onClick: () => void;
+    //     icon: any;
+    //     className?: string;
+    //     iconWidth?: string;
+    //     iconSize?: SizeProp;
+    // }
 
-    const ActionCardTitleButton: React.FC<ActionCardTitleButtonProps> = ({ title, done, onClick, icon }) => {
-        return (
-            <CardTitle className="flex justify-center m-1 mb-auto bg-gray-700 border border-gray-500">
-                <div className={`flex justify-between items-center flex-grow ps-2 ${done ? "text-green-600" : "text-green-200"}`}>
-                    {title}
-                    <div className="flex items-center ml-auto">
-                        {!done ? (
-                            <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                <LoadingCircularProgress />
-                            </div>
-                        ) : (
-                            <div style={{ marginLeft: 8, marginRight: 8, color: done ? "green" : "gray" }}>
-                                <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                            </div>
-                        )}
-                        <IconButton onClick={onClick} icon={icon} />
-                    </div>
-                </div>
-            </CardTitle>
-        );
-    };
+    // const IconButton: React.FC<IconButtonProps> = ({ onClick, icon, className = "", iconWidth = "26px", iconSize = "1x" as SizeProp }) => {
+    //     return (
+    //         <Button onClick={onClick} className={`rounded text-xl p-4 bg-green-700 text-white ${className}`}>
+    //             <FontAwesomeIcon icon={icon} width={iconWidth} size={iconSize} />
+    //         </Button>
+    //     );
+    // };
+
 
     // Generate domain presentation using AI
     const generateDomainPresentation = async () => {
@@ -246,263 +242,99 @@ Looking ahead, we can expect...`
         }
     };
 
+    // Don't render content until mounted
+    if (!mounted) {
+        return (
+            <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-800 w-full bg-transparent items-center justify-center">
+                <LoadingCircularProgress />
+            </div>
+        );
+    }
+
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-800 w-full bg-transparent">
-            <CardTitle className="flex justify-start items-center text-gray-400 text-xl">
-                <span className="text-active-item me-auto px-2">Domain Definition Builder</span>
-                <span className="mx-auto text-center">AI Powered Domain Knowledge Canvas</span>
-                <div className="flex items-center gap-2 ml-auto">
-                    <span className="text-sm">Model:</span>
-                    <select
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="bg-background text-white text-xs rounded p-1 border border-gray-700"
-                    >
-                        <option value="deepseek-coder">Deepseek Coder</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                        <option value="mistral-small-latest">Mistral Small Latest</option>
-                        <option value="dummy">Dummy (Testing)</option>
-                    </select>
-                </div>
-            </CardTitle>
+
 
             <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden" ref={containerRef}>
                 {/* Left panel */}
-                <div className="p-1 border-solid rounded border-4 border-green-900 flex flex-col h-full" style={{ width: `${dividerPosition}%` }}>
-                    <div className="h-full w-full overflow-y-auto">
-                        <div className="p-2 mb-4">
-                            <div className="mb-3">
-                                <div className="flex justify-between items-center mb-1">
-                                    <h4 className="text-sm font-medium text-gray-300">Current Prompt</h4>
-                                    <Button
-                                        onClick={() => setEditingPrompt(!editingPrompt)}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 px-2 text-green-400 hover:text-green-300"
-                                    >
-                                        <FontAwesomeIcon icon={editingPrompt ? faCheckCircle : faEdit} className="mr-1" />
-                                        {editingPrompt ? "Save" : "Edit"}
-                                    </Button>
-                                </div>
-                                {editingPrompt ? (
-                                    <Textarea
-                                        value={promptText}
-                                        onChange={(e) => setPromptText(e.target.value)}
-                                        className="bg-background text-white border-gray-600"
-                                        rows={8}
-                                    />
-                                ) : (
-                                    <div className="p-2 bg-background rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
-                                        <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden"
-                                            components={{
-                                                // Force any pre/code blocks to wrap and stay within container
-                                                pre: ({ node, ...props }) => (
-                                                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                ),
-                                                code: ({ node, ...props }) => (
-                                                    <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                ),
-                                                p: ({ node, ...props }) => (
-                                                    <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
-                                                )
-                                            }}>
-                                            {data?.phData?.domain?.prompt || "No prompt defined yet. Edit here or create one in the Prompt Builder."}
-                                        </ReactMarkdown>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="flex justify-between mt-4">
-                                <Button
-                                    onClick={generateDomainPresentation}
-                                    className={`${(!promptText.trim() && !data?.phData?.domain?.prompt?.trim())
-                                        ? "bg-gray-500 hover:bg-gray-500 cursor-not-allowed"
-                                        : (domainPresentation) ? "bg-gray-500 hover:bg-gray-500" :
-                                            "bg-green-700 hover:bg-green-600"
-                                        } text-white`}
-                                    disabled={isLoading || (!promptText.trim() && !data?.phData?.domain?.prompt?.trim())}
-                                >
-                                    <FontAwesomeIcon icon={faBrain} className="mr-2" />
-                                    {isLoading
-                                        ? "Generating..."
-                                        : (!promptText.trim() && !data?.phData?.domain?.prompt?.trim())
-                                            ? "Prompt Required"
-                                            : "Generate Definition"
-                                    }
-                                </Button>
-                                <Button
-                                    onClick={saveDomainData}
-                                    className={`${data?.phData?.domain?.prompt?.trim()
-                                        ? "bg-gray-500 hover:bg-gray-500"
-                                        : "bg-blue-700 hover:bg-blue-600"
-                                        } text-white`}
-                                    disabled={!domainPresentation.trim()}
-                                >
-                                    <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
-                                    {!domainPresentation.trim() ? "Dispatch Domain" : "Dispatch Domain"}
-                                </Button>
-                            </div>
+                <div className="p-1 flex flex-col h-full">
+                    <div className="flex flex-col h-full w-full overflow-y-auto">
+                        <div className="flex justify-between items-center mb-1">
+                            <h4 className="text-sm font-medium text-gray-300">Current Prompt</h4>
+                            <Button
+                                onClick={() => setEditingPrompt(!editingPrompt)}
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 px-2 text-green-400 hover:text-green-300"
+                            >
+                                <FontAwesomeIcon icon={editingPrompt ? faCheckCircle : faEdit} className="mr-1" />
+                                {editingPrompt ? "Save" : "Edit"}
+                            </Button>
                         </div>
-
-                        {domainPresentation && (
-                            <div className="p-2 mt-2 border-t border-gray-700 pt-4">
-                                <div className="flex justify-between items-center mb-2">
-                                    <h3 className="font-semibold text-green-400">Domain Definition</h3>
-                                    <Button
-                                        onClick={() => setEditing(!editing)}
-                                        variant="ghost"
-                                        size="sm"
-                                        className="h-6 px-2 text-green-400 hover:text-green-300"
-                                    >
-                                        <FontAwesomeIcon icon={editing ? faCheckCircle : faEdit} className="mr-1" />
-                                        {editing ? "Save" : "Edit"}
-                                    </Button>
+                        {editingPrompt ? (
+                            <Textarea
+                                style={{ width: "100%", minWidth: "500px" }}
+                                value={promptText}
+                                onChange={(e) => setPromptText(e.target.value)}
+                                className="bg-background text-white border-gray-600 w-full h-full flex-1 resize-none"
+                            />
+                        ) : (
+                            <div className="p-2 bg-background rounded border border-gray-700 overflow-y-auto overflow-x-hidden w-full flex-1">
+                                <div className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden">
+                                    {promptText || "No prompt defined yet. Edit here or create one in the Prompt Builder."}
                                 </div>
-                                {editing ? (
-                                    <Textarea
-                                        value={domainPresentation}
-                                        onChange={(e) => setDomainPresentationState(e.target.value)}
-                                        className="bg-background text-white border-gray-600"
-                                        rows={14}
-                                    />
-                                ) : (
-                                    <div className="p-2 bg-background rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full">
-                                        <ReactMarkdown className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full overflow-hidden"
-                                            components={{
-                                                // Force any pre/code blocks to wrap and stay within container
-                                                pre: ({ node, ...props }) => (
-                                                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                ),
-                                                code: ({ node, ...props }) => (
-                                                    <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                ),
-                                                p: ({ node, ...props }) => (
-                                                    <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
-                                                )
-                                            }}>
-                                            {domainPresentation}
-                                        </ReactMarkdown>
-                                    </div>
-                                )}
                             </div>
                         )}
                     </div>
-                </div>
-
-                {/* Draggable divider */}
-                <div
-                    className="cursor-col-resize w-1 bg-green-600 hover:bg-green-400 active:bg-green-300 h-full flex items-center justify-center"
-                    onMouseDown={startDragging}
-                >
-                    <div className="h-8 w-1 bg-green-300 rounded-full"></div>
-                </div>
-
-                {/* Right panel */}
-                <div className="border-solid rounded border-1 border-green-900 h-full overflow-y-hidden" style={{ width: `${100 - dividerPosition}%` }} ref={containerRef}>
-                    <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-                            <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                                <TabsTrigger value="instructions" className="pb-2 mt-3">
-                                    Instructions
-                                </TabsTrigger>
-                                <TabsTrigger value="presentation" className="pb-2 mt-3">
-                                    Domain Definition
-                                </TabsTrigger>
-                                <TabsTrigger value="preview" className="pb-2 mt-3">
-                                    Preview
-                                </TabsTrigger>
-                            </TabsList>
-
-                            <TabsContent value="instructions" className="m-0 px-1 py-2 rounded bg-background ">
-                                <div className="h-full p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                                    <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Domain Builder</h2>
-
-                                    <p className="text-white mb-3">
-                                        The Domain Builder helps you define and create comprehensive domain knowledge collections
-                                        that will be used by AI models to provide accurate and relevant information.
-                                    </p>
-
-                                    <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
-
-                                    <ol className="text-white list-decimal ml-5 space-y-2">
-                                        <li><span className="font-bold">Define your domain:</span> Provide a name and detailed description.</li>
-                                        <li><span className="font-bold">Use existing prompt:</span> Your domain will use the prompt created in the Prompt Builder.</li>
-                                        <li><span className="font-bold">Generate definition:</span> Let AI create a comprehensive domain presentation.</li>
-                                        <li><span className="font-bold">Edit and refine:</span> Customize the generated content to your needs.</li>
-                                        <li><span className="font-bold">Keep:</span> Save your domain definition for use in knowledge models.</li>
-                                    </ol>
-
-                                    <div className="mt-6 p-3 border border-green-700 rounded bg-background">
-                                        <h4 className="text-green-400 font-bold mb-2">Tips for best results:</h4>
-                                        <ul className="text-white list-disc ml-5 space-y-1">
-                                            <li>Be specific in your domain description</li>
-                                            <li>Make sure you have a well-crafted prompt from the Prompt Builder</li>
-                                            <li>Review and edit the AI-generated presentation</li>
-                                            <li>Consider adding examples and use cases</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="presentation" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="p-2 bg-background rounded border border-gray-700 max-h-[200px] overflow-y-auto overflow-x-hidden w-full h-full">
-                                    <div className="p-2 bg-background rounded border border-gray-700 w-full h-full overflow-y-auto">
-                                        <ReactMarkdown
-                                            className="prose prose-sm text-gray-300 break-words whitespace-pre-wrap w-full"
-                                            components={{
-                                                // Force any pre/code blocks to wrap and stay within container
-                                                pre: ({ node, ...props }) => (
-                                                    <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                ),
-                                                code: ({ node, ...props }) => (
-                                                    <code style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word', overflowWrap: 'break-word', maxWidth: '100%' }} {...props} />
-                                                ),
-                                                p: ({ node, ...props }) => (
-                                                    <p style={{ maxWidth: '100%', overflowWrap: 'break-word' }} {...props} />
-                                                )
-                                            }}>
-                                            {domainPresentation || "No presentation generated yet. Fill in the domain information and click 'Generate Definition'."}
-                                        </ReactMarkdown>
-                                    </div>
-                                </div>
-                            </TabsContent>
-
-                            <TabsContent value="preview" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className="p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
-                                    <div className="bg-background rounded-lg p-6 shadow-lg border border-gray-700">
-                                        <h1 className="text-2xl font-bold text-green-400 mb-4">{domainName || "Domain Name"}</h1>
-
-                                        <div className="mb-6">
-                                            <h3 className="text-lg font-semibold text-gray-300 mb-2">Description</h3>
-                                            <p className="text-gray-400">
-                                                {domainDescription || "No description provided"}
-                                            </p>
-                                        </div>
-
-                                        {domainPresentation && (
-                                            <div className="border-t border-gray-700 pt-4">
-                                                <h3 className="text-lg font-semibold text-gray-300 mb-2">Domain Knowledge</h3>
-                                                <ReactMarkdown className="prose prose-sm prose-invert max-w-none">
-                                                    {domainPresentation}
-                                                </ReactMarkdown>
-                                            </div>
-                                        )}
-
-                                        <div className="mt-6 pt-4 border-t border-gray-700">
-                                            <h3 className="text-lg font-semibold text-gray-300 mb-2">Next Steps</h3>
-                                            <ActionCardTitleButton
-                                                title="Go to Knowledge Explorer"
-                                                done={true}
-                                                onClick={() => window.location.href = "/knowledge-explorer"}
-                                                icon={faLink}
-                                            />
-                                        </div>
-                                    </div>
-                                </div>
-                            </TabsContent>
-                        </Tabs>
-                    </Card>
+                    <div className="flex justify-between mt-4">
+                        <Button
+                            onClick={generateDomainPresentation}
+                            className={`${(!promptText.trim() && !data?.phData?.domain?.prompt?.trim())
+                                ? "bg-gray-500 hover:bg-gray-500 cursor-not-allowed"
+                                : (domainPresentation) ? "bg-gray-500 hover:bg-gray-500" :
+                                    "bg-green-700 hover:bg-green-600"
+                                } text-white`}
+                            disabled={isLoading || (!promptText.trim() && !data?.phData?.domain?.prompt?.trim())}
+                        >
+                            <FontAwesomeIcon icon={faBrain} className="mr-2" />
+                            {isLoading
+                                ? "Generating..."
+                                : (!promptText.trim() && !data?.phData?.domain?.prompt?.trim())
+                                    ? "Prompt Required"
+                                    : "Generate Definition"
+                            }
+                        </Button>
+                        <Button
+                            onClick={saveDomainData}
+                            className={`${data?.phData?.domain?.prompt?.trim()
+                                ? "bg-gray-500 hover:bg-gray-500"
+                                : "bg-blue-700 hover:bg-blue-600"
+                                } text-white`}
+                            disabled={!domainPresentation.trim()}
+                        >
+                            <FontAwesomeIcon icon={faPaperPlane} className="mr-2" />
+                            {!domainPresentation.trim() ? "Dispatch Domain" : "Dispatch Domain"}
+                        </Button>
+                    </div>
                 </div>
             </div>
+            {/* <CardTitle className="flex justify-start items-center text-gray-400 text-xl"> */}
+            {/* <span className="text-active-item me-auto px-2">Domain Definition Builder</span> */}
+            {/* <span className="mx-auto text-center">AI Powered Domain Knowledge Canvas</span> */}
+            <div className="flex items-center gap-2 ml-auto">
+                <span className="text-sm">Model:</span>
+                <select
+                    value={selectedModel}
+                    onChange={(e) => setSelectedModel(e.target.value)}
+                    className="bg-background text-white text-xs rounded p-1 border border-gray-700"
+                >
+                    <option value="deepseek-coder">Deepseek Coder</option>
+                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                    <option value="mistral-small-latest">Mistral Small Latest</option>
+                    <option value="dummy">Dummy (Testing)</option>
+                </select>
+            </div>
+            {/* </CardTitle> */}
         </div>
     );
 }

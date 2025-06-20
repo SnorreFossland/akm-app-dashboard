@@ -38,7 +38,7 @@ export default function DocumentPanel({
 
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
-    const [editContent, setEditContent] = useState(mdContent);
+    const [editContent, setEditContent] = useState(mdContent || '');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
@@ -52,7 +52,7 @@ export default function DocumentPanel({
     }, []);
     // Update editContent when mdContent changes from parent
     useEffect(() => {
-        setEditContent(mdContent);
+        setEditContent(mdContent || '');
     }, [mdContent]);
 
     // Function to detect placeholders in the format [placeholder]
@@ -117,27 +117,6 @@ export default function DocumentPanel({
         setIsEditing(true);
         onEdit();
     };
-
-
-    // const handleSaveToLibrary = (content: string) => {
-    //     // Extract title from first line of content
-    //     const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-    //     const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
-
-    //     const documentTitle = cleanTitle || 'Untitled Document';
-
-    //     // Save to Redux store
-    //     dispatch(saveMarkdownDocument({
-    //         id: Date.now().toString(),
-    //         name: documentTitle,
-    //         content: content,
-    //         createdAt: new Date().toISOString()
-    //     }));
-
-    //     // Show confirmation to user
-    //     setStatusMsg(`Saved "${documentTitle}" to library`);
-    //     setTimeout(() => setStatusMsg(''), 30000);
-    // };
 
     const handleSaveToLibrary = () => {
         // Save to library in Redux store
@@ -373,7 +352,7 @@ export default function DocumentPanel({
                             ref={textareaRef}
                             autoFocus
                             placeholder={getPlaceholder()}
-                            value={editContent}
+                            value={editContent || ''}
                             onChange={(e) => setEditContent(e.target.value)}
                             onKeyDown={(e) => {
                                 // Add tab key navigation for placeholders

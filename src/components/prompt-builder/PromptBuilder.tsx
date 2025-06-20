@@ -100,6 +100,19 @@ export default function VercelAiPage() {
         }
     }, [isDragging]);
 
+    const [windowHeight, setWindowHeight] = useState(600); // default fallback
+
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            setWindowHeight(window.innerHeight);
+
+            const handleResize = () => setWindowHeight(window.innerHeight);
+            window.addEventListener('resize', handleResize);
+
+            return () => window.removeEventListener('resize', handleResize);
+        }
+    }, []);
+
     // Add these effects for handling mouse events
     useEffect(() => {
         if (isDragging) {
@@ -593,7 +606,7 @@ The assistant will provide structured responses with:
                                                 }
                                             }
                                         }}
-                                        rows={Math.max(3, Math.min(7, Math.floor(window.innerHeight / 200)))}
+                                        rows={Math.max(3, Math.min(7, Math.floor(windowHeight / 10)))}
                                         placeholder={`For each question above, write your answer on a new line or bullet point.`}
                                         ref={(input) => {
                                             if (input && phase === "clarification") {

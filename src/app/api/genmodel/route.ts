@@ -149,7 +149,7 @@ export async function POST(req: Request) {
       });
     }
 
-    if (!debug) console.log('15 route \nschemaName', schemaName, '\nsystemPrompt', systemPrompt, '\nsystemBehaviorGuidelines', systemBehaviorGuidelines, '\nuserPrompt', userPrompt, '\nuserInput', userInput, '\ncontextItems', contextItems, '\ncontextOntology', contextOntology, '\ncontextMetamodel', contextMetamodel);
+    if (debug) console.log('15 route \nschemaName', schemaName, '\nsystemPrompt', systemPrompt, '\nsystemBehaviorGuidelines', systemBehaviorGuidelines, '\nuserPrompt', userPrompt, '\nuserInput', userInput, '\ncontextItems', contextItems, '\ncontextOntology', contextOntology, '\ncontextMetamodel', contextMetamodel);
 
     // Create client for the specific provider
     const client = createClient(provider);
@@ -179,7 +179,7 @@ export async function POST(req: Request) {
       contextMetamodel ? { role: 'assistant' as const, content: contextMetamodel } : null,
     ].filter((message): message is { role: 'system' | 'user' | 'assistant'; content: string } => message !== null);
 
-    console.log('45 route messages', messages, aiModelName);
+    // console.log('45 route messages', messages, aiModelName);
 
     // Handle different providers differently for structured output
     let response;

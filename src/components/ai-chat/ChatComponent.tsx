@@ -720,7 +720,7 @@ END OF DOCUMENT: ${file.name}
                     content: systemPrompt
                 });
             }
-            
+
             console.log(`Sending context to the model (${contextContent.length} chars)`);
             // Add conversation messages
             // Add conversation messages
@@ -1070,12 +1070,12 @@ END OF DOCUMENT: ${file.name}
 
     return (
         <>
-            <div className="flex flex-col min-h-0 h-[96%] rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
+            <div className="flex flex-col h-full max-h-[calc(100vh-2.5rem)] rounded-lg overflow-hidden relative">
                 {/* Message container with scrollable area */}
-                <div className="flex-1 min-h-0 overflow-y-auto pb-[150px] w-full" id="message-container">
+                <div className="flex-1 overflow-y-auto w-full" id="message-container">
                     {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
                     {messages.length < 1 && (!input || input.trim() === "") ? (
-                        <div className="flex flex-col items-center justify-start w-full overflow-auto">
+                        <div className="flex flex-col items-center justify-start w-full h-max-[calc(100vh-40rem)] overflow-auto">
                             {showDigitalRain ? (
                                 <DigitalRainIntro
                                     onInteraction={() => setShowDigitalRain(false)}
@@ -1083,7 +1083,9 @@ END OF DOCUMENT: ${file.name}
                                     backgroundColor="rgba(10, 20, 10, 0.03)"
                                 />
                             ) : (
-                                <GettingStartedGuide />
+                                <div className="flex flex-col items-center justify-center h-max-[calc(100vh-40rem)] overflow-auto p-4 gap-4 text-gray-400 text-sm">
+                                    <GettingStartedGuide />
+                                </div>
                             )}
                         </div>
                     ) : null}
@@ -1203,7 +1205,7 @@ END OF DOCUMENT: ${file.name}
                                             <MarkdownPreview mdPreview={mdPreview} />
                                         </div>
                                     ) : ( */}
-                                        {message.content}
+                                    {message.content}
                                     {/* )} */}
                                 </div>
 
@@ -1310,7 +1312,8 @@ END OF DOCUMENT: ${file.name}
                     )
                 }
                 {/* Input area always at the bottom */}
-                <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg">
+                <div className="flex-shrink-0 bg-popover border-t border-gray-600">
+
                     <div className="flex items-center justify-between p-2">
                         {/* button row above the chat */}
                         <div className="flex items-center gap-2">
@@ -1337,294 +1340,294 @@ END OF DOCUMENT: ${file.name}
                             >
                                 <FileText className="w-5 h-5" /> {statusMsg.includes('Loaded') ? (mdContent ? 'File Loaded' : 'Load a file') : 'Load a file'}
                             </button>
-                        <input
-                            ref={mdFileInputRef}
-                            type="file"
-                            accept=".md, .txt, .markdown, .docx"
-                            style={{ display: 'none' }}
-                            className="hidden"
-                            onChange={handleMDFileSelect}
-                        />
-                        {mdContent && (
-                            <label className="flex items-center gap-2 cursor-pointer">
-                                <input
-                                    type="checkbox"
-                                    checked={docRefine && !mdContent}
-                                    disabled={!mdContent || isLoading}
-                                    onChange={() => {
-                                        if (!mdContent) {
-                                            setDocRefine(true);
-                                            setInput('');
-                                        } else {
-                                            const newRefineState = !docRefine;
-                                            setDocRefine(newRefineState);
-                                            // setInput(newRefineState ? refinePrompt : '');
-                                        }
-                                    }}
-                                    className="sr-only" // Hide default checkbox but keep it accessible
-                                />
-                                <div className={`h-5 w-5 border ${docRefine && mdContent ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                                    {docRefine && mdContent && (
-                                        <div className="h-2 w-2 bg-white rounded-full"></div>
-                                    )}
-                                </div>
-                                <span className="text-gray-500">{mdContent ? "Refine text" : "No document in the left panel"}</span>
-                            </label>
-                        )}
-                    </div>
-                    <div className="flex items-center gap-2">
-                        {/* Template selection */}
-                        {mdContent && docRefine &&
-                            <div className="flex items-center gap-2">
-                                <select
-                                    title="Select a style for the document"
-                                    className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
-                                    onChange={(e) => {
-                                        const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
-                                        if (selectedTemplate) {
-                                            setInput(selectedTemplate);
-                                            // setDocRefine(true);
-                                        }
-                                    }}
-                                    disabled={isLoading || !mdContent}
-                                >
-                                    <option value="">Select style...</option>
-                                    {Object.keys(refineTemplates).map((key) => (
-                                        <option key={key} value={key}>{key}</option>
-                                    ))}
-                                </select>
-                            </div>
-                        }
-                        <div className="flex items-center gap-2">
-                            {!docRefine &&
-                                <div className="relative">
-                                    <button
-                                        className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
-                                        onClick={() => {
-                                            const dropdown = document.getElementById('template-dropdown');
-                                            if (dropdown) {
-                                                // Check position relative to viewport
-                                                const button = document.activeElement as HTMLElement;
-                                                const buttonRect = button.getBoundingClientRect();
-                                                const viewportHeight = window.innerHeight;
-                                                const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                const spaceAbove = buttonRect.top;
-
-                                                // First toggle visibility
-                                                dropdown.classList.toggle('hidden');
-
-                                                // If there's not enough space below, position above
-                                                if (spaceBelow < 300 && spaceAbove > 150) {
-                                                    // Position above with margin to prevent cutoff
-                                                    dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
-                                                    dropdown.style.top = 'auto';
-                                                    dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
-                                                } else {
-                                                    // Otherwise position below with margin
-                                                    dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
-                                                    dropdown.style.bottom = 'auto';
-                                                    dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                }
-
-                                                // Ensure the dropdown is fully visible within viewport
-                                                setTimeout(() => {
-                                                    const dropdownRect = dropdown.getBoundingClientRect();
-                                                    if (dropdownRect.top < 0) {
-                                                        // If still cut off at top, adjust position
-                                                        dropdown.style.top = '5px';
-                                                        dropdown.style.bottom = 'auto';
-                                                    }
-                                                }, 0);
+                            <input
+                                ref={mdFileInputRef}
+                                type="file"
+                                accept=".md, .txt, .markdown, .docx"
+                                style={{ display: 'none' }}
+                                className="hidden"
+                                onChange={handleMDFileSelect}
+                            />
+                            {mdContent && (
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={docRefine && !mdContent}
+                                        disabled={!mdContent || isLoading}
+                                        onChange={() => {
+                                            if (!mdContent) {
+                                                setDocRefine(true);
+                                                setInput('');
+                                            } else {
+                                                const newRefineState = !docRefine;
+                                                setDocRefine(newRefineState);
+                                                // setInput(newRefineState ? refinePrompt : '');
                                             }
                                         }}
-                                        title="Select a template"
-                                    >
-                                        <span>Prompt Templates (Personal/Business)</span>
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    <div
-                                        id="template-dropdown"
-                                        className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
-                                    >
-                                        <div className="p-1 border-b border-gray-600">
-                                            <select
-                                                className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
-                                                value={selectedCategory}
-                                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                            >
-                                                {CATEGORIES.map((category) => (
-                                                    <option key={category} value={category}>
-                                                        {category === "All" ? "All" : category}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="overflow-y-auto max-h-[180px]">
-                                            {filteredTemplates.map((template, index) => (
-                                                <button
-                                                    key={index}
-                                                    className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                    onClick={() => {
-                                                        setSelectedReportTemplate(template.title);
-                                                        setInput(template.content);
-                                                        document.getElementById('template-dropdown')?.classList.add('hidden');
-                                                    }}
-                                                >
-                                                    {template.title}
-                                                </button>
-                                            ))}
-                                        </div>
+                                        className="sr-only" // Hide default checkbox but keep it accessible
+                                    />
+                                    <div className={`h-5 w-5 border ${docRefine && mdContent ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                        {docRefine && mdContent && (
+                                            <div className="h-2 w-2 bg-white rounded-full"></div>
+                                        )}
                                     </div>
+                                    <span className="text-gray-500">{mdContent ? "Refine text" : "No document in the left panel"}</span>
+                                </label>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {/* Template selection */}
+                            {mdContent && docRefine &&
+                                <div className="flex items-center gap-2">
+                                    <select
+                                        title="Select a style for the document"
+                                        className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
+                                        onChange={(e) => {
+                                            const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
+                                            if (selectedTemplate) {
+                                                setInput(selectedTemplate);
+                                                // setDocRefine(true);
+                                            }
+                                        }}
+                                        disabled={isLoading || !mdContent}
+                                    >
+                                        <option value="">Select style...</option>
+                                        {Object.keys(refineTemplates).map((key) => (
+                                            <option key={key} value={key}>{key}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             }
+                            <div className="flex items-center gap-2">
+                                {!docRefine &&
+                                    <div className="relative">
+                                        <button
+                                            className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
+                                            onClick={() => {
+                                                const dropdown = document.getElementById('template-dropdown');
+                                                if (dropdown) {
+                                                    // Check position relative to viewport
+                                                    const button = document.activeElement as HTMLElement;
+                                                    const buttonRect = button.getBoundingClientRect();
+                                                    const viewportHeight = window.innerHeight;
+                                                    const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                    const spaceAbove = buttonRect.top;
+
+                                                    // First toggle visibility
+                                                    dropdown.classList.toggle('hidden');
+
+                                                    // If there's not enough space below, position above
+                                                    if (spaceBelow < 300 && spaceAbove > 150) {
+                                                        // Position above with margin to prevent cutoff
+                                                        dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
+                                                        dropdown.style.top = 'auto';
+                                                        dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
+                                                    } else {
+                                                        // Otherwise position below with margin
+                                                        dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
+                                                        dropdown.style.bottom = 'auto';
+                                                        dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
+                                                    }
+
+                                                    // Ensure the dropdown is fully visible within viewport
+                                                    setTimeout(() => {
+                                                        const dropdownRect = dropdown.getBoundingClientRect();
+                                                        if (dropdownRect.top < 0) {
+                                                            // If still cut off at top, adjust position
+                                                            dropdown.style.top = '5px';
+                                                            dropdown.style.bottom = 'auto';
+                                                        }
+                                                    }, 0);
+                                                }
+                                            }}
+                                            title="Select a template"
+                                        >
+                                            <span>Prompt Templates (Personal/Business)</span>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        <div
+                                            id="template-dropdown"
+                                            className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
+                                        >
+                                            <div className="p-1 border-b border-gray-600">
+                                                <select
+                                                    className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
+                                                    value={selectedCategory}
+                                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                                >
+                                                    {CATEGORIES.map((category) => (
+                                                        <option key={category} value={category}>
+                                                            {category === "All" ? "All" : category}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+                                            <div className="overflow-y-auto max-h-[180px]">
+                                                {filteredTemplates.map((template, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                        onClick={() => {
+                                                            setSelectedReportTemplate(template.title);
+                                                            setInput(template.content);
+                                                            document.getElementById('template-dropdown')?.classList.add('hidden');
+                                                        }}
+                                                    >
+                                                        {template.title}
+                                                    </button>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
                         </div>
                     </div>
-                </div>
-                <div className="flex items-center gap-2"></div>
-            </div>
-
-            {/* START FORM */}
-            <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
-                {/* Add placeholder jump buttons */}
-                {templatePlaceholders.length > 0 && (
-                    <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                        <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                        {templatePlaceholders.map((placeholder, idx) => (
-                            <button
-                                key={idx}
-                                type="button" // Add this to prevent form submission
-                                onClick={() => selectTemplatePlaceholder(idx)}
-                                className={buttonAccent}
-                            >
-                                {placeholder.text.length > 50
-                                    ? `${placeholder.text.substring(0, 49)}...`
-                                    : placeholder.text}
-                            </button>
-                        ))}
-                    </div>
-                )}
-                <TextareaAutosize
-                    ref={textareaRef}
-                    value={input || ''}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            const now = Date.now();
-                            // Use a custom property on the event target to track the last Enter key time
-                            const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                            if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                e.preventDefault();
-                                // If two returns occur within 2 seconds, submit the form
-                                handleSubmit(e);
-                                textarea.lastEnterTime = 0;
-                            } else {
-                                // Set the last enter time and allow the default new line insertion
-                                textarea.lastEnterTime = now;
-                            }
-                        }
-
-                        // Add tab key navigation for placeholders
-                        if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                            e.preventDefault(); // Prevent default tab behavior
-
-                            // Get current cursor position
-                            const cursorPos = e.currentTarget.selectionStart;
-
-                            // Find the next placeholder after cursor position
-                            let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                            // If no next placeholder, loop back to the first one
-                            if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                nextPlaceholder = templatePlaceholders[0];
-                            }
-
-                            // Select the placeholder if found
-                            if (nextPlaceholder) {
-                                selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                            }
-                        }
-                    }}
-                    placeholder="Ask anything …"
-                    className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    minRows={6}
-                    maxRows={12}
-                    disabled={isLoading}
-                />
-                <div className="flex justify-between">
                     <div className="flex items-center gap-2"></div>
-                    <div className="flex items-center text-foreground gap-1">
-                        <ModelSelector
-                            selectedModel={selectedModel}
-                            onModelChange={(newModel) => {
-                                setSelectedModel(newModel);
-                                // Persist selected model to localStorage
-                                localStorage.setItem('aiDashboard_selectedModel', newModel);
-                            }}
-                        />
-                        <TemperatureSelector />
-                    </div>
-
-                    {/* now include the send‐button here */}
-                    <div className="flex justify-between px-2 ">
-                        <button
-                            type="submit"
-                            className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
-                            disabled={isLoading || !input?.trim()}
-                            title="Send your question"
-                        >Send
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                className="w-8 h-8"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                            </svg>
-                        </button>
-                    </div>
                 </div>
-            </form>
 
-            {/* System Prompt Modal */}
-            <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
-                <div>
-                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
-                    <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
-                        <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
-                    </div>
-
-                    {contextContent && isContextAttached && (
-                        <>
-                            <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
-                            <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
-                                <p className="mb-2 text-sm text-gray-300">
-                                    {contextFiles.length} file(s) attached as context:
-                                </p>
-                                <ul className="list-disc pl-5 text-sm">
-                                    {contextFiles.map((file) => (
-                                        <li key={file.name} className="mb-1">
-                                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        </>
+                {/* START FORM */}
+                <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
+                    {/* Add placeholder jump buttons */}
+                    {templatePlaceholders.length > 0 && (
+                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                            {templatePlaceholders.map((placeholder, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button" // Add this to prevent form submission
+                                    onClick={() => selectTemplatePlaceholder(idx)}
+                                    className={buttonAccent}
+                                >
+                                    {placeholder.text.length > 50
+                                        ? `${placeholder.text.substring(0, 49)}...`
+                                        : placeholder.text}
+                                </button>
+                            ))}
+                        </div>
                     )}
+                    <TextareaAutosize
+                        ref={textareaRef}
+                        value={input || ''}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                const now = Date.now();
+                                // Use a custom property on the event target to track the last Enter key time
+                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                    e.preventDefault();
+                                    // If two returns occur within 2 seconds, submit the form
+                                    handleSubmit(e);
+                                    textarea.lastEnterTime = 0;
+                                } else {
+                                    // Set the last enter time and allow the default new line insertion
+                                    textarea.lastEnterTime = now;
+                                }
+                            }
 
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={() => setIsSystemPromptOpen(false)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                            Close
-                        </button>
+                            // Add tab key navigation for placeholders
+                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                e.preventDefault(); // Prevent default tab behavior
+
+                                // Get current cursor position
+                                const cursorPos = e.currentTarget.selectionStart;
+
+                                // Find the next placeholder after cursor position
+                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                                // If no next placeholder, loop back to the first one
+                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                    nextPlaceholder = templatePlaceholders[0];
+                                }
+
+                                // Select the placeholder if found
+                                if (nextPlaceholder) {
+                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                }
+                            }
+                        }}
+                        placeholder="Ask anything …"
+                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minRows={6}
+                        maxRows={12}
+                        disabled={isLoading}
+                    />
+                    <div className="flex justify-between">
+                        <div className="flex items-center gap-2"></div>
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                    // Persist selected model to localStorage
+                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                }}
+                            />
+                            <TemperatureSelector />
+                        </div>
+
+                        {/* now include the send‐button here */}
+                        <div className="flex justify-between px-2 ">
+                            <button
+                                type="submit"
+                                className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
+                                disabled={isLoading || !input?.trim()}
+                                title="Send your question"
+                            >Send
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-8 h-8"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                </div>
-            </Modal>
+                </form>
+
+                {/* System Prompt Modal */}
+                <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
+                    <div>
+                        <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
+                        <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
+                            <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
+                        </div>
+
+                        {contextContent && isContextAttached && (
+                            <>
+                                <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
+                                <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
+                                    <p className="mb-2 text-sm text-gray-300">
+                                        {contextFiles.length} file(s) attached as context:
+                                    </p>
+                                    <ul className="list-disc pl-5 text-sm">
+                                        {contextFiles.map((file) => (
+                                            <li key={file.name} className="mb-1">
+                                                {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                            </li>
+                                        ))}
+                                    </ul>
+                                </div>
+                            </>
+                        )}
+
+                        <div className="mt-6 flex justify-end">
+                            <button
+                                onClick={() => setIsSystemPromptOpen(false)}
+                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </Modal>
             </div >
         </>
     )

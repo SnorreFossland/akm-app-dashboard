@@ -3,51 +3,50 @@ import { Edit, Check, FileText, Paperclip, Library, BookmarkPlus } from 'lucide-
 
 const GettingStartedGuide: React.FC = () => {
     return (
-        <div className="flex-1 p-2 text-primary bg-secondary overflow-auto min-h-0">
+        <div className="flex-1 p-2 text-primary bg-secondary overflow-auto min-h-0 max-h-[calc(100vh-14rem)]">
             <div className="flex flex-col items-center justify-start w-full pb-6">
                 <div className="mx-auto">
                     <section>
-                        <h2 className="text-xl font-semibold text-blue-400 mb-3">Getting Started</h2>
+                        <h2 className="text-xl font-semibold text-blue-200 mb-3">Getting Started</h2>
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div className="md:col-span-3 space-y-4">
-                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                                        <h3 className="text-lg font-medium text-secondary-foreground/70">1. Ask a Question Directly</h3>
-                                        <div className='ms-2'>Type or paste your question in the provided input area.</div>
-                                        <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                            <li>Click the <span className="text-blue-400">Send ↑</span> button to submit your question.</li>
-                                            <li>Alternatively, you can press the <span className="text-blue-400">Enter</span> key 2 times fast to send your question.</li>
-                                        </ul>
-                                    </div>
-    
-                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                                        <h3 className="text-lg font-medium text-secondary-foreground/70">2. Use Prompt Templates</h3>
-                                        <div className='ms-2'>Select a prompt template from the dropdown menu above and right of the input area.</div>
-                                        <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                            <li>You can type or paste additional text under the template text.</li>
-                                            <li>
-                                            You can click <FileText className="inline w-4 h-4 mr-1" /> to add a local text-file to use as context for your prompt.
-                                            </li>
-                                        </ul>
-                                    </div>
+                                <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
+                                    <h3 className="text-lg font-medium text-secondary-foreground/70">1. Ask a Question Directly</h3>
+                                    <div className='ms-2'>Type or paste your question in the provided input area below.</div>
+                                    <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
+                                        <li>Click the <span className="text-blue-200">Send ↑</span> button to submit your question.</li>
+                                        <li>Alternatively, you can press the <span className="text-blue-200">Enter</span> key 2 times quickly to send your question.</li>
+                                    </ul>
+                                </div>
 
                                 <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                                    <h3 className="text-lg font-medium text-secondary-foreground/70">3. You can also refine a document or text.</h3>
+                                    <h3 className="text-lg font-medium text-secondary-foreground/70">2. Use Prompt Templates</h3>
+                                    <div className='ms-2'>Select a prompt template from the dropdown menu above the upper right corner of the input area.</div>
                                     <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                        <li>Alt. 1: Click the <FileText className="inline w-4 h-4 mx-1 mb-1" /> button above the input area to select a local file to enhance or refine. (a new set of templates will appear).
+                                        <li>You can type or paste additional text under the template text.</li>
+                                        <li>You can add text in the left panel as <span className="text-blue-200">Document Context.</span>This text will be used as context for the prompt.</li>
+                                        <li>You can also click <FileText className="inline w-4 h-4 mr-1" /> to add a local text-file to use as context for your prompt.</li>
+                                    </ul>
+                                </div>
+
+                                <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
+                                    <h3 className="text-lg font-medium text-secondary-foreground/70">3. You can refine a document or text.</h3>
+                                    <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
+                                        <li>Alt. 1: Click the <span className="text-blue-200"> <FileText className="inline w-4 h-4 mx-1 mb-1" /> Load a file</span> button above the input area to select a local file to enhance or refine. (a new set of templates will appear).
                                         </li>
-                                        <li>Alt. 2: Click the upper left button to open the left panel to open a document tab. <br />
-                                        (The document text will be inserted and used as context for your prompt.)</li>
+                                        <li>Alt. 2: Click the upper left button to open the left panel, then Context tab. <br />
+                                            (The document text will be inserted and used as context for your prompt.)</li>
                                     </ul>
                                 </div>
                             </div>
 
                             <div className="md:col-span-2 space-y-4">
                                 <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                                    <h3 className="text-lg font-medium text-blue-400 mb-2">Tips</h3>
+                                    <h3 className="text-lg font-medium text-blue-200 mb-2">Tips</h3>
                                     <ul className="list-disc pl-6 space-y-2 text-secondary-foreground/70">
                                         <li>You can specify format in your question for specific response formats (e.g., JSON, XML, MD (Markdown), etc.)</li>
-                                        <li>You can also use <span className="text-blue-400">Markdown</span> syntax in your questions.</li>
-                                        <li>You can specify which language the AI should respond in by adding  <span className="text-blue-400">respond in &quot;Language&quot;</span></li>
+                                        <li>You can also use <span className="text-blue-200">Markdown</span> syntax in your questions.</li>
+                                        <li>You can specify which language the AI should respond in by adding  <span className="text-blue-200">respond in &quot;Language&quot;</span></li>
                                         <li>Consider providing examples to clarify your request.</li>
                                         <li>Be clear and concise to improve response accuracy.</li>
                                         <li>Utilize bullet points for clarity when listing multiple items.</li>
@@ -58,7 +57,7 @@ const GettingStartedGuide: React.FC = () => {
                     </section>
 
                     <section>
-                        <h2 className="text-xl font-semibold text-blue-400 my-3">Working with the AI Response</h2>
+                        <h2 className="text-xl font-semibold text-blue-200 my-3">Working with the AI Response</h2>
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="p-3 border border-gray-700 rounded-lg">
                                 <h3 className="font-medium text-secondary-foreground/70">1. Preview the Response</h3>
@@ -97,7 +96,7 @@ const GettingStartedGuide: React.FC = () => {
                     </section>
 
                     <section>
-                        <h2 className="text-xl mt-4 font-semibold text-blue-400 mb-3">Tips for Effective Use</h2>
+                        <h2 className="text-xl mt-4 font-semibold text-blue-200 mb-3">Tips for Effective Use</h2>
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                             <div className="flex items-start gap-3">
                                 <div className="rounded-full bg-blue-500/20 p-2 mt-1">

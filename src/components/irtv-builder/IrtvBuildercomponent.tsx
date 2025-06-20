@@ -47,8 +47,8 @@ interface IRTVBuilderComponentProps {
     onViewInPreview: (response: string) => void;
     setShowLeftPanel: (show: boolean) => void;
     onAddContent: (content: string) => void;
-    irtvContent: string;
-    setIrtvContent: (content: string) => void;
+    irtvContent: Model | null;
+    setIrtvContent: (content: Model | null) => void;
     irtvPreview: string;
     setIrtvPreview: (preview: string) => void;
     setCurrentMessages: (messages: any[]) => void;
@@ -123,7 +123,7 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
 
     const [selectedCategory, setSelectedCategory] = useState<string>('Business');
     // Prompt state
-    const [userPrompt, setUserPrompt] = useState(IRTVUserPrompt);
+    const [userPrompt, setUserPrompt] = useState<string>('');
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a helpful AI assistant that provides clear, concise, and accurate responses.
     You are provided with following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.
@@ -167,11 +167,13 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
         new Set(PROMPT_TEMPLATES.map(template => template.usage))
     ).sort(), "All"];
 
-    const filteredTemplates = selectedCategory === 'All'
-        ? PROMPT_TEMPLATES
-        : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
-    // Define templates for document refinement
-    const refineTemplates = REFINE_TEMPLATES;
+    const filteredTemplates = PROMPT_TEMPLATES
+
+    // const filteredTemplates = selectedCategory === 'All'
+    //     ? PROMPT_TEMPLATES
+    //     : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
+    // // Define templates for document refinement
+    // const refineTemplates = REFINE_TEMPLATES;
 
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
 
@@ -207,33 +209,40 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
     useEffect(() => {
         if (!curMetamodel || !data?.phData?.metis) return;
 
-        const filteredObjTypes = curMetamodel.objecttypes.filter((objtype: any) =>
-            objtype.typeName !== 'Element' &&
-            objtype.typeName !== 'EntityType' &&
-            objtype.typeName !== 'Generic' &&
-            objtype.typeName !== 'Label'
-        );
+        const filteredObjTypes = curMetamodel.objecttypes.filter((objtype: any) => {
+            const allowedTypeNames = ['Role', 'Task', 'View', 'Information'];
+            return allowedTypeNames.includes(objtype.name);
+        });
 
-        const filteredRelTypes = curMetamodel.relshiptypes.filter((reltype: any) =>
-            reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Element') &&
-            reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'EntityType') &&
-            reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Generic') &&
-            reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Label') &&
-            reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Element') &&
-            reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'EntityType') &&
-            reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Generic') &&
-            reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Label')
-        );
+        // Create a lookup map from object type ID to name
+        const objTypeIdToName = curMetamodel.objecttypes.reduce((map: any, objtype: any) => {
+            map[objtype.id] = objtype.name;
+            return map;
+        }, {});
+
+        const filteredRelTypes = curMetamodel.relshiptypes.filter((reltype: any) => {
+            const allowedTypeNames = ['Role', 'Task', 'View', 'Information'];
+
+            // Get the actual names from the IDs
+            const fromTypeName = objTypeIdToName[reltype.fromobjtypeRef];
+            const toTypeName = objTypeIdToName[reltype.toobjtypeRef];
+
+            return allowedTypeNames.includes(fromTypeName) &&
+                allowedTypeNames.includes(toTypeName);
+        });
+
+
+        if (!debug) console.log('curMetamodel.relshiptypes:', curMetamodel, filteredObjTypes, 'filteredRelTypes:', filteredRelTypes);
 
         const metatypesString = `**${curMetamodel.name}**\n
-                ${filteredObjTypes?.map(objtype => `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`).join('\n')}\n\n
-                ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`).join('\n')}\n\n
-                ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
-            `;
+${filteredObjTypes?.map(objtype => `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`).join('\n')}\n\n
+${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`).join('\n')}\n\n
+`;
+// ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
 
-        const contextmetatypesString = `## **Metamodel**\n\n ${metatypesString}`;
+        const contextmetatypesString = `## **Metamodel**\n\n${metatypesString}`;
 
-        if (!debug) console.log('122 metatypesString:', curMetamodel);
+        if (!debug) console.log('238 metatypesString:', filteredObjTypes, metatypesString, contextmetatypesString);
 
         const models = data.phData.metis.models;
         const irtvmod = models?.find(model => model.metamodelRef === curMetamodel.id);
@@ -241,14 +250,14 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
             setCurmod(irtvmod);
             dispatch(setFocusModel({ id: irtvmod.id, name: irtvmod.name }));
         }
-
         // Set prompts only once when metamodel is set
         setSystemPrompt(SystemPrompt);
         setSystemBehaviorGuidelines(SystemBehaviorGuidelines);
         setContextOntology(ExistingOntology);
-        setUserPrompt(UserPrompt);
-        setUserInput(UserInput);
-        setContextMetamodel(`\n`);
+        input === UserPrompt ? setUserPrompt('') : setUserPrompt(''); // Reset userPrompt to empty string
+        setUserInput(input);
+        // setContextMetamodel(`\n`);
+        setContextMetamodel(`${contextmetatypesString}`);
         // setContextMetamodel(`${MetamodelPrompt} \n\n ${contextmetatypesString}`);
         if (debug) console.log('159 Context Items:', contextmetatypesString);
 
@@ -273,22 +282,46 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
                 existingObjects.some(obj => obj.id === rel.nameFrom || obj.id === rel.nameTo)
             ) || []
         };
+        if (!debug) console.log('271 Existing Info Objects:', newExistingInfoObjects);
 
         setExistingInfoObjects(newExistingInfoObjects);
 
         const existInfoConcepts = {
             concepts: newExistingInfoObjects.objects.map((obj: any) => ({ name: obj.name, description: obj.description })),
-            relships: newExistingInfoObjects.relships.map((rel: any) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
+            relationships: newExistingInfoObjects.relships.map((rel: any) => ({ name: rel.name, description: rel.nameFrom + ' ' + rel.nameTo }))
         };
+        const existingObjectNames = newExistingInfoObjects.objects.map((obj: any) => obj.name);
 
-        let conceptString = `**Objects**\n\n ${data.phData.ontology?.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
+        let conceptString =`**Existing Context**\n\n
+**The following objects and relationships are already defined in the current model and is only used for connecting new relationships.**\n\n
+- Before creating a new object, check if its name exists in the 'existingObjectNames' list.
+- If it exists(case -insensitive match), skip its creation.
+- existingObjectNames = ${existingObjectNames.join(', ')}\n\n
+`;
         if (existInfoConcepts.concepts.length > 0) {
             conceptString += `**Objects**\n\n${existInfoConcepts.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
-            conceptString += `**Relationships**\n\n${existInfoConcepts.relships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
+            conceptString += `**Relationships**\n\n${existInfoConcepts.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
 
-        setContextItems((conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "");
+        let ontologyString = `**Objects**\n\n ${data.phData.ontology?.concepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n
+**Relationships**\n\n ${data.phData.ontology?.relationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
 
+        const filteredOntologyConcepts = (data.phData.ontology?.concepts || []).filter((concept: any) =>
+            !existInfoConcepts.concepts.some((infoObj: any) => infoObj.name === concept.name)
+        );
+        const filteredOntologyRelationships = (data.phData.ontology?.relationships || []).filter((relationship: any) =>
+            !existInfoConcepts.relationships.some((infoRel: any) => infoRel.name === relationship.name)
+        );
+        const newOntologyString = filteredOntologyConcepts.length > 0
+            ? `**Objects**\n\n${filteredOntologyConcepts.map((c: any) => `- ${c.name} - ${c.description}`).join('\n')}\n\n
+**Relationships**\n\n${filteredOntologyRelationships.map((r: any) => `- ${r.name} - ${r.description} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`
+            : "";
+
+        if (debug) console.log('306 ', existInfoConcepts, 'filtered:', filteredOntologyConcepts, 'Ontology String:', newOntologyString);
+
+        // setContextItems(conceptString !== "" ? `${conceptString}\n\n` : "");
+        setContextItems(``);
+        setContextOntology(`${newOntologyString}`);
     }, [curmod?.id, data?.phData?.ontology?.concepts]); // Use curmod.id instead of full curmod object
 
     // Load saved temperature preference
@@ -299,11 +332,14 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
         }
     }, []);
 
+
     // Add useEffect to monitor content changes
     useEffect(() => {
-        console.log('IRTV Content changed:', {
-            length: irtvContent?.length || 0,
-            preview: irtvContent?.substring(0, 100) || 'empty'
+        const contentString = irtvContent ? String(irtvContent) : '';
+        console.log('304 IRTV Content changed:', {
+            type: typeof irtvContent,
+            length: contentString.length,
+            preview: contentString.substring(0, 100) || 'empty'
         });
     }, [irtvContent]);
 
@@ -610,18 +646,27 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
         setIsLoading(true);
         setStep(1);
         setActiveTab('model');
+        if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n', 
+            'systemPrompt\n', systemPrompt, '\n\n', 
+            'systemBehaviorGuidelines\n', systemBehaviorGuidelines, '\n\n',
+            'userPrompt\n', userPrompt, '\n\n',
+            'userInput\n', input, '\n\n',
+            'contextItems\n', contextItems, '\n\n',
+            'contextOntology\n', contextOntology, '\n\n',
+            'contextMetamodel\n', contextMetamodel);
+
 
         try {
             const res = await fetch("/api/genmodel", {
                 method: "POST",
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    aiModelName: selectedModel || "gpt-4o-2024-08-06",
+                    aiModelName: selectedModel || "gpt-4o",
                     schemaName: 'ObjectSchema',
                     systemPrompt: systemPrompt || "",
                     systemBehaviorGuidelines: systemBehaviorGuidelines || "",
                     userPrompt: userPrompt || "",
-                    userInput: userInput || "",
+                    userInput: input?.trim() || "",  // Use input prop instead of userInput state
                     contextItems: contextItems || "",
                     contextOntology: contextOntology || "",
                     contextMetamodel: contextMetamodel || ""
@@ -674,10 +719,32 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                 parsed = fallbackResponse;
                 console.log('Using fallback response:', parsed);
             }
-
             let validatedData;
             try {
-                validatedData = ObjectSchema.parse(parsed);
+                // Sanitize the parsed data before validation
+                const sanitizedParsed = {
+                    name: parsed.name || "Generated Model",
+                    description: parsed.description || "AI-generated model",
+                    objects: (parsed.objects || []).map((obj: any, index: number) => ({
+                        id: obj.id || `obj-${Date.now()}-${index}`,
+                        name: obj.name || `Object ${index + 1}`,
+                        description: obj.description || `Generated object ${index + 1}`,
+                        typeRef: obj.typeRef || `type-${Date.now()}-${index}`,
+                        typeName: obj.typeName || "GeneratedType",
+                        proposedType: obj.proposedType || "Information"
+                    })),
+                    relships: (parsed.relships || []).map((rel: any, index: number) => ({
+                        id: rel.id || `rel-${Date.now()}-${index}`,
+                        name: rel.name || `Relationship ${index + 1}`,
+                        typeRef: rel.typeRef || `reltype-${Date.now()}-${index}`,
+                        fromobjectRef: rel.fromobjectRef || "",
+                        nameFrom: rel.nameFrom || "",
+                        toobjectRef: rel.toobjectRef || "",
+                        nameTo: rel.nameTo || ""
+                    }))
+                };
+
+                validatedData = ObjectSchema.parse(sanitizedParsed);
                 console.log('Validated Data:', validatedData);
             } catch (validationError) {
                 console.error('Schema validation failed:', validationError);
@@ -692,8 +759,10 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                 console.log('Using minimal valid response:', validatedData);
             }
 
+            setIrtvContent(parsed); // Set the IRTV content to the parsed model
             // Convert to markdown format
             const markdownResponse = formatJSONAsMarkdown(validatedData);
+
 
             // Add assistant message with markdown formatted response
             const assistantMessage: Message = {
@@ -702,7 +771,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
             };
 
             setMessages(prev => [...prev, assistantMessage]);
-            setModel({ ...validatedData, id: curmod?.id });
+            setModel({ ...parsed, id: curmod?.id });
             setStep(3);
 
         } catch (e) {
@@ -717,7 +786,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
 
             setMessages(prev => [...prev, errorMessage]);
         }
-
+        console.log('744 Model Builder completed', irtvContent);
         setIsLoading(false);
         setStep(3);
     };
@@ -772,20 +841,24 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
         e.preventDefault();
         if (!input?.trim()) return;
 
-        let userMessageContent = input;
+        // setUserInput(input.trim()); // Set user input to the trimmed value
 
+        
+        let userMessageContent = input;
+        
         if (docRefine) {
             userMessageContent = `${userMessageContent} #Content:\n ${irtvContent}`;
         } else {
-            userMessageContent = `${userMessageContent} #Context:\n ${irtvContent}`;
+            userMessageContent = `${userMessageContent}`;
         }
-
+        
         const userMessage: Message = { role: 'user', content: userMessageContent };
-
+        
+        if (!debug) console.log('857 handleSubmit userInput:', userInput, 'input', input, 'docRefine:', docRefine, 'irtvContent:', irtvContent);
         // Add the user message to conversation history without truncating it
         setMessages((prev) => [...prev, userMessage]);
         // Send all messages including the new one to maintain conversation context
-        await handleModelBuilder([...messages, userMessage]);
+        await handleModelBuilder();
 
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed
@@ -818,6 +891,8 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
     const handleSystemPromptClick = () => {
         setIsSystemPromptOpen(true);
     };
+
+
     // Alternative: Use useMemo for the prompts div to avoid useEffect issues
     const printPromptsDiv = useMemo(() => (
         <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
@@ -841,7 +916,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                 <h3 className="text-lg font-bold text-blue-400 mb-2">Document Content (Primary Input)</h3>
                 <div className="bg-gray-800 p-3 rounded">
                     <ReactMarkdown className="prose prose-invert max-w-none text-sm">
-                        {irtvContent || 'No document content available'}
+                        {mdPreview || 'No document content available'}
                     </ReactMarkdown>
                 </div>
             </div>
@@ -852,7 +927,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
         <>
             <div className="flex flex-col min-h-0 h-[96%] rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
                 {/* Message container with scrollable area */}
-                <div className="flex-1 min-h-0 max-h-[calc(100vh-20rem)] overflow-y-auto pb-[150px] w-full" id="message-container">
+                <div className="flex-1 min-h-0 max-h-[calc(100vh-17rem)] overflow-y-auto pb-[150px] w-full" id="message-container">
                     {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
                     {messages.length < 1 && (!input || input.trim() === "") ? (
                         <div className="flex flex-col items-center justify-start w-full overflow-auto">
@@ -955,7 +1030,8 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                                                         }}
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
-                                                        {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
+                                                        Show Markdown Preview
+                                                        {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                     </button>
                                                 </>
                                             )}
@@ -968,13 +1044,13 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                                     className={`flex w-full p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
                                     style={{ overflowWrap: 'anywhere' }}
                                 >
-                                    {previewMessageIndex === index ? (
+                                    {/* {previewMessageIndex === index ? (
                                         <div className="prose prose-invert custom-markdown markdown-preview w-full">
-                                            <MarkdownPreview mdPreview={mdPreview} />
+                                            <MarkdownPreview mdPreview={irtvPreview} />
                                         </div>
-                                    ) : (
-                                        message.content
-                                    )}
+                                    ) : ( */}
+                                        {message.content}
+                                    {/* )} */}
                                 </div>
 
                                 {/*  bottom buttons */}
@@ -1019,7 +1095,8 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                                                     }}
                                                     className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                 >
-                                                    {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"}
+                                                    Show Markdown Preview
+                                                    {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                 </button>
 
 
@@ -1131,7 +1208,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                                 className="hidden"
                                 onChange={handleMDFileSelect}
                             />
-                            {irtvContent && (
+                            {/* {irtvContent && (
                                 <label className="flex items-center gap-2 cursor-pointer">
                                     <input
                                         type="checkbox"
@@ -1156,268 +1233,204 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                                     </div>
                                     <span className="text-gray-500">{irtvContent ? "Refine text" : "No document in the left panel"}</span>
                                 </label>
-                            )}
+                            )} */}
                         </div>
+                        {/* Template dropdown */}
                         <div className="flex items-center gap-2">
-                            {/* Template selection */}
-                            {irtvContent && docRefine &&
-                                <div className="flex items-center gap-2">
-                                    <select
-                                        title="Select a style for the document"
-                                        className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
-                                        onChange={(e) => {
-                                            const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
-                                            if (selectedTemplate) {
-                                                setInput(selectedTemplate);
-                                                // setDocRefine(true);
+                            <div className="flex items-center gap-2">
+                                <div className="relative">
+                                    <button
+                                        className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 w-96 flex items-center justify-between gap-1 hover:bg-gray-700"
+                                        onClick={() => {
+                                            const dropdown = document.getElementById('template-dropdown');
+                                            if (dropdown) {
+                                                dropdown.classList.toggle('hidden');
                                             }
                                         }}
-                                        disabled={isLoading || !irtvContent}
+                                        title="Select a template"
                                     >
-                                        <option value="">Select style...</option>
-                                        {Object.keys(refineTemplates).map((key) => (
-                                            <option key={key} value={key}>{key}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            }
-                            <div className="flex items-center gap-2">
-                                {!docRefine &&
-                                    <div className="relative">
-                                        <button
-                                            className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 w-96 flex items-center gap-1 hover:bg-gray-700"
-                                            onClick={() => {
-                                                const dropdown = document.getElementById('template-dropdown');
-                                                if (dropdown) {
-                                                    // Check position relative to viewport
-                                                    const button = document.activeElement as HTMLElement;
-                                                    const buttonRect = button.getBoundingClientRect();
-                                                    const viewportHeight = window.innerHeight;
-                                                    const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                    const spaceAbove = buttonRect.top;
-
-                                                    // First toggle visibility
-                                                    dropdown.classList.toggle('hidden');
-
-                                                    // If there's not enough space below, position above
-                                                    if (spaceBelow < 300 && spaceAbove > 150) {
-                                                        // Position above with margin to prevent cutoff
-                                                        dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
-                                                        dropdown.style.top = 'auto';
-                                                        dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
-                                                    } else {
-                                                        // Otherwise position below with margin
-                                                        dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
-                                                        dropdown.style.bottom = 'auto';
-                                                        dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                    }
-
-                                                    // Ensure the dropdown is fully visible within viewport
-                                                    setTimeout(() => {
-                                                        const dropdownRect = dropdown.getBoundingClientRect();
-                                                        if (dropdownRect.top < 0) {
-                                                            // If still cut off at top, adjust position
-                                                            dropdown.style.top = '5px';
-                                                            dropdown.style.bottom = 'auto';
-                                                        }
-                                                    }, 0);
-                                                }
-                                            }}
-                                            title="Select a template"
-                                        >
-                                            <span>Prompt Templates (Personal/Business)</span>
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        <div
-                                            id="template-dropdown"
-                                            className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-94 right-0"
-                                        >
-                                            <div className="p-1 border-b border-gray-600">
-                                                <select
-                                                    className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
-                                                    value={selectedCategory}
-                                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                        <span>Prompt Templates</span>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div
+                                        id="template-dropdown"
+                                        className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-96 right-0 max-h-60 overflow-y-auto"
+                                    >
+                                        {filteredTemplates.length > 0 ? (
+                                            filteredTemplates.map((template, index) => (
+                                                <button
+                                                    key={index}
+                                                    className="w-full text-left px-2 py-2 hover:bg-gray-700 text-xs border-b border-gray-700 last:border-b-0"
+                                                    onClick={() => {
+                                                        setInput(template.content);
+                                                        document.getElementById('template-dropdown')?.classList.add('hidden');
+                                                    }}
+                                                    title={template.content}
                                                 >
-                                                    {CATEGORIES.map((category) => (
-                                                        <option key={category} value={category}>
-                                                            {category === "All" ? "All" : category}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="overflow-y-auto max-h-[180px]">
-                                                {filteredTemplates.map((template, index) => (
-                                                    <button
-                                                        key={index}
-                                                        className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                        onClick={() => {
-                                                            setSelectedReportTemplate(template.title);
-                                                            setInput(template.content);
-                                                            document.getElementById('template-dropdown')?.classList.add('hidden');
-                                                        }}
-                                                    >
-                                                        {template.title}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
+                                                    <div className="font-medium">{template.title}</div>
+                                                    <div className="text-gray-400 text-xs mt-1 truncate">{template.category}</div>
+                                                </button>
+                                            ))
+                                        ) : (
+                                            <div className="px-2 py-2 text-gray-400 text-xs">No templates available</div>
+                                        )}
                                     </div>
-                                }
-                            </div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2"></div>
-                </div>
-
-                {/* START FORM */}
-                <form onSubmit={handleSubmit} className="p-1 bg-popover rounded-lg">
-                    {/* Add placeholder jump buttons */}
-                    {templatePlaceholders.length > 0 && (
-                        <div className="flex gap-2 flex-wrap">
-                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                            {templatePlaceholders.map((placeholder, idx) => (
-                                <button
-                                    key={idx}
-                                    type="button" // Add this to prevent form submission
-                                    onClick={() => selectTemplatePlaceholder(idx)}
-                                    className={buttonAccent}
-                                >
-                                    {placeholder.text.length > 50
-                                        ? `${placeholder.text.substring(0, 49)}...`
-                                        : placeholder.text}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                    <TextareaAutosize
-                        ref={textareaRef}
-                        value={input || ''}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                const now = Date.now();
-                                // Use a custom property on the event target to track the last Enter key time
-                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                    e.preventDefault();
-                                    // If two returns occur within 2 seconds, submit the form
-                                    handleSubmit(e);
-                                    textarea.lastEnterTime = 0;
-                                } else {
-                                    // Set the last enter time and allow the default new line insertion
-                                    textarea.lastEnterTime = now;
-                                }
-                            }
-
-                            // Add tab key navigation for placeholders
-                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                                e.preventDefault(); // Prevent default tab behavior
-
-                                // Get current cursor position
-                                const cursorPos = e.currentTarget.selectionStart;
-
-                                // Find the next placeholder after cursor position
-                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                                // If no next placeholder, loop back to the first one
-                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                    nextPlaceholder = templatePlaceholders[0];
-                                }
-
-                                // Select the placeholder if found
-                                if (nextPlaceholder) {
-                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                                }
-                            }
-                        }}
-                        placeholder="Ask AI …"
-                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        minRows={6}
-                        maxRows={12}
-                        disabled={isLoading}
-                    />
-                    <div className="flex flex-row justify-between rounded gap-1 ">
-                        <div className="flex items-center gap-2"></div>
-                        <div className="flex flex-row items-center text-foreground gap-1">
-                            <span className="text-xs text-gray-400">
-                                Model:
-                            </span>
-                            <div className="texts bg-gray-800 border border-gray-600 rounded text-sm px-2">
-                                <ModelSelector
-                                    selectedModel={selectedModel}
-                                    onModelChange={(newModel) => {
-                                        setSelectedModel(newModel);
-                                        // Persist selected model to localStorage
-                                        localStorage.setItem('aiDashboard_selectedModel', newModel);
-                                    }}
-                                />
-                            </div>
-                            <TemperatureSelector />
-                        </div>
-
-                        {/* now include the send‐button here */}
-                        <div className="flex justify-between px-2 ">
-                            <button
-                                type="submit"
-                                className="flex items-center bg-gray-800 rounded-full ps-2 mb-1 text-blue-300 hover:text-blue-800"
-                                disabled={isLoading || !input?.trim()}
-                                title="Send your question"
-                            >Send
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    className="w-8 h-8"
-                                >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                                </svg>
-                            </button>
-                        </div>
-                    </div>
-                </form>
-
-                {/* System Prompt Modal */}
-                <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
-                    <div>
-                        <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
-                        <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
-                            <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
-                        </div>
-
-                        {contextContent && isContextAttached && (
-                            <>
-                                <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
-                                <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
-                                    <p className="mb-2 text-sm text-gray-300">
-                                        {contextFiles.length} file(s) attached as context:
-                                    </p>
-                                    <ul className="list-disc pl-5 text-sm">
-                                        {contextFiles.map((file) => (
-                                            <li key={file.name} className="mb-1">
-                                                {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                                            </li>
-                                        ))}
-                                    </ul>
                                 </div>
-                            </>
-                        )}
-
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={() => setIsSystemPromptOpen(false)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                                Close
-                            </button>
+                            </div>
                         </div>
-                    </div>
-                </Modal>
 
-            </div >
+                        <div className="flex items-center gap-2"></div>
+                    </div>
+
+                    {/* START FORM */}
+                    <form onSubmit={handleSubmit} className="p-1 bg-popover rounded-lg">
+                        {/* Add placeholder jump buttons */}
+                        {templatePlaceholders.length > 0 && (
+                            <div className="flex gap-2 flex-wrap">
+                                <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                                {templatePlaceholders.map((placeholder, idx) => (
+                                    <button
+                                        key={idx}
+                                        type="button" // Add this to prevent form submission
+                                        onClick={() => selectTemplatePlaceholder(idx)}
+                                        className={buttonAccent}
+                                    >
+                                        {placeholder.text.length > 50
+                                            ? `${placeholder.text.substring(0, 49)}...`
+                                            : placeholder.text}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                        <TextareaAutosize
+                            ref={textareaRef}
+                            value={input || ''}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    const now = Date.now();
+                                    // Use a custom property on the event target to track the last Enter key time
+                                    const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                    if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                        e.preventDefault();
+                                        // If two returns occur within 2 seconds, submit the form
+                                        handleSubmit(e);
+                                        textarea.lastEnterTime = 0;
+                                    } else {
+                                        // Set the last enter time and allow the default new line insertion
+                                        textarea.lastEnterTime = now;
+                                    }
+                                }
+
+                                // Add tab key navigation for placeholders
+                                if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                    e.preventDefault(); // Prevent default tab behavior
+
+                                    // Get current cursor position
+                                    const cursorPos = e.currentTarget.selectionStart;
+
+                                    // Find the next placeholder after cursor position
+                                    let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                                    // If no next placeholder, loop back to the first one
+                                    if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                        nextPlaceholder = templatePlaceholders[0];
+                                    }
+
+                                    // Select the placeholder if found
+                                    if (nextPlaceholder) {
+                                        selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                    }
+                                }
+                            }}
+                            placeholder="Ask AI …"
+                            className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            minRows={6}
+                            maxRows={12}
+                            disabled={isLoading}
+                        />
+                        <div className="flex flex-row justify-between rounded gap-1 ">
+                            <div className="flex items-center gap-2"></div>
+                            <div className="flex flex-row items-center text-foreground gap-1">
+                                <span className="text-xs text-gray-400">
+                                    Model:
+                                </span>
+                                <div className="texts bg-gray-800 border border-gray-600 rounded text-sm px-2">
+                                    <ModelSelector
+                                        selectedModel={selectedModel}
+                                        onModelChange={(newModel) => {
+                                            setSelectedModel(newModel);
+                                            // Persist selected model to localStorage
+                                            localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                        }}
+                                    />
+                                </div>
+                                <TemperatureSelector />
+                            </div>
+
+                            {/* now include the send‐button here */}
+                            <div className="flex justify-between px-2 ">
+                                <button
+                                    type="submit"
+                                    className="flex items-center bg-gray-800 rounded-full ps-2 mb-1 text-blue-300 hover:text-blue-800"
+                                    disabled={isLoading || !input?.trim()}
+                                    title="Send your question"
+                                >Send
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                        className="w-8 h-8"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+
+                    {/* System Prompt Modal */}
+                    <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
+                        <div>
+                            <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
+                            <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
+                                <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
+                            </div>
+
+                            {contextContent && isContextAttached && (
+                                <>
+                                    <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
+                                    <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
+                                        <p className="mb-2 text-sm text-gray-300">
+                                            {contextFiles.length} file(s) attached as context:
+                                        </p>
+                                        <ul className="list-disc pl-5 text-sm">
+                                            {contextFiles.map((file) => (
+                                                <li key={file.name} className="mb-1">
+                                                    {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                </>
+                            )}
+
+                            <div className="mt-6 flex justify-end">
+                                <button
+                                    onClick={() => setIsSystemPromptOpen(false)}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                                >
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </Modal>
+                </div >
+            </div>
         </>
     );
 };

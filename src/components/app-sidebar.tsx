@@ -308,9 +308,9 @@ export function AppSidebar({ ...props }) {
   return (
     <div className="relative">
       {/* Fixed topbar, only as wide as the sidebar */}
-      <div className="fixed top-0 left-0 z-30 w-16 h-6 flex flex-row items-center justify-between bg-transparent">
+      <div className="fixed top-0 left-0 z-30 w-6 h-6 flex flex-row items-center justify-between bg-transparent">
         <SidebarTrigger onClick={handleToggleSidebar} />
-        {isCollapsed && <ModeToggle />}
+        {/* {!isCollapsed && <ModeToggle />} */}
       </div>
       {/* Sidebar with top padding to avoid overlap */}
       <div className="pl-6 pt-12">
@@ -391,11 +391,13 @@ export function AppSidebar({ ...props }) {
               ))}
             </div>
           </div> */}
+              <ModeToggle />
             </div>
           </SidebarContent>
-          {/* <SidebarFooter className="sidebar-footer">
+          <SidebarFooter className="sidebar-footer">
         <div className="flex items-center space-x-2">
-          <Image
+              <ModeToggle />
+          {/* <Image
             src={data.user.avatar}
             alt="User Avatar"
             width={40}
@@ -407,9 +409,9 @@ export function AppSidebar({ ...props }) {
             <span className="text-xs text-muted-foreground">
               {data.user.email}
             </span>
-          </div>
+          </div> */}
         </div>
-      </SidebarFooter> */}
+      </SidebarFooter>
         </Sidebar>
       </div>
     </div>
