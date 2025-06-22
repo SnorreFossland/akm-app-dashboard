@@ -455,6 +455,28 @@ const modelSlice = createSlice({
       }
     },
 
+    updateMetisInfo(state, action: PayloadAction<{ name: string, description: string }>) {
+      if (state.phData.metis) {
+        state.phData.metis.name = action.payload.name;
+        state.phData.metis.description = action.payload.description;
+      }
+    },
+    updateModelInfo(state, action: PayloadAction<{ id: string, name: string, description: string }>) {
+      const modelIndex = state.phData.metis.models.findIndex(model => model.id === action.payload.id);
+      if (modelIndex !== -1) {
+        state.phData.metis.models[modelIndex].name = action.payload.name;
+        state.phData.metis.models[modelIndex].description = action.payload.description;
+      }
+    },
+    updateProjectInfo(state, action: PayloadAction<Partial<DataType['phFocus']['focusProj']>>) {
+      if (state.phFocus && 'focusProj' in state.phFocus) {
+        state.phFocus.focusProj = {
+          ...state.phFocus.focusProj,
+          ...action.payload
+        };
+      }
+    },
+
     clearModel(state, action) {
       console.log('187 action.payload', action.payload, state);
       if (action.payload) {
@@ -502,6 +524,9 @@ export const {
   clearStore,
   deleteDomainPrompt, // Add the new action here
   setDomainAdditionalContext,
-  resetDomainData
+  resetDomainData,
+  updateMetisInfo,
+  updateModelInfo,
+  updateProjectInfo,
 } = modelSlice.actions;
 export default modelSlice.reducer;

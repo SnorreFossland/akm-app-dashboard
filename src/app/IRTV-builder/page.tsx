@@ -46,7 +46,7 @@ const IRTVBuilderPage = () => {
     // const documents = useSelector((state: RootState) => state.documents.documents);
     const documents = useSelector((state: RootState) => state.markdown.documents);
 
-    const [activeTab, setActiveTab] = useState('current-knowledge');
+    const [activeTab, setActiveTab] = useState('ai-irtv');
     const [activeSubTab, setActiveSubTab] = useState('model-summary');
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -508,7 +508,8 @@ const IRTVBuilderPage = () => {
                     <div className="flex justify-between items-center rounded-md bg-primary-foreground px-1 sm:px-1">
                         {/* Middle Content */}
                         <div className="flex flex-col flex-grow bg-background text-gray-100 ">
-                            <Tabs defaultValue="irtv" className="flex flex-col my-0">
+                            <Tabs defaultValue="ai-irtv" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0">
+                          
                                 {/* Tab Structure with Left and Right buttons */}
                                 <div className="flex items-center justify-between">
                                     {/* Left Panel toggle button */}
@@ -525,11 +526,15 @@ const IRTVBuilderPage = () => {
                                         </span>
                                         <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
                                     </button>
-                                    <span className="self-center inline-block w-auto text-xs sm:text-sm ml-4 pt-1 text-blue-400">IRTV Builder:</span>
+                                    {/* <span className="self-center inline-block w-auto text-xs sm:text-sm ml-4 pt-1 text-blue-400">IRTV Builder:</span> */}
 
                                     {/* Tabs */}
-                                    <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-6 flex-1 mx-2">
-                                        <TabsTrigger value="irtv" className="text-xs sm:text-sm mt-0">AI Assistant
+                                    <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-9 flex-1 mx-2">
+                                        <TabsTrigger
+                                            value="ai-irtv"
+                                            className="data-[state=active]:bg-gray-800 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=inactive]:text-gray-100 py-2 px-4"
+                                            title="AI Modelling Assistant"
+                                        >                                          AI Modelling Assistant
                                             <span className="mx-1"></span>
                                             <span
                                                 onClick={() => setShowGuideModal(true)}
@@ -539,7 +544,12 @@ const IRTVBuilderPage = () => {
                                                 <HelpCircle className="h-4 w-4" />
                                             </span>
                                         </TabsTrigger>
-                                        <TabsTrigger value="current-domain" className="text-xs sm:text-sm mt-0">Domain: {currentDomain.name || 'Domain name'}
+                                        <TabsTrigger
+                                            value="current-domain"
+                                            className="data-[state=active]:b-card-forground data-[state=active]:text-white data-[state=active]:font-semibold data-[state=inactive]:text-gray-100 py-2 px-4"
+                                            title="Current Domain"                                
+                                        >
+                                            Domain: {currentDomain.name || 'Domain name'}
                                             <span className="mx-1"></span>
                                             <span
                                                 onClick={() => setShowGuideModal(true)}
@@ -549,12 +559,17 @@ const IRTVBuilderPage = () => {
                                                 <HelpCircle className="h-4 w-4" />
                                             </span>
                                         </TabsTrigger>
-                                        <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">Model:
-                                            <span className="mx-1"></span>
+                                        <TabsTrigger
+                                            value="model"
+                                            className="data-[state=active]:bg-green-100 data-[state=active]:text-gray-600 data-[state=active]:font-semibold data-[state=inactive]:text-gray-100 py-3 px-4"
+                                            title="Model Universe"
+                                        >
+                                            Model
+                                            {/* <span className="mx-1">{model.name || 'Model name'}</span> */}
                                             <span
                                                 onClick={() => setShowGuideModal(true)}
                                                 className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
-                                                title="Open domain guide"
+                                                title="Open Model guide"
                                             >
                                                 <HelpCircle className="h-4 w-4" />
                                             </span>
@@ -577,8 +592,8 @@ const IRTVBuilderPage = () => {
                                     </button>
                                 </div>
                                 {/* AI Assistant */}
-                                <TabsContent value="irtv" className="flex-1 px-1 mt-1">
-                                    <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600">
+                                <TabsContent value="ai-irtv" className="flex-1 px-1 mt-1">
+                                    <div className="flex-1 overflow-auto bg-gray-800/20 ">
                                         <IRTVBuilderComponent
                                             input={irtvInput}
                                             setInput={setIrtvInput}

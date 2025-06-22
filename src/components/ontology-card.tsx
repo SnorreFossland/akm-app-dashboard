@@ -234,15 +234,35 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
         <>
             <div className="w-full">
                 <div className="w-full">
-                    <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-gray-700 p-1">
-                        <TabsList className="bg-gray-700">
-                            <TabsTrigger value="summary" className='pb-2 mt-3'>Ontology Summary</TabsTrigger>
-                            <TabsTrigger value="concepts" className='pb-2 mt-3'>Concept List</TabsTrigger>
-                            <TabsTrigger value="relationships" className='pb-2 mt-3'>Relationship List</TabsTrigger>
-                            <TabsTrigger value="diagram" className='pb-2 mt-3'>Ontology Map</TabsTrigger>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className=" p-1">
+                        <TabsList className="bg-transparent">
+                            <TabsTrigger
+                                value="summary"
+                                className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400"
+                            >
+                                Ontology Summary
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="concepts"
+                                className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400"
+                            >
+                                Concept List
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="relationships"
+                                className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400"
+                            >
+                                Relationship List
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="diagram"
+                                className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400"
+                            >
+                                Ontology Map
+                            </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="summary" className="rounded bg-background w-full">
+                        <TabsContent value="summary" className="rounded  w-full mt-0 ">
                             <Card className="pt-1">
                                 <CardContent className="max-h-[calc(100vh-4rem)] overflow-hidden">
                                     <div className=" px-1">
@@ -264,8 +284,8 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                             </Card>
                         </TabsContent>
 
-                        <TabsContent value="concepts" className="m-0 px-1 py-1 rounded bg-background">
-                            <Card className="">
+                        <TabsContent value="concepts" className=" mt-0 rounded bg-background">
+                            <Card className="pt-1">
                                 {/* <CardHeader className="px-3 pt-3 pb-0">
                                     <CardTitle className="bg-background px-2 text-1xl rounded">Concepts</CardTitle>
                                 </CardHeader> */}
@@ -275,8 +295,8 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                             </Card>
                         </TabsContent>
 
-                        <TabsContent value="relationships" className="m-0 px-1 py-1 rounded bg-background">
-                            <Card className="">
+                        <TabsContent value="relationships" className="mt-0 rounded bg-background">
+                            <Card className="pt-1">
                                 {/* <CardHeader className="px-3 pt-3 pb-0">
                                     <CardTitle className="bg-background px-2 text-1xl rounded">Relations</CardTitle>
                                 </CardHeader> */}
