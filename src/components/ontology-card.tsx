@@ -306,7 +306,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                             </Card>
                         </TabsContent>
 
-                        <TabsContent value="diagram" className="m-0 px-1 rounded bg-background h-[calc(100vh-22rem)] max-w-[0vw] overflow-hidden">
+                        <TabsContent value="diagram" className="m-0 px-1 rounded bg-background h-[calc(100vh-22rem)] max-w-[60rem] overflow-hidden">
                             <>
                                 <div className="flex justify-between items-center mx-2 mb-2">
                                     <div className="flex items-center gap-2">

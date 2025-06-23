@@ -534,7 +534,7 @@ const IRTVBuilderPage = () => {
                                             value="ai-irtv"
                                             className="data-[state=active]:bg-gray-800 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=inactive]:text-gray-100 py-2 px-4"
                                             title="AI Modelling Assistant"
-                                        >                                          AI Modelling Assistant
+                                        >                                          AI IRTV Modelling Assistant
                                             <span className="mx-1"></span>
                                             <span
                                                 onClick={() => setShowGuideModal(true)}

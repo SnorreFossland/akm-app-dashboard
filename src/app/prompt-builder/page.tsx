@@ -502,7 +502,6 @@ export default function VercelAiPage() {
         // </div>
       )}
 
-      {/* Draggable Bar between Right and Bottom panels */}
 
       <>
         {/* Library Modal */}

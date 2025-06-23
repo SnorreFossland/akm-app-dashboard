@@ -222,27 +222,39 @@ export const ObjectCard = ({ model }: { model: Model }) => {
     return (
         <div className="w-full">
             <div className="w-full h-[calc(100vh-10rem)] overflow-hidden bg-gray-800 rounded-md">
-                <Tabs value={activeTab} onValueChange={setActiveTab} className="bg-gray-700 mb-0 w-full text-xs">
-                    <TabsList className="m-1 mb-0 bg-transparent rounded-t-md flex space-x-1 border-b-0 border-gray-600">
-                        <TabsTrigger value="objects" className='pb-2 mt-2 rounded-t-md'>Object List</TabsTrigger>
-                        <TabsTrigger value="relationships" className='pb-2 mt-2 rounded-t-md'>Relationship List</TabsTrigger>
-                        <TabsTrigger value="diagram" className='pb-2 mt-2'>Preview Diagram</TabsTrigger>
+                <Tabs value={activeTab} onValueChange={setActiveTab} className="p-1 text-xs">
+                    <TabsList className="bg-transparent">
+                        <TabsTrigger
+                            value="objects"
+                            className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400"
+                        >
+                            Object List
+                        </TabsTrigger>
+                        <TabsTrigger
+                            value="relationships"
+                            className="rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400"
+                        >
+                            Relationship List
+                        </TabsTrigger>
+                        <TabsTrigger value="diagram" className='rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400'>
+                            Preview Diagram
+                        </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="objects" className="rounded bg-background w-full">
-                        <Card className="mx-1 mt-2">
+                    <TabsContent value="objects" className="rounded  w-full mt-0 ">
+                        <Card className="pt-1">
                             {/* <CardHeader className="px-3 pt-3 pb-0">
                                 <CardTitle className="bg-background px-2 text-1xl rounded">Concepts</CardTitle>
                             </CardHeader> */}
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
-                            {/* <CardContent className="max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
+                                {/* <CardContent className="max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
                                 {model && <ObjectTable data={model.objects} />}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="relationships" className="m-0 px-1 py-1 rounded bg-background h-[calc(100vh-22rem)]">
-                        <Card className="mt-1">
+                    <TabsContent value="relationships" className="rounded  w-full mt-0 ">
+                        <Card className="pt-1">
                             {/* <CardHeader className="px-3 pt-3 pb-0">
                                 <CardTitle className="bg-background px-2 text-1xl rounded">Relations</CardTitle>
                             </CardHeader> */}
@@ -252,40 +264,40 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="diagram" className="m-0 px-1 rounded bg-background h-[calc(100vh-14rem)] overflow-auto">
-                        <div>
-                            <div className="flex justify-between items-center mx-2 mb-2">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => generateMermaidDiagram()}
-                                        className="px-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-700"
-                                    >
-                                        Regenerate Diagram
-                                    </button>
+                    <TabsContent value="diagram" className="rounded  w-full mt-0 ">
+                        <Card className="pt-1">
+                                <div className="flex justify-between items-center mx-2 mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => generateMermaidDiagram()}
+                                            className="px-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-700"
+                                        >
+                                            Regenerate Diagram
+                                        </button>
 
-                                    <button
-                                        onClick={() => setZoomMode(prev => !prev)}
-                                        className={`px-2 py-1 text-xs rounded ${isZoomMode
-                                            ? 'bg-green-500 text-white'
-                                            : 'bg-gray-500 text-gray-200'}`}
-                                    >
-                                        {isZoomMode ? 'Zoom Mode: ON' : 'Zoom Mode: OFF'}
-                                    </button>
+                                        <button
+                                            onClick={() => setZoomMode(prev => !prev)}
+                                            className={`px-2 py-1 text-xs rounded ${isZoomMode
+                                                ? 'bg-green-500 text-white'
+                                                : 'bg-gray-500 text-gray-200'}`}
+                                        >
+                                            {isZoomMode ? 'Zoom Mode: ON' : 'Zoom Mode: OFF'}
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center">
+                                        <span className="mr-2 text-xs">Zoom</span>
+                                        <input
+                                            type="range"
+                                            min="0.5"
+                                            max="2"
+                                            step="0.1"
+                                            value={zoom}
+                                            onChange={(e) => setZoom(Number(e.target.value))}
+                                            className="w-32"
+                                        />
+                                    </div>
                                 </div>
-                                <div className="flex items-center">
-                                    <span className="mr-2 text-xs">Zoom</span>
-                                    <input
-                                        type="range"
-                                        min="0.5"
-                                        max="2"
-                                        step="0.1"
-                                        value={zoom}
-                                        onChange={(e) => setZoom(Number(e.target.value))}
-                                        className="w-32"
-                                    />
-                                </div>
-                            </div>
-                            <Card className="w-full my-1">
+
                                 <div
                                     ref={containerRef}
                                     className="h-[calc(100vh-18rem)] overflow-auto bg-gray-600 rounded border relative"
@@ -301,11 +313,10 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                                         {renderMermaidDiagram()}
                                     </div>
                                 </div>
-                            </Card>
-                        </div>
-                    </TabsContent>
-                </Tabs>
-            </div>
+                        </Card>
+                </TabsContent>
+            </Tabs>
         </div>
+        </div >
     );
 };
