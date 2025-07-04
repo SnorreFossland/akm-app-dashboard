@@ -1,15 +1,13 @@
 'use client';
 import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '@/store';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import mermaid from 'mermaid';
+import { RootState } from '@/store';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
-import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
-import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
+import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import TemplatesPanel from '@/components/ai-chat/PromptRefinementPanel';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
@@ -29,7 +27,8 @@ export interface ChatComponentProps {
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
-    const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document' | 'conversations'>('document');
+
+    const [input, setInput] = useState<string>("");
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     const [mdContent, setMdContent] = useState<string>('')
@@ -37,20 +36,16 @@ const AIChatPage = () => {
     const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(360);
     const [rightPanelWidth, setRightPanelWidth] = useState(360); // Initial width
-    const [input, setInput] = useState<string>("");
-    const [editableContent, setEditableContent] = useState('');
-    const [domainContent, setDomainContent] = useState('');
+    const [leftPanelContent, setLeftPanelContent] = useState(''); // Default to 'document' content
+    const [activeLeftTab, setActiveLeftTab] = useState('document'); // Default to 'document' tab
     const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
-    const [lastResponse, setLastResponse] = useState<string>('');
     const documents = useSelector((state: RootState) => state.markdown.documents);
-    // const [documentPanelOpen, setDocumentPanelOpen] = useState(false);
 
     // replace your single openLibraryButtonRef with two refs:
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
     const mdFileInputRef = useRef<HTMLInputElement>(null)
-    // const [forceRefresh, setForceRefresh] = useState(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // New state variables for conversations
@@ -58,66 +53,11 @@ const AIChatPage = () => {
     const [currentMessages, setCurrentMessages] = useState<any[]>([]);
     const [showGuideModal, setShowGuideModal] = useState(false);
 
-    const handleAddMD = () => {
-        mdFileInputRef.current?.click()
-    }
+    const [lastResponse, setLastResponse] = useState<string>('');
+    const [activeTab, setActiveTab] = useState("chat");
+    const [editableContent, setEditableContent] = useState('');
+    const [domainContent, setDomainContent] = useState('');
 
-    const handleExportLibrary = () => {
-        if (documents.length === 0) return;
-
-        // Create a JSON file from the documents
-        const dataStr = JSON.stringify(documents, null, 2);
-        const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-
-        // Create and trigger a download link
-        const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileName);
-        linkElement.click();
-    };
-
-    const handleImportLibrary = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const importedDocuments = JSON.parse(event.target?.result as string);
-
-                // Validate the imported data structure
-                if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
-                    typeof doc === 'object' && doc !== null &&
-                    'id' in doc && 'name' in doc && 'content' in doc)) {
-
-                    // Import each document to Redux
-                    importedDocuments.forEach(doc => {
-                        dispatch(saveMarkdownDocument({
-                            id: doc.id || Date.now().toString(),
-                            name: doc.name,
-                            content: doc.content,
-                            createdAt: doc.createdAt || new Date().toISOString()
-                        }));
-                    });
-
-                    alert(`Successfully imported ${importedDocuments.length} documents`);
-                } else {
-                    alert('Invalid file format. Import failed.');
-                }
-            } catch (error) {
-                console.error('Error importing library:', error);
-                alert('Failed to import library. Invalid JSON format.');
-            }
-        };
-
-        reader.readAsText(file);
-        e.target.value = ''; // Reset the file input
-    };
     // Initialize mermaid when component mounts
     useEffect(() => {
         mermaid.initialize({
@@ -184,55 +124,81 @@ const AIChatPage = () => {
         }
     }, []);
 
-    // Simple Modal component
-    const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
-        if (!isOpen) return null;
 
-        return (
-            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-                <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
-                    <button
-                        onClick={onClose}
-                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                    <div className="p-6">
-                        {children}
-                    </div>
-                </div>
-            </div>
-        );
+    const handleShowInLeftPanel = (content: string, name: string) => {
+        setLeftPanelContent(content);
+        setShowLeftPanel(true);
+        // You might also want to update other state variables like mdContent
     };
 
-
-    const handleSaveToRedux = () => {
-        if (!docName.trim()) return;
-        console.log('Saving to Redux:', {
-            id: Date.now().toString(),
-            name: docName,
-            content: mdPreview
-        });
-        dispatch(saveMarkdownDocument({
-            id: Date.now().toString(),
-            name: docName,
-            content: mdPreview,
-            createdAt: new Date().toISOString()
-        }));
-        // Show success notification
-        alert('Document saved to library');
-        // Add this to check if documents are updated after dispatch
-        console.log('Documents after save:', documents);
-    };
-
-    const handleSelectFromLibrary = (content: string, name: string) => {
+    const handleDocumentSelect = (content: string, name: string) => {
         setMdContent(content);
         setDocName(name);
         setIsEditing(false);
         setActiveLeftTab('document'); // Switch to document tab
         setIsLibraryOpen(false); // Close the library modal after selection
-
         console.log("Selected document from library:", { content, name });
+    };
+
+    const handleAddMD = () => {
+        mdFileInputRef.current?.click()
+    }
+
+    const handleExportLibrary = () => {
+        if (documents.length === 0) return;
+
+        // Create a JSON file from the documents
+        const dataStr = JSON.stringify(documents, null, 2);
+        const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+
+        // Create and trigger a download link
+        const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileName);
+        linkElement.click();
+    };
+
+    const handleImportLibrary = () => {
+        fileInputRef.current?.click();
+    };
+
+    const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            try {
+                const importedDocuments = JSON.parse(event.target?.result as string);
+
+                // Validate the imported data structure
+                if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
+                    typeof doc === 'object' && doc !== null &&
+                    'id' in doc && 'name' in doc && 'content' in doc)) {
+
+                    // Import each document to Redux
+                    importedDocuments.forEach(doc => {
+                        dispatch(saveMarkdownDocument({
+                            id: doc.id || Date.now().toString(),
+                            name: doc.name,
+                            content: doc.content,
+                            createdAt: doc.createdAt || new Date().toISOString()
+                        }));
+                    });
+
+                    alert(`Successfully imported ${importedDocuments.length} documents`);
+                } else {
+                    alert('Invalid file format. Import failed.');
+                }
+            } catch (error) {
+                console.error('Error importing library:', error);
+                alert('Failed to import library. Invalid JSON format.');
+            }
+        };
+
+        reader.readAsText(file);
+        e.target.value = ''; // Reset the file input
     };
 
     // New handler functions for conversations
@@ -390,11 +356,6 @@ const AIChatPage = () => {
     };
 
 
-    const handleApplyTemplate = (content: string) => {
-        console.log('93 Template content inserted:', content);
-        setChatInput(content); // Update the chat input field
-    };
-
     const handleResponseChange = (response: string) => { setLastResponse(response) };
 
     const handleViewInMarkdown = (response: string) => {
@@ -409,12 +370,36 @@ const AIChatPage = () => {
         // setShowLeftPanel(false); // Hide the left panel when viewing markdown
     };
 
+
+
+    // Simple Modal component
+    const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
+        if (!isOpen) return null;
+
+        return (
+            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+                    <button
+                        onClick={onClose}
+                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                    <div className="p-6">
+                        {children}
+                    </div>
+                </div>
+            </div>
+        );
+    };
+
+
     // #region Main Layout
     return (
-        <div className="w-full h-full bg-background text-gray-100 overflow-hidden">
-            <div className="flex flex-row flex-nowrap h-[100dvh] w-full bg-background text-gray-100">
+        <div className="w-full min-h-1/3 bg-background text-gray-100 overflow-hidden">
+            <div className="flex flex-row flex-nowrap h-[100dvh-30rem] w-full bg-background text-gray-100">
 
-                {/* Left Panel: Templates ------------------------------------------------------------------------------ */}
+                {/* Left Panel:  ------------------------------------------------------------------------------ */}
                 {showLeftPanel && (
                     <div
                         className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 max-w-[95vw] overflow-auto"
@@ -423,95 +408,26 @@ const AIChatPage = () => {
                             minWidth: '200px' // Use inline style instead of conflicting Tailwind classes
                         }}
                     >
-                        {/* tabs */}
-                        <ul className="flex border-b border-gray-600 mb-2 text-sm">
-                            <li
-                                className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'conversations'
-                                    ? 'border-b-2 border-blue-400 font-semibold'
-                                    : 'text-gray-400'
-                                    }`}
-                                onClick={() => setActiveLeftTab('conversations')}
-                            >
-                                Saved AI Chat conversations
-                            </li>
-                            <li
-                                className={`px-3 py-1 cursor-pointer ${activeLeftTab === 'templates'
-                                    ? 'border-b-2 border-blue-400 font-semibold'
-                                    : 'text-gray-400'
-                                    }`}
-                                onClick={() => setActiveLeftTab('templates')}
-                            >
-                                Refine Prompt
-                            </li>
-                            <li
-                                className={`px-3 py-1 cursor-pointer ml-4 ${activeLeftTab === 'document'
-                                    ? 'border-b-2 border-blue-400 font-semibold'
-                                    : 'text-gray-400'
-                                    }`}
-                                onClick={() => setActiveLeftTab('document')}
-                            >
-                                Context
-                            </li>
-                            <button
-                                onClick={() => setShowLeftPanel(false)}
-                                className="text-xs bg-muted hover:bg-gray-600 text-white ms-auto px-2 py-1 rounded"
-                            >
-                                Close
-                            </button>
-                        </ul>
-
-                        {/* tab content */}
-                        {activeLeftTab === 'conversations' ? (
-                            <div className="p-2">
-                                <ConversationsPanel
-                                    conversations={conversations}
-                                    onSelectConversation={handleSelectConversation}
-                                    onDeleteConversation={handleDeleteConversation}
-                                    onSaveConversation={handleSaveCurrentConversation}
-                                    currentMessages={currentMessages} // Pass this prop to enable/disable save button
-                                />
+                        <div className="flex justify-between items-center m-1 sm:m-2">
+                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">
+                                Input: Context
+                            </h2>
+                            <div className="markdown-preview-header">
+                                <button
+                                    onClick={() => setShowLeftPanel(false)}
+                                    className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+                                >
+                                    Close
+                                </button>
                             </div>
-                        ) : activeLeftTab === 'templates' ? (
-                            <>
-                                {/* hidden shared picker */}
-                                <input
-                                    ref={mdFileInputRef}
-                                    type="file"
-                                    accept=".md"
-                                    className="hidden"
-                                />
-                                <TemplatesPanel
-                                    onApplyTemplate={handleApplyTemplate}
-                                    editableContent={editableContent}
-                                    setEditableContent={setEditableContent}
-                                    domainContent={domainContent}
-                                    setDomainContent={setDomainContent}
-                                    selectedModel={selectedModel}
-                                    onAddMD={handleAddMD}
-                                    mdContent={mdContent}
-                                />
-                            </>
-                        ) : ( // Document tab (activeLeftTab === 'document')
-                            (mdContent && mdContent.length > 0)
-                                ?
-                                <DocumentPanel
-                                    mdContent={mdContent}
-                                    setMdContent={setMdContent}
-                                    setIsLibraryOpen={setIsLibraryOpen}
-                                    isLibraryOpen={isLibraryOpen}
-                                    panelType='left'
-                                />
-                                :
-                                <>
-                                    <DocumentPanel
-                                        mdContent={``}
-                                        setMdContent={setMdContent}
-                                        setIsLibraryOpen={setIsLibraryOpen}
-                                        isLibraryOpen={isLibraryOpen}
-                                        panelType='left'
-                                    />
-                                </>
-                        )}
+                        </div>
+                        <DocumentPanel
+                            mdContent={mdContent}
+                            setMdContent={setMdContent}
+                            setIsLibraryOpen={setIsLibraryOpen}
+                            isLibraryOpen={isLibraryOpen}
+                            panelType='left'
+                        />
                     </div>
                 )}
                 {/* Draggable Bar for Left Panel */}
@@ -548,14 +464,44 @@ const AIChatPage = () => {
                                     </button>
 
                                     {/* Tabs */}
-                                    <TabsList className="grid grid-cols-2 bg-primary-foreground my-0 h-6 flex-1 mx-2">
-                                        <TabsTrigger value="chat" className="text-xs sm:text-sm mt-0">AI Chat
+                                    <TabsList className="grid grid-cols-5 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
+                                        <TabsTrigger
+                                            value="chat"
+                                            className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                                        >
+                                            AI Chat
                                             <span
                                                 onClick={() => setShowGuideModal(true)}
-                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                                                title="Open IRTV guide"
+                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 border-b-0 rounded-full pl-1"
+                                                title="Open guide"
                                             >
                                                 <HelpCircle className="h-3 w-3 ms-5" />
+                                            </span>
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="saved-documents"
+                                            className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                                        >
+                                            Saved Documents
+                                            <span
+                                                onClick={() => setShowGuideModal(true)}
+                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                                                title="Open guide"
+                                            >
+                                                <HelpCircle className="h-3 w-3 mx-2" />
+                                            </span>
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="saved-chat"
+                                            className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                                        >
+                                            Saved Chats
+                                            <span
+                                                onClick={() => setShowGuideModal(true)}
+                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                                                title="Open guide"
+                                            >
+                                                <HelpCircle className="h-3 w-3 mx-2" />
                                             </span>
                                         </TabsTrigger>
                                     </TabsList>
@@ -577,7 +523,7 @@ const AIChatPage = () => {
                                 </div>
                                 {/* Chat Component */}
                                 <TabsContent value="chat" className="flex-1 px-1 mt-1">
-                                    <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600">
+                                    <div className="flex-1 overflow-auto bg-gray-800/20 rounded">
                                         <ChatComponent
                                             input={input}
                                             setInput={setInput}
@@ -593,6 +539,71 @@ const AIChatPage = () => {
                                             mdPreview={mdPreview}
                                             setMdPreview={setMdPreview}
                                             setCurrentMessages={setCurrentMessages}
+                                            gettingStartedGuide={<GettingStartedGuide />}
+                                        />
+                                    </div>
+                                </TabsContent>
+                                {/* Saved Documents */}
+                                <TabsContent value="saved-documents" className="flex-1 px-1 mt-1">
+                                    <div
+                                        className="bg-background rounded-lg p-4"
+                                        onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
+                                    >
+                                        <div className="flex justify-between items-center mb-4">
+                                            <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
+                                            <div className="flex space-x-2">
+
+                                                <button
+                                                    onClick={handleExportLibrary}
+                                                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
+                                                    disabled={documents.length === 0}
+                                                >
+                                                    Export Library
+                                                </button>
+                                                <input
+                                                    type="file"
+                                                    ref={fileInputRef}
+                                                    onChange={handleFileSelection}
+                                                    accept=".json"
+                                                    style={{ display: 'none' }}
+                                                />
+                                                <button
+                                                    onClick={handleImportLibrary}
+                                                    className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
+                                                >
+                                                    <span>Import Library</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => setIsLibraryOpen(false)}
+                                                    className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
+                                                >
+                                                    Close
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {/* Pass export functionality to library component */}
+                                        <div className="text-sm text-gray-400 mb-2 overflow-auto">
+                                            <MarkdownLibrary
+                                                onSelect={handleDocumentSelect}
+                                                onShowInLeftPanel={handleShowInLeftPanel}
+                                                hideExportLibraryButton={false}
+                                            />
+                                        </div>
+                                    </div>
+                                </TabsContent>
+                                {/* Saved Conversations*/}
+                                <TabsContent value="saved-chat" className="flex-1 px-1 mt-1">
+                                    <div className="p-2">
+                                        <ConversationsPanel
+                                            conversations={conversations}
+                                            onSelectConversation={handleSelectConversation}
+                                            onDeleteConversation={handleDeleteConversation}
+                                            onSaveConversation={handleSaveCurrentConversation}
+                                            currentMessages={currentMessages} // Pass this prop to enable/disable save button
+                                            onViewInMarkdown={handleViewInMarkdown}
+                                            mdPreview={mdPreview}
+
+
                                         />
                                     </div>
                                 </TabsContent>
@@ -626,13 +637,6 @@ const AIChatPage = () => {
                             <div className="flex justify-between items-center mb-2">
                                 <h2 className="text-lg sm:text-xl font-bold text-blue-400">Output Preview</h2>
                                 <div className="flex items-center gap-2">
-                                    {/* <button
-                                    onClick={handleSaveToRedux}
-                                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded"
-                                    disabled={!mdPreview || mdPreview === '.' || !docName.trim()}
-                                >
-                                    Save to Library
-                                </button> */}
                                     <button
                                         onClick={() => setShowRightPanel(false)}
                                         className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
@@ -641,8 +645,7 @@ const AIChatPage = () => {
                                     </button>
                                 </div>
                             </div>
-                            {(mdPreview)
-                                ?
+                            {(mdPreview) &&
                                 <DocumentPanel
                                     mdContent={mdPreview}
                                     setMdContent={setMdPreview}
@@ -650,16 +653,6 @@ const AIChatPage = () => {
                                     isLibraryOpen={isLibraryOpen}
                                     panelType='right'
                                 />
-                                :
-                                <>
-                                    <DocumentPanel
-                                        mdContent={``}
-                                        setMdContent={setMdPreview}
-                                        setIsLibraryOpen={setIsLibraryOpen}
-                                        isLibraryOpen={isLibraryOpen}
-                                        panelType='right'
-                                    />
-                                </>
                             }
                         </div>
                     )
@@ -715,8 +708,9 @@ const AIChatPage = () => {
                                 {/* Pass export functionality to library component */}
                                 <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
                                     <MarkdownLibrary
-                                        onSelect={handleSelectFromLibrary}
-                                        hideExportLibraryButton={true}
+                                        onSelect={handleDocumentSelect}
+                                        onShowInLeftPanel={handleShowInLeftPanel}
+                                        hideExportLibraryButton={false}
                                     />
                                 </div>
                             </div>

@@ -3,6 +3,7 @@ import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 export interface MarkdownDocument {
   id: string;
   name: string;
+  type: string; // e.g., 'markdown';
   content: string;
   createdAt: string;
 }

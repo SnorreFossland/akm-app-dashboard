@@ -18,7 +18,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 
 import {
     SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt
-} from '@/app/concept-builder/prompts';
+} from '@/app/ontology-builder/prompts';
 
 // const debug = false;
 
@@ -106,8 +106,8 @@ const ConceptBuilder = () => {
 
     useEffect(() => {
         setDescrString(data.phData.domain?.description || "");
-        setTopicDescr(data.phData.domain?.presentation || "");
-    }, [data.phData.domain?.description, data.phData.domain?.presentation]);
+        // setTopicDescr(data.phData.domain?.presentation || "");
+    }, [data.phData.domain?.description]);
 
 
     // Memoize the prompt building logic
@@ -118,7 +118,7 @@ const ConceptBuilder = () => {
             conceptString += `**Relationships**\n\n${existingRelationships?.map((r) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
 
-        const userPrompt = `${UserPrompt} \n\n **Domain name:**  ${data.phData.domain?.name} \\ **Domain description:** ${data.phData.domain?.description || ""}`;
+        const userPrompt = `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}`;
         const userInput = `${UserInput} \n\n ${topicDescr}`;
         const newSystemPrompt = SystemPrompt;
         const newSystemBehaviorGuidelines = SystemBehaviorGuidelines;

@@ -1,58 +1,40 @@
 "use client";
+
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from "react-redux";
-import type { RootState } from "@/store";
-import { usePathname } from 'next/navigation';
 import ReactMarkdown from "react-markdown";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faCheckCircle, faPaperPlane, faEdit, faTrash, faLink, faBrain, faSave } from "@fortawesome/free-solid-svg-icons";
-import { HelpCircle } from 'lucide-react';
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
+
 import { Card, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } from "@/components/ui/dialog";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
-import DocumentPanel from '@/components/ai-chat/DocumentPanel';
-import DomainBuilder from "@/components/domain-builder/DomainBuilder";
-import ChatComponent from '@/components/ai-chat/ChatComponent';
-import ModelComponent from "@/features/model-universe/components/ModelComponent";
-import { LoadingCircularProgress } from "@/components/loading";
-import GettingStartedGuide from '@/components/domain-builder/GettingStartedGuide';
-import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 
-export interface ChatComponentProps {
-  onResponseChange: (response: string) => void;
-  onViewInMarkdown: (response: string) => void;
-  setShowLeftPanel: (show: boolean) => void;
-  error?: string; // Optional error prop
-  chatInput?: string;
-  input: string;
-  setInput: (input: string) => void;
-  setMdContent: (message: string) => void;
-  mdContent: string;
-  onAddMD?: () => void;
-  gettingStartedGuide?: React.ReactNode;
+import ConceptBuilder from '@/components/ontology-builder/ConceptBuilder';
+import ChatComponent from '@/components/ontology-builder/ChatComponent';
+import ModelComponent from "@/features/model-universe/components/ModelComponent";
+import { OntologyCard } from '@/components/ontology-card';
+import { LoadingCircularProgress } from "@/components/loading";
+import GettingStartedGuide from '@/components/ontology-builder/GettingStartedGuide';
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
+
+interface ConceptBuilderPageProps {
+  data: any;
+  dispatch: any;
 }
 
-export default function DomainBuilderPage() {
+export default function ConceptBuilderPage() {
   const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
-  const prompt = useSelector((state: { prompt: any }) => data.phData.domain?.prompt);
-  const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
-  const ontologyData = useSelector((state: { modelUniverse: any }) => data.phData.ontology);
   const dispatch = useDispatch();
-  const pathname = usePathname();
-
-  console.log('DomainBuilderPage data:', data);
-  // console.log('DomainBuilderPage prompt:', prompt);
-  console.log('DomainBuilderPage domainData:', domainData);
 
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
-  const [mdContent, setMdContent] = useState<string>('')
-  const [isEditing, setIsEditing] = useState(false);
   const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
-
-  const [activeLeftTab, setActiveLeftTab] = useState<'document' | 'library'>('document');
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
@@ -61,26 +43,22 @@ export default function DomainBuilderPage() {
   const [isResizingLeft, setIsResizingLeft] = useState(false);
   const [isResizingRight, setIsResizingRight] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
-  const [domainName, setDomainName] = useState(domainData?.name || "");
-  const [domainDescription, setDomainDescription] = useState(domainData?.description || "");
-  const [domainPresentation, setDomainPresentationState] = useState(domainData?.presentation || "");
+  const [conceptName, setConceptName] = useState(data?.phData?.concept?.name || "");
+  const [conceptDescription, setConceptDescription] = useState(data?.phData?.concept?.description || "");
+  const [conceptPresentation, setConceptPresentationState] = useState(data?.phData?.concept?.presentation || "");
 
-  const [lastResponse, setLastResponse] = useState<string>('');
   const [activeTab, setActiveTab] = useState("instructions");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
 
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [docName, setDocName] = useState<string>('New Document');
-  const documents = useSelector((state: RootState) => state.markdown.documents);
 
-  const [currentMessages, setCurrentMessages] = useState<any[]>([]);
+
+
 
   // Draggable divider state
   const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const mdFileInputRef = useRef<HTMLInputElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
 
   // Panel sizing constants
   const MIN_PANEL_WIDTH = 200;
@@ -91,9 +69,24 @@ export default function DomainBuilderPage() {
   const rightPanelWidthRef = useRef(rightPanelWidth);
   const showLeftPanelRef = useRef(showLeftPanel);
 
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [mdContent, setMdContent] = useState<string>('')
+  const [currentMessages, setCurrentMessages] = useState<any[]>([]);
+
+  const mdFileInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const middlePanelWidth = typeof window !== 'undefined'
     ? window.innerWidth - (showLeftPanel ? leftPanelWidth : 0) - (showRightPanel ? rightPanelWidth : 0) - 40
     : 800;
+
+  // Sample data for ontology - replace with actual data
+  const ontologyDataList = data?.phData?.suggestedOntology || null;
+  const printPromptsDiv = <div>Sample prompt content</div>; // Replace with actual prompt content
+
+  // Modal handlers
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
 
   // Reusable IconButton component
   interface IconButtonProps {
@@ -103,6 +96,7 @@ export default function DomainBuilderPage() {
     iconWidth?: string;
     iconSize?: SizeProp;
   }
+
   const IconButton: React.FC<IconButtonProps> = ({ onClick, icon, className = "", iconWidth = "26px", iconSize = "1x" as SizeProp }) => {
     return (
       <Button onClick={onClick} className={`rounded text-xl p-4 bg-green-700 text-white ${className}`}>
@@ -111,76 +105,6 @@ export default function DomainBuilderPage() {
     );
   };
 
-  const handleAddMD = () => {
-    mdFileInputRef.current?.click()
-  }
-
-  const handleExportLibrary = () => {
-    if (documents.length === 0) return;
-
-    // Create a JSON file from the documents
-    const dataStr = JSON.stringify(documents, null, 2);
-    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-
-    // Create and trigger a download link
-    const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
-    const linkElement = document.createElement('a');
-    linkElement.setAttribute('href', dataUri);
-    linkElement.setAttribute('download', exportFileName);
-    linkElement.click();
-  };
-
-  const handleImportLibrary = () => {
-    fileInputRef.current?.click();
-  };
-
-  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      try {
-        const importedDocuments = JSON.parse(event.target?.result as string);
-
-        // Validate the imported data structure
-        if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
-          typeof doc === 'object' && doc !== null &&
-          'id' in doc && 'name' in doc && 'content' in doc)) {
-
-          // Import each document to Redux
-          importedDocuments.forEach(doc => {
-            dispatch(saveMarkdownDocument({
-              id: doc.id || Date.now().toString(),
-              name: doc.name,
-              content: doc.content,
-              createdAt: doc.createdAt || new Date().toISOString()
-            }));
-          });
-
-          alert(`Successfully imported ${importedDocuments.length} documents`);
-        } else {
-          alert('Invalid file format. Import failed.');
-        }
-      } catch (error) {
-        console.error('Error importing library:', error);
-        alert('Failed to import library. Invalid JSON format.');
-      }
-    };
-
-    reader.readAsText(file);
-    e.target.value = ''; // Reset the file input
-  };
-
-  const handleSelectFromLibrary = (content: string, name: string) => {
-    setMdContent(content);
-    setDocName(name);
-    setIsEditing(false);
-    setActiveLeftTab('document'); // Switch to document tab
-    setIsLibraryOpen(false); // Close the library modal after selection
-
-    console.log("Selected document from library:", { content, name });
-  };
   // Reusable ActionCardTitleButton component
   interface ActionCardTitleButtonProps {
     title: string;
@@ -239,6 +163,9 @@ export default function DomainBuilderPage() {
     };
   }, [isResizingLeft, isResizingRight]);
 
+  const handleAddMD = () => {
+    mdFileInputRef.current?.click()
+  }
   // Panel drag handling
   const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, panel: 'left' | 'right') => {
     if ('button' in e && e.button !== 0) return;
@@ -303,6 +230,21 @@ export default function DomainBuilderPage() {
     document.addEventListener('contextmenu', onEnd, { capture: true });
   };
 
+  const handleExportLibrary = () => {
+    if (documents.length === 0) return;
+
+    // Create a JSON file from the documents
+    const dataStr = JSON.stringify(documents, null, 2);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+
+    // Create and trigger a download link
+    const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileName);
+    linkElement.click();
+  };
+
   const handleResponseChange = (response: string) => { setLastResponse(response) };
 
   const handleViewInMarkdown = (response: string) => {
@@ -363,13 +305,26 @@ export default function DomainBuilderPage() {
               </button>
             </div>
           </div>
-          <DocumentPanel
-            mdContent={mdContent}
-            setMdContent={setMdContent}
-            setIsLibraryOpen={setIsLibraryOpen}
-            isLibraryOpen={isLibraryOpen}
-            panelType='left'
-          />
+          {(mdContent && mdContent.length > 0)
+            ?
+            <DocumentPanel
+              mdContent={mdContent}
+              setMdContent={setMdContent}
+              setIsLibraryOpen={setIsLibraryOpen}
+              isLibraryOpen={isLibraryOpen}
+              panelType='left'
+            />
+            :
+            <>
+              <DocumentPanel
+                mdContent={``}
+                setMdContent={setMdContent}
+                setIsLibraryOpen={setIsLibraryOpen}
+                isLibraryOpen={isLibraryOpen}
+                panelType='left'
+              />
+            </>
+          }
         </div>
       )}
 
@@ -392,9 +347,9 @@ export default function DomainBuilderPage() {
         }}>
         <div className="flex justify-between items-center rounded-md bg-primary-foreground px-1 sm:px-1">
           <div className="flex flex-col flex-grow bg-background text-gray-100">
-            <Tabs defaultValue="chat" className="flex flex-col my-0">
+            <Tabs defaultValue="concept-builder" className="flex flex-col my-0 h-full">
               {/* Tab Navigation */}
-              <div className="flex items-center justify-between px-2">
+              <div className="flex items-center justify-between">
                 {/* Left Panel Button */}
                 <button
                   onClick={() => setShowLeftPanel(!showLeftPanel)}
@@ -408,11 +363,10 @@ export default function DomainBuilderPage() {
                     </svg>
                   </span>
                 </button>
-
                 {/* Tabs */}
-                <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
+                <TabsList className="grid grid-cols-5 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
                   <TabsTrigger value="chat" className="text-xs sm:text-sm mt-0">
-                    AI Domain Builder
+                    AI Ontology Builder
                     <span
                       onClick={() => setShowGuideModal(true)}
                       className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
@@ -421,38 +375,37 @@ export default function DomainBuilderPage() {
                       <HelpCircle className="h-3 w-3 ms-5" />
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="domain" className="text-xs sm:text-sm mt-0">
-                    Current Domain
-                    {/* <span
-                    onClick={() => setShowGuideModal(true)}
-                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                    title="Open Domain Builder guide"
-                  >
-                    <HelpCircle className="h-3 w-3 ms-5" />
-                  </span> */}
+                  <TabsTrigger value="concept-builder" className="text-xs sm:text-sm mt-0">
+                    Advanced Builder
+                    <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
+                      title="Open Concept Builder guide"
+                    >
+                      <HelpCircle className="h-3 w-3 ms-5" />
+                    </span>
                   </TabsTrigger>
                   <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">
-                    Current Model Suite
-                    {/* <span
-                    onClick={() => setShowGuideModal(true)}
-                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                    title="Open model guide"
-                  >
-                    <HelpCircle className="h-3 w-3 ms-5" />
-                  </span> */}
+                    Model
+                    <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
+                      title="Open model guide"
+                    >
+                      <HelpCircle className="h-3 w-3 ms-5" />
+                    </span>
                   </TabsTrigger>
-                  <TabsTrigger value="domain2" className="text-xs sm:text-sm mt-0">
-                    Domain Builder2
-                    {/* <span
-                    onClick={() => setShowGuideModal(true)}
-                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                    title="Open Domain Builder guide"
-                  >
-                    <HelpCircle className="h-3 w-3 ms-5" />
-                  </span> */}
+                  <TabsTrigger value="ontology" className="text-xs sm:text-sm mt-0">
+                    Ontology
+                    <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
+                      title="Open ontology guide"
+                    >
+                      <HelpCircle className="h-3 w-3 ms-5" />
+                    </span>
                   </TabsTrigger>
                 </TabsList>
-
                 {/* Right Panel Button */}
                 <button
                   onClick={() => setShowRightPanel(!showRightPanel)}
@@ -491,81 +444,98 @@ export default function DomainBuilderPage() {
                   />
                 </div>
               </TabsContent>
-              {/* Domain view */}
-              <TabsContent value="domain" className="flex-1 p-1 mt-1  h-[calc(100vh-8rem)]">
-                <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-
-                  <h5 className="text-gray-400 font-bold">Name</h5>
-                  <input
-                    type="text"
-                    defaultValue={domainData?.name}
-                    // onChange={(e) => dispatch(updateMetisInfo({
-                    //   name: e.target.value,
-                    //   description: ontologyData?.description
-                    // }))}
-                    className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full"
-                  />
-                  <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                  <textarea
-                    defaultValue={domainData?.description}
-                    // onChange={(e) => dispatch(updateMetisInfo({
-                    //   name: data.phData.metis.name,
-                    //   description: e.target.value
-                    // }))}
-                    className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
-                    rows={15}
-                  />
-                </div>
-              </TabsContent>
-              {/* Model */}
-              <TabsContent value="model" className="flex-1 px-1 mt-1 h-full">
-                <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
-                  <h2 className="text-xl font-bold mb-4">Model View</h2>
-                  <ModelComponent />
-                </div>
-              </TabsContent>
-              {/* Domain Builder */}
-              <TabsContent value="domain2" className="flex-1 px-1 mt-1 h-full">
-                <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
-                  <div className="flex overflow-hidden h-full">
-                    <DomainBuilder
-                      input={chatInput}
-                      setInput={setChatInput}
-                      mdContent={mdContent}
-                      setMdContent={setMdContent}
-                      setIsLibraryOpen={setIsLibraryOpen}
-                      isLibraryOpen={isLibraryOpen}
-                      mdPreview={mdPreview}
-                      setMdPreview={setMdPreview}
-                      onViewInMarkdown={(content) => setMdPreview(content)}
-                    />
+              <TabsContent value="concept-builder" className="flex-1 px-1 mt-1">
+                <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+                  <div className="flex overflow-hidden">
+                    <ConceptBuilder />
                   </div>
                 </div>
               </TabsContent>
 
-
+              <TabsContent value="model" className="flex-1 px-1 mt-1">
+                <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4">
+                  <h2 className="text-xl font-bold mb-4">Model View</h2>
+                  <ModelComponent />
+                </div>
+              </TabsContent>
+              <TabsContent value="ontology" className="flex-1 p-1 m-1">
+                <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+                  <Card className="p-1 h-full">
+                    <Tabs value={activeTab} onValueChange={setActiveTab}>
+                      <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
+                        <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Ontology Concepts</TabsTrigger>
+                        <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Ontology Concepts</TabsTrigger>
+                      </TabsList>
+                      <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
+                        <div className="mx-1 bg-gray-700">
+                          {data.phData.ontology ? (
+                            <OntologyCard ontologyData={data.phData.ontology} />
+                          ) : (
+                            <div className="p-4 text-center text-gray-400">
+                              No existing ontology data available
+                            </div>
+                          )}
+                        </div>
+                      </TabsContent>
+                      <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
+                        <>
+                          <div className="flex justify-end pb-1 pt-0 mx-2">
+                            <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs hover:bg-blue-700">
+                              Show Prompt
+                            </button>
+                            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                              <DialogContent className="max-w-5xl">
+                                <DialogHeader>
+                                  <DialogDescription>
+                                    {printPromptsDiv}
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <DialogFooter>
+                                  <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                                    Close
+                                  </Button>
+                                </DialogFooter>
+                              </DialogContent>
+                            </Dialog>
+                          </div>
+                          <div className="mx-1 bg-gray-700">
+                            {ontologyDataList &&
+                              ontologyDataList.concepts &&
+                              ontologyDataList.concepts.length > 0 ? (
+                              <OntologyCard ontologyData={ontologyDataList} />
+                            ) : (
+                              <div className="p-4 text-center text-gray-400">
+                                {isLoading ? 'Generating suggestions...' : 'No suggested concepts available. Click the robot button to generate suggestions.'}
+                              </div>
+                            )}
+                          </div>
+                        </>
+                      </TabsContent>
+                    </Tabs>
+                  </Card>
+                </div>
+              </TabsContent>
             </Tabs>
           </div>
         </div>
       </div>
 
-      {/* Draggable Bar for Right Panel */}
-      {
-        showRightPanel && (
-          <div
-            className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize relative flex-shrink-0"
-            onMouseDown={(e) => handleMouseDown(e, 'right')}
-            onTouchStart={(e) => handleMouseDown(e, 'right')}
-            style={{ zIndex: 10, touchAction: 'none' }}
-          >
-            <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
-          </div>
-        )
-      }
 
-      {/* Right Panel: Markdown Preview ------------------------------------------------------------------------*/}
-      {
-        showRightPanel && (
+      {/* Draggable Bar for Right Panel */}
+      {showRightPanel && (
+        <div
+          className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize relative flex-shrink-0"
+          onMouseDown={(e) => handleMouseDown(e, 'right')}
+          onTouchStart={(e) => handleMouseDown(e, 'right')}
+          style={{ zIndex: 10, touchAction: 'none' }}
+        >
+          <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
+        </div>
+      )}
+
+      {/* Right Panel */}
+      {showRightPanel && (
+        <>
           <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
             style={{
               width: `${rightPanelWidth}px`,
@@ -591,85 +561,12 @@ export default function DomainBuilderPage() {
               panelType='right'
             />
           </div>
-        )
-      }
+        </>
+      )}
       {/* Add the modal at the end of the component */}
       < Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
         <GettingStartedGuide />
       </Modal >
-      <>
-        {/* Library Modal */}
-        {isLibraryOpen && (
-          <div
-            className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
-            onClick={() => setIsLibraryOpen(false)}
-          >
-            <div
-              className="bg-background rounded-lg p-4 w-[600px]"
-              onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                <div className="flex space-x-2">
-
-                  <button
-                    onClick={handleExportLibrary}
-                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                    disabled={documents.length === 0}
-                  >
-                    Export Library
-                  </button>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelection}
-                    accept=".json"
-                    style={{ display: 'none' }}
-                  />
-                  <button
-                    onClick={handleImportLibrary}
-                    className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                  >
-                    <span>Import Library</span>
-                  </button>
-                  <button
-                    onClick={() => setIsLibraryOpen(false)}
-                    className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
-                  >
-                    Close
-                  </button>
-                </div>
-              </div>
-              {/* Pass export functionality to library component */}
-              <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
-                <MarkdownLibrary
-                  onSelect={handleSelectFromLibrary}
-                  hideExportLibraryButton={true}
-                />
-              </div>
-            </div>
-          </div>
-        )}
-      </>
-
-    </div >
+    </div>
   );
 }
-
-// import DomainBuilder from "@/components/domain-builder/DomainBuilder";
-// import ModelComponent from "@/features/model-universe/components/ModelComponent";
-
-// export default function VercelAiPage() {
-
-//   return (
-//     <div className="flex flex-col w-full h-full overflow-hidden">
-//       {/* {chatOutput && <div className="chat-output">{chatOutput}</div>} */}
-//       <div className="flex flex-col ">
-//       <ModelComponent />
-//       <div className="flex overflow-hidden">
-//         <DomainBuilder />
-//       </div>
-//       </div>
-//     </div>
-//   );
-// }

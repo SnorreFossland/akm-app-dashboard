@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 
 export default function Home() {
-  redirect('/aichat-basis');
+  redirect('/ai-chat');
   return null;
 }
 // "use client";
@@ -212,7 +212,7 @@ export default function Home() {
 //       <div className="relative z-20 w-full h-full">
 //         {/* Apply explicit z-index to Header to ensure it's above everything */}
 //         <div className="relative z-30">
-//           <Header metisName={data.phData.metis.name} />
+//           <Header title={'Model'} value={data.phData.metis.name} />
 //         </div>
 
 //         <div className="my-2 md:my-5 py-1 md:py-5 px-1 md:px-4 w-full height-full flex flex-col items-center justify-center">

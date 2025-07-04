@@ -97,11 +97,11 @@ export async function GET(request: NextRequest) {
             }
 
             // Log the messages for debugging
-            console.log(`Processing ${messages.length} messages`);
-            if (messages.length > 0) {
-                console.log(`First message: ${messages[0].role} - ${messages[0].content?.substring(0, 50)}...`);
-                console.log(`Last message: ${messages[messages.length - 1].role} - ${messages[messages.length - 1].content?.substring(0, 50)}...`);
-            }
+            // console.log(`Processing ${messages.length} messages`);
+            // if (messages.length > 0) {
+            //     console.log(`First message: ${messages[0].role} - ${messages[0].content?.substring(0, 50)}...`);
+            //     console.log(`Last message: ${messages[messages.length - 1].role} - ${messages[messages.length - 1].content?.substring(0, 50)}...`);
+            // }
 
         } catch (error) {
             console.error('Error processing messages:', error);

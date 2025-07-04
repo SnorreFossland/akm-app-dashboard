@@ -6,6 +6,8 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar";
 import { PanelLeft } from 'lucide-react';
 
+import { AppHeader } from "@/components/AppHeader";
+
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap', // Controls loading behavior
@@ -37,7 +39,6 @@ export default async function RootLayout({
         {/* <meta name="next-size-adjust" content="true" /> */}
         {/* <meta name="viewport" content="width=device-width, initial-scale=1" /> */}
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.2"></meta>
-
       </head>
       <body className={`${inter.className}  overflow-auto bg-background text-foreground antialiased`}>
       {/* <body className={`${inter.className}  overflow-hidden bg-background text-foreground antialiased`}> */}
@@ -52,12 +53,7 @@ export default async function RootLayout({
             {/* <SidebarProvider defaultOpen={sidebarState?.value !== "false"}> */}
               <AppSidebar variant="inset"/>
               <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
-                {/* <div className="fixed top-0 left-0 z-50"> */}
-                  {/* <SidebarTrigger />
-                  {/* <SidebarTrigger>
-                    <PanelLeft className="h-4 w-2" />
-                  </SidebarTrigger> */}
-                {/* </div> */}
+                <AppHeader />
                 <div className="h-full rounded-md p-0">
                   {children}
                 </div>

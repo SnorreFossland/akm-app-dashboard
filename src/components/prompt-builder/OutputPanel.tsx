@@ -1,12 +1,10 @@
 'use client';
+'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { usePathname } from 'next/navigation';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-react';
 import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
-import { setDomainData } from '@/features/model-universe/modelSlice';
-
 
 interface DocumentPanelProps {
     mdContent: string;
@@ -22,7 +20,7 @@ interface DocumentPanelProps {
     panelType?: 'left' | 'right'; // Optional panel type for layout
 }
 
-export default function DocumentPanel({
+export default function OutputPanel({
     mdContent,
     setMdContent,
     onEdit = () => { },
@@ -40,7 +38,6 @@ export default function DocumentPanel({
     // console.log('DocumentPanel render - mdContent length:', mdContent?.length || 0);
 
     const dispatch = useDispatch();
-    const pathname = usePathname();
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(mdContent || '');
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -49,15 +46,14 @@ export default function DocumentPanel({
     const message = { content: mdContent || '' }; // Default message content
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
 
-    // useEffect(() => {
-    //     if (!mdContent) {
-    //         setIsEditing(true);
-    //     }
-    // }, []);
+    useEffect(() => {
+        if (!mdContent) {
+            setIsEditing(true);
+        }
+    }, []);
     // Update editContent when mdContent changes from parent
     useEffect(() => {
         setEditContent(mdContent || '');
-        console.log('60 DocumentPanel useEffect - mdContent updated:', mdContent?.substring(0, 100) || 'empty');
     }, [mdContent]);
 
     // Function to detect placeholders in the format [placeholder]
@@ -114,8 +110,7 @@ export default function DocumentPanel({
 
     const handleCancel = () => {
         // Don't clear mdContent when canceling, just reset editContent to original
-        // setEditContent(mdContent || '');
-        setEditContent('');
+        setEditContent(mdContent || '');
         setIsEditing(false);
     };
 
@@ -128,44 +123,26 @@ export default function DocumentPanel({
         // Save to library in Redux store
         const contentToSave = isEditing ? editContent : mdContent;
 
-        const firstLine = contentToSave.includes('Domain Name')
-            ? contentToSave.split('Domain Name:**')[1].split('\n')[0]?.trim() || ''
-            : (contentToSave.split('\n')[0] || 'Document');
-        const secondLine = contentToSave.includes('Domain Description')
-            ? contentToSave.split('Domain Description:**')[1].split('\n')[1]?.trim() || ''
-            : 'AIChat: Document';
+        const firstLine = 'AIChat: ' + (contentToSave.split('\n')[0] || 'AIChat: Document');
+        dispatch(saveMarkdownDocument({
+            id: Date.now().toString(),
+            name: firstLine,
+            content: contentToSave,
+            createdAt: new Date().toISOString()
+        }));
 
-        console.log('133 DocumentPanel handleSaveToLibrary - first:', firstLine, 'second:', secondLine, 'pathname:', pathname);
-
-        if (pathname === '/domain-builder') {
-            const domain = {
-                name: firstLine,
-                description: secondLine,
-                presentation: contentToSave,
-                prompt: '',
-                additionalContext: '',
-            }
-            console.log('141 DomainBuilderPage dispatching domain data:', domain);
-            dispatch(setDomainData({ ...domain }));
-        } else {
-            dispatch(saveMarkdownDocument({
-                id: Date.now().toString(),
-                name: firstLine,
-                type: 'markdown',
-                content: contentToSave,
-                createdAt: new Date().toISOString()
-            }));
-            onSaveToLibrary(contentToSave);
-        }
+        // Also call the prop callback for parent components
+        onSaveToLibrary(contentToSave);
     };
+
     const handleSave = () => {
         dispatch(saveMarkdownDocument({
             id: documentId || Date.now().toString(),
             name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
-            type: 'markdown',
             content: editContent,
             createdAt: new Date().toISOString()
         }));
+
         onSave(editContent);
         setIsEditing(false);
     };
@@ -180,16 +157,7 @@ export default function DocumentPanel({
 
     const getEmptyMessage = () => {
         if (panelType === 'left') {
-            return (
-                <span>
-                    No current context text. Click
-                    <Edit className="inline-block h-4 w-4 mx-1" />
-                    to start writing or paste text.
-                    Click
-                    <Library className="inline-block h-4 w-4 mx-1" />
-                    to load text from library.
-                </span>
-            );
+            return 'No response document. Click Edit to start writing or Library to load content.';
         }
         return 'No document selected!';
     };
@@ -295,48 +263,13 @@ export default function DocumentPanel({
                                 >
                                     <Save className="h-4 w-4" />
                                 </button>
-                                {isEditing ? (
-                                    <button
-                                        onClick={() => {
-                                            console.log('303 Applying changes:', editContent.substring(0, 100)); // Debug log
-                                            console.log('304 Before setMdContent - current mdContent:', mdContent?.substring(0, 100) || 'empty');
-                                            // Update parent component's state
-                                            setMdContent(editContent);
-                                            setIsEditing(false);
-                                            // Also call onSave to notify parent components
-                                            onSave(editContent);
-
-                                            console.log('After setMdContent - editContent applied:', editContent.substring(0, 100) || 'empty');
-                                        }}
-                                        className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
-                                        title="Apply changes"
-                                    >
-                                        <Check className="h-4 w-4" />
-                                    </button>
-                                ) : (
-                                    <button
-                                        onClick={() => {
-                                            setIsEditing(true);
-                                            onEdit();
-                                        }}
-                                        className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
-                                        title="Edit document"
-                                    >
-                                        <Edit className="h-4 w-4" />
-                                    </button>
-                                )}
-                                <button
-                                    onClick={() => {
-                                        setMdContent(''); // Clear content
-                                        setEditContent(''); // Clear edit content
-                                        // setIsEditing(false); // Exit editing mode
-                                        // onEdit(); // Call parent edit handler
-                                    }}
-                                    className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md"
-                                    title="Cancel editing"
+                                {/* <button
+                                    onClick={handleSaveToLibrary}
+                                    className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
+                                    title="Save to library"
                                 >
-                                    <X className="h-4 w-4" />
-                                </button>
+                                    <BookmarkPlus className="h-4 w-4" />
+                                </button> */}
                             </>
                         ) : (
                             <>
@@ -357,11 +290,13 @@ export default function DocumentPanel({
                                 {isEditing ? (
                                     <button
                                         onClick={() => {
-                                            console.log('303 Applying changes:', editContent.substring(0, 100)); // Debug log
-                                            console.log('304 Before setMdContent - current mdContent:', mdContent?.substring(0, 100) || 'empty');
+                                            console.log('Applying changes:', editContent.substring(0, 100)); // Debug log
+                                            console.log('Before setMdContent - current mdContent:', mdContent?.substring(0, 100) || 'empty');
+
                                             // Update parent component's state
                                             setMdContent(editContent);
                                             setIsEditing(false);
+
                                             // Also call onSave to notify parent components
                                             onSave(editContent);
 
@@ -374,10 +309,7 @@ export default function DocumentPanel({
                                     </button>
                                 ) : (
                                     <button
-                                        onClick={() => {
-                                            setIsEditing(true);
-                                            onEdit();
-                                        }}
+                                        onClick={() => setIsEditing(true)}
                                         className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
                                         title="Edit document"
                                     >
@@ -385,12 +317,7 @@ export default function DocumentPanel({
                                     </button>
                                 )}
                                 <button
-                                    onClick={() => {
-                                        setMdContent(''); // Clear content
-                                        setEditContent(''); // Clear edit content
-                                        setIsEditing(false); // Exit editing mode
-                                        onEdit(); // Call parent edit handler
-                                    }}
+                                    onClick={handleCancel}
                                     className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md"
                                     title="Cancel editing"
                                 >
@@ -480,3 +407,327 @@ export default function DocumentPanel({
         </div >
     );
 }
+
+
+// import React, { useState, useEffect, useRef } from 'react';
+// import { useDispatch, useSelector } from 'react-redux';
+// import { RootState } from '@/store/store';
+// import { Card, CardTitle } from '@/components/ui/card';
+// import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+// import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-react';
+// import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+// import { LoadingCircularProgress } from "@/components/loading";
+
+// import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
+// import { ObjectCard } from '@/components/object-card';
+// import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
+// import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
+
+// interface DocumentPanelProps {
+//     irtvPreview: string; // The preview content to display
+//     setIrtvPreview: (preview: string) => void; // Function to update
+//     irtvContent: Model | null; // The content to display and edit, can be a Model or undefined
+//     setIrtvContent: (content: Model | null) => void;
+//     onEdit?: () => void;
+//     onPaste?: () => void;
+//     onLibrary?: () => void;
+//     onSave?: (content: string) => void;
+//     onSaveToLibrary?: (content: string) => void;
+//     setIsLibraryOpen?: (isOpen: boolean) => void;
+//     isLibraryOpen?: boolean;
+//     documentId?: string; // Optional document ID for updates
+//     panelType?: 'left' | 'right'; // Optional panel type for layout
+// }
+
+// export default function DocumentPanel({
+//     irtvPreview,
+//     setIrtvPreview,
+//     irtvContent,
+//     setIrtvContent,
+//     onEdit = () => { },
+//     onPaste = () => { },
+//     onLibrary = () => { },
+//     onSave = () => { },
+//     onSaveToLibrary = () => { },
+//     documentId,
+//     setIsLibraryOpen = () => { },
+//     isLibraryOpen = false,
+//     panelType = 'left' // Default to 'left' panel type
+// }: DocumentPanelProps) {
+//     // Add debugging
+//     // console.log('DocumentPanel render - irtvContent:', irtvContent?.substring(0, 100) || 'empty');
+//     // console.log('DocumentPanel render - irtvContent length:', irtvContent?.length || 0);
+//     const data = useSelector((state: RootState) => state.modelUniverse);
+//     const dispatch = useDispatch();
+//     const [dispatchDone, setDispatchDone] = useState(false);
+//     const [isEditing, setIsEditing] = useState(false);
+//     const [editContent, setEditContent] = useState(irtvContent || '');
+//     const textareaRef = useRef<HTMLTextAreaElement>(null);
+//     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
+//     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
+//     const message = { content: irtvContent || '' }; // Default message content
+//     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
+//     const [activeTab, setActiveTab] = useState('current-knowledge');
+
+//     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
+//     // const [metis, setMetis] = useState<Metis | null >(null);
+//     const [currentModel, setCurrentModel] = useState<Model | null>(null);
+//     const [currentModelview, setCurrentModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
+//     const [model, setModel] = useState<Model>(currentModel ?? { id: '', name: '', description: '', objects: [], relships: [], metamodelRef: '', modelviews: [] });
+//     const [curmod, setCurmod] = useState<Model | null>(null);
+//     const [modelview, setModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(currentModelview ?? { id: '', name: '', description: '', objectviews: [], relshipviews: [] });
+
+
+//     useEffect(() => {
+//         if (!irtvContent) {
+//             setIsEditing(true);
+//         }
+//     }, []);
+//     // Update editContent when irtvContent changes from parent
+//     useEffect(() => {
+//         setEditContent(irtvContent || '');
+//     }, [irtvContent]);
+
+//     // Function to detect placeholders in the format [placeholder]
+//     useEffect(() => {
+//         if (!editContent) {
+//             setTemplatePlaceholders([]);
+//             return;
+//         }
+
+//         const placeholderRegex = /\[([^\[\]]+)\]/g;
+//         const placeholders: { text: string, start: number, end: number }[] = [];
+//         let match;
+
+//         while ((match = placeholderRegex.exec(editContent)) !== null) {
+//             placeholders.push({
+//                 text: match[1],
+//                 start: match.index,
+//                 end: match.index + match[0].length
+//             });
+//         }
+
+//         setTemplatePlaceholders(placeholders);
+//     }, [editContent]);
+
+
+//     // Add this function with your other handler functions
+//     const handleSaveToFile = (content: string) => {
+//         // Create a blob with the content
+//         const blob = new Blob([content], { type: 'text/markdown' });
+
+//         // Create a URL for the blob
+//         const url = URL.createObjectURL(blob);
+
+//         // Extract title from first line for filename
+//         const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+//         const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
+//         const fileName = `${cleanTitle || 'document'}.md`;
+
+//         // Create a temporary anchor element
+//         const a = document.createElement('a');
+//         a.href = url;
+//         a.download = fileName;
+
+//         // Trigger download
+//         document.body.appendChild(a);
+//         a.click();
+//         document.body.removeChild(a);
+//         URL.revokeObjectURL(url);
+
+//         // Show confirmation
+//         setStatusMsg(`Saved "${fileName}" to downloads`);
+//         setTimeout(() => setStatusMsg(''), 30000);
+//     };
+
+//     const handleCancel = () => {
+//         // Don't clear irtvContent when canceling, just reset editContent to original
+//         setEditContent(irtvContent || '');
+//         setIsEditing(false);
+//     };
+
+//     const handleEdit = () => {
+//         setIsEditing(true);
+//         onEdit();
+//     };
+
+//     const handleSaveToLibrary = () => {
+//         // Save to library in Redux store if irtvContent is not null
+//         if (irtvContent) {
+//             dispatch(setObjects(irtvContent.objects));
+//             dispatch(setRelationships(irtvContent.relships));
+//         }
+
+//         // Also call the prop callback for parent components
+//         // onSaveToLibrary(contentToSave);
+//     };
+
+//     const handleSave = () => {
+//         dispatch(saveMarkdownDocument({
+//             id: documentId || Date.now().toString(),
+//             name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
+//             content: editContent,
+//             createdAt: new Date().toISOString()
+//         }));
+
+//         onSave(editContent);
+//         setIsEditing(false);
+//     };
+
+//     // Define placeholders based on panel type
+//     const getPlaceholder = () => {
+//         if (panelType === 'left') {
+//             return 'Type, paste content, or load from library. This will be used as context for AI chat.';
+//         }
+//         return '' // 'Click Markdown Preview to view or edit your document.';
+//     };
+
+//     const getEmptyMessage = () => {
+//         if (panelType === 'left') {
+//             return 'No response document. Click Edit to start writing or Library to load content.';
+//         }
+//         return 'No document selected!';
+//     };
+
+//     // Function to select and jump to a placeholder
+//     const selectTemplatePlaceholder = (idx: number) => {
+//         if (!textareaRef.current) return;
+
+//         const placeholder = templatePlaceholders[idx];
+//         if (!placeholder) return;
+
+//         // Focus the textarea
+//         textareaRef.current.focus();
+
+//         // Set selection range to highlight the placeholder
+//         textareaRef.current.setSelectionRange(
+//             placeholder.start,
+//             placeholder.end
+//         );
+
+//         // Scroll the placeholder into view if needed
+//         const textarea = textareaRef.current;
+
+//         // Get character position information
+//         const charInfo = getCaretCoordinates(textarea, placeholder.start);
+
+//         // Calculate scroll position
+//         if (charInfo) {
+//             const scrollTop = textarea.scrollTop;
+//             const offsetTop = charInfo.top;
+//             const textareaHeight = textarea.clientHeight;
+
+//             // Adjust scroll if needed to ensure the placeholder is visible
+//             if (offsetTop < scrollTop || offsetTop > scrollTop + textareaHeight - 30) {
+//                 textarea.scrollTop = Math.max(0, offsetTop - textareaHeight / 2);
+//             }
+//         }
+//     };
+
+//     // Helper function to get caret coordinates in a textarea
+//     function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
+//         // Create a dummy element to measure text dimensions
+//         const div = document.createElement('div');
+//         // Copy styles that affect dimensions
+//         const styles = window.getComputedStyle(element);
+//         const props = [
+//             'fontFamily', 'fontSize', 'fontWeight', 'letterSpacing',
+//             'paddingLeft', 'paddingTop', 'paddingRight', 'paddingBottom',
+//             'width', 'lineHeight', 'textAlign', 'wordSpacing', 'whiteSpace'
+//         ];
+
+//         props.forEach(prop => {
+//             const value = styles[prop as keyof typeof styles];
+//             div.style[prop as any] = value !== null ? value.toString() : '';
+//         });
+
+//         // Set content up to the caret position
+//         div.textContent = element.value.substring(0, position);
+
+//         // Create a span where the caret would be
+//         const span = document.createElement('span');
+//         span.textContent = element.value.charAt(position) || '.';
+//         div.appendChild(span);
+
+//         // Position absolutely out of view
+//         div.style.position = 'absolute';
+//         div.style.visibility = 'hidden';
+//         document.body.appendChild(div);
+
+//         // Measure position
+//         const rect = span.getBoundingClientRect();
+//         const result = {
+//             top: rect.top - div.getBoundingClientRect().top,
+//             left: rect.left - div.getBoundingClientRect().left,
+//             height: rect.height
+//         };
+
+//         document.body.removeChild(div);
+//         return result;
+//     }
+//     const handleDispatchIrtvData = () => {
+//         console.log('69 HandleDispatch:', dispatchDone, modelview, model);
+//         if (!model && !modelview) {
+//             alert('No IRTV to dispatch');
+//             return;
+//         }
+//         const metamodRef = curMetamodel?.id;
+//         const curmod = data.phData.metis.models[0];
+//         console.log('75 Curmod:', curmod, model);
+
+//         const newMod = {
+//             ...curmod,
+//             ...(model || {})
+//         }
+//         console.log('82 NewMod:', newMod);
+//         setCurmod(newMod);
+//         dispatch(setNewModel(newMod));
+
+//         if (modelview) {
+//             const completeModelview = {
+//                 ...modelview,
+//                 id: modelview.id || crypto.randomUUID(),
+//                 name: modelview.name || 'Default View',
+//                 description: modelview.description || '',
+//                 modelRef: curmod?.id || '',
+//                 modified: false,
+//                 markedAsDeleted: false,
+//                 objectviews: modelview.objectviews || [],
+//                 relshipviews: modelview.relshipviews || []
+//             };
+//             dispatch(setNewModelview([completeModelview]));
+//         }
+
+//         setDispatchDone(true);
+//     };
+
+//     return (
+//         <div className="p-0 max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col h-full w-full">
+//             {/* <div className="flex items-center justify-between mb-2 px-1">
+//                 <div className="text-sm text-gray-400">Objects and Relships Preview</div>
+//             </div> */}
+//             <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto  max-w-full whitespace-pre-wrap break-words">
+//                 {data
+//                     ? <Card className="bg-transparent w-full h-full overflow-hidden">
+//                         <Tabs value={activeTab} onValueChange={setActiveTab}>
+//                             <TabsList className="bg-transparent">
+//                                 <TabsTrigger value="prompt" className='pb-2 mt-3'>Preview</TabsTrigger>
+//                             </TabsList>
+
+//                             <TabsContent value="prompt" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+//                                 <div className="mx-1 ">
+//                                     {irtvPreview && (
+//                                         <MarkdownPreview mdPreview={irtvPreview} />
+//                                     )}
+//                                 </div>
+//                             </TabsContent>
+//                         </Tabs>
+//                     </Card>
+//                     : <div className="flex justify-center items-center h-screen">
+//                         <LoadingCircularProgress />
+//                     </div>
+//                 }
+//             </div>
+//         </div >
+//     );
+// }

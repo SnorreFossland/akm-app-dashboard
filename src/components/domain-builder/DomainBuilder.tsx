@@ -13,12 +13,49 @@ import ReactMarkdown from "react-markdown";
 import { LoadingCircularProgress } from "@/components/loading";
 import { setDomainData } from "@/features/model-universe/modelSlice";
 
-export default function DomainBuilder() {
+const debug = false; // Set to true for debugging
+
+interface DomainBuilderProps {
+    input?: string;
+    setInput?: (input: string) => void;
+    selectedModel?: string;
+    mdContent?: string;
+    setMdContent?: (content: string) => void;
+    setIsLibraryOpen?: (isOpen: boolean) => void;
+    isLibraryOpen?: boolean;
+    mdPreview: string;
+    setMdPreview: (content: string) => void;
+    onViewInMarkdown: (content: string) => void;
+}
+
+export default function DomainBuilder({
+    input,
+    setInput,
+    mdContent,
+    setMdContent,
+    setIsLibraryOpen,
+    isLibraryOpen,
+    mdPreview,
+    setMdPreview,
+    onViewInMarkdown
+}: DomainBuilderProps = {
+        input,
+        setInput,
+        mdContent,
+        setMdContent,
+        setIsLibraryOpen,
+        isLibraryOpen,
+        mdPreview,
+        setMdPreview,
+        onViewInMarkdown
+    }) {
     const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
     const dispatch = useDispatch();
 
     // Add mounted state to prevent hydration mismatch
     const [mounted, setMounted] = useState(false);
+
+    const [messages, setMessages] = useState<Message[]>([]);
 
     // UI State
     const [activeTab, setActiveTab] = useState("instructions");
@@ -29,6 +66,8 @@ export default function DomainBuilder() {
     const [domainName, setDomainName] = useState(data?.phData?.domain?.name || "");
     const [domainDescription, setDomainDescription] = useState(data?.phData?.domain?.description || "");
     const [domainPresentation, setDomainPresentationState] = useState(data?.phData?.domain?.presentation || "");
+
+
 
     // Editing State
     const [editing, setEditing] = useState(true);
@@ -234,6 +273,9 @@ Looking ahead, we can expect...`
             prompt: editingPrompt ? promptText : (data?.phData?.domain?.prompt || ""),
             additionalContext: data?.phData?.domain?.additionalContext || ""
         };
+        if (!debug) {
+            console.log("Saving domain data:", domainData);
+        }
         setDispatchDone(false);
         dispatch(setDomainData(domainData));
         setDispatchDone(true);
@@ -304,6 +346,22 @@ Looking ahead, we can expect...`
                                     : "Generate Definition"
                             }
                         </Button>
+                        <button
+                            onClick={() => {
+                                console.log('Previewing message in markdown:', domainName, domainDescription, domainPresentation);
+                                onViewInMarkdown(domainPresentation);
+                                // Toggle preview state locally
+                                // if (previewMessageIndex === index) {
+                                //     setPreviewMessageIndex(null);
+                                // } else {
+                                //     setPreviewMessageIndex(index);
+                                // }
+                            }}
+                            className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                        >
+                            Show Markdown Preview
+                            {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
+                        </button>
                         <Button
                             onClick={saveDomainData}
                             className={`${data?.phData?.domain?.prompt?.trim()

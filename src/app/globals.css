@@ -349,3 +349,15 @@
     margin-top: 0 !important;
     margin-bottom: 0 !important;
 }
+
+[data-state="inactive"] {
+    border-top: 1px solid rgba(107, 114, 128, 0.6) !important;
+    border-left: 1px solid rgba(107, 114, 128, 0.6) !important;
+    border-right: 1px solid rgba(107, 114, 128, 0.6) !important;
+}
+
+[data-state="active"] {
+    border-top: 1px solid rgba(107, 114, 128, 0.7) !important;
+    border-left: 1px solid rgba(107, 114, 128, 0.7) !important;
+    border-right: 1px solid rgba(107, 114, 128, 0.7) !important;
+}

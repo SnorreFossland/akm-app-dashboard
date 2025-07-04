@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
 import TextareaAutosize from 'react-textarea-autosize';
-import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
+import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
 interface TemplatesPanelProps {
     onApplyTemplate: (content: string) => void;
     selectedModel: string; // Add selectedModel to props
@@ -126,7 +126,7 @@ export default function TemplatesPanel({
                     });
                 }
             }
-            
+
             // Update domain placeholders 
             setTemplatePlaceholders(domainPlaceholders);
         }
@@ -162,7 +162,7 @@ export default function TemplatesPanel({
                     });
                 }
             }
-            
+
             // Update template placeholders
             setPlaceholders(placeholders);
         }
@@ -591,7 +591,7 @@ Now, refine the following user input into an exceptional prompt:
     };
 
     return (
-        <div className="flex flex-col gap-2 overflow-y-auto bg-secondary text-gray-100 shadow-lg h-[calc(100vh-9rem)]"> 
+        <div className="flex flex-col gap-2 overflow-y-auto bg-secondary text-gray-100 shadow-lg h-[calc(100vh-9rem)]">
             <div className={`h-full border border-gray-400 p-3 rounded-md`}>
                 <div className="flex justify-between items-center mb-2 ">
                     <h2 className="text-secondary-foreground text-lg font-bold">1. What topic would you like to make a prompt about ? </h2>
@@ -728,141 +728,141 @@ Now, refine the following user input into an exceptional prompt:
                 )}
             </div>
             {/* Template Selection Section */}
-            { (false) &&
-            <div className="flex flex-col gap-2 border border-gray-400 rounded h-[60%]">
-                <div className="shadow-lg overflow-y-auto">
-                    <div className="flex justify-between items-center p-2 bg-secondary text-secondary-foreground">
-                        <h2 className="text-secondary-foreground font-bold">2. Select Report Templates</h2>
-                        <button
-                            onClick={() => { setIsTemplatesOpen(!isTemplatesOpen) }}
-                            className={`${buttonOutline} text-sm text-foreground bg-background hover:bg-secondary/80`}
-                        >
-                            {isTemplatesOpen ? '▲' : '▼'}
-                        </button>
-                    </div>
-                    {isTemplatesOpen && (
-                        <div className="flex-1 flex flex-col gap-2 h-[60%]">
-                            <div className="flex bg-secondary text-secondary-foreground px-2 rounded-md mb-4">
-                                <label htmlFor="category" className="block me-2 text-sm font-medium whitespace-nowrap">Filter by Category:</label>
-                                <select
-                                    id="category"
-                                    value={selectedCategory}
-                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                    className="w-full px-2 border border-gray-600 rounded-md bg-secondary text-secondary-foreground"
-                                >
-                                    {CATEGORIES.map((category, index) => (
-                                        <option key={index} value={category}>
-                                            {category}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-                            {/* Template Selection Section */}
-                            <div className="flex " id="templates-container">
-                                {/* Business Templates Column */}
-                                <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground">
-                                    <h3 className="text-xs font-semibold text-center">Business</h3>
-                                    <div className="flex flex-col gap-1  h-[24vh] min-h-[10px] max-h-[40vh]  always-scrollbar">
-                                        {/* Business templates will be rendered here */}
-                                        {filteredTemplates.map((template) => (
-                                            <button
-                                                key={template.title}
-                                                onClick={() => handleTemplateSelect(template)}
-                                                className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplateKey === template.title
-                                                    ? 'bg-blue-600 text-white'
-                                                    : 'bg-gray-700 text-gray-100'
-                                                    }`}
-                                            >
-                                                {template.title}
-                                            </button>
+            {(false) &&
+                <div className="flex flex-col gap-2 border border-gray-400 rounded h-[60%]">
+                    <div className="shadow-lg overflow-y-auto">
+                        <div className="flex justify-between items-center p-2 bg-secondary text-secondary-foreground">
+                            <h2 className="text-secondary-foreground font-bold">2. Select Report Templates</h2>
+                            <button
+                                onClick={() => { setIsTemplatesOpen(!isTemplatesOpen) }}
+                                className={`${buttonOutline} text-sm text-foreground bg-background hover:bg-secondary/80`}
+                            >
+                                {isTemplatesOpen ? '▲' : '▼'}
+                            </button>
+                        </div>
+                        {isTemplatesOpen && (
+                            <div className="flex-1 flex flex-col gap-2 h-[60%]">
+                                <div className="flex bg-secondary text-secondary-foreground px-2 rounded-md mb-4">
+                                    <label htmlFor="category" className="block me-2 text-sm font-medium whitespace-nowrap">Filter by Category:</label>
+                                    <select
+                                        id="category"
+                                        value={selectedCategory}
+                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                        className="w-full px-2 border border-gray-600 rounded-md bg-secondary text-secondary-foreground"
+                                    >
+                                        {CATEGORIES.map((category, index) => (
+                                            <option key={index} value={category}>
+                                                {category}
+                                            </option>
                                         ))}
-                                    </div>
+                                    </select>
                                 </div>
+                                {/* Template Selection Section */}
+                                <div className="flex " id="templates-container">
+                                    {/* Business Templates Column */}
+                                    <div className="w-1/2 pr-2 bg-secondary text-secondary-foreground">
+                                        <h3 className="text-xs font-semibold text-center">Business</h3>
+                                        <div className="flex flex-col gap-1  h-[24vh] min-h-[10px] max-h-[40vh]  always-scrollbar">
+                                            {/* Business templates will be rendered here */}
+                                            {filteredTemplates.map((template) => (
+                                                <button
+                                                    key={template.title}
+                                                    onClick={() => handleTemplateSelect(template)}
+                                                    className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplateKey === template.title
+                                                        ? 'bg-blue-600 text-white'
+                                                        : 'bg-gray-700 text-gray-100'
+                                                        }`}
+                                                >
+                                                    {template.title}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
 
-                                {/* Personal Templates Column */}
-                                <div className="w-1/2 pl-2 bg-secondary text-secondary-foreground ">
-                                    <h3 className="text-xs font-semibold text-center">Personal</h3>
-                                    <div className="flex flex-col gap-2 h-[24vh] min-h-[10px] max-h-[40vh] overflow-y-auto">
-                                        {filteredTemplates
-                                            .filter(template => template.usage === "Personal")
-                                            .map((template, index) => {
-                                                const actualIndex = filteredTemplates.findIndex(t => t === template);
-                                                return (
-                                                    <button
-                                                        key={actualIndex}
-                                                        onClick={() => handleTemplateSelect(filteredTemplates[actualIndex])}
-                                                        className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
-                                                            ? 'bg-blue-600 text-white'
-                                                            : 'bg-gray-700 text-gray-300'
-                                                            }`}
-                                                    >
-                                                        {template.title}
-                                                    </button>
-                                                );
-                                            })}
+                                    {/* Personal Templates Column */}
+                                    <div className="w-1/2 pl-2 bg-secondary text-secondary-foreground ">
+                                        <h3 className="text-xs font-semibold text-center">Personal</h3>
+                                        <div className="flex flex-col gap-2 h-[24vh] min-h-[10px] max-h-[40vh] overflow-y-auto">
+                                            {filteredTemplates
+                                                .filter(template => template.usage === "Personal")
+                                                .map((template, index) => {
+                                                    const actualIndex = filteredTemplates.findIndex(t => t === template);
+                                                    return (
+                                                        <button
+                                                            key={actualIndex}
+                                                            onClick={() => handleTemplateSelect(filteredTemplates[actualIndex])}
+                                                            className={`w-full p-1 rounded-md bg-popover text-secondary-foreground ${selectedTemplate === actualIndex
+                                                                ? 'bg-blue-600 text-white'
+                                                                : 'bg-gray-700 text-gray-300'
+                                                                }`}
+                                                        >
+                                                            {template.title}
+                                                        </button>
+                                                    );
+                                                })}
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
-                    )}
-                </div>
-                {/* Editable Content Section */}
-                <div className="flex flex-col gap-2 p-2 bg-secondary text-gray-100 shadow-lg overflow-y-auto">
-                    {/* Custom Template Section */}
-                    <h3 className="text-md font-semibold ml-1 bg-secondary text-secondary-foreground">
-                        {selectedTemplate === null
-                            ? 'Template Prompt'
-                            : selectedTemplate === PROMPT_TEMPLATES.length - 1
-                                ? 'Custom Template'
-                                : 'Prompt for: ' + filteredTemplates[selectedTemplate]?.title}
-                    </h3>
+                        )}
+                    </div>
+                    {/* Editable Content Section */}
+                    <div className="flex flex-col gap-2 p-2 bg-secondary text-gray-100 shadow-lg overflow-y-auto">
+                        {/* Custom Template Section */}
+                        <h3 className="text-md font-semibold ml-1 bg-secondary text-secondary-foreground">
+                            {selectedTemplate === null
+                                ? 'Template Prompt'
+                                : selectedTemplate === PROMPT_TEMPLATES.length - 1
+                                    ? 'Custom Template'
+                                    : 'Prompt for: ' + filteredTemplates[selectedTemplate]?.title}
+                        </h3>
 
-                    {/* Add placeholder jump buttons */}
-                    {placeholders.length > 0 && (
-                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                            {placeholders.map((placeholder, idx) => (
-                                <button
-                                    key={idx}
-                                    onClick={() => selectTemplatePlaceholder(idx)}
-                                    className={buttonAccent}
-                                >
-                                    {placeholder.text.length > 100
-                                        ? `${placeholder.text.substring(0, 99)}...`
-                                        : placeholder.text}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                    <TextareaAutosize
-                        ref={editableTextareaRef}
-                        value={editableContent}
-                        onChange={(e) => setEditableContent(e.target.value)}
-                        onKeyDown={handleKeyDown}
-                        minRows={5}
-                        maxRows={30}
-                        className="w-full p-2 border border-gray-600 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground text-base"
-                        placeholder="You can edit the content here before inserting..."
-                        id="editable-content-textarea"
-                    />
-                    <div className="flex items-center justify-end gap-4">
-                        <button
-                            title="Insert Prompt with Context into Chat"
-                            onClick={handleInsertTemplate}
-                            className={`${buttonOutline} hover:bg-blue-700 text-white rounded-full w-120 h-12 px-5 flex items-center justify-center shadow-lg text-2xl relative group`}
-                            aria-label="Insert Prompt with Context into Chat    "
-                            type="button"
-                        >
-                            <div className="flex gap-2 text-sm text-gray-300">
-                                Insert this prompt into chat
+                        {/* Add placeholder jump buttons */}
+                        {placeholders.length > 0 && (
+                            <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                                <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                                {placeholders.map((placeholder, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => selectTemplatePlaceholder(idx)}
+                                        className={buttonAccent}
+                                    >
+                                        {placeholder.text.length > 100
+                                            ? `${placeholder.text.substring(0, 99)}...`
+                                            : placeholder.text}
+                                    </button>
+                                ))}
                             </div>
-                            <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                            </svg>
-                        </button>
+                        )}
+                        <TextareaAutosize
+                            ref={editableTextareaRef}
+                            value={editableContent}
+                            onChange={(e) => setEditableContent(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            minRows={5}
+                            maxRows={30}
+                            className="w-full p-2 border border-gray-600 rounded-md bg-background text-gray-100 bg-popover text-secondary-foreground text-base"
+                            placeholder="You can edit the content here before inserting..."
+                            id="editable-content-textarea"
+                        />
+                        <div className="flex items-center justify-end gap-4">
+                            <button
+                                title="Insert Prompt with Context into Chat"
+                                onClick={handleInsertTemplate}
+                                className={`${buttonOutline} hover:bg-blue-700 text-white rounded-full w-120 h-12 px-5 flex items-center justify-center shadow-lg text-2xl relative group`}
+                                aria-label="Insert Prompt with Context into Chat    "
+                                type="button"
+                            >
+                                <div className="flex gap-2 text-sm text-gray-300">
+                                    Insert this prompt into chat
+                                </div>
+                                <svg xmlns="http://www.w3.org/2000/svg" className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
-            </div>
             }
             {/* Library Modal */}
             {isLibraryOpen && (

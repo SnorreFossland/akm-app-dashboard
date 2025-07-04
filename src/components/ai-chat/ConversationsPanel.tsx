@@ -5,6 +5,8 @@ export interface ConversationsPanelProps {
     onSelectConversation: (conversation: any) => void;
     onDeleteConversation: (id: string) => void;
     onSaveConversation: () => void;
+    onViewInMarkdown: (content: string) => void;
+    mdPreview: string;
     currentMessages?: any[];
 }
 
@@ -13,10 +15,14 @@ const ConversationsPanel: React.FC<ConversationsPanelProps> = ({
     onSelectConversation,
     onDeleteConversation,
     onSaveConversation,
+    onViewInMarkdown,
+    mdPreview,
     currentMessages = []
 }) => {
     const [selectedId, setSelectedId] = useState<string | null>(null);
     const [copiedMsgId, setCopiedMsgId] = useState<string | null>(null);
+
+    const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
 
     const handleSelectConversation = (conversation: any) => {
         // Toggle selected state - if clicking the same conversation, close it
@@ -88,26 +94,49 @@ const ConversationsPanel: React.FC<ConversationsPanelProps> = ({
 
                                 {/* Show messages directly under the selected conversation */}
                                 {selectedId === conversation.id && (
-                                    <div className="mb-4 ml-4 mr-2 border-l-2 border-blue-500 pl-3">
+                                    <div className="h-[calc(100vh-22rem)] ml-4 mr-2 border-l-2 border-blue-500 pl-3 overflow-y-auto">
                                         <h4 className="text-sm font-medium mb-2">Messages</h4>
-                                        <div className="rounded bg-gray-900 p-2 max-h-64 overflow-y-auto">
+                                        <div className="rounded bg-gray-900 p-2 overflow-y-auto">
                                             {conversation.messages?.map((message: any, index: number) => {
                                                 const messageId = `${conversation.id}-${index}`;
                                                 return (
                                                     <div key={index} className={`mb-2 p-2 rounded ${message.role === 'user' ? 'bg-gray-800' : 'bg-gray-700'}`}>
                                                         <div className="flex justify-between items-center mb-1">
                                                             <div className="text-xs font-bold">
-                                                                {message.role === 'user' ? 'You' : 'AI'}
+                                                                {message.role === 'user' ? 'You' : 'assistant'}
                                                             </div>
-                                                            <button
-                                                                onClick={() => handleCopyMessage(message.content, messageId)}
-                                                                className="text-xs bg-gray-600 hover:bg-gray-500 px-2 py-0.5 rounded"
-                                                                title="Copy message"
-                                                            >
-                                                                {copiedMsgId === messageId ? 'Copied!' : 'Copy'}
-                                                            </button>
+                                                            <div className="flex items-center gap-2">
+                                                                <button
+                                                                    onClick={() => handleCopyMessage(message.content, messageId)}
+                                                                    className="text-xs bg-gray-600 hover:bg-gray-500 px-2 py-0.5 rounded"
+                                                                    title="Copy message"
+                                                                >
+                                                                    {copiedMsgId === messageId ? 'Copied!' : 'Copy'}
+                                                                </button>
+                                                                {message.role === 'assistant' && (
+                                                                    <button
+                                                                        onClick={() => {
+                                                                            console.log('Previewing message in markdown:', message.content);
+                                                                            onViewInMarkdown(message.content);
+                                                                            // Toggle preview state locally
+                                                                            if (previewMessageIndex === index) {
+                                                                                setPreviewMessageIndex(null);
+                                                                            } else {
+                                                                                setPreviewMessageIndex(index);
+                                                                            }
+                                                                        }}
+                                                                        className={`${previewMessageIndex === index && 'text-gray-500'}  text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1 whitespace-nowrap px-2 py-0.5 rounded`}
+                                                                    >
+                                                                        Show Markdown Preview
+                                                                    </button>
+                                                                )}
+                                                            </div>
                                                         </div>
-                                                        <div className="text-sm">
+                                                        {/* message content */}
+                                                        <div
+                                                            className={`flex flex-col flex-1 p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
+                                                            style={{ overflowWrap: 'anywhere' }}
+                                                        >
                                                             {message.content}
                                                         </div>
                                                     </div>

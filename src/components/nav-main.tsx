@@ -47,7 +47,7 @@ export function NavMain({
   return (
     <ul className={cn("grid gap-0.5", className)}>
       <li>
-        <SidebarSearch results={searchResults} />
+        {/* <SidebarSearch results={searchResults} /> */}
       </li>
       {items.map((item) => (
         <Collapsible key={item.title} asChild defaultOpen={item.isActive}>

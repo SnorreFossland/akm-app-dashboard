@@ -14,8 +14,12 @@ export const store = configureStore({
     reducer: persistedReducer,
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
-            serializableCheck: {
+            // Disable the middleware that's causing performance issues in development
+            immutableCheck: process.env.NODE_ENV === 'production' ? true : false,
+            serializableCheck: process.env.NODE_ENV === 'production' ? true : {
                 ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+                // Increase the warning threshold or disable warnings
+                warnAfter: 128, // Increase from default 32ms to 128ms
             },
         }),
     devTools: process.env.NODE_ENV !== 'production', // Enable Redux DevTools in development

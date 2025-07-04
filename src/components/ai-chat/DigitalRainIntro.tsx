@@ -14,7 +14,7 @@ const DigitalRainIntro: React.FC<DigitalRainIntroProps> = ({
     backgroundColor = "rgba(10, 20, 10, 0.03)"
 }) => {
     return (
-        <div className=" ">
+        <div className="relative w-full h-[calc(100vh-20rem)] min-h-[400px]">
             <div className="absolute inset-0 z-20">
                 <DigitalRain
                     onInteraction={onInteraction}

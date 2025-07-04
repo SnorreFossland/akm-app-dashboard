@@ -16,6 +16,7 @@ import { RootState } from "@/store"; // Ensure you have the correct path to your
 
 import { systemPrompt, systemPromptExample } from '@/app/prompt-builder/prompts';
 import { callbackify } from "util";
+
 // import { json } from "stream/consumers";
 // import { set } from "zod";
 
@@ -38,7 +39,15 @@ interface DispatchCardTitleProps {
     extraClassName?: string;
 }
 
-export default function VercelAiPage() {
+interface PromptBuilderProps {
+    finalPrompt: string;
+    setFinalPrompt: React.Dispatch<React.SetStateAction<string>>;
+}
+
+const PromptBuilder: React.FC<PromptBuilderProps> = ({
+    finalPrompt,
+    setFinalPrompt,
+}) => {
 
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch();
@@ -50,6 +59,7 @@ export default function VercelAiPage() {
     const [isLoading, setIsLoading] = useState(false);
     const [activeTab, setActiveTab] = useState("introduction");
 
+
     // State for initial domain input
     const [domainInput, setDomainInput] = useState("");
     // State for clarifying questions returned by ChatGPT
@@ -59,9 +69,8 @@ export default function VercelAiPage() {
     // States for additional details and confirmation after clarification
     const [additionalDetails, setAdditionalDetails] = useState("");
     // New state to accumulate multiple rounds of additional details
-    const [collectedAdditionalDetails, setCollectedAdditionalDetails] = useState("");
-    // State for the final prompt
-    const [finalPrompt, setFinalPrompt] = useState("");
+    const [collectedAdditionalDetails, setCollectedAdditionalDetails] = useState("")
+
     // State for editing the existing prompt
     const [editedPrompt, setEditedPrompt] = useState("");
     // State for editing the final prompt
@@ -409,43 +418,27 @@ The assistant will provide structured responses with:
     };
 
     return (
-        <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-800 w-full bg-transparent">
-            <CardTitle className="flex justify-start items-center text-gray-400 text-xl">
-                {/* <span className="text-active-item me-auto px-2">Prompt Builder</span>
-                <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span> */}
-                <div className="flex items-center gap-2 ml-auto">
-                    <span className="text-sm">Model:</span>
-                    <select
-                        value={selectedModel}
-                        onChange={(e) => setSelectedModel(e.target.value)}
-                        className="bg-background text-white text-xs rounded p-1 border border-gray-700"
-                    >
-                        <option value="deepseek-coder">Deepseek Coder</option>
-                        <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                        <option value="mistral-large">Mistral Large</option>
-                        <option value="dummy">Dummy (Testing)</option>
-                    </select>
-                    {clarificationPrompt?.includes("Insufficient Balance") && (
-                        <span className="text-xs text-red-500">⚠️ Account balance issue</span>
-                    )}
-                </div>
-            </CardTitle>
-            <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden" ref={containerRef}>
-                <div className="p-1 border-solid rounded border-4 border-green-900 flex flex-col h-full max-w-3/4 self-start" style={{ width: `${dividerPosition}%` }}>
+        <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded  w-full bg-transparent">
+            <div className="flex h-[calc(100vh-8rem)] overflow-hidden" ref={containerRef}>
+                <div className="p-1 border-solid rounded border-1 border-green-900 flex flex-col h-full max-w-3/4 self-start" style={{ width: `${dividerPosition}%` }}>
                     {/* <h2 className="font-bold mb-2">Generate Perfect Domain Prompt:</h2> */}
-                    <div className="h-full w-full overflow-y-hidden">
+                    <div className="h-full overflow-y-hidden">
                         {(phase === "initial") && (
-                            <div className="p-1 w-full h-full flex flex-col">
-                                <div className="flex h-full w-full">
+                            <div className="p-1  h-full flex flex-col">
+                                <div className="flex h-full">
                                     {/* Chat welcome message */}
                                     <div className="flex flex-col flex-grow overflow-y-auto ">
-                                        <div className="bg-background rounded-lg px-4">
+                                        <div className="bg-background rounded-lg px-4 mb-2 py-3">
                                             <div className="flex items-center mb-1">
                                                 <FontAwesomeIcon icon={faRobot} className="mr-1 text-green-500 text-xs" />
                                                 <span className="font-medium text-green-400 text-sm">AI Assistant</span>
                                             </div>
-                                            <p className="text-white">Welcome! I&apos;m here to help you build the best prompt to ask for definition and description of a Subject or Domain. </p>
-                                            <p className="text-gray-400 text-sm mt-2">You start with Domain name or keywords for your domain, and the AI Assistant will ask you for more data input. The final Prompt will be used in next step to create this definition.</p></div>
+                                            <span className="text-white">Welcome! I&apos;m here to help you build the best prompt to ask for definition and description of a Subject or Domain. </span>
+                                            <p className="text-gray-400 text-sm mt-2">
+                                                You start with Domain name or keywords for your domain, and the AI Assistant will ask you for more data input.
+                                                The final Prompt will be used in next step to create this definition.
+                                            </p>
+                                        </div>
                                         {/* Chat input area */}
                                         <div className="border-t border-gray-700 rounded-lg mt-2 mb-auto py-2">
                                             <div className="flex justify-between items-center mb-1">
@@ -495,6 +488,25 @@ The assistant will provide structured responses with:
                                                         </div>
                                                     )}
                                                 </Button>
+                                <CardTitle className="flex justify-start items-center text-gray-400 text-xl">
+                                    {/* <span className="text-active-item me-auto px-2">Prompt Builder</span> <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span> */}
+                                    <div className="flex items-center gap-2 ml-auto">
+                                        <span className="text-sm">Model:</span>
+                                        <select
+                                            value={selectedModel}
+                                            onChange={(e) => setSelectedModel(e.target.value)}
+                                            className="bg-background text-white text-xs rounded p-1 border border-gray-700"
+                                        >
+                                            <option value="deepseek-coder">Deepseek Coder</option>
+                                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                            <option value="mistral-large">Mistral Large</option>
+                                            <option value="dummy">Dummy (Testing)</option>
+                                        </select>
+                                        {clarificationPrompt?.includes("Insufficient Balance") && (
+                                            <span className="text-xs text-red-500">⚠️ Account balance issue</span>
+                                        )}
+                                    </div>
+                                </CardTitle>
                                             </div>
                                         </div>
                                     </div>
@@ -705,7 +717,9 @@ The assistant will provide structured responses with:
                             </div>
                         )}
                     </div>
+                    
                 </div>
+                
                 {/* Draggable divider */}
                 {/* <div
                     className="cursor-col-resize w-1 bg-green-600 hover:bg-green-400 active:bg-green-300 h-full flex items-center justify-center"
@@ -717,6 +731,7 @@ The assistant will provide structured responses with:
         </div>
     );
 }
+export default PromptBuilder;
 
 
 

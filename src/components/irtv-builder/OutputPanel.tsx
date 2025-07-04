@@ -8,7 +8,7 @@ import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-r
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingCircularProgress } from "@/components/loading";
 
-import { saveMarkdownDocument } from '@/redux/features/markdownSlice';
+import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
 import { ObjectCard } from '@/components/object-card';
 import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
@@ -298,71 +298,71 @@ export default function DocumentPanel({
             </div> */}
             <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto  max-w-full whitespace-pre-wrap break-words">
                 {/* <div className="h-full w-full"> */}
-                    {data
-                        ? <Card className="bg-transparent w-full h-full overflow-hidden">
-                            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                <TabsList className="bg-transparent">
-                                    <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Preview</TabsTrigger>
-                                    <TabsTrigger value="model" className='pb-2 mt-3'>Objects/Relationships</TabsTrigger>
-                                    <TabsTrigger value="modelview" className='pb-2 mt-3'>Modelview</TabsTrigger>
-                                </TabsList>
+                {data
+                    ? <Card className="bg-transparent w-full h-full overflow-hidden">
+                        <Tabs value={activeTab} onValueChange={setActiveTab}>
+                            <TabsList className="bg-transparent">
+                                <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Preview</TabsTrigger>
+                                <TabsTrigger value="model" className='pb-2 mt-3'>Objects/Relationships</TabsTrigger>
+                                <TabsTrigger value="modelview" className='pb-2 mt-3'>Modelview</TabsTrigger>
+                            </TabsList>
 
-                                <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                    <div className="mx-1 ">
-                                        {irtvPreview && (
-                                            <MarkdownPreview mdPreview={irtvPreview} />
-                                        )}
-                                    </div>
-                                </TabsContent>
+                            <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                                <div className="mx-1 ">
+                                    {irtvPreview && (
+                                        <MarkdownPreview mdPreview={irtvPreview} />
+                                    )}
+                                </div>
+                            </TabsContent>
 
-                                <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] ">
-                                    <div className="flex flex-col h-full w-full">
-                                        <button
-                                            title="Save to Library"
-                                            onClick={handleDispatchIrtvData}
-                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex flex-row-reverse items-center gap-1`}
-                                        >
-                                            <BookmarkPlus className="h-4 w-4" />
-                                        </button>
-                                        <div className="text-xs w-full">
-                                            <ObjectCard model={{
-                                                id: irtvContent?.id || crypto.randomUUID(),
-                                                name: irtvContent?.name || 'Generated Model',
-                                                description: irtvContent?.description || '',
-                                                objects: irtvContent?.objects?.map(obj => ({
-                                                    id: obj.id || crypto.randomUUID(),
-                                                    name: obj.name || '',
-                                                    description: obj.description || '',
-                                                    proposedType: obj.proposedType || '',
-                                                    typeRef: obj.typeRef || '',
-                                                    typeName: obj.typeName || '',
-                                                    category: obj.category || ''
-                                                })) || [],
-                                                relships: irtvContent?.relships || [],
-                                                metamodelRef: irtvContent?.metamodelRef || '',
-                                                modelviews: irtvContent?.modelviews || []
-                                            }} />
-                                        </div>
+                            <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] ">
+                                <div className="flex flex-col h-full w-full">
+                                    <button
+                                        title="Save to Library"
+                                        onClick={handleDispatchIrtvData}
+                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex flex-row-reverse items-center gap-1`}
+                                    >
+                                        <BookmarkPlus className="h-4 w-4" />
+                                    </button>
+                                    <div className="text-xs w-full">
+                                        <ObjectCard model={{
+                                            id: irtvContent?.id || crypto.randomUUID(),
+                                            name: irtvContent?.name || 'Generated Model',
+                                            description: irtvContent?.description || '',
+                                            objects: irtvContent?.objects?.map(obj => ({
+                                                id: obj.id || crypto.randomUUID(),
+                                                name: obj.name || '',
+                                                description: obj.description || '',
+                                                proposedType: obj.proposedType || '',
+                                                typeRef: obj.typeRef || '',
+                                                typeName: obj.typeName || '',
+                                                category: obj.category || ''
+                                            })) || [],
+                                            relships: irtvContent?.relships || [],
+                                            metamodelRef: irtvContent?.metamodelRef || '',
+                                            modelviews: irtvContent?.modelviews || []
+                                        }} />
                                     </div>
-                                </TabsContent>
+                                </div>
+                            </TabsContent>
 
-                                <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                    <div className="mx-1 ">
-                                        {modelview && <ModelviewCard modelviews={[{
-                                            // Use type assertion to match what ModelviewCard expects
-                                            name: modelview.name || 'Default View',
-                                            description: modelview.description || '',
-                                            objectviews: modelview.objectviews || [],
-                                            relshipviews: modelview.relshipviews || []
-                                        } as any]} />}
-                                    </div>
-                                </TabsContent>
-                            </Tabs>
-                        </Card>
-                        : <div className="flex justify-center items-center h-screen">
-                            <LoadingCircularProgress />
-                        </div>
-                    }
+                            <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                                <div className="mx-1 ">
+                                    {modelview && <ModelviewCard modelviews={[{
+                                        // Use type assertion to match what ModelviewCard expects
+                                        name: modelview.name || 'Default View',
+                                        description: modelview.description || '',
+                                        objectviews: modelview.objectviews || [],
+                                        relshipviews: modelview.relshipviews || []
+                                    } as any]} />}
+                                </div>
+                            </TabsContent>
+                        </Tabs>
+                    </Card>
+                    : <div className="flex justify-center items-center h-screen">
+                        <LoadingCircularProgress />
+                    </div>
+                }
                 {/* </div> */}
             </div>
         </div >

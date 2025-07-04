@@ -46,6 +46,9 @@ type ModelView = {
 function ModelComponent() {
   const dispatch = useDispatch<AppDispatch>();
   const data = useSelector((state: RootState) => state.modelUniverse);
+  const prompt = useSelector((state: { prompt: any }) => data.phData.domain?.prompt);
+  const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
+
   const [currentOntology, setCurrentOntology] = useState<any>(data.phData?.ontology || null);
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [currentModelview, setCurrentModelview] = useState<ModelView | null>(null);
@@ -131,64 +134,9 @@ function ModelComponent() {
   // if (!metis || !currentModel || !currentModelview) return null;
 
   return (
-    <div className='model-universe-a-component w-fullflex flex-col'>
+    <div className='model-universe-a-component w-full flex flex-col'>
       {/* <Header metisName={data.phData.metis?.name} /> */}
       <div className="bg-background">
-        <div className="flex bg-background justify-left items-center">
-          <Header metisName={data.phSource} />
-          {/* <button
-            className="bg-gray-700 text-white rounded m-1 py-0.5 px-2 text-xs"
-            onClick={() => handleGetFile(dispatch, setFileStatus, setFileContent)} disabled={fileStatus === 'loading'}>
-            {fileStatus === 'loading' ? 'Loading...' : 'Load from GitHub'}
-          </button> */}
-          {/* <button
-            className="bg-gray-700 text-white rounded m-1 py-0.5 px-2 text-xs"
-            onClick={() => handleSaveToGithub(dispatch, data, setSaveStatus, setPullRequestUrl)} disabled={saveStatus === 'saving'}>
-            {saveStatus === 'saving' ? 'Saving...' : 'Save to GitHub'}
-          </button> */}
-            <button
-              className="bg-blue-800 dark:bg-blue-800 text-gray-100 dark:text-gray-100 border border-blue-700 rounded m-1 py-0 px-2 text-xs whitespace-nowrap hover:bg-blue-700 dark:hover:bg-blue-700"
-              onClick={() => {
-              if (fileInputRef.current) {
-                fileInputRef.current.click();
-              }
-              }}
-            >
-              Open Local File
-            </button>
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: 'none' }}
-            onChange={(e) => handleGetLocalFile(e, dispatch)}
-          />
-          <button
-            className="!bg-blue-800 !dark:bg-blue-900 text-gray-100 dark:text-gray-100 border border-blue-700 rounded m-1 py-0 px-2 text-xs whitespace-nowrap hover:bg-blue-700 dark:hover:bg-blue-700"
-            onClick={() => {
-              handleSaveToLocalFile(data);
-            }}
-          >
-            Save Local File
-          </button>
-          <button
-            className="bg-red-900 !dark:bg-blue-900 text-gray-100 dark:text-gray-100 border border-red-700 rounded m-1 py-0 px-2 text-xs whitespace-nowrap hover:bg-red-700 dark:hover:bg-red-700 hover:border-red-400"
-            onClick={() => {
-              dispatch(clearModel(currentModel));
-            }}
-          >
-            Clear Model
-          </button>
-          <button
-            className="bg-red-900 dark:bg-red-900 text-gray-100 dark:text-gray-100 border dark:border-red-700 rounded m-1 py-0 px-2 text-xs whitespace-nowrap hover:bg-red-700 dark:hover:bg-red-700 hover:border-red-400"
-            onClick={() => {
-              dispatch(clearStore());
-              handleGetDefaultFile({} as React.ChangeEvent<HTMLInputElement>, dispatch);
-            }}
-          >
-            Clear Store
-          </button>
-
-        </div>
         <div className="flex justify-between bg-gray-600 p-1">
           <div className=" px-1 bg-background">
             <label htmlFor="model-select" className="mx-1 font-bold text-gray-400 inline-block">Current Model:</label>
@@ -248,11 +196,11 @@ function ModelComponent() {
                   </TabsList>
 
                   <TabsContent value="domain-concepts" className="m-0 px-1 py-2 h-full rounded bg-background text-gray-200">
-                    {data && data.phData && data.phData.domain && (
+                    {domainData && (
                       <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                         {/* <h4 className="px-1 text-gray-400 font-bold">Concepts:</h4> */}
                         <div className=" ">
-                          <OntologyCard ontologyData={currentOntology} />
+                          <OntologyCard ontologyData={{ name: domainData.name, description: domainData.description, presentation: domainData.presentation, concepts: [], relationships: [] }} />
                         </div>
                       </div>
                     )}

@@ -509,7 +509,7 @@ const IRTVBuilderPage = () => {
                         {/* Middle Content */}
                         <div className="flex flex-col flex-grow bg-background text-gray-100 ">
                             <Tabs defaultValue="ai-irtv" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0">
-                          
+
                                 {/* Tab Structure with Left and Right buttons */}
                                 <div className="flex items-center justify-between">
                                     {/* Left Panel toggle button */}
@@ -529,10 +529,10 @@ const IRTVBuilderPage = () => {
                                     {/* <span className="self-center inline-block w-auto text-xs sm:text-sm ml-4 pt-1 text-blue-400">IRTV Builder:</span> */}
 
                                     {/* Tabs */}
-                                    <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-9 flex-1 mx-2">
+                                    <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
                                         <TabsTrigger
                                             value="ai-irtv"
-                                            className="data-[state=active]:bg-gray-800 data-[state=active]:text-white data-[state=active]:font-semibold data-[state=inactive]:text-gray-100 py-2 px-4"
+                                            className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                             title="AI Modelling Assistant"
                                         >                                          AI IRTV Modelling Assistant
                                             <span className="mx-1"></span>
@@ -546,33 +546,47 @@ const IRTVBuilderPage = () => {
                                         </TabsTrigger>
                                         <TabsTrigger
                                             value="current-domain"
-                                            className="data-[state=active]:b-card-forground data-[state=active]:text-white data-[state=active]:font-semibold data-[state=inactive]:text-gray-100 py-2 px-4"
-                                            title="Current Domain"                                
+                                            className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+
+                                            title="Current Domain"
                                         >
-                                            Domain: {currentDomain.name || 'Domain name'}
+                                            Domain: {currentDomain?.name || 'Domain name'}
                                             <span className="mx-1"></span>
-                                            <span
+                                            {/* <span
                                                 onClick={() => setShowGuideModal(true)}
                                                 className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
                                                 title="Open domain guide"
                                             >
                                                 <HelpCircle className="h-4 w-4" />
-                                            </span>
+                                            </span> */}
                                         </TabsTrigger>
                                         <TabsTrigger
                                             value="model"
-                                            className="data-[state=active]:bg-green-100 data-[state=active]:text-gray-600 data-[state=active]:font-semibold data-[state=inactive]:text-gray-100 py-3 px-4"
+                                            className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=active]:bg-green-100/90 data-[state=active]:text-gray-600 data-[state=inactive]:border-gray-600/30 relative z-20"
                                             title="Model Universe"
                                         >
                                             Model
                                             {/* <span className="mx-1">{model.name || 'Model name'}</span> */}
-                                            <span
+                                            {/* <span
                                                 onClick={() => setShowGuideModal(true)}
                                                 className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
                                                 title="Open Model guide"
                                             >
                                                 <HelpCircle className="h-4 w-4" />
-                                            </span>
+                                            </span> */}
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="saved-chat"
+                                            className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                                        >
+                                            Saved Chats
+                                            {/* <span
+                                                onClick={() => setShowGuideModal(true)}
+                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                                                title="Open guide"
+                                            >
+                                                <HelpCircle className="h-3 w-3 mx-2" />
+                                            </span> */}
                                         </TabsTrigger>
                                     </TabsList>
 
@@ -618,7 +632,7 @@ const IRTVBuilderPage = () => {
                                     </div>
                                 </TabsContent>
                                 {/* Model */}
-                                <TabsContent value="model" className="flex-1">
+                                <TabsContent value="model" className="flex-1 mt-1 overflow-hidden">
                                     <iframe
                                         style={{ height: "calc(100vh - 2.3rem)", width: "100%" }}
                                         ref={iframeRef}
@@ -628,6 +642,17 @@ const IRTVBuilderPage = () => {
                                         allow="clipboard-read; clipboard-write"
                                         sandbox="allow-same-origin allow-scripts"
                                     />
+                                </TabsContent>
+                                <TabsContent value="saved-chat" className="flex-1 px-1 mt-1">
+                                    <div className="p-2">
+                                        <ConversationsPanel
+                                            conversations={conversations}
+                                            onSelectConversation={handleSelectConversation}
+                                            onDeleteConversation={handleDeleteConversation}
+                                            onSaveConversation={handleSaveCurrentConversation}
+                                            currentMessages={currentMessages} // Pass this prop to enable/disable save button
+                                        />
+                                    </div>
                                 </TabsContent>
                             </Tabs>
                         </div>

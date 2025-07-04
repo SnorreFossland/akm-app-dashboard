@@ -15,7 +15,7 @@ const GettingStartedGuide: React.FC = () => {
                                     <div className='ms-2'>Type or paste your question in the provided input area below.</div>
                                     <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
                                         <li>Click the <span className="text-blue-200">Send ↑</span> button to submit your question.</li>
-                                        <li>Alternatively, you can press the <span className="text-blue-200">Enter</span> key 2 times quickly to send your question.</li>
+                                        <li>Alternatively, you can quickly press the <span className="text-blue-200">Enter</span> key 2 times to send your question.</li>
                                     </ul>
                                 </div>
 
@@ -24,8 +24,17 @@ const GettingStartedGuide: React.FC = () => {
                                     <div className='ms-2'>Select a prompt template from the dropdown menu above the upper right corner of the input area.</div>
                                     <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
                                         <li>You can type or paste additional text under the template text.</li>
-                                        <li>You can add text in the left panel as <span className="text-blue-200">Document Context.</span>This text will be used as context for the prompt.</li>
-                                        <li>You can also click <FileText className="inline w-4 h-4 mr-1" /> to add a local text-file to use as context for your prompt.</li>
+                                        <li>
+                                            <span className="inline-flex items-center">
+                                                Open the left panel (Click on the upperleft icon  
+                                                <svg className="mx-1 inline-block" width="12" height="12" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                    <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                </svg>
+                                            </span> to access the left panel.)
+                                            You can add text in the <span className="text-blue-200">Current Context.</span>This text will be used as context for the prompt.
+                                        </li>
+                                        <li>You can also click <FileText className="inline w-4 h-4 mr-1" /> below, to add a local text-file to use as context for your prompt.</li>
                                     </ul>
                                 </div>
 
@@ -81,13 +90,7 @@ const GettingStartedGuide: React.FC = () => {
                                 </p>
                             </div>
                             <div className="p-3 border border-gray-700 rounded-lg">
-                                <h3 className="font-medium text-secondary-foreground/70">5. View a document</h3>
-                                <p className="text-secondary-foreground/70">
-                                    Click the <Library className="inline w-4 h-4 mr-1" /> button and then click on a document to view its details.
-                                </p>
-                            </div>
-                            <div className="p-3 border border-gray-700 rounded-lg">
-                                <h3 className="font-medium text-secondary-foreground/70">6. Import a Document from local file</h3>
+                                <h3 className="font-medium text-secondary-foreground/70">5. Import a Document from local file</h3>
                                 <p className="text-secondary-foreground/70">
                                     Click the <Library className="inline w-4 h-4 mr-1" /> button and then &quot;Import File&quot; to import a document from your local device.
                                 </p>

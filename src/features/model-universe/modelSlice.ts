@@ -5,8 +5,8 @@ import { fetchModelDataFromGitHub, saveModelDataToGitHub } from './modelAPI';
 interface DomainData {
   name: string;
   description: string;
-  prompt: string;
   presentation: string;
+  prompt: string;
   additionalContext?: string; // Make this optional since it's a new field
 }
 
@@ -129,6 +129,10 @@ export interface Model {
 }
 
 export const initialState: DataType = { phData: { metis: { name: '', description: '', models: [], metamodels: [] }, domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' }, ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] } }, phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } }, phUser: { id: '', name: '', email: '' }, phSource: '', status: 'idle', error: null };
+
+
+
+
 //   phData: {
 //     metis: {
 //       name: 'AKMM Blank',

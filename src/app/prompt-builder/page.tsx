@@ -1,25 +1,24 @@
 "use client";
 import { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/store";
-import { Card, CardTitle } from "@/components/ui/card";
-import { faRobot, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
-import { SizeProp } from "@fortawesome/fontawesome-svg-core";
-import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import ReactMarkdown from "react-markdown";
+import { SizeProp } from "@fortawesome/fontawesome-svg-core";
+import { RootState } from "@/store";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
 import PromptBuilder from "@/components/prompt-builder/PromptBuilder";
-import ModelComponent from "@/features/model-universe/components/ModelComponent";
+import PromptComponent from "@/components/prompt-builder/PromptComponent";
 import DraggableBar from "@/components/ui/DraggableBar";
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import { saveMarkdownDocument } from "@/redux/features/markdownSlice";
-import { LoadingCircularProgress } from "@/components/loading";
-import { setDomainData, deleteDomainPrompt } from "@/features/model-universe/modelSlice";
+import { saveMarkdownDocument } from "@/features/documents/markdownSlice";
+import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
+import TemplatesPanel from '@/components/ai-chat/PromptRefinementPanel';
+import ChatComponent from '@/components/ai-chat/ChatComponent';
+import GettingStartedGuide from '@/components/prompt-builder/GettingStartedGuide';
 
-import { faEdit, faPaperPlane, faTrash, faLink } from "@fortawesome/free-solid-svg-icons";
+
 
 interface IconButtonProps {
   onClick: () => void;
@@ -41,19 +40,23 @@ interface DispatchCardTitleProps {
 }
 
 export default function VercelAiPage() {
-  const data = useSelector((state: RootState) => state.modelUniverse);
   const dispatch = useDispatch();
-  const [middlePanelWidth, setMiddlePanelWidth] = useState(600);
-  const [showLeftPanel, setShowLeftPanel] = useState(true);
-  const [showRightPanel, setShowRightPanel] = useState(true);
+  const data = useSelector((state: RootState) => state.modelUniverse);
+
+  const [input, setInput] = useState<string>("");
+  const [chatInput, setChatInput] = useState('');
+  const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
+
+  const promptData = useSelector((state: RootState) => state.prompt.documents);
+  const [currentDomain, setCurrentDomain] = useState<any>(data.phData?.domain || null);
+  const [currentPrompt, setCurrentPrompt] = useState<string>(promptData.length > 0 ? promptData[0].content : '');
+  const [showLeftPanel, setShowLeftPanel] = useState(false);
+  const [showRightPanel, setShowRightPanel] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState(360);
   const [rightPanelWidth, setRightPanelWidth] = useState(360); // Initial width
-  const [activeTab, setActiveTab] = useState("introduction");
-  const [editedPrompt, setEditedPrompt] = useState<string>('')
-  const [phase, setPhase] = useState("initial");
-  const [dispatchDone, setDispatchDone] = useState(true);
-  const [isLoading, setIsLoading] = useState(false);
-  const [domainInput, setDomainInput] = useState<string>('');
+  // const [leftPanelContent, setLeftPanelContent] = useState(''); // Default to 'document' content
+  const [activeTab, setActiveTab] = useState("chat");
+  const [editableContent, setEditableContent] = useState('');
 
   const documents = useSelector((state: RootState) => state.markdown.documents);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -61,12 +64,31 @@ export default function VercelAiPage() {
   const [docName, setDocName] = useState<string>('New Document');
   const mdFileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+
+  // New state variables for conversations
+  const [conversations, setConversations] = useState<any[]>([]);
+  const [currentMessages, setCurrentMessages] = useState<any[]>([]);
+
+
+  const [domainContent, setDomainContent] = useState('');
+  const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
+
+  const [showGuideModal, setShowGuideModal] = useState(false);
+  const [lastResponse, setLastResponse] = useState<string>('');
+  const [middlePanelWidth, setMiddlePanelWidth] = useState(600);
+  const [editedPrompt, setEditedPrompt] = useState<string>('')
+  const [phase, setPhase] = useState("initial");
+  const [dispatchDone, setDispatchDone] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
+  const [domainInput, setDomainInput] = useState<string>('');
+  const [promptPreview, setPromptPreview] = useState<string>('');
+  const [promptContent, setPromptContent] = useState<string>('');
   const [isEditing, setIsEditing] = useState(false);
   const [activeLeftTab, setActiveLeftTab] = useState<'document' | 'library'>('document');
   const [dividerPosition, setDividerPosition] = useState(10); // 40% default width for left panel
   const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement | null>(null);
-
+  const [windowWidth, setWindowWidth] = useState(800); // default fallback
 
   const IconButton: React.FC<IconButtonProps> = ({ onClick, icon, className = "", iconWidth = "26px", iconSize = "1x" as SizeProp }) => {
     return (
@@ -76,24 +98,9 @@ export default function VercelAiPage() {
     );
   };
 
-  const handleLeftResize = (newWidth: number) => {
-    setLeftPanelWidth(newWidth);
-  };
-
-  const handleMiddleResize = (newWidth: number) => {
-    setMiddlePanelWidth(newWidth);
-  };
-
-  const handleSelectFromLibrary = (content: string, name: string) => {
-    setMdContent(content);
-    setDocName(name);
-    setIsEditing(false);
-    setActiveLeftTab('document'); // Switch to document tab
-    setIsLibraryOpen(false); // Close the library modal after selection
-
-    console.log("Selected document from library:", { content, name });
-  };
-
+  const handleAddMD = () => {
+    mdFileInputRef.current?.click()
+  }
   const handleExportLibrary = () => {
     if (documents.length === 0) return;
 
@@ -132,6 +139,7 @@ export default function VercelAiPage() {
             dispatch(saveMarkdownDocument({
               id: doc.id || Date.now().toString(),
               name: doc.name,
+              type: "markdown",
               content: doc.content,
               createdAt: doc.createdAt || new Date().toISOString()
             }));
@@ -151,48 +159,155 @@ export default function VercelAiPage() {
     e.target.value = ''; // Reset the file input
   };
 
-  // Dispatch the edited prompt to the Redux store
-  const handleDispatchEditedPrompt = () => {
-    if (!editedPrompt.trim()) {
-      alert("No edited prompt available to dispatch.");
+  const handleSelectFromLibrary = (content: string, name: string) => {
+    setMdContent(content);
+    setDocName(name);
+    setIsEditing(false);
+    setActiveLeftTab('document'); // Switch to document tab
+    setIsLibraryOpen(false); // Close the library modal after selection
+
+    console.log("Selected document from library:", { content, name });
+  };
+
+  const handleLeftResize = (newWidth: number) => {
+    setLeftPanelWidth(newWidth);
+  };
+
+  const handleMiddleResize = (newWidth: number) => {
+
+
+    setMiddlePanelWidth(newWidth);
+  };
+
+  // Check device type on component mount'
+  useEffect(() => {
+    const checkDeviceType = () => {
+      // Only change panel state on initial load, not on every resize
+      if (!showLeftPanel) {
+        // You can enable this if you want panel to open on desktop initially
+        const isDesktop = window.innerWidth >= 768;
+      }
+    };
+    checkDeviceType();
+    setMdContent(data.phData?.domain?.prompt || '');
+  }, []);
+
+  const handleShowInLeftPanel = (content: string, name: string) => {
+    setMdContent(content);
+    setShowLeftPanel(true);
+    // You might also want to update other state variables if needed
+  };
+
+  const handleDocumentSelect = (content: string, name: string) => {
+    setMdContent(content);
+    setDocName(name);
+    setIsEditing(false);
+    setActiveLeftTab('document'); // Switch to document tab
+    setIsLibraryOpen(false); // Close the library modal after selection
+    console.log("Selected document from library:", { content, name });
+  };
+
+  const handleResponseChange = (response: string) => { setLastResponse(response) };
+
+  const handleViewInMarkdown = (response: string) => {
+    const cleanResponse = (response: string) => {
+      let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
+      cleaned = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
+      return cleaned;
+    };
+    const cleanedResponse = cleanResponse(response);
+    setMdPreview(cleanedResponse);
+    setShowRightPanel(true); // Show the right panel with markdown preview
+    // setShowLeftPanel(false); // Hide the left panel when viewing markdown
+  };
+  // New handler functions for conversations
+  const handleSelectConversation = (conversation: any) => {
+    // Logic to load a saved conversation into the chat
+    // You would need to integrate this with your ChatComponent
+    console.log('Selected conversation:', conversation);
+  };
+
+  const handleDeleteConversation = (id: string) => {
+    setConversations(conversations.filter(conv => conv.id !== id));
+    // Also remove from local storage if you're using that
+    const storedConversations = JSON.parse(localStorage.getItem('savedConversations') || '[]');
+    localStorage.setItem('savedConversations',
+      JSON.stringify(storedConversations.filter((conv: any) => conv.id !== id))
+    );
+  };
+
+  const handleSaveCurrentConversation = () => {
+    console.log('Current messages to save:', currentMessages);
+
+    // Don't allow saving if no messages
+    if (!currentMessages || currentMessages.length === 0) {
+      alert("No messages to save. Please have a conversation first.");
       return;
     }
-    console.log("205 Dispatching Edited Prompt:", editedPrompt);
 
-    // Get current domain data
-    const currentDomainData = data?.phData?.domain || {};
+    // Extract the first sentence from the first user message or after #content marker
+    let title = '';
+    if (currentMessages && currentMessages.length > 0) {
+      // First, check if any message contains #content marker
+      const contentMarkerMessage = currentMessages.find(msg =>
+        typeof msg.content === 'string' && msg.content.includes('#content')
+      );
 
-    // Create updated domain data with new prompt
-    const updatedData = {
-      ...currentDomainData,
-      prompt: editedPrompt
+      if (contentMarkerMessage) {
+        // Extract text after #content
+        const contentParts = contentMarkerMessage.content.split('#content');
+        if (contentParts.length > 1) {
+          // Find the first sentence after #content
+          const match = contentParts[1].match(/^\s*(.*?[.!?])/);
+          if (match) {
+            title = match[1].trim();
+          }
+        }
+      }
+      if (!title) {
+        const firstAssistantMessage = currentMessages.find(msg => msg.role === 'assistant');
+        if (firstAssistantMessage && firstAssistantMessage.content) {
+          const match = firstAssistantMessage.content.match(/^.*?[.!?]/);
+          title = match ? match[0].trim() : firstAssistantMessage.content.trim().substring(0, 50);
+        }
+      }
+      console.log('266 Extracted title from #content:', title, contentMarkerMessage, currentMessages);
+      // If no title from #content, fall back to first user message
+      if (!title) {
+        const firstUserMessage = currentMessages.find(msg => msg.role === 'user');
+        if (firstUserMessage && firstUserMessage.content) {
+          // Extract the first sentence - look for the first period, question mark, or exclamation
+          const match = firstUserMessage.content.match(/^.*?[.!?]/);
+          title = match ? match[0].trim() : firstUserMessage.content.trim().substring(0, 50);
+        }
+      }
+
+      // If it's too long, truncate it
+      if (title.length > 50) {
+        title = title.substring(0, 47) + '...';
+      }
+    }
+
+    // If we couldn't extract a title, use a default title with timestamp
+    if (!title) {
+      title = `Conversation ${new Date().toLocaleString()}`;
+    }
+
+    const newConversation = {
+      id: Date.now().toString(),
+      title,
+      date: new Date().toLocaleString(),
+      messages: currentMessages,
     };
 
-    // Use setDomainData instead of setDomainPrompt
-    dispatch(setDomainData(updatedData));
-    setDispatchDone(true);
-    setEditedPrompt("");
-  };
+    const updatedConversations = [...conversations, newConversation];
+    setConversations(updatedConversations);
 
-  // Delete the prompt from the Redux store
-  const handleDeletePrompt = () => {
-    dispatch(deleteDomainPrompt());
-    setEditedPrompt("");
-    setDomainInput("");
-    setPhase("initial");
-  };
-    // Check device type on component mount'
-    useEffect(() => {
-        const checkDeviceType = () => {
-            // Only change panel state on initial load, not on every resize
-            if (!showLeftPanel) {
-                // You can enable this if you want panel to open on desktop initially
-                const isDesktop = window.innerWidth >= 768;
-            }
-        };
-        checkDeviceType();
-    }, []);
+    // Save to localStorage for persistence
+    localStorage.setItem('savedConversations', JSON.stringify(updatedConversations));
 
+    alert(`Conversation "${title}" saved successfully!`);
+  };
   const MIN_PANEL_WIDTH = 20;
   const MAX_PANEL_WIDTH = () => window.innerWidth - 120; // leave at least 120px for the middle
 
@@ -258,40 +373,44 @@ export default function VercelAiPage() {
     document.addEventListener('contextmenu', onMouseUp, { capture: true }); // Handle right-click
   };
 
-
-
-  const ActionCardTitleButton: React.FC<ActionCardTitleButtonProps> = ({ title, done, onClick, icon }) => {
-    return (
-      <CardTitle className="flex justify-center m-1 mb-auto bg-gray-700 border border-gray-500">
-        <div className={`flex justify-between items-center flex-grow ps-2 ${done ? "text-green-600" : "text-green-200"}`}>
-          {title}
-          <div className="flex items-center ml-auto">
-            {!done ? (
-              <div style={{ marginLeft: 8, marginRight: 8 }}>
-                <LoadingCircularProgress />
-              </div>
-            ) : (
-              <div style={{ marginLeft: 8, marginRight: 8, color: done ? "green" : "gray" }}>
-                <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-              </div>
-            )}
-            <IconButton onClick={onClick} icon={icon} />
-          </div>
-        </div>
-      </CardTitle>
-    );
+  const handleApplyTemplate = (content: string) => {
+    console.log('93 Template content inserted:', content);
+    setChatInput(content); // Update the chat input field
   };
 
+
+
   return (
-    <div className="flex w-full h-full overflow-hidden">
-      {/* Left Panel */}
+    <div className="flex h-screen w-full bg-gray-900 text-white overflow-hidden">
+      {/* Left Panel: Templates ------------------------------------------------------------------------------ */}
       {showLeftPanel && (
-        <div className="h-full overflow-hidden" style={{ width: leftPanelWidth + "px", minWidth: "300px" }} >
+        <div
+          className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 max-w-[95vw] overflow-auto"
+          style={{
+            width: `${leftPanelWidth}px`,
+            minWidth: '200px' // Use inline style instead of conflicting Tailwind classes
+          }}
+        >
+          <div className="flex justify-between items-center m-1 sm:m-2">
+            <h2 className="text-lg sm:text-xl font-bold text-blue-400">
+              Input: Context
+            </h2>
+            <div className="markdown-preview-header">
+              <button
+                onClick={() => setShowLeftPanel(false)}
+                className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+              >
+                Close
+              </button>
+            </div>
+          </div>
           <DocumentPanel
             mdContent={mdContent}
             setMdContent={setMdContent}
             setIsLibraryOpen={setIsLibraryOpen}
-            isLibraryOpen={isLibraryOpen} />
+            isLibraryOpen={isLibraryOpen}
+            panelType='left'
+          />
         </div>
       )}
 
@@ -306,54 +425,267 @@ export default function VercelAiPage() {
       )}
 
       {/* Middle Panel */}
-      {/* <div className="flex flex-col h-full overflow-hidden" style={{ width: middlePanelWidth + "px", minWidth: "300px" }}> */}
       <div className="flex p-1 sm:px-2 flex-col flex-grow"
         style={{
           minWidth: '320px' // Ensure minimum usable width
         }}>
         <div className="flex justify-between items-center rounded-md gap-1 bg-primary-foreground p-1 mb-2 sm:mb-4 sm:p-2">
-          <button
-            onClick={() => setShowLeftPanel(!showLeftPanel)}
-            className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-            title={showLeftPanel ? 'Hide Left Panel' : 'Show Left Panel'}
-          >
-            <span>
-              <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-            </span>
-            {/* <span className="ml-1 hidden sm:inline">
-              {showLeftPanel ? 'Hide' : 'Show'}
-            </span> */}
-          </button>
+          {/* Middle Content */}
+          <div className="flex flex-col flex-grow bg-background text-gray-100 ">
+            <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0">
 
-          <h1 className="text-lg sm:text-2xl font-bold text-blue-400 px-1">AI Prompt Builder</h1>
+              {/* Tab Structure with Left and Right buttons */}
+              <div className="flex items-center justify-between">
+                {/* Left Panel toggle button */}
+                <button
+                  onClick={() => setShowLeftPanel(!showLeftPanel)}
+                  className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                  title='Show Left pane'
+                >
+                  <span>
+                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                    </svg>
+                  </span>
+                  <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
+                </button>
 
-          <div className="flex items-center gap-2">
-            <div className="text-orange-700">AI-Powered Dashboard</div>
-            <FontAwesomeIcon icon={faRobot} className="fa-2lg text-orange-700" />
-            {/* Right Panel Button - moved here */}
-            <button
-              onClick={() => setShowRightPanel(!showRightPanel)}
-              className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded ml-2"
-              title={showRightPanel ? 'Hide Right Panel' : 'Show Right Panel'}
-            >
-              {/* <span className="mr-1 hidden sm:inline">
-                {showRightPanel ? 'Hide' : 'Show'}
-              </span> */}
-              <span>
-                <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                </svg>
-              </span>
-            </button>
+                {/* Tabs */}
+                <TabsList className="grid grid-cols-6 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
+                  {/* AI Assistant 1 */}
+                  <TabsTrigger
+                    value="chat"
+                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                    title="AI Prompt Assistant"
+                  >
+                    AI Assistant 1
+                    <span className="mx-1"></span>
+                    {/* <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
+                      title="Open AI Prompt Assistant guide"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </span> */}
+                  </TabsTrigger>
+                  {/* AI Assistant 2 */}
+                  <TabsTrigger
+                    value="ai-prompt"
+                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                    title="AI Prompt Assistant"
+                  >
+                    AI Prompt Assistant 2
+                    <span className="mx-1"></span>
+                    {/* <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
+                      title="Open AI Prompt Assistant guide"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </span> */}
+                  </TabsTrigger>
+                  {/* Refine prompt */}
+                  <TabsTrigger
+                    value="refine"
+                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                    title="Refine prompt"
+                  >
+                    Refine prompt
+                    {/* <span
+                      onClick={() => setShowGuideModal(true)}
+                     className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                      title="Open guide"
+                    >
+                      <HelpCircle className="h-3 w-3 ms-5" />
+                    </span> */}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="saved-documents"
+                    className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                  >
+                    Saved Documents
+                    <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                      title="Open guide"
+                    >
+                      <HelpCircle className="h-3 w-3 mx-2" />
+                    </span>
+                  </TabsTrigger>
+                  {/* Current Prompt */}
+                  <TabsTrigger
+                    value="current-prompt"
+                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                    title="Current Prompt"
+                  >
+                    Prompt: {currentPrompt?.name || 'Prompt name'}
+                    <span className="mx-1"></span>
+                    {/* <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
+                      title="Open domain guide"
+                    >
+                      <HelpCircle className="h-4 w-4" />
+                    </span> */}
+                  </TabsTrigger>
+                  <TabsTrigger
+                    value="saved-chat"
+                    className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                  >
+                    Saved Chats
+                    {/* <span
+                      onClick={() => setShowGuideModal(true)}
+                      className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                      title="Open guide"
+                    >
+                      <HelpCircle className="h-3 w-3 mx-2" />
+                    </span> */}
+                  </TabsTrigger>
+                </TabsList>
+
+                <div className="flex items-center gap-2">
+                  {/* <div className="text-orange-700">AI-Powered Dashboard</div> */}
+                  {/* <FontAwesomeIcon icon={faRobot} className="fa-2lg text-orange-700" /> */}
+                  {/* Right Panel Button - moved here */}
+
+                  {/* Right Panel Button */}
+                  <button
+                    onClick={() => setShowRightPanel(!showRightPanel)}
+                    className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
+                    title='Show Right pane'
+                  >
+                    <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
+                    <span>
+                      <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                      </svg>
+                    </span>
+                  </button>
+                </div>
+              </div>
+              <TabsContent value="chat" className="flex-1 px-1 mt-1">
+                <div className="flex-1 overflow-auto bg-gray-800/20 rounded">
+                  <ChatComponent
+                    input={input}
+                    setInput={setInput}
+                    selectedModel={selectedModel}
+                    setSelectedModel={setSelectedModel}
+                    onResponseChange={handleResponseChange}
+                    onViewInMarkdown={handleViewInMarkdown}
+                    setShowLeftPanel={setShowLeftPanel}
+                    chatInput={chatInput}
+                    onAddMD={handleAddMD}
+                    mdContent={mdContent}
+                    setMdContent={setMdContent}
+                    mdPreview={mdPreview}
+                    setMdPreview={setMdPreview}
+                    setCurrentMessages={setCurrentMessages}
+                    gettingStartedGuide={<GettingStartedGuide />}
+                  />
+                </div>
+              </TabsContent>
+              <TabsContent value="ai-prompt" className="flex-1 px-1 mt-1">
+                <div className="flex-1 overflow-hidden">
+                  <PromptBuilder
+                    finalPrompt={currentPrompt}
+                    setFinalPrompt={setCurrentPrompt}
+                  />
+                </div>
+              </TabsContent>
+              <TabsContent value="refine" className="flex-1 px-1 mt-1">
+                <div className="flex-1 overflow-hidden">
+                  {/* hidden shared picker */}
+                  <input
+                    ref={mdFileInputRef}
+                    type="file"
+                    accept=".md"
+                    className="hidden"
+                  />
+                </div>
+                <TemplatesPanel
+                  onApplyTemplate={handleApplyTemplate}
+                  editableContent={editableContent}
+                  setEditableContent={setEditableContent}
+                  domainContent={domainContent}
+                  setDomainContent={setDomainContent}
+                  selectedModel={selectedModel}
+                  onAddMD={handleAddMD}
+                  mdContent={mdContent}
+                />
+              </TabsContent>
+              {/* Saved Documents */}
+              <TabsContent value="saved-documents" className="flex-1 px-1 mt-1">
+
+                <div
+                  className="bg-background rounded-lg p-4"
+                  onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
+                >
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
+                    <div className="flex space-x-2">
+
+                      <button
+                        onClick={handleExportLibrary}
+                        className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
+                        disabled={documents.length === 0}
+                      >
+                        Export Library
+                      </button>
+                      <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelection}
+                        accept=".json"
+                        style={{ display: 'none' }}
+                      />
+                      <button
+                        onClick={handleImportLibrary}
+                        className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
+                      >
+                        <span>Import Library</span>
+                      </button>
+                      <button
+                        onClick={() => setIsLibraryOpen(false)}
+                        className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  </div>
+                  {/* Pass export functionality to library component */}
+                  <div className="text-sm text-gray-400 mb-2 overflow-auto">
+                    <MarkdownLibrary
+                      onSelect={handleDocumentSelect}
+                      onShowInLeftPanel={handleShowInLeftPanel}
+                      hideExportLibraryButton={false}
+                    />
+                  </div>
+                </div>
+              </TabsContent>
+              {/* Current Prompt */}
+              <TabsContent value="current-prompt" className="flex-1 px-1 mt-1">
+                <div className="flex-1 overflow-auto bg-gray-800/20 p-1 overflow-hidden">
+                  <PromptComponent />
+                </div>
+              </TabsContent>
+              {/* Saved Conversations*/}
+              <TabsContent value="saved-chat" className="flex-1 px-1 mt-1">
+                <div className="p-2">
+                  <ConversationsPanel
+                    conversations={conversations}
+                    onSelectConversation={handleSelectConversation}
+                    onDeleteConversation={handleDeleteConversation}
+                    onSaveConversation={handleSaveCurrentConversation}
+                    currentMessages={currentMessages} // Pass this prop to enable/disable save button
+                    onViewInMarkdown={handleViewInMarkdown}
+                    mdPreview={mdPreview}
+                  />
+                </div>
+              </TabsContent>
+            </Tabs>
           </div>
-        </div>
-
-        <div className="flex-1 overflow-hidden">
-          <PromptBuilder />
         </div>
       </div>
       {/* Draggable Bar for Right Panel */}
@@ -367,140 +699,37 @@ export default function VercelAiPage() {
         </div>
       )}
 
-      {/* Right Panel */}
-      {showRightPanel && (
-        // <div className="flex-1 h-full overflow-hidden">
+      {
+        showRightPanel && (
           <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
             style={{
               width: `${rightPanelWidth}px`,
               minWidth: '200px',
               maxWidth: '65%'
             }}>
-
-          <div className="flex justify-between items-center mb-2">
-            <h2 className="text-lg sm:text-xl font-bold text-blue-400">AI Output: Markdown Preview</h2>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setShowRightPanel(false)}
-                className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-              >
-                Close
-              </button>
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="text-lg sm:text-xl font-bold text-blue-400">Output Preview</h2>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowRightPanel(false)}
+                  className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+                >
+                  Close
+                </button>
+              </div>
             </div>
+            {(mdPreview) &&
+              <DocumentPanel
+                mdContent={mdPreview}
+                setMdContent={setMdPreview}
+                setIsLibraryOpen={setIsLibraryOpen}
+                isLibraryOpen={isLibraryOpen}
+                panelType='right'
+              />
+            }
           </div>
-            <ModelComponent />
-            <Card className="p-1 h-full border-solid rounded border-4 border-green-900 w-full">
-              <Tabs value={activeTab} onValueChange={setActiveTab} className="h-full">
-                <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                  <TabsTrigger value="introduction" className="pb-2 mt-3">
-                    ...
-                  </TabsTrigger>
-                  {/* <TabsTrigger value="final-suggested-prompt" className="pb-2 mt-3">
-                                    AI Suggested Prompt
-                                </TabsTrigger> */}
-                  <TabsTrigger value="existing-prompt" className="pb-2 mt-3">
-                    Stored Prompt
-                  </TabsTrigger>
-                </TabsList>
-                <TabsContent value="introduction" className="m-0 px-1 py-2 rounded bg-background">
-                  <div className="m-2 p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 max-h-[calc(100vh-21rem)]">
-                    <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Prompt Builder</h2>
-
-                    <p className="text-white mb-3">
-                      The Prompt Builder is an AI-powered tool that helps you create perfect prompts for domain-specific knowledge models.
-                      Its about asking the right questions to ask AI to give the best definition of a subject  (The Domain we want to explore).
-                    </p>
-
-                    <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
-
-                    <ol className="text-white list-decimal ml-5 space-y-2">
-                      <li><span className="font-bold">Start with a Subject :</span> Enter a domain, topic, or theme you want to create a prompt for.</li>
-                      <li><span className="font-bold">Answer Clarifying Questions:</span> The AI will ask questions to refine your requirements.</li>
-                      <li><span className="font-bold">Review & Edit:</span> Examine the suggested prompt and make any necessary edits.</li>
-                      <li><span className="font-bold">Keep:</span> When satisfied, save your prompt to use with your knowledge models. </li>
-                    </ol>
-                    <div className="text-sm font-bold mt-4 mb-2">
-                      <span className="text-green-400">Note: </span> You can run the prompt in next step
-                    </div>
-                    <div className="mt-6 p-3 border border-green-700 rounded bg-background">
-                      <h4 className="text-green-400 font-bold mb-2">Tips for best results:</h4>
-                      <ul className="text-white list-disc ml-5 space-y-1">
-                        <li>Be specific about your domain</li>
-                        <li>Provide detailed answers to the clarification questions</li>
-                        <li>Don&apos;t hesitate to iterate through multiple rounds of refinement</li>
-                        <li>Edit the final prompt to add any missing details</li>
-                      </ul>
-                    </div>
-                    {/* 
-                                    <div className="mt-6 text-center">
-                                        <button onClick={() => setActiveTab("final-suggested-prompt")}
-                                            className="bg-green-700 hover:bg-green-600 text-white py-2 px-4 rounded">
-                                            Get Started
-                                        </button>
-                                    </div> */}
-                  </div>
-                </TabsContent>
-                {/* <TabsContent value="final-suggested-prompt" className="m-0 px-1 py-2 rounded bg-background">
-                                <div className=" py-1 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-[calc(100vh-20rem)]">
-                                    <ReactMarkdown className="prose prose-sm p-2 text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full min-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
-                                        {finalPrompt}
-                                    </ReactMarkdown>
-                                </div>
-                                <div className="mb-auto min-w-[50%]">
-                                    <DispatchCardTitle
-                                        dispatchDone={dispatchDone}
-                                        handleDispatchFinalPrompt={handleDispatchFinalPrompt}
-                                        extraClassName="float-bottom"
-                                    />
-                                </div>
-                            </TabsContent> */}
-                <TabsContent value="existing-prompt" className="m-0 px-1 py-2 rounded bg-background">
-                  <div className="m-2 p-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                    <div className="text-white px-2 bg-gray-900 max-h-[calc(100vh-21rem)] overflow-y-auto">
-                      {!editedPrompt ? (
-                        <ReactMarkdown className="prose prose-sm text-white custom-markdown whitespace-normal break-words overflow-x-hidden max-w-full w-full prose-pre:overflow-auto prose-img:max-w-full prose-p:break-words prose-p:overflow-wrap-anywhere prose-code:break-all prose-code:whitespace-pre-wrap">
-                          {`${data?.phData?.domain?.prompt || "No prompt in store."}`}
-                        </ReactMarkdown>
-                      ) : (
-                        <Textarea
-                          className="p-2 bg-gray-900 text-lg text-gray-300"
-                          value={editedPrompt}
-                          onChange={(e) => setEditedPrompt(e.target.value)}
-                          rows={20}
-                          placeholder="Edit the stored prompt here..."
-                        />
-                      )}
-                    </div>
-                    <div className="flex justify-between bg-gray-700">
-                      <IconButton
-                        onClick={() => { setEditedPrompt(data?.phData?.domain?.prompt || ""); setPhase("final"); }}
-                        icon={faEdit}
-                        className="mr-2 w-full"
-                      />
-                      <IconButton
-                        onClick={handleDispatchEditedPrompt}
-                        icon={faPaperPlane}
-                        className="mr-2 w-full"
-                      />
-                      <IconButton
-                        onClick={handleDeletePrompt}
-                        icon={faTrash}
-                        className="ml-2 bg-red-700 w-full"
-                      />
-                    </div>
-                    <ActionCardTitleButton
-                      title="Next step:  Go to Domain Builder"
-                      done={true}
-                      onClick={() => window.location.href = "/domain-builder"}
-                      icon={faLink}
-                    />
-                  </div>
-                </TabsContent>
-              </Tabs>
-            </Card>
-          </div>
-        // </div>
-      )}
+        )
+      }
 
 
       <>

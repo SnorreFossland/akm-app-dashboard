@@ -4,11 +4,11 @@ import { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch } from 'react-redux'; // Add this import
 import { usePathname } from 'next/navigation';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
-import MarkdownPreview from './MarkdownPreview';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
-import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
+import { PROMPT_TEMPLATES, PromptTemplate } from '@/components/ai-chat/promptTemplates';
 import { systemPrompt as promptBuilderPrompt } from '@/app/prompt-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
@@ -17,12 +17,12 @@ import AnimatedAICircle from '../ui/AnimatedAICircle';
 import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
-import ModelSelector from './ModelSelector';
+import ModelSelector from '@/components/ai-chat/ModelSelector';
 import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
-import DigitalRainIntro from './DigitalRainIntro';
+import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 // import GettingStartedGuide from './GettingStartedGuide';
-import { REFINE_TEMPLATES } from './refineTemplates';
+import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';
 import { error } from 'console';
 import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 // import { API_BASE_URL } from '@/config/apiConfig';
@@ -263,6 +263,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         setCurrentMessages(messages);
     }, [messages, isLoading]);
 
+    // Add a useEffect to handle input changes
     useEffect(() => {
         const lastAssistant = messages.findLast((m) => m.role === 'assistant');
         if (lastAssistant) {
@@ -332,7 +333,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         };
     }, []);
 
-    // Load saved model preference from localStorage on component mount
+    // Load saved AI model preference from localStorage on component mount
     useEffect(() => {
         const savedModel = localStorage.getItem('aiDashboard_selectedModel');
         if (savedModel && savedModel !== selectedModel) {
@@ -556,136 +557,176 @@ Size: ${(file.size / 1024).toFixed(1)} KB
 `;
     };
 
-    const handleSaveToLibrary = (content: string) => {
-        // Extract title from first line of content
-        const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-        const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
 
-        const documentTitle = cleanTitle || 'Untitled Document';
+//     const handleSaveToLibrary = (content: string) => {
+    //         // Extract title from first line of content
+    //         const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+    //         const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
 
-        // Save to Redux store
-        dispatch(saveMarkdownDocument({
-            id: Date.now().toString(),
-            name: documentTitle,
-            content: content,
-            type: 'markdown',
-            createdAt: new Date().toISOString()
-        }));
+    //         const documentTitle = cleanTitle || 'Untitled Document';
 
-        // Show confirmation to user
-        setStatusMsg(`Saved "${documentTitle}" to library`);
-        setTimeout(() => setStatusMsg(''), 30000);
-    };
+    //         // Save to Redux store
+    //         dispatch(saveMarkdownDocument({
+    //             id: Date.now().toString(),
+    //             name: documentTitle,
+    //             content: content,
+    //             type: 'markdown',
+    //             createdAt: new Date().toISOString()
+    //         }));
 
-    // Add this function with your other handler functions
-    const handleSaveToFile = (content: string) => {
-        // Create a blob with the content
-        const blob = new Blob([content], { type: 'text/markdown' });
+    //         // Show confirmation to user
+    //         setStatusMsg(`Saved "${documentTitle}" to library`);
+    //         setTimeout(() => setStatusMsg(''), 30000);
+    //     };
 
-        // Create a URL for the blob
-        const url = URL.createObjectURL(blob);
+    //     // Add this function with your other handler functions
+    //     const handleSaveToFile = (content: string) => {
+    //         // Create a blob with the content
+    //         const blob = new Blob([content], { type: 'text/markdown' });
 
-        // Extract title from first line for filename
-        const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-        const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
-        const fileName = `${cleanTitle || 'document'}.md`;
+    //         // Create a URL for the blob
+    //         const url = URL.createObjectURL(blob);
 
-        // Create a temporary anchor element
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
+    //         // Extract title from first line for filename
+    //         const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+    //         const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
+    //         const fileName = `${cleanTitle || 'document'}.md`;
 
-        // Trigger download
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    //         // Create a temporary anchor element
+    //         const a = document.createElement('a');
+    //         a.href = url;
+    //         a.download = fileName;
 
-        // Show confirmation
-        setStatusMsg(`Saved "${fileName}" to downloads`);
-        setTimeout(() => setStatusMsg(''), 30000);
-    };
+    //         // Trigger download
+    //         document.body.appendChild(a);
+    //         a.click();
+    //         document.body.removeChild(a);
+    //         URL.revokeObjectURL(url);
 
-    // Handle file selection for context
-    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
-        const selectedFiles = Array.from(files);
-        setContextFiles(selectedFiles);
-        setIsProcessingFile(true);
-        setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
+    //         // Show confirmation
+    //         setStatusMsg(`Saved "${fileName}" to downloads`);
+    //         setTimeout(() => setStatusMsg(''), 30000);
+    //     };
 
-        try {
-            // Process files one by one with status updates
-            const fileContents = [];
-            const binaryFiles = [];
+    //     // Handle file selection for context
+    //     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    //         const files = event.target.files;
+    //         if (!files || files.length === 0) return;
+    //         const selectedFiles = Array.from(files);
+    //         setContextFiles(selectedFiles);
+    //         setIsProcessingFile(true);
+    //         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
 
-            for (const file of selectedFiles) {
-                setStatusMsg(`Reading ${file.name}...`);
-                const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+    //         try {
+    //             // Process files one by one with status updates
+    //             const fileContents = [];
+    //             const binaryFiles = [];
 
-                // Track binary files to show warning later
-                if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-                    binaryFiles.push(file.name);
-                }
+    //             for (const file of selectedFiles) {
+    //                 setStatusMsg(`Reading ${file.name}...`);
+    //                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
 
-                const text = await extractTextFromFile(file);
-                console.log(`File processed: ${file.name}, size: ${text.length} chars`);
+    //                 // Track binary files to show warning later
+    //                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
+    //                     binaryFiles.push(file.name);
+    //                 }
 
-                fileContents.push(`
-====================
-DOCUMENT: ${file.name}
-====================
+    //                 const text = await extractTextFromFile(file);
+    //                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
 
-${text}
+    //                 fileContents.push(`
+    // ====================
+    // DOCUMENT: ${file.name}
+    // ====================
 
-====================
-END OF DOCUMENT: ${file.name}
-====================`);
-            }
+    // ${text}
 
-            const combinedContent = fileContents.join('\n\n');
-            setContextContent(combinedContent);
-            setIsContextAttached(true);
-            console.log(`Total context size: ${combinedContent.length} chars`);
+    // ====================
+    // END OF DOCUMENT: ${file.name}
+    // ====================`);
+    //             }
 
-            // Show user feedback about attached files
-            let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
+    //             const combinedContent = fileContents.join('\n\n');
+    //             setContextContent(combinedContent);
+    //             setIsContextAttached(true);
+    //             console.log(`Total context size: ${combinedContent.length} chars`);
 
-            // Add warning about binary files if any were attached
-            if (binaryFiles.length > 0) {
-                message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-                message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-            }
+    //             // Show user feedback about attached files
+    //             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
 
-            setStatusMsg(message);
-            setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-        } catch (error) {
-            console.error('Error processing files:', error);
-            setStatusMsg(
-                error instanceof Error
-                    ? `Error processing files: ${error.message}`
-                    : `Error processing files: ${String(error)}`
-            );
-        } finally {
-            setIsProcessingFile(false);
-        }
-    };
+    //             // Add warning about binary files if any were attached
+    //             if (binaryFiles.length > 0) {
+    //                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
+    //                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
+    //             }
 
-    // Open file picker
-    const handleAddContext = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.click();
-        }
-    };
+    //             setStatusMsg(message);
+    //             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
+    //         } catch (error) {
+    //             console.error('Error processing files:', error);
+    //             setStatusMsg(
+    //                 error instanceof Error
+    //                     ? `Error processing files: ${error.message}`
+    //                     : `Error processing files: ${String(error)}`
+    //             );
+    //         } finally {
+    //             setIsProcessingFile(false);
+    //         }
+    //     };
 
-    // Remove context
-    const handleRemoveContext = () => {
-        setContextFiles([]);
-        setContextContent('');
-        setIsContextAttached(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-    };
+    //     // Open file picker
+    //     const handleAddContext = () => {
+    //         if (fileInputRef.current) {
+    //             fileInputRef.current.click();
+    //         }
+    //     };
+
+    //     // Remove context
+    //     const handleRemoveContext = () => {
+//         setContextFiles([]);
+//         setContextContent('');
+//         setIsContextAttached(false);
+//         if (fileInputRef.current) fileInputRef.current.value = '';
+//     };
+    // // Add this retry function
+    // const handleRetry = useCallback(async () => {
+    //     setStatusMsg('Retrying last request... please wait.');
+    //     console.log('Retrying request');
+    //     setIsLoading(true);
+    //     retryInProgress.current = true;
+
+    //     try {
+    //         // Find the last request to retry
+    //         const lastUserMessage = messages.findLast(m => m.role === 'user');
+
+    //         if (!lastUserMessage) {
+    //             setStatusMsg('No previous message to retry');
+    //             return;
+    //         }
+
+    //         // Create a retry message with a special flag
+    //         const retryMessage: Message = {
+    //             role: 'user',
+    //             content: 'Continue with your response that was interrupted',
+    //         };
+
+    //         // Don't add the retry message to the conversation history yet
+    //         // We'll only add it if we get a successful response
+    //         const messagesForRetry = [...messages, retryMessage];
+
+    //         // Send the request with a longer timeout
+    //         await sendMessageToAPI(messagesForRetry);
+
+    //         // If successful, update the conversation
+    //         console.log('Retry completed successfully');
+    //     } catch (error) {
+    //         console.error('Retry failed:', error);
+    //         setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
+    //         setIsLoading(false);
+    //         retryInProgress.current = false;
+    //     }
+    // }, [messages, sendMessageToAPI]);
+//
 
     // Function to send messages to the API
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
@@ -997,44 +1038,7 @@ END OF DOCUMENT: ${file.name}
         );
     };
 
-    // Add this retry function
-    const handleRetry = useCallback(async () => {
-        setStatusMsg('Retrying last request... please wait.');
-        console.log('Retrying request');
-        setIsLoading(true);
-        retryInProgress.current = true;
 
-        try {
-            // Find the last request to retry
-            const lastUserMessage = messages.findLast(m => m.role === 'user');
-
-            if (!lastUserMessage) {
-                setStatusMsg('No previous message to retry');
-                return;
-            }
-
-            // Create a retry message with a special flag
-            const retryMessage: Message = {
-                role: 'user',
-                content: 'Continue with your response that was interrupted',
-            };
-
-            // Don't add the retry message to the conversation history yet
-            // We'll only add it if we get a successful response
-            const messagesForRetry = [...messages, retryMessage];
-
-            // Send the request with a longer timeout
-            await sendMessageToAPI(messagesForRetry);
-
-            // If successful, update the conversation
-            console.log('Retry completed successfully');
-        } catch (error) {
-            console.error('Retry failed:', error);
-            setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
-            setIsLoading(false);
-            retryInProgress.current = false;
-        }
-    }, [messages, sendMessageToAPI]);
 
     // Simple Modal component
     const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
@@ -1474,35 +1478,7 @@ END OF DOCUMENT: ${file.name}
                             </div>
                         </div>
                     }
-                    {pathname === '/prompt-builder' &&
-                        <div className="flex items-center justify-between p-2">
-                            {/* button row above the chat */}
-                            <div className="flex items-center gap-2">
-                                {/* System Prompt Button */}
-                                <div
-                                    className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
-                                    onClick={handleSystemPromptClick}
-                                    title="Click to view system prompt"
-                                >
-                                    <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                        <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
-                                    </span>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
-                                onClick={() => {
-                                    setInput('Create a prompt with the following items: [Goal], [Context], [Role]')
-                                }}
-                            >
-                                Create a enhanced prompt
-                            </button>
-
-                        </div>
-
-                    }
-                    {pathname === '/domain-builder' &&
+                    {pathname === '/ontology-builder' &&
                         <div className="flex items-center justify-between p-2">
                             {/* button row above the chat */}
                             <div className="flex items-center gap-2">

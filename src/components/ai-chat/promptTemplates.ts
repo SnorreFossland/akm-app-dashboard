@@ -12,13 +12,19 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
         title: "Brainstorming Ideas",
         category: "Brainstorming",
         usage: "Business",
-        content: "Generate ideas for the topic described in the context below"
+        content: "Generate ideas for the topic described in the text below or in the #Context section."
+    },
+    {
+        title: "Refine text",
+        category: "Document Refinement",
+        usage: "Communication",
+        content: "Refine the text below or in the #Context section below to make it more concise and clear."
     },
     {
         title: "Domain Definition",
         category: "Domain Definition",
-        usage: "Business",
-        content: `Help me define and scope the domain described in the context below.
+        usage: "Domain Definition",
+        content: `Help me define and scope the domain described below and in the context.
 Use the following format:
 Domain name:** [Insert concise and specific name] **
 Domain description:** [Provide a clear, concise summary (2-3 sentences) of the domain.] **
@@ -34,9 +40,9 @@ Success criteria
 Define clear, measurable, and achievable indicators of success
 `
     },
-    { title: "Task List", category: "Task Management", usage: "Business", content: "Create a task list for the topic described in the context below." },
+    { title: "Task List", category: "Task Management", usage: "Planning", content: "Create a task list for the topic described below or in the context." },
     {
-        title: "Project Plan", category: "Planning", usage: "Business", content:
+        title: "Project Plan", category: "Planning", usage: "Planning", content:
             `Make a project plan for a project within the domain/topic described in the context below.
 Include the following sections:
 1. Project Overview
@@ -56,7 +62,7 @@ Include the following sections:
     {
         title: "Product Roadmap",
         category: "Planning",
-        usage: "Business",
+        usage: "Planning",
         content:
             `Create a product roadmap for the product described in the context below.:
 [Insert start date]
@@ -82,8 +88,8 @@ Include the following sections:
     {
         title: "Meeting Agenda",
         category: "Meetings",
-        usage: "Business",
-        content: `Create an agenda for the meeting on the topic described in the context below.
+        usage: "Meetings",
+        content: `Create an agenda for the meeting on the topic described below.
 Include the following sections:
     1. Meeting Title [Insert title]
     2. Date and Time [Insert date and time]
@@ -103,14 +109,14 @@ Include the following sections:
     {
         title: "Meeting Summary",
         category: "Meetings",
-        usage: "Business",
+        usage: "Meetings",
         content: "Summarize the following meeting notes:\n"
     },
     {
         title: "Meeting Notes",
         category: "Meetings",
-        usage: "Business",
-        content: "Summarize the following meeting notes into key points:\n"
+        usage: "Meetings",
+        content: "Create meeting notes for the following meeting:\n"
     },
     {
         title: "Content Outline",
@@ -121,13 +127,13 @@ Include the following sections:
     {
         title: "Presentation Slides",
         category: "Content Creation",
-        usage: "Business",
+        usage: "Communication",
         content: "Create a slide deck for the following text:\n"
     },
     {
         title: "Blog Post",
         category: "Content Creation",
-        usage: "Business",
+        usage: "Communication",
         content:
             `Write a short blog post about the topic in the domain/topic described below.
 Include the following sections:
@@ -150,13 +156,13 @@ Include the following sections:
     {
         title: "Marketing Strategy",
         category: "Marketing",
-        usage: "Business",
+        usage: "Marketing",
         content: "Outline a marketing strategy for the following product:\n"
     },
     {
         title: "Press Release",
         category: "Marketing",
-        usage: "Business",
+        usage: "Marketing",
         content: "Draft a press release for the following event:\n"
     },
     {
@@ -180,19 +186,19 @@ Include the following sections:
     {
         title: "Customer Feedback",
         category: "Feedback",
-        usage: "Business",
+        usage: "Communication",
         content: "Summarize the following customer feedback:\n"
     },
     {
         title: "Email Response",
         category: "Communication",
-        usage: "Business",
+        usage: "Communication",
         content: "Draft a response to the following email:\n"
     },
     {
         title: "Email Draft",
         category: "Communication",
-        usage: "Business",
+        usage: "Communication",
         content: "Draft a professional email for the following purpose:\n"
     },
     {
@@ -200,6 +206,12 @@ Include the following sections:
         category: "Summarization",
         usage: "Business",
         content: "Summarize the following research findings:\n"
+    },
+    {
+        title: "Research Paper",
+        category: "Research",
+        usage: "Business",
+        content: "Outline a research paper on the following topic:\n"
     },
     {
         title: "Feedback Request",
@@ -243,12 +255,7 @@ Include the following sections:
         usage: "Business",
         content: "Create an outline for a proposal on the following topic:\n"
     },
-    {
-        title: "Research Paper",
-        category: "Research",
-        usage: "Business",
-        content: "Outline a research paper on the following topic:\n"
-    },
+
     {
         title: "Code Review",
         category: "Code Review",
@@ -279,13 +286,13 @@ Make sure Only walking routes are shown in the map.
     {
         title: "Social Media Post",
         category: "Content Creation",
-        usage: "Personal",
+        usage: "Communication",
         content: "Create a social media post for the topic described below:\n\n"
     },
     {
         title: "Learning Plan",
         category: "Learning",
-        usage: "Personal",
+        usage: "Business / Personal",
         content: "Create a learning plan for the topic described in the context below."
     },
     { title: "Task List", category: "Task Management", usage: "Personal", content: "Create a task list for the topic described in the context below." },
@@ -316,7 +323,7 @@ Include:
     {
         title: "Travel Itinerary",
         category: "Travel",
-        usage: "Personal",
+        usage: "Business / Personal",
         content: `Create a detailed travel itinerary based on:
 1. Destination: [Insert destination]
 2. Duration: [Insert number of days]
@@ -357,7 +364,7 @@ Include:
     {
         title: "Budget Plan",
         category: "Finance",
-        usage: "Personal",
+        usage: "Planning",
         content: `Create a personal budget plan based on:
 1. Monthly income: [Insert income]
 2. Fixed expenses: [Insert major fixed expenses]
