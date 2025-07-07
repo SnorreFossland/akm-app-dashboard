@@ -491,10 +491,9 @@ export default function DomainBuilderPage() {
                   />
                 </div>
               </TabsContent>
-              {/* Domain view */}
+              {/* Domain  */}
               <TabsContent value="domain" className="flex-1 p-1 mt-1  h-[calc(100vh-8rem)]">
                 <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-
                   <h5 className="text-gray-400 font-bold">Name</h5>
                   <input
                     type="text"
@@ -513,7 +512,17 @@ export default function DomainBuilderPage() {
                     //   description: e.target.value
                     // }))}
                     className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
-                    rows={15}
+                    rows={5}
+                  />
+                  <h5 className="text-gray-400 p-1 font-bold">Presentation</h5>
+                  <textarea
+                    defaultValue={domainData?.presentation}
+                    // onChange={(e) => dispatch(updateMetisInfo({
+                    //   name: data.phData.metis.name,
+                    //   description: e.target.value
+                    // }))}
+                    className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
+                    rows={25}
                   />
                 </div>
               </TabsContent>

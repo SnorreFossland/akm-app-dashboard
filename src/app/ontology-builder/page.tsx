@@ -7,7 +7,9 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faCheckCircle, faPaperPlane, faEdit, faTrash, faLink, faBrain, faSave } from "@fortawesome/free-solid-svg-icons";
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 
-import { Card, CardTitle } from "@/components/ui/card";
+import { usePathname } from 'next/navigation';
+import { setDomainData, setOntologyData } from '@/features/model-universe/modelSlice';
+import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -27,9 +29,35 @@ interface ConceptBuilderPageProps {
   dispatch: any;
 }
 
+interface Domain {
+  name: string;
+  description: string;
+  presentation: string;
+}
+interface Concept {
+  name: string;
+  description: string;
+}
+
+interface Relationship {
+  name: string;
+  nameFrom: string;
+  nameTo: string;
+  description: string;
+}
+
+interface Ontology {
+  name: string;
+  description: string;
+  concepts: Concept[];
+  relationships: Relationship[];
+  presentation: string;
+}
 export default function ConceptBuilderPage() {
   const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
+
   const dispatch = useDispatch();
+  const pathname = usePathname();
 
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
@@ -46,23 +74,13 @@ export default function ConceptBuilderPage() {
   const [conceptName, setConceptName] = useState(data?.phData?.concept?.name || "");
   const [conceptDescription, setConceptDescription] = useState(data?.phData?.concept?.description || "");
   const [conceptPresentation, setConceptPresentationState] = useState(data?.phData?.concept?.presentation || "");
+  const [suggestedOntologyData, setSuggestedOntologyData] = useState<Ontology | null>(null);
+  const [suggestedDomainData, setSuggestedDomainData] = useState<Domain | null>(null);
+
 
   const [activeTab, setActiveTab] = useState("instructions");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-
-
-
-
-
-  // Draggable divider state
-  const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
-  const [isDragging, setIsDragging] = useState(false);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Panel sizing constants
-  const MIN_PANEL_WIDTH = 200;
-  const MAX_PANEL_WIDTH = () => window.innerWidth * 0.6;
 
   // Refs for touch/drag handling
   const leftPanelWidthRef = useRef(leftPanelWidth);
@@ -72,16 +90,30 @@ export default function ConceptBuilderPage() {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [mdContent, setMdContent] = useState<string>('')
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
+  const [existingConcepts, setExistingConcepts] = useState<any[]>([]);
+  const [existingRelationships, setExistingRelationships] = useState<any[]>([]);
+  const [suggestedConceptData, setSuggestedConceptData] = useState<any>(null);
 
   const mdFileInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const [statusMsg, setStatusMsg] = useState(''); // <-- error state
+
+  // Draggable divider state
+  const [dividerPosition, setDividerPosition] = useState(40); // 40% default width for left panel
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  // Panel sizing constants
+  const MIN_PANEL_WIDTH = 300;
+  const MAX_PANEL_WIDTH = () => window.innerWidth * 0.6;
 
   const middlePanelWidth = typeof window !== 'undefined'
     ? window.innerWidth - (showLeftPanel ? leftPanelWidth : 0) - (showRightPanel ? rightPanelWidth : 0) - 40
     : 800;
 
   // Sample data for ontology - replace with actual data
-  const ontologyDataList = data?.phData?.suggestedOntology || null;
+  // setSuggestedOntologyData(data?.phData?.suggestedOntology || null);
   const printPromptsDiv = <div>Sample prompt content</div>; // Replace with actual prompt content
 
   // Modal handlers
@@ -134,6 +166,7 @@ export default function ConceptBuilderPage() {
       </CardTitle>
     );
   };
+
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
@@ -199,7 +232,7 @@ export default function ConceptBuilderPage() {
       } else if (panel === 'right') {
         const leftPanelActualWidth = showLeftPanelRef.current ? leftPanelWidthRef.current + 8 : 0;
         const minimumMiddleWidth = 320;
-        const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 20;
+        const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 10;
 
         const newWidth = Math.max(
           MIN_PANEL_WIDTH,
@@ -259,6 +292,68 @@ export default function ConceptBuilderPage() {
     // setShowLeftPanel(false); // Hide the left panel when viewing markdown
   };
 
+  const handleSaveToLibrary = () => {
+    // Save to library in Redux store
+    const contentToSave = mdContent;
+    // const contentToSave = isEditing ? editContent : mdContent;
+    if (pathname === '/domain-builder') {
+      const firstLine = contentToSave.includes('Domain Name')
+        ? contentToSave.split('Domain Name:**')[1].split('\n')[0]?.trim() || ''
+        : (contentToSave.split('\n')[0] || 'Document');
+      const secondLine = contentToSave.includes('Domain Description')
+        ? contentToSave.split('Domain Description:**')[1].split('\n')[1]?.trim() || ''
+        : 'AIChat: Document';
+
+      console.log('133 DocumentPanel handleSaveToLibrary - first:', firstLine, 'second:', secondLine, 'pathname:', pathname);
+
+
+      const domain = {
+        name: firstLine,
+        description: secondLine,
+        presentation: contentToSave,
+        prompt: '',
+        additionalContext: '',
+      }
+      console.log('141 DomainBuilderPage dispatching domain data:', domain);
+      dispatch(setDomainData({ ...domain }));
+    } else if (pathname === '/ontology-builder') {
+      if (!suggestedOntologyData) {
+        alert('No Concept data to dispatch');
+        return;
+      }
+      const updatedOntologyData = {
+        status: 'succeeded' as const,
+        phData: {
+          ...data.phData,
+          ontology: suggestedOntologyData,
+        },
+        phFocus: data.phFocus,
+        phUser: data.phUser,
+        phSource: data.phSource,
+      };
+
+      const uniqueConcepts = Array.from(new Map(updatedOntologyData.phData.ontology.concepts.map((item: Concept) => [item.name, item])).values());
+      const uniqueRelationships = Array.from(new Map(updatedOntologyData.phData.ontology.relationships.map((item: Relationship) => [item.name, item])).values());
+
+      updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
+      updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
+
+      console.log('337 Ontology data to dispatch:', updatedOntologyData);
+
+      dispatch(setOntologyData(updatedOntologyData));
+      setSuggestedOntologyData(null);
+      // setDispatchDone(true);
+    } else {
+      dispatch(saveMarkdownDocument({
+        id: Date.now().toString(),
+        name: firstLine,
+        type: 'markdown',
+        content: contentToSave,
+        createdAt: new Date().toISOString()
+      }));
+      onSaveToLibrary(contentToSave);
+    }
+  };
   // Simple Modal component
   const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
     if (!isOpen) return null;
@@ -375,16 +470,6 @@ export default function ConceptBuilderPage() {
                       <HelpCircle className="h-3 w-3 ms-5" />
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="concept-builder" className="text-xs sm:text-sm mt-0">
-                    Advanced Builder
-                    <span
-                      onClick={() => setShowGuideModal(true)}
-                      className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                      title="Open Concept Builder guide"
-                    >
-                      <HelpCircle className="h-3 w-3 ms-5" />
-                    </span>
-                  </TabsTrigger>
                   <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">
                     Model
                     <span
@@ -395,16 +480,17 @@ export default function ConceptBuilderPage() {
                       <HelpCircle className="h-3 w-3 ms-5" />
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="ontology" className="text-xs sm:text-sm mt-0">
-                    Ontology
+                  <TabsTrigger value="concept-builder" className="text-xs sm:text-sm mt-0">
+                    Advanced Builder
                     <span
                       onClick={() => setShowGuideModal(true)}
                       className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                      title="Open ontology guide"
+                      title="Open Concept Builder guide"
                     >
                       <HelpCircle className="h-3 w-3 ms-5" />
                     </span>
                   </TabsTrigger>
+
                 </TabsList>
                 {/* Right Panel Button */}
                 <button
@@ -444,75 +530,31 @@ export default function ConceptBuilderPage() {
                   />
                 </div>
               </TabsContent>
-              <TabsContent value="concept-builder" className="flex-1 px-1 mt-1">
-                <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
-                  <div className="flex overflow-hidden">
-                    <ConceptBuilder />
-                  </div>
+              <TabsContent value="ontology" className="flex-1 p-1 m-1">
+                <div className="mx-1 bg-gray-700">
+                  {data.phData.ontology ? (
+                    <OntologyCard ontologyData={data.phData.ontology} />
+                  ) : (
+                    <div className="p-4 text-center text-gray-400">
+                      No existing ontology data available
+                    </div>
+                  )}
                 </div>
               </TabsContent>
-
               <TabsContent value="model" className="flex-1 px-1 mt-1">
                 <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4">
-                  <h2 className="text-xl font-bold mb-4">Model View</h2>
+                  {/* <h2 className="text-xl font-bold mb-4">Models</h2> */}
                   <ModelComponent />
                 </div>
               </TabsContent>
-              <TabsContent value="ontology" className="flex-1 p-1 m-1">
+              <TabsContent value="concept-builder" className="flex-1 px-1 mt-1">
                 <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
-                  <Card className="p-1 h-full">
-                    <Tabs value={activeTab} onValueChange={setActiveTab}>
-                      <TabsList className="mx-1 mb-0 pb-0 bg-transparent">
-                        <TabsTrigger value="existing-concepts" className="pb-2 mt-3">Existing Ontology Concepts</TabsTrigger>
-                        <TabsTrigger value="suggested-concepts" className="pb-2 mt-3">Suggested Ontology Concepts</TabsTrigger>
-                      </TabsList>
-                      <TabsContent value="existing-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                        <div className="mx-1 bg-gray-700">
-                          {data.phData.ontology ? (
-                            <OntologyCard ontologyData={data.phData.ontology} />
-                          ) : (
-                            <div className="p-4 text-center text-gray-400">
-                              No existing ontology data available
-                            </div>
-                          )}
-                        </div>
-                      </TabsContent>
-                      <TabsContent value="suggested-concepts" className="m-0 px-1 py-2 rounded bg-background">
-                        <>
-                          <div className="flex justify-end pb-1 pt-0 mx-2">
-                            <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs hover:bg-blue-700">
-                              Show Prompt
-                            </button>
-                            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                              <DialogContent className="max-w-5xl">
-                                <DialogHeader>
-                                  <DialogDescription>
-                                    {printPromptsDiv}
-                                  </DialogDescription>
-                                </DialogHeader>
-                                <DialogFooter>
-                                  <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                    Close
-                                  </Button>
-                                </DialogFooter>
-                              </DialogContent>
-                            </Dialog>
-                          </div>
-                          <div className="mx-1 bg-gray-700">
-                            {ontologyDataList &&
-                              ontologyDataList.concepts &&
-                              ontologyDataList.concepts.length > 0 ? (
-                              <OntologyCard ontologyData={ontologyDataList} />
-                            ) : (
-                              <div className="p-4 text-center text-gray-400">
-                                {isLoading ? 'Generating suggestions...' : 'No suggested concepts available. Click the robot button to generate suggestions.'}
-                              </div>
-                            )}
-                          </div>
-                        </>
-                      </TabsContent>
-                    </Tabs>
-                  </Card>
+                  <div className="flex overflow-hidden">
+                    <ConceptBuilder
+                      suggestedOntologyData={suggestedOntologyData}
+                      setSuggestedOntologyData={setSuggestedOntologyData}
+                    />
+                  </div>
                 </div>
               </TabsContent>
             </Tabs>
@@ -553,20 +595,48 @@ export default function ConceptBuilderPage() {
                 </button>
               </div>
             </div>
-            <DocumentPanel
-              mdContent={mdPreview}
-              setMdContent={setMdPreview}
-              setIsLibraryOpen={setIsLibraryOpen}
-              isLibraryOpen={isLibraryOpen}
-              panelType='right'
-            />
+            <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+              <Card className="p-1 h-full">
+                <CardTitle className="text-sm font-bold">Suggested Ontology</CardTitle>
+                <div className="flex justify-end pb-1 pt-0 mx-2">
+                  <button
+                    title="Save to Library"
+                    onClick={handleSaveToLibrary}
+                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                  >
+                    <BookmarkPlus className="h-4 w-4" />
+                    Save to Library
+                  </button>
+                  {/* <button onClick={handleOpenModal} className="fixed bg-blue-500 text-white rounded px-1 text-xs hover:bg-blue-700">
+                    Show Prompt
+                  </button> */}
+                  <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                    <DialogContent className="max-w-5xl">
+                      <DialogHeader>
+                        <DialogDescription>
+                          {printPromptsDiv}
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                          Close
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+                <div className="mx-1 bg-gray-700">
+                  <OntologyCard domainData={suggestedDomainData} ontologyData={suggestedOntologyData} />
+                </div>
+              </Card>
+            </div>
           </div>
         </>
       )}
       {/* Add the modal at the end of the component */}
-      < Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
+      <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
         <GettingStartedGuide />
-      </Modal >
+      </Modal>
     </div>
   );
 }

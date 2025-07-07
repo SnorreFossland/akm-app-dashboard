@@ -129,10 +129,10 @@ export default function DocumentPanel({
         const contentToSave = isEditing ? editContent : mdContent;
 
         const firstLine = contentToSave.includes('Domain Name')
-            ? contentToSave.split('Domain Name:**')[1].split('\n')[0]?.trim() || ''
+            ? contentToSave.split('Domain Name:**')[1].split('\n')[1]?.trim().replace(/[#*/\\:?<>|"]/g, '') || ''
             : (contentToSave.split('\n')[0] || 'Document');
         const secondLine = contentToSave.includes('Domain Description')
-            ? contentToSave.split('Domain Description:**')[1].split('\n')[1]?.trim() || ''
+            ? contentToSave.split('Domain Description:**')[1].split('\n')[1]?.trim().replace(/[#*/\\:?<>|"]/g, '') || ''
             : 'AIChat: Document';
 
         console.log('133 DocumentPanel handleSaveToLibrary - first:', firstLine, 'second:', secondLine, 'pathname:', pathname);

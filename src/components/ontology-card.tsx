@@ -10,6 +10,11 @@ import ReactMarkdown from 'react-markdown';
 import 'tailwindcss/tailwind.css';
 
 interface OntologyCardProps {
+    domainData: {
+        name: string;
+        description: string;
+        presentation: string;
+    };
     ontologyData: {
         name: string;
         description: string;
@@ -37,6 +42,8 @@ const debug = false;
 export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
+    const [renderedSvg, setRenderedSvg] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeTab, setActiveTab] = useState('domain-summary');
     const [zoom, setZoom] = useState(1);
@@ -44,10 +51,33 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
     if (debug) console.log('35 ontology-card', ontologyData);
 
+    // Initialize Mermaid once
+    useEffect(() => {
+        mermaid.initialize({
+            startOnLoad: false,
+            theme: 'dark',
+            themeVariables: {
+                primaryColor: '#224444',
+                edgeLabelBackground: '#22557715',
+                secondaryColor: '#8888ff',
+                tertiaryColor: '#ddddff',
+                primaryTextColor: '#ffdddd',
+                secondaryTextColor: '#00ff00',
+                tertiaryTextColor: '#0000ff',
+                lineColor: '#dddddd',
+                background: '#ffffff',
+                nodeBorderRadius: '25px',
+                rough: false,
+            },
+            securityLevel: 'loose',
+        });
+    }, []);
+
     // Memoize the diagram generation to prevent infinite loops
     const generateMermaidDiagram = useCallback(() => {
         if (!ontologyData || !ontologyData.concepts || ontologyData.concepts.length === 0) {
             setMermaidDiagram('');
+            setRenderedSvg('');
             return;
         }
 
@@ -98,6 +128,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
         } catch (error) {
             console.error('Error generating Mermaid diagram:', error);
             setMermaidDiagram('');
+            setRenderedSvg('');
         }
     }, [ontologyData]);
 
@@ -152,55 +183,32 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
         }
     }, [ontologyData, activeTab, generateMermaidDiagram]);
 
-    // Initialize Mermaid when diagram content changes
+    // Render the diagram when mermaidDiagram changes
     useEffect(() => {
         const renderDiagram = async () => {
-            if (mermaidDiagram && diagramRef.current && activeTab === 'diagram') {
+            if (mermaidDiagram && activeTab === 'diagram') {
+                setIsLoading(true);
                 try {
-                    // Clear previous content
-                    diagramRef.current.innerHTML = '';
-
-                    // Initialize mermaid
-                    mermaid.initialize({
-                        startOnLoad: false,
-                        theme: 'dark',
-                        themeVariables: {
-                            primaryColor: '#224444',
-                            edgeLabelBackground: '#22557715',
-                            secondaryColor: '#8888ff',
-                            tertiaryColor: '#ddddff',
-                            primaryTextColor: '#ffdddd',
-                            secondaryTextColor: '#00ff00',
-                            tertiaryTextColor: '#0000ff',
-                            lineColor: '#dddddd',
-                            background: '#ffffff',
-                            nodeBorderRadius: '25px',
-                            rough: false,
-                        },
-                        securityLevel: 'loose',
-                    });
-
                     // Generate unique ID for this diagram
                     const diagramId = `mermaid-diagram-${Date.now()}`;
 
                     // Render the diagram
                     const { svg } = await mermaid.render(diagramId, mermaidDiagram);
 
-                    // Insert the SVG into the container
-                    diagramRef.current.innerHTML = svg;
+                    // Store the rendered SVG
+                    setRenderedSvg(svg);
+                    console.log('Mermaid diagram rendered successfully');
 
                 } catch (error) {
                     console.error('Error rendering Mermaid diagram:', error);
-                    if (diagramRef.current) {
-                        diagramRef.current.innerHTML = `<div class="p-4 text-center text-red-400">Error rendering diagram: ${error.message}</div>`;
-                    }
+                    setRenderedSvg(`<div class="p-4 text-center text-red-400">Error rendering diagram: ${error}</div>`);
+                } finally {
+                    setIsLoading(false);
                 }
             }
         };
 
-        if (activeTab === 'diagram') {
-            renderDiagram();
-        }
+        renderDiagram();
     }, [mermaidDiagram, activeTab]);
 
     const handleAuxClick = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -211,22 +219,25 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     };
 
     const renderMermaidDiagram = () => {
-        if (mermaidDiagram) {
+        if (isLoading) {
+            return <div className="p-4 text-center text-gray-400">Loading diagram...</div>;
+        }
+
+        if (renderedSvg) {
             return (
                 <div
-                    ref={diagramRef}
-                    className="mermaid min-w-[1200px]"
+                    className="min-w-[1200px] w-full"
                     style={{
                         transform: `scale(${zoom})`,
                         transformOrigin: '0 0',
                         margin: '10px'
                     }}
                     onAuxClick={handleAuxClick}
-                >
-                    {mermaidDiagram}
-                </div>
+                    dangerouslySetInnerHTML={{ __html: renderedSvg }}
+                />
             );
         }
+
         return <div className="p-4 text-center text-gray-400">No diagram data available</div>;
     };
 
@@ -236,12 +247,11 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                 <div className="w-full">
                     <Tabs value={activeTab} defaultValue='domain-summary' onValueChange={setActiveTab} className=" p-1">
                         <TabsList className="grid grid-cols-5 bg-primary-foreground my-0 h-7 flex-1 mx-2 relative z-10">
-                            {/* <TabsList className="bg-transparent"> */}
                             <TabsTrigger
                                 value="domain-summary"
                                 className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 px-4 border-gray-400"
                             >
-                                Domain Summary
+                                Domain
                             </TabsTrigger>
                             <TabsTrigger
                                 value="domain-ontology"
@@ -253,23 +263,23 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                 value="concepts"
                                 className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
                             >
-                                Concept List
+                                Concepts
                             </TabsTrigger>
                             <TabsTrigger
                                 value="relationships"
                                 className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
                             >
-                                Relationship List
+                                Relationships
                             </TabsTrigger>
                             <TabsTrigger
                                 value="diagram"
                                 className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
                             >
-                                Ontology Map
+                                Map
                             </TabsTrigger>
                         </TabsList>
 
-                        <TabsContent value="domain-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200 text-xs">
+                        <TabsContent value="domain-summary" className="m-0 px-1 py-2 rounded bg-card text-gray-200 text-xs">
                             <div className="m-1 py-1 rounded">
                                 <div className="">
                                     <div className="max-h-[calc(100vh-40rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
@@ -280,19 +290,11 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                                     <input
                                                         type="text"
                                                         defaultValue={ontologyData?.name}
-                                                        // onChange={(e) => dispatch(updateMetisInfo({
-                                                        //   name: e.target.value,
-                                                        //   description: ontologyData?.description
-                                                        // }))}
                                                         className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full"
                                                     />
                                                     <h5 className="text-gray-400 p-1 font-bold">Description</h5>
                                                     <textarea
                                                         defaultValue={ontologyData?.description}
-                                                        // onChange={(e) => dispatch(updateMetisInfo({
-                                                        //   name: data.phData.metis.name,
-                                                        //   description: e.target.value
-                                                        // }))}
                                                         className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
                                                         rows={15}
                                                     />
@@ -328,9 +330,6 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
                         <TabsContent value="concepts" className=" mt-0 rounded bg-background">
                             <Card className="pt-1">
-                                {/* <CardHeader className="px-3 pt-3 pb-0">
-                                    <CardTitle className="bg-background px-2 text-1xl rounded">Concepts</CardTitle>
-                                </CardHeader> */}
                                 <CardContent className="max-h-[calc(100vh-26rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                     {ontologyData && <ConceptTable data={ontologyData.concepts} />}
                                 </CardContent>
@@ -339,30 +338,26 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
                         <TabsContent value="relationships" className="mt-0 rounded bg-background">
                             <Card className="pt-1">
-                                {/* <CardHeader className="px-3 pt-3 pb-0">
-                                    <CardTitle className="bg-background px-2 text-1xl rounded">Relations</CardTitle>
-                                </CardHeader> */}
                                 <CardContent className="max-h-[calc(100vh-26rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                     {ontologyData && <RelshipTable data={ontologyData.relationships} />}
                                 </CardContent>
                             </Card>
                         </TabsContent>
-
-                        <TabsContent value="diagram" className="m-0 px-1 rounded bg-background h-[calc(100vh-22rem)] max-w-[60rem] overflow-hidden">
-                            <>
-                                <Card className="w-full my-1">
-                                    <div className="flex justify-between items-center m-2 mb-2">
+                        <TabsContent value="diagram" className="m-0 px-1 rounded bg-card h-[calc(100vh-10rem)] overflow-hidden">
+                            <Card className="w-full h-full">
+                                <CardContent className="">
+                                    <div className="flex justify-between items-center m-1 py-1">
                                         <div className="flex items-center gap-2">
                                             <button
                                                 onClick={() => generateMermaidDiagram()}
-                                                className="px-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-700"
+                                                className="px-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-500"
                                             >
                                                 Regenerate Diagram
                                             </button>
 
                                             <button
                                                 onClick={() => setZoomMode(prev => !prev)}
-                                                className={`px-2 py-1 text-xs rounded ${isZoomMode
+                                                className={`px-1 text-xs rounded hover:bg-gray-400 ${isZoomMode
                                                     ? 'bg-green-500 text-white'
                                                     : 'bg-gray-500 text-gray-200'}`}
                                             >
@@ -384,7 +379,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                     </div>
                                     <div
                                         ref={containerRef}
-                                        className="h-[calc(100vh-24rem)] overflow-auto bg-gray-600 rounded border relative"
+                                        className="h-[calc(100vh-13rem)] overflow-auto bg-gray-600 rounded border relative"
                                         style={{
                                             maxWidth: '100%',
                                             overflowX: 'auto',
@@ -393,12 +388,12 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                                         <div className="text-xs text-gray-400 ml-2">
                                             {isZoomMode ? 'Use wheel to zoom' : 'Hold Shift+wheel for horizontal scrolling'}
                                         </div>
-                                        <div className="min-w-max p-2">
+                                        <div className="min-w-max p-2 w-full">
                                             {renderMermaidDiagram()}
                                         </div>
                                     </div>
-                                </Card>
-                            </>
+                                </CardContent>
+                            </Card>
                         </TabsContent>
                     </Tabs>
                 </div>

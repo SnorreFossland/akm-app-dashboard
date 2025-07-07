@@ -37,7 +37,23 @@ type ModelView = {
   id: string;
   name: string;
 };
-
+interface Concept {
+  name: string;
+  description: string;
+}
+interface Relationship {
+  name: string;
+  nameFrom: string;
+  nameTo: string;
+  description: string;
+}
+interface Ontology {
+  name: string;
+  description: string;
+  concepts: Concept[];
+  relationships: Relationship[];
+  presentation: string;
+}
 
 // import { set } from 'zod';
 // import { handleClearStore } from './HandleClearStore';
@@ -48,6 +64,7 @@ function ModelComponent() {
   const data = useSelector((state: RootState) => state.modelUniverse);
   const prompt = useSelector((state: { prompt: any }) => data.phData.domain?.prompt);
   const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
+  const ontologyData = useSelector((state: { modelUniverse: any }) => data.phData.ontology);
 
   const [currentOntology, setCurrentOntology] = useState<any>(data.phData?.ontology || null);
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
@@ -200,7 +217,7 @@ function ModelComponent() {
                       <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                         {/* <h4 className="px-1 text-gray-400 font-bold">Concepts:</h4> */}
                         <div className=" ">
-                          <OntologyCard ontologyData={{ name: domainData.name, description: domainData.description, presentation: domainData.presentation, concepts: [], relationships: [] }} />
+                          <OntologyCard ontologyData={{ name: domainData.name, description: domainData.description, presentation: domainData.presentation, concepts: ontologyData?.concepts, relationships: ontologyData?.relationships }} />
                         </div>
                       </div>
                     )}

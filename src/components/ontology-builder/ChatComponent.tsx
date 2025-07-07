@@ -293,7 +293,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         window.addEventListener('mousemove', handleUserActivity);
         window.addEventListener('click', handleUserActivity);
         window.addEventListener('keydown', handleUserActivity);
-''
+        ''
         return () => {
             if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current);
@@ -558,431 +558,121 @@ Size: ${(file.size / 1024).toFixed(1)} KB
     };
 
 
-//     const handleSaveToLibrary = (content: string) => {
-    //         // Extract title from first line of content
-    //         const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-    //         const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
 
-    //         const documentTitle = cleanTitle || 'Untitled Document';
-
-    //         // Save to Redux store
-    //         dispatch(saveMarkdownDocument({
-    //             id: Date.now().toString(),
-    //             name: documentTitle,
-    //             content: content,
-    //             type: 'markdown',
-    //             createdAt: new Date().toISOString()
-    //         }));
-
-    //         // Show confirmation to user
-    //         setStatusMsg(`Saved "${documentTitle}" to library`);
-    //         setTimeout(() => setStatusMsg(''), 30000);
-    //     };
-
-    //     // Add this function with your other handler functions
-    //     const handleSaveToFile = (content: string) => {
-    //         // Create a blob with the content
-    //         const blob = new Blob([content], { type: 'text/markdown' });
-
-    //         // Create a URL for the blob
-    //         const url = URL.createObjectURL(blob);
-
-    //         // Extract title from first line for filename
-    //         const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-    //         const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
-    //         const fileName = `${cleanTitle || 'document'}.md`;
-
-    //         // Create a temporary anchor element
-    //         const a = document.createElement('a');
-    //         a.href = url;
-    //         a.download = fileName;
-
-    //         // Trigger download
-    //         document.body.appendChild(a);
-    //         a.click();
-    //         document.body.removeChild(a);
-    //         URL.revokeObjectURL(url);
-
-    //         // Show confirmation
-    //         setStatusMsg(`Saved "${fileName}" to downloads`);
-    //         setTimeout(() => setStatusMsg(''), 30000);
-    //     };
-
-    //     // Handle file selection for context
-    //     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    //         const files = event.target.files;
-    //         if (!files || files.length === 0) return;
-    //         const selectedFiles = Array.from(files);
-    //         setContextFiles(selectedFiles);
-    //         setIsProcessingFile(true);
-    //         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
-
-    //         try {
-    //             // Process files one by one with status updates
-    //             const fileContents = [];
-    //             const binaryFiles = [];
-
-    //             for (const file of selectedFiles) {
-    //                 setStatusMsg(`Reading ${file.name}...`);
-    //                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-
-    //                 // Track binary files to show warning later
-    //                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-    //                     binaryFiles.push(file.name);
-    //                 }
-
-    //                 const text = await extractTextFromFile(file);
-    //                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
-
-    //                 fileContents.push(`
-    // ====================
-    // DOCUMENT: ${file.name}
-    // ====================
-
-    // ${text}
-
-    // ====================
-    // END OF DOCUMENT: ${file.name}
-    // ====================`);
-    //             }
-
-    //             const combinedContent = fileContents.join('\n\n');
-    //             setContextContent(combinedContent);
-    //             setIsContextAttached(true);
-    //             console.log(`Total context size: ${combinedContent.length} chars`);
-
-    //             // Show user feedback about attached files
-    //             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
-
-    //             // Add warning about binary files if any were attached
-    //             if (binaryFiles.length > 0) {
-    //                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-    //                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-    //             }
-
-    //             setStatusMsg(message);
-    //             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-    //         } catch (error) {
-    //             console.error('Error processing files:', error);
-    //             setStatusMsg(
-    //                 error instanceof Error
-    //                     ? `Error processing files: ${error.message}`
-    //                     : `Error processing files: ${String(error)}`
-    //             );
-    //         } finally {
-    //             setIsProcessingFile(false);
-    //         }
-    //     };
-
-    //     // Open file picker
-    //     const handleAddContext = () => {
-    //         if (fileInputRef.current) {
-    //             fileInputRef.current.click();
-    //         }
-    //     };
-
-    //     // Remove context
-    //     const handleRemoveContext = () => {
-//         setContextFiles([]);
-//         setContextContent('');
-//         setIsContextAttached(false);
-//         if (fileInputRef.current) fileInputRef.current.value = '';
-//     };
-    // // Add this retry function
-    // const handleRetry = useCallback(async () => {
-    //     setStatusMsg('Retrying last request... please wait.');
-    //     console.log('Retrying request');
-    //     setIsLoading(true);
-    //     retryInProgress.current = true;
-
-    //     try {
-    //         // Find the last request to retry
-    //         const lastUserMessage = messages.findLast(m => m.role === 'user');
-
-    //         if (!lastUserMessage) {
-    //             setStatusMsg('No previous message to retry');
-    //             return;
-    //         }
-
-    //         // Create a retry message with a special flag
-    //         const retryMessage: Message = {
-    //             role: 'user',
-    //             content: 'Continue with your response that was interrupted',
-    //         };
-
-    //         // Don't add the retry message to the conversation history yet
-    //         // We'll only add it if we get a successful response
-    //         const messagesForRetry = [...messages, retryMessage];
-
-    //         // Send the request with a longer timeout
-    //         await sendMessageToAPI(messagesForRetry);
-
-    //         // If successful, update the conversation
-    //         console.log('Retry completed successfully');
-    //     } catch (error) {
-    //         console.error('Retry failed:', error);
-    //         setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
-    //         setIsLoading(false);
-    //         retryInProgress.current = false;
-    //     }
-    // }, [messages, sendMessageToAPI]);
-//
-
-    // Function to send messages to the API
-    const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
+    // Add a new function to handle concept builder specifically
+    const handleConceptBuilder = async () => {
         setIsLoading(true);
-        setIsStreaming(false);
-        setStreamedContent('');
+        setActiveTab('suggested-concepts');
 
-        try {
-            // Create messagesToSend array as you did before
-            const messagesToSend: Message[] = [];
-
-            // First add system messages if context is attached
-            if (contextContent && isContextAttached) {
-                messagesToSend.push(
-                    {
-                        role: 'system',
-                        content: systemPrompt
-                    },
-                    {
-                        role: 'system',
-                        content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
-                    }
-                );
-            } else {
-                messagesToSend.push({
-                    role: 'system',
-                    content: systemPrompt
-                });
-            }
-
-            console.log(`Sending context to the model (${contextContent.length} chars)`);
-            // Add conversation messages
-            // Add conversation messages
-            if (newMessages && newMessages.length > 0) {
-                messagesToSend.push(...newMessages);
-            } else {
-                console.error('No messages in newMessages array');
-                setStatusMsg('Error: No prompt detected. Please enter a question or message.');
-                return; // Exit early if no messages
-            }
-
-            // Final safety check
-            if (messagesToSend.length === 0) {
-                console.error('messagesToSend is empty after all processing');
-                setStatusMsg('Error: Unable to create a valid message for the AI. Please try again.');
-                return;
-            }
-
-            // Build the API request body
-            const requestBody: any = {
-                messages: messagesToSend,
-                model: selectedModel,
-                temperature: temperature
-            };
-
-            // Log what we're sending (for debugging)
-            console.log('744 Sending to API:', {
-                model: selectedModel,
-                messagesCount: messagesToSend.length,
-                hasContext: Boolean(contextContent && isContextAttached),
-                messagePreview: JSON.stringify(messagesToSend.slice(0, 2))
-            });
-
-            // Set up event source for streaming
-            setIsStreaming(true);
-            // First, create a session ID for this request
-            const sessionId = Date.now().toString();
-
-            // Store the messages in session storage temporarily
-            sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
-
-            // Before creating the EventSource, validate messages
-            if (!messagesToSend || messagesToSend.length === 0) {
-                console.error('No messages to send');
-                setStatusMsg('Error: No messages to send. Please enter a prompt.');
-                setIsLoading(false);
-                setIsStreaming(false);
-                return;
-            }
-
-            // Send the messages via POST
-            fetch('/api/chat/create-stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    sessionId,
-                    messages: messagesToSend,  // Add messages here
-                    model: selectedModel,
-                    temperature: temperature
-                })
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-
-                // Now create EventSource with sessionId AND messages
-                const encodedMessages = encodeURIComponent(JSON.stringify(messagesToSend));
-                const eventSource = new EventSource(
-                    `/api/chat/stream?sessionId=${sessionId}&messages=${encodedMessages}&model=${selectedModel}&temperature=${temperature}`
-                );
-
-                let accumulatedResponse = '';
-
-                eventSource.onmessage = (event) => {
-                    try {
-                        // Check for end of stream
-                        if (event.data === "[DONE]") {
-                            console.log('794 Stream complete, adding full response to messages', accumulatedResponse);
-                            // Stream complete, add the assistant message with the full response
-                            console.log('797 ', ((prev: Message[]) => [...prev, { role: 'assistant', content: accumulatedResponse }]));
-                            setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
-                            setIsLoading(false);
-                            setIsStreaming(false);
-                            console.log('801EventSource closed after completion', messages);
-                            eventSource.close();
-                            return;
-                        }
-
-                        const data = JSON.parse(event.data);
-                        if (data.content) {
-                            // Check if this is a rate limit message
-                            if (data.content.includes('rate limit')) {
-                                setStatusMsg(`Rate limit reached for ${selectedModel}. Consider waiting a minute or switching models.`);
-                            }
-
-                            accumulatedResponse += data.content;
-                            setStreamedContent(accumulatedResponse);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing SSE message:', error);
-                    }
-                };
-
-                // Enhanced error handler
-                eventSource.onerror = (error) => {
-                    // Enhanced error logging with context
-                    const errorDetails = {
-                        readyState: eventSource.readyState, // 0=connecting, 1=open, 2=closed
-                        url: eventSource.url,
-                        timestamp: new Date().toISOString(),
-                        model: selectedModel,
-                        messageCount: messagesToSend.length
-                    };
-
-                    // console.error('EventSource error:', errorDetails);
-
-                    // User-friendly error handling based on readyState
-                    let errorMessage = 'Error connecting to AI. ';
-
-                    if (eventSource.readyState === 2) { // CLOSED
-                        errorMessage += 'The connection was closed unexpectedly.';
-                    } else if (eventSource.readyState === 0) { // CONNECTING
-                        errorMessage += 'Unable to establish connection. The server may be unavailable.';
-                    }
-
-                    setStatusMsg(errorMessage);
-                    setIsLoading(false);
-                    setIsStreaming(false);
-                    eventSource.close();
-
-                    // If we have accumulated some content, still show it
-                    if (accumulatedResponse) {
-                        setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
-                    }
-                };
-            }).catch(error => {
-                console.error('Failed to initiate streaming:', error);
-                setStatusMsg(`Failed to start AI response: ${error.message}`);
-                setIsLoading(false);
-                setIsStreaming(false);
-            });
-        } catch (error) {
-            console.error('Error sending message:', error);
-            const errorMessage = error instanceof Error
-                ? error.message
-                : String(error);
-
-            // Check if it's a timeout error
-            const isTimeout =
-                errorMessage.includes('timeout') ||
-                errorMessage.includes('timed out') ||
-                errorMessage.includes('AbortError');
-
-            setStatusMsg(
-                isTimeout
-                    ? `Request timed out. AI is taking too long to respond. ${selectedModel} might be busy. Try again or switch models.`
-                    : `Failed to communicate with AI ${selectedModel}: ${errorMessage}`
-            );
-        } finally {
-            console.log('876 AI request completed', messages);
+        if (!topicDescr || topicDescr === '') {
+            alert(`Please provide a domain description.\nExamples:
+            - E-Scooter Rental Services\n
+            - Car sale administration\n
+            - Energy generation\n
+            - Data management\n
+            - Financial services for Car rental in Scandinavia\n
+        `);
             setIsLoading(false);
-            retryInProgress.current = false;
+            return; // Add return here to exit early
         }
-    }, [selectedModel, contextContent, isContextAttached, contextFiles]);
 
-    // When selectedModel changes, retry sending the last non-retry user message
-    useEffect(() => {
-        // Skip on first render
-        if (isInitialRender.current) {
-            isInitialRender.current = false;
-            previousModelRef.current = selectedModel;
+        // Add validation for required fields
+        if (!systemPrompt || !userPrompt || !userInput) {
+            console.error("Missing required prompt data:", {
+                systemPrompt: !!systemPrompt,
+                userPrompt: !!userPrompt,
+                userInput: !!userInput
+            });
+            alert("Required prompt data is missing. Please wait for the prompts to load.");
+            setIsLoading(false);
             return;
         }
 
-        // Only trigger if model changed and we have messages
-        if (
-            selectedModel &&
-            previousModelRef.current !== selectedModel &&
-            modelRetryCount < MAX_MODEL_RETRIES &&
-            !retryInProgress.current &&
-            messages.length > 0
-        ) {
-            // Find the last non-retry user message
-            const lastUserMessage = messages.findLast(
-                (m) => m.role === 'user' && !m.content.startsWith('Retry with model:')
-            );
+        try {
+            console.log("Sending request with data:", {
+                aiModelName: "gpt-4o",
+                schemaName: 'OntologySchema',
+                systemPrompt: systemPrompt?.substring(0, 100) + "...", // Log first 100 chars
+                systemBehaviorGuidelines: !!systemBehaviorGuidelines,
+                userPrompt: userPrompt?.substring(0, 100) + "...",
+                userInput: userInput?.substring(0, 100) + "...",
+                contextItems: !!contextItems,
+                contextOntology: !!contextOntology,
+                contextMetamodel: !!contextMetamodel
+            });
 
-            if (lastUserMessage) {
-                retryInProgress.current = true;
-                const modelChangeMessage: Message = {
-                    role: 'user',
-                    content: `Retry with model: ${selectedModel} `,
-                };
-                setMessages((prev) => [...prev, modelChangeMessage]);
-                setModelRetryCount((prev) => prev + 1);
-                sendMessageToAPI([lastUserMessage, modelChangeMessage]).finally(() => {
-                    retryInProgress.current = false;
+            const res = await fetch("/api/genmodel", {
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    aiModelName: "gpt-4o",
+                    schemaName: 'OntologySchema',
+                    systemPrompt: systemPrompt || "",
+                    systemBehaviorGuidelines: systemBehaviorGuidelines || "",
+                    userPrompt: userPrompt || "",
+                    userInput: userInput || "",
+                    contextItems: contextItems || "",
+                    contextOntology: contextOntology || "",
+                    contextMetamodel: contextMetamodel || ""
+                })
+            });
+
+            if (!res.ok) {
+                const errorText = await res.text();
+                console.error("API Error Response:", {
+                    status: res.status,
+                    statusText: res.statusText,
+                    body: errorText
                 });
+                throw new Error(`Failed to fetch: ${res.status} ${res.statusText} - ${errorText}`);
             }
-        }
 
-        // Update for next comparison
-        previousModelRef.current = selectedModel;
-    }, [selectedModel, sendMessageToAPI, modelRetryCount, messages, statusMsg]);
+            const reader = res.body?.getReader();
+            if (!reader) throw new Error("No reader available");
+
+            const decoder = new TextDecoder();
+            let data = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+                data += decoder.decode(value, { stream: true });
+            }
+
+            console.log("Raw API Response:", data);
+
+            const parsed = JSON.parse(data);
+            if (parsed.ontologyData?.concepts && Array.isArray(parsed.ontologyData.concepts)) {
+                setSuggestedOntologyData(parsed.ontologyData);
+                setIsLoading(false);
+
+            } else {
+                console.error("Parsed data does not contain concepts or concepts is not an array:", parsed);
+
+            }
+        } catch (e) {
+            console.error("Validation failed:", e instanceof Error ? e.message : e);
+            alert(`Error: ${e instanceof Error ? e.message : 'Unknown error occurred'}`);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input?.trim()) return;
 
-        let userMessageContent = input;
-
-        if (docRefine) {
-            userMessageContent = `${userMessageContent} #Content:\n ${mdContent}`;
-        } else {
-            userMessageContent = `${userMessageContent} #Context:\n ${mdContent}`;
-        }
-
-        const userMessage: Message = { role: 'user', content: userMessageContent };
+        const userMessage: Message = { role: 'user', content: input };
 
         // Add the user message to conversation history without truncating it
-        setMessages((prev) => [...prev, userMessage]);
+        // setMessages((prev) => [...prev, userMessage]);
         // Send all messages including the new one to maintain conversation context
-        await sendMessageToAPI([...messages, userMessage]);
+        // await sendMessageToAPI([...messages, userMessage]);
+        handleConceptBuilder();
 
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed
@@ -1187,7 +877,7 @@ Size: ${(file.size / 1024).toFixed(1)} KB
                                                     >
                                                         Show Markdown Preview
                                                     </button>
-                                                </>
+                                            </>
                                             )}
                                         </div>
                                     )}
@@ -1613,43 +1303,43 @@ Size: ${(file.size / 1024).toFixed(1)} KB
                     </div>
                 </form>
 
-                {/* System Prompt Modal */}
-                <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
-                    <div>
-                        <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
-                        <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
-                            <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
-                        </div>
-
-                        {contextContent && isContextAttached && (
-                            <>
-                                <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
-                                <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
-                                    <p className="mb-2 text-sm text-gray-300">
-                                        {contextFiles.length} file(s) attached as context:
-                                    </p>
-                                    <ul className="list-disc pl-5 text-sm">
-                                        {contextFiles.map((file) => (
-                                            <li key={file.name} className="mb-1">
-                                                {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                                            </li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            </>
-                        )}
-
-                        <div className="mt-6 flex justify-end">
-                            <button
-                                onClick={() => setIsSystemPromptOpen(false)}
-                                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                            >
-                                Close
-                            </button>
-                        </div>
+            {/* System Prompt Modal */}
+            <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
+                <div>
+                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
+                    <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
+                        <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
                     </div>
-                </Modal>
-            </div >
+
+                    {contextContent && isContextAttached && (
+                        <>
+                            <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
+                            <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
+                                <p className="mb-2 text-sm text-gray-300">
+                                    {contextFiles.length} file(s) attached as context:
+                                </p>
+                                <ul className="list-disc pl-5 text-sm">
+                                    {contextFiles.map((file) => (
+                                        <li key={file.name} className="mb-1">
+                                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={() => setIsSystemPromptOpen(false)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+        </div >
         </>
     )
 }

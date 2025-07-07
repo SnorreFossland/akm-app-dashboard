@@ -128,8 +128,7 @@ export default function ChatComponent({
     // New state for system prompt modal
     const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a helpful AI assistant that provides clear, concise, and accurate responses.
-You are provided with following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.
-Begin your response with the name of the Template used.
+You are provided with following context and documents for reference. When answering the user's questions, ALWAYS analyze and refer to the context and content of these documents.
     `);
 
     const refinePrompt = (
@@ -706,7 +705,7 @@ END OF DOCUMENT: ${file.name}
                     },
                     {
                         role: 'system',
-                        content: `# Context:\n Here are the documents you must reference:\n\n${contextContent}`
+                        content: `# Context:\n Here are the context and documents you must reference:\n\n${contextContent}`
                     }
                 );
             } else {
@@ -757,7 +756,7 @@ END OF DOCUMENT: ${file.name}
             // Store the messages in session storage temporarily
             sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
 
-            // Before creating the EventSource, validate messages
+            // Validate messages
             if (!messagesToSend || messagesToSend.length === 0) {
                 console.error('No messages to send');
                 setStatusMsg('Error: No messages to send. Please enter a prompt.');
@@ -1521,7 +1520,7 @@ END OF DOCUMENT: ${file.name}
                                 type="button"
                                 className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
                                 onClick={() => {
-                                    setInput('Create a domain with the following items: [Domain Name], [Domain Description]')
+                                    setInput('Create a domain with the following: Domain Name: [Domain Name], Domain Description: [Domain Description]')
                                 }}
                             >
                                 Define & Scope Domain

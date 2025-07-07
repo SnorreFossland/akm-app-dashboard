@@ -42,12 +42,21 @@ interface Ontology {
     presentation: string;
 }
 
-const ConceptBuilder = () => {
+const ConceptBuilder = (
+    {
+        suggestedOntologyData,
+        setSuggestedOntologyData
+    }: {
+        suggestedOntologyData: Ontology | null;
+        setSuggestedOntologyData: (data: Ontology | null) => void;
+    }
+) => {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
     const [dispatchDone, setDispatchDone] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
     const [topicDescr, setTopicDescr] = useState("");
+    const [definition, setDefinition] = useState("");
     const [ontologyUrl, setOntologyUrl] = useState("");
     const [impOntologyString, setImpOntologyString] = useState("");
     const [systemPrompt, setSystemPrompt] = useState("");
@@ -61,9 +70,9 @@ const ConceptBuilder = () => {
     const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
     const [domainDesc, setDomainDesc] = useState("");
     const [descrString, setDescrString] = useState("");
-    const [suggestedOntologyData, setSuggestedOntologyData] = useState<Ontology | null>(null);
+    // const [suggestedOntologyData, setSuggestedOntologyData] = useState<Ontology | null>(null);
     // const [ontologyDataList, setOntologyDataList] = useState<Ontology | null>(null);
-    const [suggestedConceptData, setSuggestedConceptData] = useState("");
+    // const [suggestedConceptData, setSuggestedConceptData] = useState("");
     const [step, setStep] = useState(0);
     const [activeTab, setActiveTab] = useState('suggested-concepts');
 
@@ -106,8 +115,9 @@ const ConceptBuilder = () => {
 
     useEffect(() => {
         setDescrString(data.phData.domain?.description || "");
+        setDefinition(data.phData.domain?.presentation || "");
         // setTopicDescr(data.phData.domain?.presentation || "");
-    }, [data.phData.domain?.description]);
+    }, [data.phData.domain]);
 
 
     // Memoize the prompt building logic
@@ -228,14 +238,8 @@ const ConceptBuilder = () => {
         setStep(1);
         setActiveTab('suggested-concepts');
 
-        if (!topicDescr || topicDescr === '') {
-            alert(`Please provide a domain description.\nExamples:
-            - E-Scooter Rental Services\n
-            - Car sale administration\n
-            - Energy generation\n
-            - Data management\n
-            - Financial services for Car rental in Scandinavia\n
-        `);
+        if (!descrString || descrString === '') {
+            alert(`Please generate a Domain Description before generating ontology concepts.`);
             setIsLoading(false);
             return; // Add return here to exit early
         }
@@ -306,9 +310,10 @@ const ConceptBuilder = () => {
                 data += decoder.decode(value, { stream: true });
             }
 
-            console.log("Raw API Response:", data);
+            // console.log("Raw API Response:", data);
 
             const parsed = JSON.parse(data);
+            console.log("Parsed API Response:", parsed);
             if (parsed.ontologyData?.concepts && Array.isArray(parsed.ontologyData.concepts)) {
                 setSuggestedOntologyData(parsed.ontologyData);
                 setIsLoading(false);
@@ -401,7 +406,10 @@ const ConceptBuilder = () => {
                     </div> */}
                     <div className="flex flex-wrap items-start m-1">
                         <label htmlFor="chatOutput" className="text-white mt-2">Current Domain Definition:</label>
-                        <Textarea
+                        <div className="flex-grow p-4 rounded bg-gray-700 text-white overflow-y-auto max-h-[calc(100vh-10rem)]">
+                            {definition}
+                        </div>
+                        {/* <Textarea
                             style={{ width: "100%", minWidth: "500px" }}
                             id="chatOutput"
                             className="flex-grow p-1 rounded bg-background"
@@ -410,7 +418,7 @@ const ConceptBuilder = () => {
                             onChange={(e) => setDescrString(e.target.value)}
                             rows={22}
                             placeholder="Domain Summary"
-                        />
+                        /> */}
                         {/* <label htmlFor="topicDescr" className="text-white">Domain Topic</label>
                         <Textarea
                             id="topicDescr"
@@ -444,9 +452,9 @@ const ConceptBuilder = () => {
                                     <Input
                                         id="suggestedConcepts"
                                         className="flex-grow p-1 rounded bg-background"
-                                        value={suggestedConceptData || ""}
+                                        value={Array.isArray(suggestedOntologyData?.concepts) ? suggestedOntologyData.concepts.map(concept => concept.name).join(', ') : ""}
                                         disabled={isLoading}
-                                        onChange={(e) => setSuggestedConceptData(e.target.value)}
+                                        onChange={(e) => setSuggestedOntologyData({ ...suggestedOntologyData, concepts: e.target.value })}
                                         placeholder="Enter your concepts i.e.: Scooter, User, booking"
                                     />
                                 </div>
