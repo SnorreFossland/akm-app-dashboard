@@ -18,7 +18,7 @@ import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+// import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 // import GettingStartedGuide from './GettingStartedGuide';

@@ -7,6 +7,7 @@ import {
     Eclipse,
     Frame,
     History,
+    Home,
     LifeBuoy,
     Map,
     PieChart,
@@ -16,6 +17,12 @@ import {
     SquareTerminal,
     Star,
     Turtle,
+    Dice1,
+    Dice2,
+    Dice3,
+    Dice4,
+    Dice5,
+    Dice6
 } from "lucide-react"
 import { LucideIcon } from "lucide-react"
 
@@ -92,46 +99,7 @@ export const navigationData: NavigationData = {
         email: "home@example.com",
         avatar: "/avatar.png",
     },
-    navMimris: [
-        {
-            title: "AI Assisted Modelling",
-            url: "#",
-            icon: SquareTerminal,
-            isActive: true,
-            items: [
-                {
-                    title: "Domain Builder",
-                    url: "/domain-builder",
-                    icon: Star,
-                    description: "Domain Scoping and Definition",
-                },
-                {
-                    title: "Ontology Builder.",
-                    url: "/ontology-builder",
-                    icon: Star,
-                    description: "Ontology Modelling",
-                },
-                {
-                    title: "4 POPS Model Builder.",
-                    url: "/",
-                    icon: Star,
-                    description: "Product, Organisation, Process, System (POPS) Modelling",
-                },
-                {
-                    title: "5 IRTV Model Builder",
-                    url: "/IRTV-builder",
-                    icon: Star,
-                    description: "Active Knowledge Modelling with IRTV",
-                },
-                {
-                    title: "4 META Model Builder.",
-                    url: "/model-builder",
-                    icon: Star,
-                    description: "Product, Organisation, Process, System (POPS) Modelling",
-                },
-            ]
-        }
-    ],
+
     navMain: [
         {
             title: "AI Chat Playground",
@@ -142,13 +110,13 @@ export const navigationData: NavigationData = {
                 {
                     title: "0 AI Chat Basic",
                     url: "/ai-chat",
-                    icon: Star,
+                    icon: Dice1,
                     description: "Basic AI Chat with templates",
                 },
                 {
                     title: "1 Prompt Builder",
                     url: "/prompt-builder",
-                    icon: Star,
+                    icon: Dice2,
                     description: "Prompt Builder",
                 },
             ]
@@ -165,6 +133,58 @@ export const navigationData: NavigationData = {
             url: "#",
             icon: Send,
         },
+    ],
+    navMimris: [
+        {
+            title: "AI Assisted Modelling",
+            url: "#",
+            icon: SquareTerminal,
+            isActive: true,
+            items: [
+                {
+                    title: "Domain Builder",
+                    url: "/domain-builder",
+                    icon: Dice1,
+                    description: "Domain Scoping and Definition",
+                },
+                {
+                    title: "Ontology Builder.",
+                    url: "/ontology-builder",
+                    icon: Dice2,
+                    description: "Ontology Modelling",
+                },
+                {
+                    title: "4 POPS Model Builder.",
+                    url: "/POPS-builder",
+                    icon: Dice3,
+                    description: "Product, Organisation, Process, System (POPS) Modelling",
+                },
+                {
+                    title: "5 IRTV Model Builder",
+                    url: "/IRTV-builder",
+                    icon: Dice4,
+                    description: "Active Knowledge Modelling with IRTV",
+                },
+                {
+                    title: "4 META Model Builder.",
+                    url: "/model-builder",
+                    icon: Dice5,
+                    description: "Product, Organisation, Process, System (POPS) Modelling",
+                },
+                {
+                    title: "1 Model Universe",
+                    url: "/model-universe",
+                    icon: Turtle,
+                    description: "Model Universe Management",
+                },
+                {
+                    title: "2 Model Builder",
+                    url: "/model-builder",
+                    icon: Star,
+                    description: "Model Builder for POPS and IRTV",
+                },
+            ]
+        }
     ],
     projects: [
         {

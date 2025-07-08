@@ -1,6 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from "react-redux";
+import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
 import type { RootState } from "@/store";
 import { usePathname } from 'next/navigation';
 import ReactMarkdown from "react-markdown";
@@ -153,6 +154,7 @@ export default function DomainBuilderPage() {
             dispatch(saveMarkdownDocument({
               id: doc.id || Date.now().toString(),
               name: doc.name,
+              type: 'markdown',
               content: doc.content,
               createdAt: doc.createdAt || new Date().toISOString()
             }));

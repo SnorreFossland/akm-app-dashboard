@@ -296,10 +296,10 @@ export default function ConceptBuilderPage() {
     // Save to library in Redux store
     const contentToSave = mdContent;
     // const contentToSave = isEditing ? editContent : mdContent;
-    if (pathname === '/domain-builder') {
-      const firstLine = contentToSave.includes('Domain Name')
+    const firstLine = contentToSave.includes('Domain Name')
         ? contentToSave.split('Domain Name:**')[1].split('\n')[0]?.trim() || ''
         : (contentToSave.split('\n')[0] || 'Document');
+    if (pathname === '/domain-builder') {
       const secondLine = contentToSave.includes('Domain Description')
         ? contentToSave.split('Domain Description:**')[1].split('\n')[1]?.trim() || ''
         : 'AIChat: Document';

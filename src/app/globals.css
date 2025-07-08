@@ -36,7 +36,8 @@
     }
 
     .dark {
-        --background: 200 50% 16%; /* dark green */
+        --background: 200 50% 16%;
+        /* dark green */
         --foreground: 210 40% 98%;
         --card: 200 50% 28%;
         --card-foreground: 310 40% 98%;
@@ -143,6 +144,7 @@
     max-width: 100%;
     height: auto;
 }
+
 /* Ensure all Mermaid edges and arrows are white in dark mode */
 .mermaid .edgePath path {
     stroke: #ffffff !important;
@@ -176,6 +178,7 @@
     max-width: 100%;
     /* Ensure it doesn't exceed the container's width */
 }
+
 .markdown-preview h1,
 .markdown-preview h2,
 .markdown-preview h3,
@@ -185,6 +188,7 @@
     margin-top: 0.5em;
     /* Add space above headings */
 }
+
 .condensed-prose p {
     margin-top: 0.1em !important;
     margin-bottom: 0.1em !important;
@@ -207,12 +211,14 @@
     list-style-type: decimal !important;
     margin-top: 0em !important;
     margin-bottom: 0em !important;
-    padding-left: 2em !important;  /* Increased padding to ensure visibility */
-    line-height: 1 !important;  /* Tighter line height */
+    padding-left: 2em !important;
+    /* Increased padding to ensure visibility */
+    line-height: 1 !important;
+    /* Tighter line height */
 }
 
-.prose.prose-invert.custom-markdown.condensed-prose ol > li,
-.condensed-prose ol > li {
+.prose.prose-invert.custom-markdown.condensed-prose ol>li,
+.condensed-prose ol>li {
     display: list-item !important;
     position: relative !important;
     padding-left: 0.5em !important;
@@ -220,8 +226,8 @@
 }
 
 /* Force marker visibility */
-.prose.prose-invert.custom-markdown.condensed-prose ol > li::marker,
-.condensed-prose ol > li::marker {
+.prose.prose-invert.custom-markdown.condensed-prose ol>li::marker,
+.condensed-prose ol>li::marker {
     color: #f0f0f0 !important;
     opacity: 1 !important;
     font-weight: 500 !important;
@@ -236,14 +242,14 @@
     padding-left: 2em !important;
 }
 
-.prose.prose-invert.custom-markdown.condensed-prose ul > li,
-.condensed-prose ul > li {
+.prose.prose-invert.custom-markdown.condensed-prose ul>li,
+.condensed-prose ul>li {
     display: list-item !important;
     line-height: 1 !important;
 }
 
-.prose.prose-invert.custom-markdown.condensed-prose ul > li::marker,
-.condensed-prose ul > li::marker {
+.prose.prose-invert.custom-markdown.condensed-prose ul>li::marker,
+.condensed-prose ul>li::marker {
     color: #f0f0f0 !important;
     opacity: 1 !important;
     display: inline !important;
@@ -313,6 +319,7 @@
 .sidebar[data-collapsed="true"] .sidebar-content div:not(:has(> svg)) {
     font-size: 0;
 }
+
 .sidebar-active-icon-mode .my-manual-sidebar-trigger {
     display: none;
 }
@@ -344,7 +351,7 @@
 
 .tabs-trigger {
     border-bottom: none !important;
-    padding-bottom: 0 !important; 
+    padding-bottom: 0 !important;
     padding-top: 0 !important;
     margin-top: 0 !important;
     margin-bottom: 0 !important;
@@ -360,4 +367,129 @@
     border-top: 1px solid rgba(107, 114, 128, 0.7) !important;
     border-left: 1px solid rgba(107, 114, 128, 0.7) !important;
     border-right: 1px solid rgba(107, 114, 128, 0.7) !important;
+}
+
+/* Update the existing collapsed sidebar rules to use the correct data attributes */
+.sidebar[data-state="collapsed"] .sidebar-content .nav-item-text,
+[data-collapsible="icon"] .sidebar-content .nav-item-text,
+[data-collapsible="icon"] .sidebar-content a span,
+[data-collapsible="icon"] .sidebar-content div span,
+[data-collapsible="icon"] .sidebar-content a div,
+[data-collapsible="icon"] .sidebar-content button span {
+    display: none !important;
+}
+
+/* Ensure icons are visible and centered when collapsed */
+[data-collapsible="icon"] .sidebar-content a,
+[data-collapsible="icon"] .sidebar-content button {
+    justify-content: center;
+    min-width: var(--sidebar-width-icon);
+}
+
+/* Keep only the icon visible */
+[data-collapsible="icon"] .sidebar-content svg {
+    display: block !important;
+}
+
+/* Ensure icons and text are on the same line when expanded */
+.sidebar-content a,
+.sidebar-content button {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    /* 8px spacing between icon and text */
+}
+
+/* When collapsed, center the icons */
+[data-collapsible="icon"] .sidebar-content a,
+[data-collapsible="icon"] .sidebar-content button {
+    justify-content: center;
+    min-width: var(--sidebar-width-icon);
+}
+
+/* Hide text when collapsed */
+[data-collapsible="icon"] .sidebar-content .nav-item-text,
+[data-collapsible="icon"] .sidebar-content span:not(.sr-only) {
+    display: none !important;
+}
+
+/* Ensure icons remain visible */
+[data-collapsible="icon"] .sidebar-content svg {
+    display: block !important;
+}
+
+/* Ensure proper width and visibility for collapsed sidebar */
+[data-collapsible="icon"] {
+    min-width: var(--sidebar-width-icon);
+    overflow: visible;
+}
+
+/* Ensure menu buttons have proper sizing when collapsed */
+[data-collapsible="icon"] .sidebar-content [data-sidebar="menu-button"] {
+    width: var(--sidebar-width-icon);
+    height: var(--sidebar-width-icon);
+    min-width: var(--sidebar-width-icon);
+    min-height: var(--sidebar-width-icon);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    overflow: visible;
+}
+
+/* Ensure icons are fully visible */
+[data-collapsible="icon"] .sidebar-content svg {
+    display: block !important;
+    width: 1rem;
+    height: 1rem;
+    flex-shrink: 0;
+}
+
+/* Ensure sidebar groups don't constrain width */
+[data-collapsible="icon"] .sidebar-group {
+    min-width: var(--sidebar-width-icon);
+}
+
+/* Reset padding/margin for collapsed sidebar */
+[data-collapsible="icon"] {
+    min-width: var(--sidebar-width-icon);
+    padding-left: 0 !important;
+    margin-left: 0 !important;
+}
+
+/* Remove excessive padding from sidebar content when collapsed */
+[data-collapsible="icon"] .sidebar-content {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+}
+
+/* Reset padding for sidebar groups when collapsed */
+[data-collapsible="icon"] .sidebar-group {
+    padding-left: 0 !important;
+    padding-right: 0 !important;
+    margin-left: 0 !important;
+    margin-right: 0 !important;
+}
+
+/* Center the menu buttons and remove excessive padding */
+[data-collapsible="icon"] [data-sidebar="menu-button"] {
+    width: var(--sidebar-width-icon);
+    height: var(--sidebar-width-icon);
+    padding: 0.25rem !important;
+    margin: 0.125rem auto !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+}
+
+/* Ensure icons are properly sized and centered */
+[data-collapsible="icon"] .sidebar-content svg {
+    width: 1rem !important;
+    height: 1rem !important;
+    flex-shrink: 0 !important;
+}
+
+/* Hide all text when collapsed */
+[data-collapsible="icon"] .sidebar-content span:not(.sr-only) {
+    display: none !important;
 }

@@ -1,0 +1,16 @@
+[data-collapsible="expanded"] {
+    width: 100%;
+}
+
+[data-collapsible="icon"] {
+    width: var(--sidebar-width-icon);
+}
+
+[data-collapsible="icon"] .sidebar-menu-button {
+    justify-content: center;
+    text-align: center;
+}
+
+[data-collapsible="icon"] .sidebar-menu-button .nav-item-text {
+    display: none;
+}

@@ -1,80 +1,99 @@
 "use client"
+import type { LucideIcon } from "lucide-react"
 import { useState } from "react"
 import Image from "next/image";
 import Link from "next/link";
 import {
   Atom,
   Frame,
+  Home,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
 import { TeamSwitcher } from "@/components/team-switcher"
-import { Sidebar, SidebarContent, SidebarFooter, SidebarHeader, SidebarGroup, SidebarGroupLabel, SidebarTrigger } from "@/components/ui/sidebar"
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarFooter,
+  SidebarHeader,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarTrigger,
+  useSidebar,
+  SidebarMenu,
+  SidebarMenuButton,
+  SidebarMenuItem
+} from "@/components/ui/sidebar"
 import { ModeToggle } from '@/components/mode-toggle'
 import { navigationData } from '@/data/navigationData'
 
 export function AppSidebar({ ...props }) {
-  // console.log("291 AppSidebar", props)
-  const [isCollapsed, setIsCollapsed] = useState(false); // Replace with your actual logic
-
-  // Toggle handler for the sidebar trigger
-  const handleToggleSidebar = () => setIsCollapsed((prev) => !prev);
+  // Use the actual sidebar state instead of local state
+  const { state } = useSidebar()
+  const isCollapsed = state === "collapsed"
 
   return (
-    <div className="relative">
-      {/* Fixed topbar, only as wide as the sidebar */}
+    <div className="relative bg-gray-500">
+      {/* Fixed toggler */}
       <div className="fixed top-0 left-0 z-30 w-6 h-6 flex flex-row items-center justify-between bg-transparent">
-        <SidebarTrigger onClick={handleToggleSidebar} />
-        {/* {!isCollapsed && <ModeToggle />} */}
+        <SidebarTrigger />
       </div>
-      {/* Sidebar with top padding to avoid overlap */}
-      <div className="pl-6 pt-12">
-        <Sidebar {...props}>
-          <SidebarHeader className="sidebar-header mt-1">
-            {/* <div className="flex w-full justify-between items-center">
-          <TeamSwitcher teams={navigationData.teams} />
-        </div> */}
+      {/* Sidebar */}
+      <div className="">
+        <Sidebar collapsible="icon" {...props}>
+          <SidebarHeader className="sidebar-header">
+            {!isCollapsed && (
+              <div className="flex w-full justify-right items-center text-xs pl-5">
+                <span>AI Assisted Mimris Modelling</span>
+                <span className="ml-2 text-sm text-gray-400">Beta</span>
+              </div>
+            )}
           </SidebarHeader>
+          <SidebarGroup className="sidebar-group">
+            {/* {!isCollapsed && <SidebarGroupLabel>Additional Links</SidebarGroupLabel>} */}
+            <SidebarMenu>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <Link href="/" title="Home" className="flex items-center justify-center">
+                    <Home className="h-4 w-4 flex-shrink-0" />
+                    {!isCollapsed && <span className="ml-2">Home</span>}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+              <SidebarMenuItem>
+                <SidebarMenuButton>
+                  <Link href="/modelling" title="Mimris Modelling" className="flex items-center justify-center">
+                    <Atom className="h-4 w-4 flex-shrink-0" />
+                    {!isCollapsed && <span className="ml-2">Mimris Modelling</span>}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            </SidebarMenu>
+          </SidebarGroup>
           <SidebarContent className="sidebar-content">
             <SidebarGroup className="sidebar-group">
-              <SidebarGroupLabel>AI Chat</SidebarGroupLabel>
+              {!isCollapsed && <SidebarGroupLabel>AI Chat</SidebarGroupLabel>}
               <NavMain items={navigationData.navMain} searchResults={navigationData.searchResults} />
             </SidebarGroup>
             <SidebarGroup className="sidebar-group">
-              <SidebarGroupLabel>Mimris Modelling</SidebarGroupLabel>
+              {!isCollapsed && <SidebarGroupLabel>Mimris Modelling</SidebarGroupLabel>}
               <NavMain items={navigationData.navMimris} searchResults={navigationData.searchResults} />
             </SidebarGroup>
-            <SidebarGroup className="sidebar-group">
-              <SidebarGroupLabel>Mimris Modelling</SidebarGroupLabel>
-              <div className="space-y-1">
-                <Link
-                  href="/"
-                  className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
-                  title="Home"
-                >
-                  <Frame className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-sm sidebar-item-content">Home</span>
-                </Link>
-                <Link
-                  href="/modelling"
-                  className="flex items-center gap-2 p-1.5 rounded-md hover:bg-accent"
-                  title="Mimris Modelling"
-                >
-                  <Atom className="h-4 w-4 flex-shrink-0" />
-                  <span className="text-sm sidebar-item-content">Mimris Modelling</span>
-                </Link>
-              </div>
-            </SidebarGroup>
 
-            <div className="flex flex-col gap-4">
-              <ModeToggle />
-            </div>
+
+            {!isCollapsed && (
+              <div className="flex flex-col gap-4 px-4">
+                <ModeToggle />
+              </div>
+            )}
           </SidebarContent>
 
           <SidebarFooter className="sidebar-footer">
-            <div className="flex items-center space-x-2">
-              <ModeToggle />
-            </div>
+            {!isCollapsed && (
+              <div className="flex items-center space-x-2 px-4">
+                <ModeToggle />
+              </div>
+            )}
           </SidebarFooter>
         </Sidebar>
       </div>

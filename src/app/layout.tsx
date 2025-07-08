@@ -41,24 +41,20 @@ export default async function RootLayout({
         <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1.2"></meta>
       </head>
       <body className={`${inter.className}  overflow-auto bg-background text-foreground antialiased`}>
-      {/* <body className={`${inter.className}  overflow-hidden bg-background text-foreground antialiased`}> */}
+        {/* <body className={`${inter.className}  overflow-hidden bg-background text-foreground antialiased`}> */}
         <ReduxProvider>
           <ThemeProvider
             attribute="class"
             defaultTheme="system"
             enableSystem
-            >
+          >
             {/* Set defaultOpen to true if no cookie is found */}
             <SidebarProvider defaultOpen={false}>
-            {/* <SidebarProvider defaultOpen={sidebarState?.value !== "false"}> */}
-              <AppSidebar variant="inset"/>
-              <main className="flex flex-1 flex-col p-0 max-h-screen transition-all duration-300 ease-in-out">
-                <AppHeader />
-                <div className="h-full rounded-md p-0">
-                  {children}
-                </div>
-                {/* Spacer to mitigate the gray lower bar on iPads */}
-                <div className="h-16 md:h-20 lg:h-24 bg-transparent"></div>
+              {/* <SidebarProvider defaultOpen={sidebarState?.value !== "false"}> */}
+              <AppSidebar />
+              <main className="flex-1 flex flex-col overflow-auto">
+                {/* <AppHeader /> */}
+                {children}
               </main>
             </SidebarProvider>
           </ThemeProvider>

@@ -217,7 +217,7 @@ function ModelComponent() {
                       <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                         {/* <h4 className="px-1 text-gray-400 font-bold">Concepts:</h4> */}
                         <div className=" ">
-                          <OntologyCard ontologyData={{ name: domainData.name, description: domainData.description, presentation: domainData.presentation, concepts: ontologyData?.concepts, relationships: ontologyData?.relationships }} />
+                          <OntologyCard domainData={domainData} ontologyData={{ name: domainData.name, description: domainData.description, presentation: domainData.presentation, concepts: ontologyData?.concepts, relationships: ontologyData?.relationships }} />
                         </div>
                       </div>
                     )}

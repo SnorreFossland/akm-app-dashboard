@@ -3,7 +3,8 @@
 import { useAppSelector, useAppDispatch } from '@/hooks/redux';
 import { useRef, useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, Upload } from 'lucide-react';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faDownload, faUpload, faBars, faColumns } from '@fortawesome/free-solid-svg-icons';
 import { usePathname } from 'next/navigation';
 import { handleSaveToLocalFile } from '@/features/model-universe/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/model-universe/components/HandleGetLocalFile';
@@ -12,82 +13,80 @@ import { handleGetDefaultFile } from '@/features/model-universe/components/Handl
 import { clearStore, clearModel, updateMetisInfo, updateModelInfo, updateProjectInfo } from '@/features/model-universe/modelSlice';
 import { getCurrentMenuItemDescription } from '@/utils/navigationHelpers';
 
-export function AppHeader() {
-    const phSource = useAppSelector((state) => state.modelUniverse.phSource);
-    const data = useAppSelector((state) => state.modelUniverse);
-    const dispatch = useAppDispatch();
-    const fileInputRef = useRef<HTMLInputElement>(null);
-    const pathname = usePathname();
+interface AppHeaderProps {
+    showLeftPanel?: boolean;
+    showRightPanel?: boolean;
+    onToggleLeftPanel?: () => void;
+    onToggleRightPanel?: () => void;
+    moduleOperations?: ReactNode;
+}
+
+export function AppHeader({
+    showLeftPanel,
+    showRightPanel,
+    onToggleLeftPanel,
+    onToggleRightPanel,
+    moduleOperations
+}: AppHeaderProps) {
+    // const phSource = useAppSelector((state) => state.modelUniverse.phSource);
+    // const data = useAppSelector((state) => state.modelUniverse);
+    // const dispatch = useAppDispatch();
+    // const fileInputRef = useRef<HTMLInputElement>(null);
+    // const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-    const currentDescription = getCurrentMenuItemDescription(pathname);
+    // const currentDescription = getCurrentMenuItemDescription(pathname);
 
     return (
-        <header className="px-4 bg-gray-700 border-b flex items-center justify-between">
-            <div className="flex items-center gap-2 font-bold text-orange-200/80">
-                <span>{pathname}
-                    {(currentDescription) && ` - ${currentDescription}`
-                    }
-                </span>
-            </div>
-            <div className="flex items-center">
-                <span>AI Assisted Mimris Modelling</span>
-                <span className="ml-2 text-sm text-gray-400">Beta</span>
-            </div>
-
-            <div className="flex justify-end items-center gap-2">
-                <span className="mt-1 mr-2 font-bold text-sm text-green-600">
-                    File: {isClient ? (phSource || 'Local file not loaded') : 'Loading...'}.json
-                </span>
-                {/* Hidden file input */}
-                <input
-                    type="file"
-                    ref={fileInputRef}
-                    style={{ display: 'none' }}
-                    accept=".json"
-                    onChange={(e) => handleGetLocalFile(e, dispatch)}
-                />
-
-                {/* Open File Button */}
+        <header className="bg-gray-700 border-b flex items-center justify-around">
+            {/* Panel toggle buttons */}
+            {onToggleLeftPanel && (
                 <Button
                     variant="outline"
                     size="sm"
-                    onClick={() => handleGetLocalFileClick(fileInputRef)}
-                    className="flex items-center my-0 py-0"
-                    title='Open a file from local storage'
+                    onClick={onToggleLeftPanel}
+                    // className={`flex flex-col flex-grow bg-transparent text-gray-100  ${showLeftPanel ? 'bg-muted' : ''}`}
+                    className="flex items-center text-xs bg-transparent hover:bg-gray-600 text-white px-1 pb-1 rounded"
+                    title={showLeftPanel ? 'Hide left panel' : 'Show left panel'}
                 >
-                    <Upload className="h-3 w-4" />
-                    Open
+                    <span>
+                        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                    </span>
                 </Button>
-
-                {/* Save File Button */}
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleSaveToLocalFile(data)}
-                    className="flex items-center my-0 py-0"
-                    title='Save the current file to local storage'
-                >
-                    <Download className="h-3 w-4" />
-                    Save
-                </Button>
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => {
-                        dispatch(clearStore());
-                        handleGetDefaultFile({} as React.ChangeEvent<HTMLInputElement>, dispatch);
-                    }}
-                    className="flex items-center my-0 py-0"
-                    title='Clear the current file and load the default file'
-                >
-                    Clear
-                </Button>
+            )}
+            <div className="flex-1 min-w-0 mx-1">
+                {/* Module operations */}
+                {moduleOperations && (
+                    <div className="flex items-center gap-2 w-full">
+                        {moduleOperations}
+                    </div>
+                )}
             </div>
+            {/* Right Panel toggle button */}
+            {onToggleRightPanel && (
+                <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={onToggleRightPanel}
+                    // className={`flex items-center my-0 py-0 ${showRightPanel ? 'bg-blue-600' : ''}`}
+                    className="flex items-center text-xs bg-transparent hover:bg-gray-600 text-white px-1 pb-1 rounded"
+                    title={showRightPanel ? 'Hide right panel' : 'Show right panel'}
+                >
+                    <span>
+                        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                            <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                        </svg>
+                    </span>
+                </Button>
+            )}
         </header>
     );
 }

@@ -1,257 +1,636 @@
-import { redirect } from 'next/navigation';
+"use client";
+import React, { useState, useEffect, useRef } from 'react';
+import { useSelector, useDispatch } from "react-redux";
+import { useRouter } from 'next/navigation';
+import type { RootState } from "@/store";
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
+import { Card, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from "@/components/ui/button";
+import { AppHeader } from "@/components/AppHeader";
+import { FileOperations } from "@/components/FileOperations";
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
+import ModelComponent from "@/features/model-universe/components/ModelComponent";
+import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
+import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
+import { saveMarkdownDocument } from "@/features/documents/markdownSlice";
+import { ThreePanelLayout } from "@/components/ThreePanelLayout";
 
-export default function Home() {
-  redirect('/ai-chat');
-  return null;
+export default function home() {
+  const data = useSelector((state: RootState) => state.modelUniverse);
+  const documents = useSelector((state: RootState) => state.markdown.documents);
+  const dispatch = useDispatch();
+  const router = useRouter();
+  // State for panel management
+  const [activeTab, setActiveTab] = useState("ai-chat");
+  const [activeSubTab, setActiveSubTab] = useState("overview");
+  const [showLeftPanel, setShowLeftPanel] = useState(true);
+  const [showRightPanel, setShowRightPanel] = useState(true);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(400);
+  const [rightPanelWidth, setRightPanelWidth] = useState(400);
+  const [activeLeftTab, setActiveLeftTab] = useState<'document' | 'library' | 'guide'>('guide');
+  const [activeRightTab, setActiveRightTab] = useState<'model' | 'help'>('help'); // Changed default to 'help' since model is moved
+
+  // Document management
+  const [mdContent, setMdContent] = useState<string>('');
+    const [isEditing, setIsEditing] = useState(false);
+  const [docName, setDocName] = useState<string>('Welcome');
+  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Refs for panel management
+  const leftPanelWidthRef = useRef(leftPanelWidth);
+  const rightPanelWidthRef = useRef(rightPanelWidth);
+  const showLeftPanelRef = useRef(showLeftPanel);
+  const mdFileInputRef = useRef<HTMLInputElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Panel sizing constants
+  const MIN_PANEL_WIDTH = 300;
+  const MAX_PANEL_WIDTH = () => window.innerWidth * 0.6;
+
+  // Update refs when state changes
+  useEffect(() => {
+    leftPanelWidthRef.current = leftPanelWidth;
+  }, [leftPanelWidth]);
+
+  useEffect(() => {
+    rightPanelWidthRef.current = rightPanelWidth;
+  }, [rightPanelWidth]);
+
+  useEffect(() => {
+    showLeftPanelRef.current = showLeftPanel;
+  }, [showLeftPanel]);
+
+  // Handle window resize to keep panels within bounds
+  useEffect(() => {
+    const handleResize = () => {
+      const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0;
+      const minimumMiddleWidth = 320;
+      const dragBarWidth = 8;
+      const padding = 80;
+      const maxRightWidth = Math.max(
+        MIN_PANEL_WIDTH,
+        window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - dragBarWidth - padding
+      );
+
+      // Adjust right panel if it's too wide
+      if (rightPanelWidth > maxRightWidth) {
+        setRightPanelWidth(maxRightWidth);
+      }
+
+      // Adjust left panel if it's too wide
+      const maxLeftWidth = Math.min(window.innerWidth * 0.5, 800);
+      if (leftPanelWidth > maxLeftWidth) {
+        setLeftPanelWidth(maxLeftWidth);
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [leftPanelWidth, rightPanelWidth, showLeftPanel]);
+
+  // Panel drag handling
+  const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, panel: 'left' | 'right') => {
+    if ('button' in e && e.button !== 0) return;
+
+    e.preventDefault();
+    e.stopPropagation();
+
+    const startX = 'touches' in e ? e.touches[0].clientX : e.clientX;
+    const startLeftWidth = leftPanelWidthRef.current;
+    const startRightWidth = rightPanelWidthRef.current;
+
+    document.body.style.userSelect = 'none';
+    document.body.style.cursor = 'col-resize';
+    document.body.style.touchAction = 'none';
+
+    const onMove = (event: MouseEvent | TouchEvent) => {
+      if (event instanceof MouseEvent && !(event.buttons & 1)) {
+        onEnd();
+        return;
+      }
+
+      const currentX = event instanceof TouchEvent ? event.touches[0].clientX : event.clientX;
+      const deltaX = currentX - startX;
+
+      if (panel === 'left') {
+        const newWidth = Math.max(
+          MIN_PANEL_WIDTH,
+          Math.min(MAX_PANEL_WIDTH(), startLeftWidth + deltaX)
+        );
+        setLeftPanelWidth(newWidth);
+      } else if (panel === 'right') {
+        const leftPanelActualWidth = showLeftPanelRef.current ? leftPanelWidthRef.current + 8 : 0;
+        const minimumMiddleWidth = 320;
+        const dragBarWidth = 8;
+        const padding = 40;
+        const maxRightWidth = Math.max(
+          MIN_PANEL_WIDTH,
+          window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - dragBarWidth - padding
+        );
+
+        const newWidth = Math.max(
+          MIN_PANEL_WIDTH,
+          Math.min(maxRightWidth, startRightWidth - deltaX)
+        );
+        setRightPanelWidth(newWidth);
+      }
+    };
+
+    const onEnd = () => {
+      document.body.style.userSelect = '';
+      document.body.style.cursor = '';
+      document.body.style.touchAction = '';
+
+      document.removeEventListener('mousemove', onMove, { capture: true });
+      document.removeEventListener('mouseup', onEnd, { capture: true });
+      document.removeEventListener('touchmove', onMove, { capture: true });
+      document.removeEventListener('touchend', onEnd, { capture: true });
+      document.removeEventListener('touchcancel', onEnd, { capture: true });
+    };
+
+    document.addEventListener('mousemove', onMove, { capture: true });
+    document.addEventListener('mouseup', onEnd, { capture: true });
+    document.addEventListener('touchmove', onMove, { capture: true });
+    document.addEventListener('touchend', onEnd, { capture: true });
+    document.addEventListener('touchcancel', onEnd, { capture: true });
+  };
+
+  // Handler functions
+  const handleOpenModal = () => setIsModalOpen(true);
+  const handleCloseModal = () => setIsModalOpen(false);
+
+    const handleExportLibrary = () => {
+      if (documents.length === 0) return;
+  
+      // Create a JSON file from the documents
+      const dataStr = JSON.stringify(documents, null, 2);
+      const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+  
+      // Create and trigger a download link
+      const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
+      const linkElement = document.createElement('a');
+      linkElement.setAttribute('href', dataUri);
+      linkElement.setAttribute('download', exportFileName);
+      linkElement.click();
+    };
+  
+    const handleImportLibrary = () => {
+      fileInputRef.current?.click();
+    };
+  
+    const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file) return;
+  
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const importedDocuments = JSON.parse(event.target?.result as string);
+  
+          // Validate the imported data structure
+          if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
+            typeof doc === 'object' && doc !== null &&
+            'id' in doc && 'name' in doc && 'content' in doc)) {
+  
+            // Import each document to Redux
+            importedDocuments.forEach(doc => {
+              dispatch(saveMarkdownDocument({
+                id: doc.id || Date.now().toString(),
+                name: doc.name,
+                type: 'markdown',
+                content: doc.content,
+                createdAt: doc.createdAt || new Date().toISOString()
+              }));
+            });
+  
+            alert(`Successfully imported ${importedDocuments.length} documents`);
+          } else {
+            alert('Invalid file format. Import failed.');
+          }
+        } catch (error) {
+          console.error('Error importing library:', error);
+          alert('Failed to import library. Invalid JSON format.');
+        }
+      };
+  
+      reader.readAsText(file);
+      e.target.value = ''; // Reset the file input
+    };
+  
+    const handleSelectFromLibrary = (content: string, name: string) => {
+      setMdContent(content);
+      setDocName(name);
+      setIsEditing(false);
+      setActiveLeftTab('document'); // Switch to document tab
+      setIsLibraryOpen(false); // Close the library modal after selection
+  
+      console.log("Selected document from library:", { content, name });
+    };
+
+  const handleSaveDocument = (content: string, name: string) => {
+    dispatch(saveMarkdownDocument({ content, name }));
+  };
+
+  const handleShowInLeftPanel = (content: string, name: string) => {
+    setMdContent(content);
+    setDocName(name);
+    setActiveLeftTab('document');
+    setIsLibraryOpen(false);
+  };
+
+  const leftPanelContent = {
+    tabs: [
+      {
+        key: 'guide',
+        label: 'Guide',
+        content: (
+          <div className="p-4">
+            <div className="space-y-4">
+              <div className="bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-white mb-2">Quick Tips</h3>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li>• Drag panel borders to resize</li>
+                  <li>• Use tabs to switch between views</li>
+                  <li>• Save frequently used documents</li>
+                  <li>• Explore the AI tools for assistance</li>
+                </ul>
+              </div>
+              <div className="bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-white mb-2">Navigation</h3>
+                <p className="text-sm text-gray-300">
+                  Use the sidebar to access different tools and features. Each tool has its own specialized interface for specific tasks.
+                </p>
+              </div>
+            </div>
+          </div>
+        )
+      },
+      // {
+      //   key: 'getting-started',
+      //   label: 'Guide',
+      //   content: <GettingStartedGuide />
+      // },
+      {
+        key: 'document',
+        label: 'New Context',
+        content: (
+          <DocumentPanel
+            mdContent={mdContent}
+            setMdContent={setMdContent}
+            onSave={(content: string) => handleSaveDocument(content, docName)}
+            isLibraryOpen={isLibraryOpen}
+            setIsLibraryOpen={setIsLibraryOpen}
+            panelType='left'
+          />
+        )
+      },
+      {
+        key: 'model',
+        label: 'Model Context',
+        content: (
+          <DocumentPanel
+            mdContent={mdContent}
+            setMdContent={setMdContent}
+            onSave={(content: string) => handleSaveDocument(content, docName)}
+            isLibraryOpen={isLibraryOpen}
+            setIsLibraryOpen={setIsLibraryOpen}
+            panelType='left'
+          />
+        )
+      }
+    ],
+    defaultTab: 'document'
+  };
+
+  // Define right panel content without the Model tab
+  const rightPanelContent = {
+    tabs: [
+      {
+        key: 'document',
+        label: 'Context',
+        content: (
+          <DocumentPanel
+            mdContent={mdContent}
+            setMdContent={setMdContent}
+            onSave={(content: string) => handleSaveDocument(content, docName)}
+            isLibraryOpen={isLibraryOpen}
+            setIsLibraryOpen={setIsLibraryOpen}
+            panelType='left'
+          />
+        )
+      },
+      {
+        key: 'help',
+        label: 'Help',
+        content: (
+          <div className="p-4">
+            <div className="space-y-4">
+              <div className="bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-white mb-2">Quick Tips</h3>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li>• Drag panel borders to resize</li>
+                  <li>• Use tabs to switch between views</li>
+                  <li>• Save frequently used documents</li>
+                  <li>• Explore the AI tools for assistance</li>
+                </ul>
+              </div>
+              <div className="bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-white mb-2">Navigation</h3>
+                <p className="text-sm text-gray-300">
+                  Use the sidebar to access different tools and features. Each tool has its own specialized interface for specific tasks.
+                </p>
+              </div>
+            </div>
+          </div>
+        )
+      }
+    ],
+    defaultTab: 'help'
+  };
+
+  return (
+    <>
+      <ThreePanelLayout
+        moduleOperations={<FileOperations />}
+        leftPanelContent={leftPanelContent}
+        rightPanelContent={rightPanelContent}
+
+      >
+        <Tabs defaultValue="ai-chat" className="flex flex-col flex-1">
+          {/* Main Tabs */}
+          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto pt-3 z-20">
+            <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
+            <TabsTrigger value="overview">Overview</TabsTrigger>
+            <TabsTrigger value="model">Current Universe</TabsTrigger>
+            <TabsTrigger value="help">Help</TabsTrigger>
+          </TabsList>
+
+          {/* Tab Content */}
+          <TabsContent value="ai-chat" className="flex-1 px-1 mt-1">
+            <div className="flex-1 overflow-auto bg-gray-800/20">
+              <div className="max-w-4xl mx-auto">
+                <div className="text-center mb-8">
+                  <h1 className="text-2xl font-bold text-white my-2">
+                    Welcome to AI Assisted Mimris Modelling
+                  </h1>
+                  <p className="text-xl text-gray-300 mb-6">
+                    Your comprehensive platform for AI-powered model building and analysis
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-green-400 mb-3">Quick Start</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      New to the platform? Start with our guided tutorials and examples.
+                    </p>
+                    <Button
+                      onClick={() => router.push('/ai-chat')}
+                      className="w-full bg-green-600 hover:bg-green-700 mt-auto">
+                      Get Started
+                    </Button>
+                  </Card>
+
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-blue-400 mb-3">AI Chat</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      Interact with AI assistant using predefined Template prompts to get the most out of AI Chat!
+                    </p>
+                    <Button
+                      onClick={() => router.push('/ai-chat')}
+                      className="w-full bg-blue-600 hover:bg-blue-700 mt-auto">
+                      Open Chat
+                    </Button>
+                  </Card>
+
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-blue-400 mb-3">Prompt Generator</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      Interact with AI assistant to generate the perfect prompt!
+                    </p>
+                    <Button
+                      onClick={() => router.push('/prompt-builder')}
+                      className="w-full bg-blue-600 hover:bg-blue-700 mt-auto">
+                      Generate Prompt
+                    </Button>
+                  </Card>
+
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-orange-400 mb-3">Scope Domain</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      Scope and Define the actual Domain with AI assistance.
+                    </p>
+                    <Button
+                      onClick={() => router.push('/domain-builder')}
+                      className="w-full bg-orange-600/70 hover:bg-orange-700 mt-auto">
+                      Define Domain
+                    </Button>
+                  </Card>
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-orange-400 mb-3">Ontology Builder</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      Create and manage the atual Ontology Concepts and Relationships with AI assistance.
+                    </p>
+                    <Button
+                      onClick={() => router.push('/ontology-builder')}
+                      className="w-full bg-orange-600/70 hover:bg-orange-700 mt-auto">
+                      Build Ontology Concepts
+                    </Button>
+                  </Card>
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+
+                  </Card>
+
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-purple-400 mb-3">POPS Model Builder</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      Create and manage sophisticated POPS models with AI assistance.
+                    </p>
+                    <Button
+                      onClick={() => router.push('/domain-builder')}
+                      className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
+                      Build POPS Models
+                    </Button>
+                  </Card>
+
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-purple-400 mb-3">IRTV Model Builder</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      Create and manage sophisticated IRTV models with AI assistance.
+                    </p>
+                    <Button
+                      onClick={() => router.push('/domain-builder')}
+                      className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
+                      Build IRTV Models
+                    </Button>
+                  </Card>
+
+                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <CardTitle className="text-purple-400 mb-3">META Model Builder</CardTitle>
+                    <p className="text-gray-300 mb-4 flex-grow">
+                      Create and manage sophisticated META models with AI assistance.
+                    </p>
+                    <Button
+                      onClick={() => router.push('/domain-builder')}
+                      className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
+                      Build META Models
+                    </Button>
+                  </Card>
+                </div>
+              </div>
+
+            </div>
+          </TabsContent>
+
+          <TabsContent value="overview" className="flex-1 px-1 mt-1">
+            <div className="flex-1 overflow-auto bg-gray-800/20 p-4">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold text-white mb-6">Platform Overview</h2>
+
+                <div className="space-y-6">
+                  <div className="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-green-400 mb-3">Features</h3>
+                    <ul className="space-y-2 text-gray-300">
+                      <li>• AI-powered model generation and analysis</li>
+                      <li>• Interactive domain and ontology building</li>
+                      <li>• Advanced prompt engineering tools</li>
+                      <li>• Real-time collaboration and sharing</li>
+                      <li>• Comprehensive documentation system</li>
+                    </ul>
+                  </div>
+
+                  <div className="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-blue-400 mb-3">Available Tools</h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-gray-200">AI & Chat</h4>
+                        <p className="text-sm text-gray-400">Interactive AI assistants for model building</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-gray-200">Domain Builder</h4>
+                        <p className="text-sm text-gray-400">Define and structure your problem domains</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-gray-200">Ontology Builder</h4>
+                        <p className="text-sm text-gray-400">Create comprehensive ontologies</p>
+                      </div>
+                      <div className="space-y-2">
+                        <h4 className="font-medium text-gray-200">Model Builder</h4>
+                        <p className="text-sm text-gray-400">Build and refine complex models</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+
+          <TabsContent value="model" className="flex-1 px-1 mt-1">
+            <div className="flex-1 overflow-auto bg-gray-800/20 p-2">
+              <ModelComponent />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="help" className="flex-1 px-1 mt-1">
+            <div className="flex-1 overflow-auto bg-gray-800/20 p-4">
+              <div className="max-w-4xl mx-auto">
+                <h2 className="text-2xl font-bold text-white mb-6">Help & Support</h2>
+
+                <div className="space-y-6">
+                  <div className="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-orange-400 mb-3">Getting Help</h3>
+                    <div className="space-y-3">
+                      <p className="text-gray-300">
+                        Need assistance? Here are the best ways to get help:
+                      </p>
+                      <ul className="space-y-2 text-gray-300">
+                        <li>• Check the Getting Started guide in the left panel</li>
+                        <li>• Use the AI Chat for interactive assistance</li>
+                        <li>• Browse the documentation library</li>
+                        <li>• Explore example models and templates</li>
+                      </ul>
+                    </div>
+                  </div>
+
+                  <div className="bg-gray-800/50 p-6 rounded-lg">
+                    <h3 className="text-xl font-semibold text-red-400 mb-3">Common Issues</h3>
+                    <div className="space-y-3">
+                      <div>
+                        <h4 className="font-medium text-gray-200">Panel Management</h4>
+                        <p className="text-sm text-gray-400">Use the toggle buttons in the header to show/hide left and right panels</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-200">Saving Work</h4>
+                        <p className="text-sm text-gray-400">All documents are automatically saved to your library</p>
+                      </div>
+                      <div>
+                        <h4 className="font-medium text-gray-200">Navigation</h4>
+                        <p className="text-sm text-gray-400">Use the sidebar to switch between different tools</p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </TabsContent>
+        </Tabs>
+      </ThreePanelLayout>
+
+      {/* Library Modal */}
+      {isLibraryOpen && (
+        <div
+          className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
+          onClick={() => setIsLibraryOpen(false)}
+        >
+          <div
+            className="bg-background rounded-lg p-4 w-[600px]"
+            onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
+          >
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
+              <div className="flex space-x-2">
+
+                <button
+                  onClick={handleExportLibrary}
+                  className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
+                  disabled={documents.length === 0}
+                >
+                  Export Library
+                </button>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelection}
+                  accept=".json"
+                  style={{ display: 'none' }}
+                />
+                <button
+                  onClick={handleImportLibrary}
+                  className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
+                >
+                  <span>Import Library</span>
+                </button>
+                <button
+                  onClick={() => setIsLibraryOpen(false)}
+                  className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+            {/* Pass export functionality to library component */}
+            <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
+              <MarkdownLibrary
+                onSelect={handleSelectFromLibrary}
+                hideExportLibraryButton={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
 }
-// "use client";
 
-// import { useState } from "react";
-// import Image from "next/image";
-// import Link from "next/link";
-// import { useSelector } from "react-redux";
-// // import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-// // import { Button } from "@/components/ui/button";
-// import { ChevronLeft, ChevronRight } from 'lucide-react';
-// import type { RootState } from "@/store";
-// import { faRobot } from "@fortawesome/free-solid-svg-icons";
-// import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-
-// import Header from "@/components/Header";
-// import DigitalRain from "@/utils/digital-rain";
-
-// // import { FeatureAComponent } from '@/features';
-// // import { Card } from "@/components/ui/card";
-// // const components = [<ModelComponent key="model" />, <ConceptBuilder key="builder" />];
-
-
-
-// export default function Home() {
-//   const data = useSelector((state: RootState) => state.modelUniverse);
-//   const [currentIndex, setCurrentIndex] = useState(0);
-
-//   const slide1 = (
-//     <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-2 md:p-4 gap-2 md:gap-4 w-full max-w-7xl mx-auto">
-//       <div className="flex flex-col items-left justify-start space-y-1 md:space-y-3 text-xs md:text-base p-1 md:p-3 w-full md:w-1/3 bg-gradient-to-r from-green-950 to-blue-1000">
-//         <div className="font-semibold text-xl bg-gradient-to-l from-green-400 to-blue-600 bg-clip-text text-transparent">
-//           AI Powered - Active Knowledge Modelling (AKM).
-//         </div>
-//         <div className="text-cyan-300 text-xs md:text-sm p-1 md:p-2 bg-gradient-to-r from-green-950 to-blue-1000">
-//           The goal of the AKM is to create a Knowledge Model that can be used to explore and generate insights about a specific Domain. <br />
-//           We start with scoping and defining the Domain we are going to explore and model. <br />
-//           This includes:
-//           <ul className="list-disc pl-3 mt-1">
-//         <li className="whitespace-normal break-words mb-1">
-//           <Link href="/prompt-builder" className="hover:text-blue-400 transition-colors">
-//             Generate a super Prompt to in-depth explore the Domain in question.
-//           </Link>
-//         </li>
-//         <li className="whitespace-normal break-words mb-1">
-//           <Link href="/domain-builder" className="hover:text-blue-400 transition-colors">
-//             Run the Prompt to let AI generate the Scope definition.
-//           </Link>
-//         </li>
-//         <li className="whitespace-normal break-words mb-1">
-//           <Link href="/concept-builder" className="hover:text-blue-400 transition-colors">
-//             AI generated Domain Ontology (Knowledge Graph).
-//           </Link>
-//         </li>
-//           </ul>
-//         </div>
-//       </div>
-//       <div className="relative flex flex-col items-center justify-center w-full md:w-1/3 aspect-square my-2 md:my-0">
-
-//         <div className="relative w-full max-w-xs aspect-square rounded-full border-4 border-green-500 shadow-lg flex items-center justify-center">
-//           <div className="relative w-full h-full m-1 rounded-full border-4 border-blue-500 shadow-lg flex items-center justify-center">
-//             {/* Image visible for the first half of the cycle */}
-//             <div
-//               style={{ animation: "fadeInOut 10s ease-in-out infinite" }}
-//               className="absolute"
-//             >
-//               <style jsx>{`
-//                 @keyframes fadeInOut {
-//                   0% { opacity: 1; }
-//                   45% { opacity: 0; }
-//                   55% { opacity: 0; }
-//                   100% { opacity: 1; }
-//                 }
-//               `}</style>
-//               <Image
-//                 src="/images/earthbox.png"
-//                 alt="Active AI Powered Knowledge Models"
-//                 width={222}
-//                 height={222}
-//                 className="object-cover rounded-full w-full h-full"
-//               />
-//             </div>
-//             <div className="absolute inset-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 opacity-10 animate-[pulse_5s_linear_infinite]"></div>
-//             <div className="flex flex-col items-center z-2">
-//               <span className="relative p-2 md:p-4 text-center text-lg md:text-2xl lg:text-2xl font-semibold bg-gradient-to-r from-green-400 to-blue-500 animate-[pulse_1s_linear_infinite] bg-clip-text text-transparent">
-//                 AI Powered
-//               </span>
-//               <span className="relative p-2 md:p-4 text-center text-lg md:text-2xl lg:text-2xl font-semibold bg-gradient-to-l from-green-400 to-blue-500 animate-[pulse_5s_linear_infinite] bg-clip-text text-transparent">
-//                 Active Knowledge Models
-//               </span>
-//             </div>
-//             <div
-//               style={{
-//                 animation: "fadeInOut 20s ease-in-out infinite reverse, moveAround 30s linear infinite"
-//               }}
-//               className="absolute"
-//             >
-//               <style jsx>{`
-//               @keyframes fadeInOut {
-//               0% { opacity: 1; }
-//               45% { opacity: 0; }
-//               55% { opacity: 0; }
-//               100% { opacity: 1; }
-//               }
-//               @keyframes moveAround {
-//               0% { transform: translate(0px, 0px); }
-//               20% { transform: translate(50px, -35px); }
-//               40% { transform: translate(-40px, -30px); }
-//               60% { transform: translate(-50px, 40px); }
-//               80% { transform: translate(40px, 30px); }
-//               100% { transform: translate(0px, 0px); }
-//               }
-//               @keyframes changeColors {
-//               0% { color: #b91c1c; }
-//               25% { color: #4f46e5; }
-//               50% { color: #0ea5e9; }
-//               75% { color: #059669; }
-//               100% { color: #b91c1c; }
-//               }
-//               @keyframes changeSize {
-//               0% { transform: scale(1); }
-//               50% { transform: scale(1.5); }
-//               100% { transform: scale(1); }
-//               }
-//               `}</style>
-//               <FontAwesomeIcon
-//                 icon={faRobot}
-//                 className="fa-2xl"
-//                 style={{ animation: "changeColors 18s linear infinite, changeSize 8s ease-in-out infinite" }}
-//               />
-//             </div>
-//           </div>
-//         </div>
-//       </div>
-//       <div className="flex flex-col items-left justify-left space-y-1 md:space-y-4 text-xs md:text-sm p-2 md:p-4 w-full md:w-1/3 bg-gradient-to-l from-green-950 to-blue-1000">
-//         <div className="font-semibold bg-gradient-to-r from-green-400 to-blue-600 bg-clip-text text-transparent text-xs md:text-sm">
-//           This model suite, can consist of: <br />Top-down overview models, Workspace models and<br />Bottom-up Solution models, <br />as a collection of models. <br />
-//           The models are used to explore the Domain and generate insights and knowledge for the Domain in question.
-//         </div>
-//         <div className="text-cyan-300 text-xs md:text-xs p-2 bg-gradient-to-l from-green-950 to-blue-1000">
-//           Based on the Domain Scope definition, we generate specific model objects and relationships that form the foundation of our AKM models. The AI analyzes the domain knowledge and automatically creates suggestions:
-//           <ul className="list-disc pl-4 mt-1 text-cyan-300 text-xs">
-//         <li className="whitespace-normal break-words mb-1">
-//           <Link href="/model-builder" className="hover:text-blue-400 transition-colors">
-//             AI Generated IRTV Model
-//           </Link>
-//         </li>
-//         <li className="whitespace-normal break-words mb-1">
-//           <Link href="/model-builder" className="hover:text-blue-400 transition-colors">
-//             AI Generated POPS Model
-//           </Link>
-//         </li>
-//         <li className="whitespace-normal break-words mb-1">
-//           <Link href="/model-builder" className="hover:text-blue-400 transition-colors">
-//             AI Generated META Model
-//           </Link>
-//         </li>
-//           </ul>
-//         </div>
-//       </div>
-//     </div>
-//   );
-
-//   const slide2 = (
-//     <div className="flex flex-col items-center justify-center w-full h-full">
-//       <div className="flex flex-col items-left space-y-4">
-//         <div className="text-4xl font-semibold text-blue-700">Active AI Powered Knowledge Models</div>
-//         <div className="relative bg-gradient-to-r from-blue-500 to-purple-600 opacity-10 animate-pulse"></div>
-//         <div className="text-sm text-gray-700 space-y-1">
-//           <div className="text-sm text-orange-500 p-1 mb-2 border-dotted border-2 border-orange-600 rounded">
-//             <span className="text-xs italic text-orange-500 mb-2">
-//               As the Supercomputer &quot;Deep Thought&quot; in The &quot;Hitchhiker&apos;s Guide to the Galaxy&quot; replied :<br />
-//               &laquo;The Answer to the Ultimate Question of Life, the Universe, and Everything is &raquo; :
-//             </span>
-//             <span className="text-xl font-bold animate-bounce"> &quot;42&quot;</span>
-//             <hr className="my-2 bg-green-500" />
-//             <span className="text-xs italic text-orange-400 mb-4">
-//               But we are here, to create the best Question (Prompt), ever written.
-//             </span>
-//             <span className="text-xl font bold"> 😄</span>
-//           </div>
-//         </div>
-//       </div>
-//     </div>
-//   );
-
-//   const components = [slide1, slide2];
-
-//   const nextSlide = () => {
-//     setCurrentIndex((prevIndex) =>
-//       prevIndex === components.length - 1 ? 0 : prevIndex + 1
-//     );
-//   };
-
-//   const prevSlide = () => {
-//     setCurrentIndex((prevIndex) =>
-//       prevIndex === 0 ? components.length - 1 : prevIndex - 1
-//     );
-//   };
-
-//   return (
-//     <div className="w-full h-screen overflow-hidden relative">
-//       {/* Position DigitalRain absolutely to cover the entire viewport */}
-//       <div className="absolute inset-0 z-0 h-screen w-screen overflow-hidden">
-//         <DigitalRain />
-//       </div>
-//       {/* Content container with higher z-index */}
-//       <div className="relative z-20 w-full h-full">
-//         {/* Apply explicit z-index to Header to ensure it's above everything */}
-//         <div className="relative z-30">
-//           <Header title={'Model'} value={data.phData.metis.name} />
-//         </div>
-
-//         <div className="my-2 md:my-5 py-1 md:py-5 px-1 md:px-4 w-full height-full flex flex-col items-center justify-center">
-//           <div className="flex items-center justify-center w-full">
-//             <button
-//               onClick={prevSlide}
-//               className="flex-shrink-0 mr-2 md:mr-4 bg-white/10 rounded-full p-1 md:p-2 shadow-md hover:bg-gray-200/20"
-//               aria-label="Previous"
-//             >
-//               <ChevronLeft size={20} className="md:w-6 md:h-6" />
-//             </button>
-//             <div className="relative flex flex-1 items-center justify-center h-full ">
-//               <div
-//                 className="flex transition-transform duration-300 w-full h-full"
-//                 style={{ transform: `translateX(-${currentIndex * 100}%)` }}
-//               >
-//                 {components.map((component, index) => (
-//                     <div
-//                     key={index}
-//                     className="min-w-full w-full flex items-center justify-center flex-shrink-0 px-1"
-//                     >
-//                     <div className="w-full h-screen overflow-y-auto">
-//                       {component}
-//                     </div>
-//                     </div>
-//                 ))}
-//               </div>
-//             </div>
-//             <button
-//               onClick={nextSlide}
-//               className="flex-shrink-0 ml-2 md:ml-4 bg-white/20 rounded-full p-1 md:p-2 shadow-md hover:bg-white/30 z-10"
-//               aria-label="Next"
-//             >
-//               <ChevronRight size={20} className="md:w-6 md:h-6" />
-//             </button>
-//           </div>
-//         </div>
-//         {/* Commented tabs section would go here */}
-//       </div>
-//     </div>
-//   );
-// }

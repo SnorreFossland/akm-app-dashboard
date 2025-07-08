@@ -127,6 +127,7 @@ export default function OutputPanel({
         dispatch(saveMarkdownDocument({
             id: Date.now().toString(),
             name: firstLine,
+            type: 'markdown',
             content: contentToSave,
             createdAt: new Date().toISOString()
         }));
@@ -135,17 +136,17 @@ export default function OutputPanel({
         onSaveToLibrary(contentToSave);
     };
 
-    const handleSave = () => {
-        dispatch(saveMarkdownDocument({
-            id: documentId || Date.now().toString(),
-            name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
-            content: editContent,
-            createdAt: new Date().toISOString()
-        }));
+    // const handleSave = () => {
+    //     dispatch(saveMarkdownDocument({
+    //         id: documentId || Date.now().toString(),
+    //         name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
+    //         content: editContent,
+    //         createdAt: new Date().toISOString()
+    //     }));
 
-        onSave(editContent);
-        setIsEditing(false);
-    };
+    //     onSave(editContent);
+    //     setIsEditing(false);
+    // };
 
     // Define placeholders based on panel type
     const getPlaceholder = () => {
