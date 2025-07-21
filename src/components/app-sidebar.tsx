@@ -35,7 +35,7 @@ export function AppSidebar({ ...props }) {
   return (
     <div className="relative bg-gray-500">
       {/* Fixed toggler */}
-      <div className="fixed top-0 left-0 z-30 w-6 h-6 flex flex-row items-center justify-between bg-transparent">
+      <div className="fixed top-0 left-1 z-30 w-6 h-6 flex flex-row items-center justify-between bg-transparent">
         <SidebarTrigger />
       </div>
       {/* Sidebar */}
@@ -70,30 +70,22 @@ export function AppSidebar({ ...props }) {
               </SidebarMenuItem>
             </SidebarMenu>
           </SidebarGroup>
-          <SidebarContent className="sidebar-content">
+          {/* <SidebarContent className="sidebar-content"> */}
+          <hr className="border-gray-600" />
             <SidebarGroup className="sidebar-group">
-              {!isCollapsed && <SidebarGroupLabel>AI Chat</SidebarGroupLabel>}
+            {!isCollapsed && <SidebarGroupLabel>AI Chat</SidebarGroupLabel>}
               <NavMain items={navigationData.navMain} searchResults={navigationData.searchResults} />
             </SidebarGroup>
+            <hr className="border-gray-600" />
             <SidebarGroup className="sidebar-group">
               {!isCollapsed && <SidebarGroupLabel>Mimris Modelling</SidebarGroupLabel>}
               <NavMain items={navigationData.navMimris} searchResults={navigationData.searchResults} />
             </SidebarGroup>
-
-
-            {!isCollapsed && (
-              <div className="flex flex-col gap-4 px-4">
-                <ModeToggle />
-              </div>
-            )}
-          </SidebarContent>
-
-          <SidebarFooter className="sidebar-footer">
-            {!isCollapsed && (
-              <div className="flex items-center space-x-2 px-4">
-                <ModeToggle />
-              </div>
-            )}
+          {/* </SidebarContent> */}
+          <SidebarFooter className="sidebar-footer mt-auto">
+            <div className="flex items-center justify-left p-2">
+              <ModeToggle />
+            </div>
           </SidebarFooter>
         </Sidebar>
       </div>

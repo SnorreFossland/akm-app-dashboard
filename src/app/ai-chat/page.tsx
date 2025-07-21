@@ -182,6 +182,7 @@ const AIChatPage = () => {
                         dispatch(saveMarkdownDocument({
                             id: doc.id || Date.now().toString(),
                             name: doc.name,
+                            type: 'markdown',
                             content: doc.content,
                             createdAt: doc.createdAt || new Date().toISOString()
                         }));

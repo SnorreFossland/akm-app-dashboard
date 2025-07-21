@@ -60,7 +60,7 @@ export function NavMain({
   const allItems = items.flatMap(section => section.items || [])
 
   return (
-    <SidebarMenu className={cn("grid gap-0.5", className)}>
+    <SidebarMenu className={cn("grid gap-0.1", className)}>
       {allItems.map((item) => {
         const isActive = pathname === item.url
         const hasSubItems = item.items && item.items.length > 0
@@ -72,7 +72,7 @@ export function NavMain({
                 className={cn("w-full justify-start flex items-center gap-2", isActive && "bg-accent text-accent-foreground")}
               >
                 <Link href={item.url} className="flex items-center gap-2">
-                  {item.icon && React.createElement(item.icon, { className: "h-4 w-4 flex-shrink-0" })}
+                  {item.icon && React.createElement(item.icon, { className: "h-5 w-5 flex-shrink-0" })}
                   {!isCollapsed && (
                     <span className="nav-item-text">{item.title}</span>
                   )}
@@ -81,9 +81,8 @@ export function NavMain({
             </SidebarMenuItem>
           )
         }
-
         // If expanded and has sub-items, render as collapsible
- return (
+        return (
           <Collapsible key={item.title} asChild defaultOpen={item.isActive}>
             <SidebarMenuItem>
               <CollapsibleTrigger asChild>
@@ -113,7 +112,6 @@ export function NavMain({
             </SidebarMenuItem>
           </Collapsible>
         )
-
       })}
     </SidebarMenu>
   )

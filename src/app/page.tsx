@@ -15,12 +15,17 @@ import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { saveMarkdownDocument } from "@/features/documents/markdownSlice";
 import { ThreePanelLayout } from "@/components/ThreePanelLayout";
+import { ObjectCard } from '@/components/object-card';
+import { Model } from '@/features/model-universe/modelSlice';
 
 export default function home() {
   const data = useSelector((state: RootState) => state.modelUniverse);
   const documents = useSelector((state: RootState) => state.markdown.documents);
   const dispatch = useDispatch();
   const router = useRouter();
+  const [currentModel, setCurrentModel] = useState<Model | null>(null);
+    const [focusModel, setFocusModel] = useState<{ id: string; name: string } | null>(null);
+
   // State for panel management
   const [activeTab, setActiveTab] = useState("ai-chat");
   const [activeSubTab, setActiveSubTab] = useState("overview");
@@ -33,7 +38,7 @@ export default function home() {
 
   // Document management
   const [mdContent, setMdContent] = useState<string>('');
-    const [isEditing, setIsEditing] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
   const [docName, setDocName] = useState<string>('Welcome');
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -43,11 +48,18 @@ export default function home() {
   const rightPanelWidthRef = useRef(rightPanelWidth);
   const showLeftPanelRef = useRef(showLeftPanel);
   const mdFileInputRef = useRef<HTMLInputElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Panel sizing constants
   const MIN_PANEL_WIDTH = 300;
   const MAX_PANEL_WIDTH = () => window.innerWidth * 0.6;
+
+    useEffect(() => {
+      if (data.phFocus) {
+        setFocusModel(data.phFocus.focusModel);
+        setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
+      }
+    }, [data.phFocus, data.phData.metis, focusModel?.id]);
 
   // Update refs when state changes
   useEffect(() => {
@@ -161,73 +173,73 @@ export default function home() {
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
 
-    const handleExportLibrary = () => {
-      if (documents.length === 0) return;
-  
-      // Create a JSON file from the documents
-      const dataStr = JSON.stringify(documents, null, 2);
-      const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-  
-      // Create and trigger a download link
-      const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
-      const linkElement = document.createElement('a');
-      linkElement.setAttribute('href', dataUri);
-      linkElement.setAttribute('download', exportFileName);
-      linkElement.click();
-    };
-  
-    const handleImportLibrary = () => {
-      fileInputRef.current?.click();
-    };
-  
-    const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-      const file = e.target.files?.[0];
-      if (!file) return;
-  
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        try {
-          const importedDocuments = JSON.parse(event.target?.result as string);
-  
-          // Validate the imported data structure
-          if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
-            typeof doc === 'object' && doc !== null &&
-            'id' in doc && 'name' in doc && 'content' in doc)) {
-  
-            // Import each document to Redux
-            importedDocuments.forEach(doc => {
-              dispatch(saveMarkdownDocument({
-                id: doc.id || Date.now().toString(),
-                name: doc.name,
-                type: 'markdown',
-                content: doc.content,
-                createdAt: doc.createdAt || new Date().toISOString()
-              }));
-            });
-  
-            alert(`Successfully imported ${importedDocuments.length} documents`);
-          } else {
-            alert('Invalid file format. Import failed.');
-          }
-        } catch (error) {
-          console.error('Error importing library:', error);
-          alert('Failed to import library. Invalid JSON format.');
+  const handleExportLibrary = () => {
+    if (documents.length === 0) return;
+
+    // Create a JSON file from the documents
+    const dataStr = JSON.stringify(documents, null, 2);
+    const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
+
+    // Create and trigger a download link
+    const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
+    const linkElement = document.createElement('a');
+    linkElement.setAttribute('href', dataUri);
+    linkElement.setAttribute('download', exportFileName);
+    linkElement.click();
+  };
+
+  const handleImportLibrary = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      try {
+        const importedDocuments = JSON.parse(event.target?.result as string);
+
+        // Validate the imported data structure
+        if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
+          typeof doc === 'object' && doc !== null &&
+          'id' in doc && 'name' in doc && 'content' in doc)) {
+
+          // Import each document to Redux
+          importedDocuments.forEach(doc => {
+            dispatch(saveMarkdownDocument({
+              id: doc.id || Date.now().toString(),
+              name: doc.name,
+              type: 'markdown',
+              content: doc.content,
+              createdAt: doc.createdAt || new Date().toISOString()
+            }));
+          });
+
+          alert(`Successfully imported ${importedDocuments.length} documents`);
+        } else {
+          alert('Invalid file format. Import failed.');
         }
-      };
-  
-      reader.readAsText(file);
-      e.target.value = ''; // Reset the file input
+      } catch (error) {
+        console.error('Error importing library:', error);
+        alert('Failed to import library. Invalid JSON format.');
+      }
     };
-  
-    const handleSelectFromLibrary = (content: string, name: string) => {
-      setMdContent(content);
-      setDocName(name);
-      setIsEditing(false);
-      setActiveLeftTab('document'); // Switch to document tab
-      setIsLibraryOpen(false); // Close the library modal after selection
-  
-      console.log("Selected document from library:", { content, name });
-    };
+
+    reader.readAsText(file);
+    e.target.value = ''; // Reset the file input
+  };
+
+  const handleSelectFromLibrary = (content: string, name: string) => {
+    setMdContent(content);
+    setDocName(name);
+    setIsEditing(false);
+    setActiveLeftTab('document'); // Switch to document tab
+    setIsLibraryOpen(false); // Close the library modal after selection
+
+    console.log("Selected document from library:", { content, name });
+  };
 
   const handleSaveDocument = (content: string, name: string) => {
     dispatch(saveMarkdownDocument({ content, name }));
@@ -272,36 +284,45 @@ export default function home() {
       //   label: 'Guide',
       //   content: <GettingStartedGuide />
       // },
-      {
-        key: 'document',
-        label: 'New Context',
-        content: (
-          <DocumentPanel
-            mdContent={mdContent}
-            setMdContent={setMdContent}
-            onSave={(content: string) => handleSaveDocument(content, docName)}
-            isLibraryOpen={isLibraryOpen}
-            setIsLibraryOpen={setIsLibraryOpen}
-            panelType='left'
-          />
-        )
-      },
-      {
-        key: 'model',
-        label: 'Model Context',
-        content: (
-          <DocumentPanel
-            mdContent={mdContent}
-            setMdContent={setMdContent}
-            onSave={(content: string) => handleSaveDocument(content, docName)}
-            isLibraryOpen={isLibraryOpen}
-            setIsLibraryOpen={setIsLibraryOpen}
-            panelType='left'
-          />
-        )
-      }
+      // {
+      //   key: 'document',
+      //   label: 'New Context',
+      //   content: (
+      //     <DocumentPanel
+      //       mdContent={mdContent}
+      //       setMdContent={setMdContent}
+      //       onSave={(content: string) => handleSaveDocument(content, docName)}
+      //       isLibraryOpen={isLibraryOpen}
+      //       setIsLibraryOpen={setIsLibraryOpen}
+      //       panelType='left'
+      //     />
+      //   )
+      // },
+      // {
+      //   key: 'object-card',
+      //   label: 'Model Card',
+      //   content: currentModel ? (
+      //     <ObjectCard model={{
+      //       id: currentModel.id,
+      //       name: currentModel.name,
+      //       description: currentModel.description,
+      //       objects: currentModel.objects?.map(obj => ({
+      //         id: obj.id || '',
+      //         name: obj.name || '',
+      //         description: obj.description || '',
+      //         proposedType: obj.proposedType || '',
+      //         typeRef: obj.typeRef || '',
+      //         typeName: obj.typeName || '',
+      //         category: obj.category || ''
+      //       })) || [],
+      //       relships: currentModel.relships || [],
+      //       metamodelRef: currentModel.metamodelRef,
+      //       modelviews: currentModel.modelviews
+      //     }} />
+      //   ) : <div className="p-4 text-gray-400">No model selected</div>
+      // }
     ],
-    defaultTab: 'document'
+    defaultTab: 'guide'  
   };
 
   // Define right panel content without the Model tab
@@ -358,22 +379,22 @@ export default function home() {
         rightPanelContent={rightPanelContent}
 
       >
-        <Tabs defaultValue="ai-chat" className="flex flex-col flex-1">
+        <Tabs defaultValue="overview" className="flex flex-col flex-1">
           {/* Main Tabs */}
           <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto pt-3 z-20">
-            <TabsTrigger value="ai-chat">AI Chat</TabsTrigger>
             <TabsTrigger value="overview">Overview</TabsTrigger>
             <TabsTrigger value="model">Current Universe</TabsTrigger>
+            <TabsTrigger value="about">About</TabsTrigger>
             <TabsTrigger value="help">Help</TabsTrigger>
           </TabsList>
 
           {/* Tab Content */}
-          <TabsContent value="ai-chat" className="flex-1 px-1 mt-1">
+          <TabsContent value="overview" className="flex-1 px-1 mt-1">
             <div className="flex-1 overflow-auto bg-gray-800/20">
               <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-8">
                   <h1 className="text-2xl font-bold text-white my-2">
-                    Welcome to AI Assisted Mimris Modelling
+                    Welcome to the AI Assisted Workplace
                   </h1>
                   <p className="text-xl text-gray-300 mb-6">
                     Your comprehensive platform for AI-powered model building and analysis
@@ -484,7 +505,7 @@ export default function home() {
             </div>
           </TabsContent>
 
-          <TabsContent value="overview" className="flex-1 px-1 mt-1">
+          <TabsContent value="about" className="flex-1 px-1 mt-1">
             <div className="flex-1 overflow-auto bg-gray-800/20 p-4">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-2xl font-bold text-white mb-6">Platform Overview</h2>

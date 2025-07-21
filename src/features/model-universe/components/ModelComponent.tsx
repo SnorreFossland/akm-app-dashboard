@@ -114,16 +114,9 @@ function ModelComponent() {
     if (data.phFocus) {
       setFocusModel(data.phFocus.focusModel);
       setFocusModelview(data.phFocus.focusModelview);
-      // setFocusObject(data.phFocus.focusObject);
-      // setFocusObjectview(data.phFocus.focusObjectview);
-      // setFocusRelationship(data.phFocus.focusRelship);
-      // setFocusRelationshipview(data.phFocus.focusRelshipview);
-      // }
-      // if (data.phData.metis) {
       setMetis(data.phData.metis);
       setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
       setCurrentModelview(currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id) || null);
-
     }
   }, [data.phFocus, data.phData.metis, focusModel?.id, focusModelview?.id, currentModel?.modelviews]);
 
@@ -153,7 +146,7 @@ function ModelComponent() {
   return (
     <div className='model-universe-a-component w-full flex flex-col'>
       {/* <Header metisName={data.phData.metis?.name} /> */}
-      <div className="bg-background">
+      {/* <div className="bg-background">
         <div className="flex justify-between bg-gray-600 p-1">
           <div className=" px-1 bg-background">
             <label htmlFor="model-select" className="mx-1 font-bold text-gray-400 inline-block">Current Model:</label>
@@ -173,13 +166,12 @@ function ModelComponent() {
           </div>
           <h3 className="flex mx-1 pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
         </div>
-
-      </div>
+      </div> */}
       <div className="flex bg-background flex-1 overflow-hidden">
         <div className=" w-full overflow-y-auto">
           <div className="pt-0 w-full h-full">
             {data
-              ? <Card className="p-0 m-0 max-h-[calc(100vh-80px)] overflow-hidden">
+              ? <Card className="p-0 m-0 max-h-[calc(100vh-8px)] overflow-hidden">
                 <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="m-1">
                   <TabsList className="m-0 mb-0 bg-transparent rounded-t-md flex space-x-1">
                     <TabsTrigger
@@ -212,7 +204,7 @@ function ModelComponent() {
                     </TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="domain-concepts" className="m-0 px-1 py-2 h-full rounded bg-background text-gray-200">
+                  <TabsContent value="domain-concepts" className="m-0 px-1 py-2 rounded bg-background text-gray-200">
                     {domainData && (
                       <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                         {/* <h4 className="px-1 text-gray-400 font-bold">Concepts:</h4> */}
@@ -229,7 +221,7 @@ function ModelComponent() {
                         {data && data.phData && data.phData.metis && data.phData.metis.models && (
                           // Replace the section from line 262-317 with this editable version:
 
-                          <div className="max-h-[calc(100vh-40rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                          <div className="scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                             <div className="flex flex-wrap">
                               <div className="px-2 col text-left mb-4 w-1/3">
                                 <h4 className="text-gray-400 font-bold">Model Suite:</h4>
@@ -332,9 +324,9 @@ function ModelComponent() {
                               </div>
                               <div className="px-4 col text-left w-2/3">
                                 <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
-                                <div className="border border-gray-600 p-2">
+                                <div className="border border-gray-600 p-1">
                                   {data.phData.metis.models.map((model: any, index: number) => (
-                                    <div key={model.id} className="flex flex-col">
+                                    <div key={model.id} className="flex flex-col border border-gray-500 p-1 mb-1 last:border-b-0">
                                       <h5 className="text-gray-400 font-bold">Name</h5>
                                       <div className="bg-background p-2 flex items-center">
                                         <span className="text-gray-400 mr-2">{index}:</span>
@@ -362,7 +354,7 @@ function ModelComponent() {
                                           rows={2}
                                         />
                                       </div>
-                                      <hr className="my-1" />
+                                      {/* <hr className="my-1" /> */}
                                     </div>
                                   ))}
                                 </div>
@@ -375,6 +367,27 @@ function ModelComponent() {
                   </TabsContent>
 
                   <TabsContent value="model-objects" className="my-0 px-1 py-2 rounded bg-background  overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 text-gray-200">
+                    {/* <div className="bg-background"> */}
+                      <div className="flex justify-between  p-1">
+                        <div className=" px-1 bg-background">
+                          <label htmlFor="model-select" className="mx-1 font-bold text-gray-400 inline-block">Current Model:</label>
+                          <select id="model-select" className="px-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
+                            {metis?.models.map((model: { name: string }) => (
+                              <option key={model.name} value={model.name}>{model.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="bg-background">
+                          <label htmlFor="model-view-select" className="mx-2 font-bold text-gray-400 inline-block">Model View:</label>
+                          <select id="model-view-select" className="px-2 py-0 inline-block text-gray-400 inline-block" onChange={handleModelviewChange} value={currentModelview?.name}>
+                            {currentModel?.modelviews?.map((modelView: ModelView) => (
+                              <option key={modelView.id} value={modelView.name}>{modelView.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <h3 className="flex mx-1 pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
+                      </div>
+                    {/* </div> */}
                     {currentModel && (
                       <ObjectCard model={{
                         id: currentModel.id,

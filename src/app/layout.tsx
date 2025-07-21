@@ -1,7 +1,7 @@
 // import Head from "next/head";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import { ReduxProvider } from './providers/ReduxProvider';
+import ReduxProvider from '../providers/ReduxProvider';
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar";
 import { PanelLeft } from 'lucide-react';

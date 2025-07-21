@@ -1,6 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // ...existing config...
     webpack: (config, { isServer }) => {
         // Add specific rule for Font Awesome
         config.module.rules.push({
@@ -8,11 +7,10 @@ const nextConfig = {
             use: ['style-loader', 'css-loader'],
         });
 
-        // Disable the webpack cache
-        config.cache = false;
-
         return config;
     },
+    // Remove conflicting experimental options
+    transpilePackages: ['class-variance-authority'],
 }
 
 module.exports = nextConfig;

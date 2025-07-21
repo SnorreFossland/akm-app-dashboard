@@ -442,7 +442,7 @@ export default function ConceptBuilderPage() {
         }}>
         <div className="flex justify-between items-center rounded-md bg-primary-foreground px-1 sm:px-1">
           <div className="flex flex-col flex-grow bg-background text-gray-100">
-            <Tabs defaultValue="concept-builder" className="flex flex-col my-0 h-full">
+            <Tabs defaultValue="chat" className="flex flex-col my-0 h-full">
               {/* Tab Navigation */}
               <div className="flex items-center justify-between">
                 {/* Left Panel Button */}
@@ -470,8 +470,8 @@ export default function ConceptBuilderPage() {
                       <HelpCircle className="h-3 w-3 ms-5" />
                     </span>
                   </TabsTrigger>
-                  <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">
-                    Model
+                  <TabsTrigger value="ontology" className="text-xs sm:text-sm mt-0">
+                    Current Ontology
                     <span
                       onClick={() => setShowGuideModal(true)}
                       className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
@@ -533,7 +533,7 @@ export default function ConceptBuilderPage() {
               <TabsContent value="ontology" className="flex-1 p-1 m-1">
                 <div className="mx-1 bg-gray-700">
                   {data.phData.ontology ? (
-                    <OntologyCard ontologyData={data.phData.ontology} />
+                    <OntologyCard domainData={data.phData.domain || null} ontologyData={data.phData.ontology} />
                   ) : (
                     <div className="p-4 text-center text-gray-400">
                       No existing ontology data available
