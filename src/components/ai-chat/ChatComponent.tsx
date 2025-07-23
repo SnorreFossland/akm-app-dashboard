@@ -94,7 +94,7 @@ export default function ChatComponent({
     const [inputState, setInputState] = useState<string | undefined>(chatInput);
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
-    const [temperature, setTemperature] = useState<number>(0.7); // Default value 0.7
+    const [temperature, setTemperature] = useState<number>(0.5); // Default value 0.5
 
     const [topHeight, setTopHeight] = useState<number>(600); // 
 
@@ -704,10 +704,15 @@ END OF DOCUMENT: ${file.name}
                         content: systemPrompt
                     },
                     {
-                        role: 'system',
+                        role: 'user',
                         content: `# Context:\n Here are the context and documents you must reference:\n\n${contextContent}`
                     }
                 );
+            } else if (mdContent && mdContent.trim().length > 0) {
+                messagesToSend.push({
+                    role: 'user',
+                    content: mdContent
+                });
             } else {
                 messagesToSend.push({
                     role: 'system',

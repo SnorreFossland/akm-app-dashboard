@@ -17,7 +17,7 @@ export async function callDeepseek(messages: Message[], model: string, temperatu
     body: {
       model: model,
       messages: messages,
-      temperature: temperature || 0.7,
+      temperature: temperature || 0.5,
     },
     responseHandler: (data) => data.choices[0].message.content
   });
@@ -62,7 +62,7 @@ export async function streamDeepseek(
       body: JSON.stringify({
         model: model,
         messages: formattedMessages,
-        temperature: temperature || 0.7,
+        temperature: temperature || 0.5,
         stream: true
       })
     });

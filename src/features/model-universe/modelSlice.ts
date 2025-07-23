@@ -128,6 +128,12 @@ export interface Model {
   }[],
 }
 
+export interface ModelView {
+  id: string;
+  name: string;
+};
+
+
 export const initialState: DataType = { phData: { metis: { name: '', description: '', models: [], metamodels: [] }, domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' }, ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] } }, phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } }, phUser: { id: '', name: '', email: '' }, phSource: '', status: 'idle', error: null };
 
 

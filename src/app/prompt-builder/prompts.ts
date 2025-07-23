@@ -53,6 +53,7 @@ Your format and section descriptions for this prompt development are as follows:
 TARGET AUDIENCE:
 The target audience for this prompt creation is ChatGPT. 
 
+Verify that the text is based on the provided context and requirements.
 `
 // short example of the prompt
 export const systemPromptExample = `

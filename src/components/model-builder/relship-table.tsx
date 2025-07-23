@@ -143,7 +143,7 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
                             </tr>
                         ))}
                     </thead>
-                    <tbody className="bg-gray-700 divide-y divide-gray-500">
+                    <tbody className="bg-background divide-y divide-gray-500">
                         {table.getRowModel().rows.map((row) => (
                             <tr key={row.id}>
                                 {row.getVisibleCells().map((cell) => (

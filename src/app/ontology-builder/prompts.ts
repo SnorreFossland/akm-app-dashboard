@@ -63,6 +63,8 @@ If input contains graph schema, convert the nodes and edges to concepts and rela
     - Enhance concept descriptions to ensure every entity is fully defined without redundancy.
     - Create at least five new concepts and establish relationships between them.
     - Make sure you include existing items, relationships, description and presentation in your analysis.
+
+## Verify that the text is based on the provided context
 `;  
 
 export const SystemBehaviorGuidelines = `

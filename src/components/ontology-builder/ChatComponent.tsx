@@ -707,7 +707,7 @@ Size: ${(file.size / 1024).toFixed(1)} KB
                 <div className="flex items-center gap-1">
                     <span className="text-gray-400">Temp:</span>
                     <select
-                        value={temperature}
+                        value={temperature || '0.5'}
                         onChange={(e) => {
                             const newTemp = parseFloat(e.target.value);
                             setTemperature(newTemp);
@@ -716,12 +716,12 @@ Size: ${(file.size / 1024).toFixed(1)} KB
                         className="bg-popover border border-gray-600 rounded text-xs py-0 px-1"
                         title="Temperature controls randomness. Lower values are more deterministic, higher values more creative."
                     >
-                        <option value="0.0">0.0</option>
-                        <option value="0.3">0.3</option>
-                        <option value="0.5">0.5</option>
-                        <option value="0.7">0.7</option>
-                        <option value="1.0">1.0</option>
-                        <option value="1.2">1.2</option>
+                        <option value="0.0">0.0 (Deterministic)</option>
+                        <option value="0.3">0.3 (Focused)</option>
+                        <option value="0.5">0.5 (Balanced)</option>
+                        <option value="0.7">0.7 (Creative)</option>
+                        <option value="1.0">1.0 (Very Creative)</option>
+                        <option value="1.2">1.2 (Highly Creative)</option>
                     </select>
                 </div>
             </div>

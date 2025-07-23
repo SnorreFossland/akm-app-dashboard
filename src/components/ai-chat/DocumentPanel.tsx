@@ -19,7 +19,7 @@ interface DocumentPanelProps {
     setIsLibraryOpen?: (isOpen: boolean) => void;
     isLibraryOpen?: boolean;
     documentId?: string; // Optional document ID for updates
-    panelType?: 'left' | 'right'; // Optional panel type for layout
+    panelType?: 'left' | 'right' | 'middle'; // Optional panel type for layout
 }
 
 export default function DocumentPanel({
@@ -33,7 +33,7 @@ export default function DocumentPanel({
     documentId,
     setIsLibraryOpen = () => { },
     isLibraryOpen = false,
-    panelType = 'left' // Default to 'left' panel type
+    panelType = 'middle' // Default to 'middle' panel type
 }: DocumentPanelProps) {
     // Add debugging
     // console.log('DocumentPanel render - mdContent:', mdContent?.substring(0, 100) || 'empty');
@@ -275,7 +275,7 @@ export default function DocumentPanel({
         <div className="p-2">
             <>
                 <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="text-sm text-gray-400">{(panelType === 'left' ? 'Current text' : 'Markdown Preview')}</div>
+                    <div className="text-sm text-gray-400">{(panelType === 'left' ? 'Current text' : (panelType === 'middle' ? 'Current' : 'Markdown Preview'))}</div>
                     <div className="flex gap-2">
                         {(panelType === 'right') ? (
                             <>
@@ -466,7 +466,7 @@ export default function DocumentPanel({
                         </button>
                     </div>
                 ) : (
-                    <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                    <div className="prose prose-invert custom-markdown markdown-preview bg-primary-foreground p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
                         {mdContent ? (
                             <MarkdownPreview mdPreview={mdContent} />
                         ) : (

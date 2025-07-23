@@ -141,6 +141,8 @@ const ModelviewBuilder = () => {
   You will also create Roles, Tasks, and Views based on the concepts.
   Position all objectviews with enough space between them to show the relationships clearly.
   Make horizontal and vertical space between the objects to make the modelview look good.
+
+  Verify that the text is based on the provided context.
       `;
 
         const modelviewContextItems = `

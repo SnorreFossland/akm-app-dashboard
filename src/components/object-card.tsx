@@ -8,112 +8,46 @@ import { ObjectTable } from "@/components/model-builder/object-table";
 import { RelshipTable } from "@/components/model-builder/relship-table";
 import { Model } from '@/features/model-universe/modelSlice';
 
-
-// export interface Model {
-//     id: string;
-//     name: string;
-//     description: string;
-//     metamodelRef: string,
-//     objects: {
-//         id: string,
-//         name: string,
-//         description: string,
-//         proposedType: string,
-//         typeRef: string,
-//         typeName: string,
-//         category: string,
-//     }[],
-//     relships: {
-//         id: string,
-//         name: string,
-//         typeRef: string,
-//         fromobjectRef: string,
-//         nameFrom: string,
-//         toobjectRef: string,
-//         nameTo: string,
-//     }[],
-//     modelviews: {
-//         id: string,
-//         name: string,
-//         description: string,
-//         modelRef: string,
-//         modified: boolean,
-//         markedAsDeleted: boolean,
-//         objectviews: {
-//             id: string,
-//             name: string,
-//             type: string,
-//             loc: string,
-//             size: string,
-//             memberscale: number,
-//             objectRef: string,
-//             modified: boolean,
-//             markedAsDeleted: boolean,
-//             isSelect: boolean,
-//             isGroup: boolean,
-//             isExpanded: boolean,
-//             image: string,
-//             icon: string,
-//             fillColor: string,
-//             strokeColor: string,
-//             strokeWidth: string,
-//             strokeColor2: string,
-//             textColor: string,
-//             textColor2: string,
-//             viewkind: string,
-//         }[],
-//         relshipviews: {
-//             id: string,
-//             name: string,
-//             relshipRef: string,
-//             fromobjviewRef: string,
-//             toobjviewRef: string,
-//             points: number[],
-//         }[],
-//     }[],
-// }
-
 const debug = false;
 
 export const ObjectCard = ({ model }: { model: Model }) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
+    const [renderedSvg, setRenderedSvg] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    // const [mermaidCode, setMermaidCode] = useState('');
-    // const [showObjectsCard, setShowObjectsCard] = useState(true);
-    // const [showDiagram, setShowDiagram] = useState(false);
     const [activeTab, setActiveTab] = useState('objects');
-    const [regen, setRegen] = useState(false);
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
+
     console.log('24 model:', model);
 
-    // const objColor = (obj: string) => {
-    //     switch (obj) {
-    //         case 'actor':
-    //             return 'bg-blue-500';
-    //         case 'object':
-    //             return 'bg-green-500';
-    //         case 'action':
-    //             return 'bg-yellow-500';
-    //         case 'event':
-    //             return 'bg-red-500';
-    //         case 'place':
-    //             return 'bg-purple-500';
-    //         case 'concept':
-    //             return 'bg-indigo-500';
-    //         case 'property':
-    //             return 'bg-pink-500';
-    //         default:
-    //             return 'bg-gray-500';
-    //     }
-    // }
+    // Initialize Mermaid once
+    useEffect(() => {
+        mermaid.initialize({
+            startOnLoad: false, // Change to false
+            theme: 'base',
+            themeVariables: {
+                primaryColor: '#97e499ff',
+                edgeLabelBackground: '#21313c15',
+                secondaryColor: '#8888ff',
+                tertiaryColor: '#dddddd',
+                primaryTextColor: '#ffffff',
+                secondaryTextColor: '#ccffcc',
+                tertiaryTextColor: '#0000ff',
+                lineColor: '#dddddd',
+                background: '#ffffff',
+                nodeBorderRadius: '5px',
+            },
+            securityLevel: 'loose',
+        });
+    }, []);
 
-    if (!debug) console.log('21 object-card domain:', model);
     // Memoize the diagram generation to prevent infinite loops
     const generateMermaidDiagram = useCallback(() => {
-        if (!model) {
+        if (!model || !model.objects || model.objects.length === 0) {
             setMermaidDiagram('');
+            setRenderedSvg('');
             return;
         }
 
@@ -121,18 +55,30 @@ export const ObjectCard = ({ model }: { model: Model }) => {
             let diagram = 'graph TD;\n';
             const validNodes = new Set();
 
-
+            // Add objects as nodes with better sanitization
             model.objects.forEach((object, index) => {
                 if (object && object.name && object.name.trim()) {
-                    // Create a more robust node ID
                     const nodeId = object.name
                         .replace(/[^a-zA-Z0-9]/g, '_')
                         .replace(/_+/g, '_')
-                        .replace(/^_|_$/g, '') || `concept_${index}`;
+                        .replace(/^_|_$/g, '') || `object_${index}`;
 
-                    const nodeName = object.name.replace(/"/g, "'"); // Escape quotes
+                    const nodeName = object.name.replace(/"/g, "'");
                     diagram += `    ${nodeId}["${nodeName}"];\n`;
                     validNodes.add(object.name);
+                }
+            });
+
+            // Add explicit styling for all nodes
+            model.objects.forEach((object, index) => {
+                if (object && object.name && object.name.trim()) {
+                    const nodeId = object.name
+                        .replace(/[^a-zA-Z0-9]/g, '_')
+                        .replace(/_+/g, '_')
+                        .replace(/^_|_$/g, '') || `object_${index}`;
+
+                    // Add CSS styling for each node
+                    diagram += `    style ${nodeId} fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff;\n`;
                 }
             });
 
@@ -152,7 +98,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                             .replace(/_+/g, '_')
                             .replace(/^_|_$/g, '') || `to_${index}`;
 
-                        const relationName = rel.name.replace(/"/g, "'"); // Escape quotes
+                        const relationName = rel.name.replace(/"/g, "'");
                         diagram += `    ${fromId} -->|"${relationName}"| ${toId};\n`;
                     }
                 });
@@ -164,33 +110,75 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         } catch (error) {
             console.error('Error generating Mermaid diagram:', error);
             setMermaidDiagram('');
+            setRenderedSvg('');
         }
     }, [model]);
 
-
+    // Generate diagram when model changes or when switching to diagram tab
     useEffect(() => {
-        if (mermaidDiagram && diagramRef.current) {
-            mermaid.initialize({
-                startOnLoad: true,
-                theme: 'base',
-                themeVariables: {
-                    primaryColor: '#224444',
-                    edgeLabelBackground: '#33557700', //'rgba(0, 0, 0, 0)',
-                    secondaryColor: '#8888ff',
-                    tertiaryColor: '#dddddd',
-                    primaryTextColor: '#ffdddd',
-                    secondaryTextColor: '#00ff00',
-                    tertiaryTextColor: '#0000ff',
-                    lineColor: '#dddddd', // line relationship color
-                    background: 'red', // light background
-                    nodeBorderRadius: '5px', // rounded objects
-                    // background: '#ffffff', // light background
-                    // nodeBorderRadius: '15px', // rounded objects
-                },
-            });
-            mermaid.contentLoaded();
+        if (activeTab === 'diagram' || model) {
+            generateMermaidDiagram();
         }
-    }, [mermaidDiagram]);
+    }, [model, activeTab, generateMermaidDiagram]);
+
+    // Render the diagram when mermaidDiagram changes
+    useEffect(() => {
+        const renderDiagram = async () => {
+            if (mermaidDiagram && activeTab === 'diagram') {
+                setIsLoading(true);
+                try {
+                    // Generate unique ID for this diagram
+                    const diagramId = `mermaid-diagram-${Date.now()}`;
+
+                    // Render the diagram
+                    const { svg } = await mermaid.render(diagramId, mermaidDiagram);
+
+                    // Store the rendered SVG
+                    setRenderedSvg(svg);
+                    console.log('Mermaid diagram rendered successfully');
+
+                } catch (error) {
+                    console.error('Error rendering Mermaid diagram:', error);
+                    setRenderedSvg(`<div class="p-4 text-center text-red-400">Error rendering diagram: ${error}</div>`);
+                } finally {
+                    setIsLoading(false);
+                }
+            }
+        };
+
+        renderDiagram();
+    }, [mermaidDiagram, activeTab]);
+
+    // Zoom and scroll handling
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+
+        const handleWheel = (e: WheelEvent) => {
+            if (e.shiftKey) {
+                e.preventDefault();
+                const scrollAmount = e.deltaY * 2;
+                container.scrollLeft += scrollAmount;
+                console.log('Horizontal scroll', scrollAmount);
+            } else if (isZoomMode) {
+                e.preventDefault();
+                const zoomSensitivity = 0.1;
+                if (e.deltaY < 0) {
+                    setZoom((prev) => Math.min(prev + zoomSensitivity, 5));
+                } else {
+                    setZoom((prev) => Math.max(prev - zoomSensitivity, 0.5));
+                }
+            }
+        };
+
+        if (isZoomMode) {
+            container.addEventListener('wheel', handleWheel, { passive: false });
+        }
+
+        return () => {
+            container.removeEventListener('wheel', handleWheel);
+        };
+    }, [isZoomMode]);
 
     const handleAuxClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.button === 1) {
@@ -200,22 +188,25 @@ export const ObjectCard = ({ model }: { model: Model }) => {
     };
 
     const renderMermaidDiagram = () => {
-        if (mermaidDiagram) {
+        if (isLoading) {
+            return <div className="p-4 text-center text-gray-400">Loading diagram...</div>;
+        }
+
+        if (renderedSvg) {
             return (
                 <div
-                    ref={diagramRef}
-                    className="mermaid min-w-[1200px]"
+                    className="min-w-[1200px] w-full"
                     style={{
                         transform: `scale(${zoom})`,
                         transformOrigin: '0 0',
                         margin: '10px'
                     }}
                     onAuxClick={handleAuxClick}
-                >
-                    {mermaidDiagram}
-                </div>
+                    dangerouslySetInnerHTML={{ __html: renderedSvg }}
+                />
             );
         }
+
         return <div className="p-4 text-center text-gray-400">No diagram data available</div>;
     };
 
@@ -265,19 +256,20 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                     </TabsContent>
 
                     <TabsContent value="diagram" className="rounded  w-full mt-0 ">
-                        <Card className="pt-1">
-                                <div className="flex justify-between items-center mx-2 mb-2">
+                        <Card className="w-full h-full">
+                            <CardContent className="">
+                                <div className="flex justify-between items-center m-1 py-1">
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => generateMermaidDiagram()}
-                                            className="px-1 bg-blue-500 text-white text-xs rounded hover:bg-blue-700"
+                                            className="px-1 bg-blue-700 text-white text-xs rounded hover:bg-blue-500"
                                         >
                                             Regenerate Diagram
                                         </button>
 
                                         <button
                                             onClick={() => setZoomMode(prev => !prev)}
-                                            className={`px-2 py-1 text-xs rounded ${isZoomMode
+                                            className={`px-1 text-xs rounded hover:bg-gray-400 ${isZoomMode
                                                 ? 'bg-green-500 text-white'
                                                 : 'bg-gray-500 text-gray-200'}`}
                                         >
@@ -297,10 +289,9 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                                         />
                                     </div>
                                 </div>
-
                                 <div
                                     ref={containerRef}
-                                    className="h-[calc(100vh-18rem)] overflow-auto bg-gray-600 rounded border relative"
+                                    className="h-[calc(100vh-13rem)] overflow-auto bg-background rounded border relative"
                                     style={{
                                         maxWidth: '100%',
                                         overflowX: 'auto',
@@ -309,14 +300,15 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                                     <div className="text-xs text-gray-400 ml-2">
                                         {isZoomMode ? 'Use wheel to zoom' : 'Hold Shift+wheel for horizontal scrolling'}
                                     </div>
-                                    <div className="min-w-max p-2">
+                                    <div className="min-w-max p-2 w-full">
                                         {renderMermaidDiagram()}
                                     </div>
                                 </div>
+                            </CardContent>
                         </Card>
-                </TabsContent>
-            </Tabs>
-        </div>
+                    </TabsContent>
+                </Tabs>
+            </div>
         </div >
     );
 };

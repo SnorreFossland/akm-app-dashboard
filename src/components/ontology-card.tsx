@@ -60,17 +60,17 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
             startOnLoad: false,
             theme: 'dark',
             themeVariables: {
-                primaryColor: '#224444',
-                edgeLabelBackground: '#22557715',
+                primaryColor: '#4CAF50',
+                edgeLabelBackground: '#21313c15',
                 secondaryColor: '#8888ff',
                 tertiaryColor: '#ddddff',
-                primaryTextColor: '#ffdddd',
-                secondaryTextColor: '#00ff00',
+                primaryTextColor: '#ffeeee',
+                secondaryTextColor: '#ccffcc',
                 tertiaryTextColor: '#0000ff',
                 lineColor: '#dddddd',
                 background: '#ffffff',
                 nodeBorderRadius: '25px',
-                rough: false,
+                rough: true,
             },
             securityLevel: 'loose',
         });
@@ -260,7 +260,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         value="domain-ontology"
                         className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
                     >
-                        Ontology
+                        Ontology presentation
                     </TabsTrigger>
                     <TabsTrigger
                         value="concepts"
@@ -324,7 +324,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                             </div>
                             <div className="prose prose-sm bg-gray-800 mt-2 p-1 divide-y-3 divide-gray-900 max-h-[calc(100vh-4rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                 <h4 className="px-1 bg-gray-700">Ontology Presentation</h4>
-                                <div className="p-1 text-sm text-gray-400 bg-gray-900">
+                                <div className="p-1 text-sm text-gray-400 bg-background rounded">
                                     <MarkdownPreview mdPreview={ontologyData?.presentation ?? ''} />
                                 </div>
                             </div>
@@ -384,7 +384,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                             </div>
                             <div
                                 ref={containerRef}
-                                className="h-[calc(100vh-13rem)] overflow-auto bg-gray-600 rounded border relative"
+                                className="h-[calc(100vh-13rem)] overflow-auto bg-background rounded border relative"
                                 style={{
                                     maxWidth: '100%',
                                     overflowX: 'auto',

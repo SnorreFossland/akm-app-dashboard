@@ -5,6 +5,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Building2, Network, Package } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot } from '@fortawesome/free-solid-svg-icons';
@@ -91,8 +92,8 @@ function ModelComponent() {
 
   const [showModel, setShowModel] = useState(true);
 
-  const [activeSubTab, setActiveSubTab] = useState('domain-concepts');
-  const [activeTab, setActiveTab] = useState('current-knowledge');
+  const [activeSubTab, setActiveSubTab] = useState('model-summary');
+  const [activeTab, setActiveTab] = useState('model-summary');
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
@@ -116,307 +117,268 @@ function ModelComponent() {
       setFocusModelview(data.phFocus.focusModelview);
       setMetis(data.phData.metis);
       setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
-      setCurrentModelview(currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id) || null);
+      setCurrentModelview((currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id) as ModelView) || null);
     }
   }, [data.phFocus, data.phData.metis, focusModel?.id, focusModelview?.id, currentModel?.modelviews]);
 
-
-
-  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedModel = data.phData.metis.models.find(model => model.name === event.target.value);
-    dispatch({ type: 'modelUniverse/setFocusModel', payload: selectedModel });
-    setCurrentModel(selectedModel || null);
-    setFocusModel(selectedModel || null);
-    setFocusModelview(selectedModel?.modelviews[0] || null);
-    // if (selectedModel) {
-    //   setCurrentModelview(selectedModel.modelviews[0]);
-    // }
-  };
-
-  const handleModelviewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    // const selectedModelview = currentModel.modelviews.find((mv: { name: string }) => mv.name === event.target.value);
-    // setCurrentModelview(selectedModelview);
-  };
-
-  // if (status === 'loading') return <div>Loading...</div>;
-  // if (status === 'failed') return <div>Error: {error}</div>;
-
-  // if (!metis || !currentModel || !currentModelview) return null;
-
   return (
-    <div className='model-universe-a-component w-full flex flex-col'>
-      {/* <Header metisName={data.phData.metis?.name} /> */}
-      {/* <div className="bg-background">
-        <div className="flex justify-between bg-gray-600 p-1">
-          <div className=" px-1 bg-background">
-            <label htmlFor="model-select" className="mx-1 font-bold text-gray-400 inline-block">Current Model:</label>
-            <select id="model-select" className="px-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
-              {metis?.models.map((model: { name: string }) => (
-                <option key={model.name} value={model.name}>{model.name}</option>
-              ))}
-            </select>
-          </div>
-          <div className="bg-background">
-            <label htmlFor="model-view-select" className="mx-2 font-bold text-gray-400 inline-block">Model View:</label>
-            <select id="model-view-select" className="px-2 py-0 inline-block text-gray-400 inline-block" onChange={handleModelviewChange} value={currentModelview?.name}>
-              {currentModel?.modelviews?.map((modelView: ModelView) => (
-                <option key={modelView.id} value={modelView.name}>{modelView.name}</option>
-              ))}
-            </select>
-          </div>
-          <h3 className="flex mx-1 pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
-        </div>
-      </div> */}
-      <div className="flex bg-background flex-1 overflow-hidden">
-        <div className=" w-full overflow-y-auto">
-          <div className="pt-0 w-full h-full">
-            {data
-              ? <Card className="p-0 m-0 max-h-[calc(100vh-8px)] overflow-hidden">
-                <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="m-1">
-                  <TabsList className="m-0 mb-0 bg-transparent rounded-t-md flex space-x-1">
-                    <TabsTrigger
-                      value="domain-concepts"
-                      className={` mt-3 rounded-t-md ${activeSubTab === "domain-concepts" ? " rounded-tl-md rounded-tr-md bg-gray-800 text-gray-800" : ""
-                        }`}
-                    >
-                      Domain
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="model-summary"
-                      className={` mt-3 rounded-t-md ${activeSubTab === "model-summary" ? " rounded-tl-md rounded-tr-md bg-gray-800 text-gray-800" : ""
-                        }`}
-                    >
-                      Model Suite Summary
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="model-objects"
-                      className={`pb-2 mt-3  ${activeSubTab === "model-objects" ? "bg-gray-300 text-gray-800" : ""
-                        }`}
-                    >
-                      Current Model
-                    </TabsTrigger>
-                    <TabsTrigger
-                      value="model-modelviews"
-                      className={`pb-2 mt-3 rounded-tl-md rounded-tr-md ${activeSubTab === "model-modelviews" ? "bg-gray-300 text-gray-800" : ""
-                        }`}
-                    >
-                      Current Modelview
-                    </TabsTrigger>
-                  </TabsList>
+    <div className="h-full bg-background text-gray-100">
+      {data
+        ?
+        // <Card className="p-0 m-0 max-h-[calc(100vh-8px)] overflow-hidden">
+        <Tabs defaultValue="model-summary" value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 group">
+          {/* <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="m-1"> */}
+          <TabsList className="grid w-full grid-cols-3 max-w-lg my-0 mx-2 pt-2 relative z-20">
 
-                  <TabsContent value="domain-concepts" className="m-0 px-1 py-2 rounded bg-background text-gray-200">
-                    {domainData && (
-                      <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        {/* <h4 className="px-1 text-gray-400 font-bold">Concepts:</h4> */}
-                        <div className=" ">
-                          <OntologyCard domainData={domainData} ontologyData={{ name: domainData.name, description: domainData.description, presentation: domainData.presentation, concepts: ontologyData?.concepts, relationships: ontologyData?.relationships }} />
+            <TabsTrigger
+              value="model-summary"
+              className="flex items-center gap-2 group-data-[state=active]:bg-blue-600/20 group-data-[state=active]:text-blue-400"
+            >
+              Model Suite Summary
+            </TabsTrigger>
+                                            <TabsTrigger
+                                                value="model-list"
+                                                className="flex items-center gap-2 group-data-[state=active]:bg-purple-600/20 group-data-[state=active]:text-purple-400"
+                                            >
+                                                <Package className="w-4 h-4" />
+                                                Model list
+                                            </TabsTrigger>
+            <TabsTrigger
+              value="model-objects"
+              className="flex items-center gap-2 group-data-[state=active]:bg-blue-600/20 group-data-[state=active]:text-blue-400"
+            >
+              Current Model
+            </TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="model-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200 text-xs">
+            <div className="m-1 py-1 rounded">
+              <div className="">
+                {data && data.phData && data.phData.metis && data.phData.metis.models && (
+                  // Replace the section from line 262-317 with this editable version:
+                  <div className="scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                    <div className="flex flex-wrap">
+                      <div className="px-2 col text-left mb-4 w-1/3">
+                        <h4 className="text-gray-400 font-bold">Model Suite:</h4>
+                        <div className="border border-gray-600 p-2">
+                          <h5 className="text-gray-400 font-bold">Name</h5>
+                          <input
+                            type="text"
+                            value={data.phData.metis.name}
+                            onChange={(e) => dispatch(updateMetisInfo({
+                              name: e.target.value,
+                              description: data.phData.metis.description
+                            }))}
+                            className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full"
+                          />
+                          <h5 className="text-gray-400 p-1 font-bold">Description</h5>
+                          <textarea
+                            value={data.phData.metis.description}
+                            onChange={(e) => dispatch(updateMetisInfo({
+                              name: data.phData.metis.name,
+                              description: e.target.value
+                            }))}
+                            className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
+                            rows={4}
+                          />
+                        </div>
+                        <div className="col text-left">
+                          <h4 className="text-gray-400 font-bold">Repository:</h4>
+                          <div className="border border-gray-600 p-2">
+                            {data.phFocus && 'focusProj' in data.phFocus ? (
+                              <>
+                                <h5 className="text-gray-400 font-bold px-1">id</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.id || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ id: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.projectNumber || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ projectNumber: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">name</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.name || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ name: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">org</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.org || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ org: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">repo</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.repo || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ repo: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">path</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.path || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ path: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">file</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.file || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ file: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">branch</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.branch || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ branch: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                                <h5 className="text-gray-400 font-bold px-1">username</h5>
+                                <input
+                                  type="text"
+                                  value={(data.phFocus as any).focusProj?.username || ''}
+                                  onChange={(e) => dispatch(updateProjectInfo({ username: e.target.value }))}
+                                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
+                                />
+                              </>
+                            ) : (
+                              <p className="text-gray-400">No project information available</p>
+                            )}
+                          </div>
                         </div>
                       </div>
-                    )}
-                  </TabsContent>
-
-                  <TabsContent value="model-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200 text-xs">
-                    <div className="m-1 py-1 rounded">
-                      <div className="">
-                        {data && data.phData && data.phData.metis && data.phData.metis.models && (
-                          // Replace the section from line 262-317 with this editable version:
-
-                          <div className="scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                            <div className="flex flex-wrap">
-                              <div className="px-2 col text-left mb-4 w-1/3">
-                                <h4 className="text-gray-400 font-bold">Model Suite:</h4>
-                                <div className="border border-gray-600 p-2">
-                                  <h5 className="text-gray-400 font-bold">Name</h5>
-                                  <input
-                                    type="text"
-                                    value={data.phData.metis.name}
-                                    onChange={(e) => dispatch(updateMetisInfo({
-                                      name: e.target.value,
-                                      description: data.phData.metis.description
-                                    }))}
-                                    className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full"
-                                  />
-                                  <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                  <textarea
-                                    value={data.phData.metis.description}
-                                    onChange={(e) => dispatch(updateMetisInfo({
-                                      name: data.phData.metis.name,
-                                      description: e.target.value
-                                    }))}
-                                    className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
-                                    rows={3}
-                                  />
-                                </div>
-                                <div className="col text-left">
-                                  <h4 className="text-gray-400 font-bold">Repository:</h4>
-                                  <div className="border border-gray-600 p-2">
-                                    {data.phFocus && 'focusProj' in data.phFocus ? (
-                                      <>
-                                        <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.id || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ id: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.projectNumber || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ projectNumber: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.name || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ name: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">org</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.org || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ org: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.repo || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ repo: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.path || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ path: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.file || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ file: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.branch || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ branch: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                        <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                        <input
-                                          type="text"
-                                          value={(data.phFocus as any).focusProj?.username || ''}
-                                          onChange={(e) => dispatch(updateProjectInfo({ username: e.target.value }))}
-                                          className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
-                                        />
-                                      </>
-                                    ) : (
-                                      <p className="text-gray-400">No project information available</p>
-                                    )}
-                                  </div>
-                                </div>
+                      <div className="px-4 col text-left w-2/3">
+                        <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
+                        <div className="border border-gray-600 p-1">
+                          {data.phData.metis.models.map((model: any, index: number) => (
+                            <div key={model.id} className="flex flex-col border border-gray-500 p-1 mb-1 last:border-b-0">
+                              <h5 className="text-gray-400 font-bold">Name</h5>
+                              <div className="bg-background p-2 flex items-center">
+                                <span className="text-gray-400 mr-2">{index}:</span>
+                                <input
+                                  type="text"
+                                  value={model.name}
+                                  onChange={(e) => dispatch(updateModelInfo({
+                                    id: model.id,
+                                    name: e.target.value,
+                                    description: model.description
+                                  }))}
+                                  className="bg-transparent border border-gray-500 rounded px-2 py-1 flex-1"
+                                />
                               </div>
-                              <div className="px-4 col text-left w-2/3">
-                                <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
-                                <div className="border border-gray-600 p-1">
-                                  {data.phData.metis.models.map((model: any, index: number) => (
-                                    <div key={model.id} className="flex flex-col border border-gray-500 p-1 mb-1 last:border-b-0">
-                                      <h5 className="text-gray-400 font-bold">Name</h5>
-                                      <div className="bg-background p-2 flex items-center">
-                                        <span className="text-gray-400 mr-2">{index}:</span>
-                                        <input
-                                          type="text"
-                                          value={model.name}
-                                          onChange={(e) => dispatch(updateModelInfo({
-                                            id: model.id,
-                                            name: e.target.value,
-                                            description: model.description
-                                          }))}
-                                          className="bg-transparent border border-gray-500 rounded px-2 py-1 flex-1"
-                                        />
-                                      </div>
-                                      <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                      <div className="bg-background p-2">
-                                        <textarea
-                                          value={model.description}
-                                          onChange={(e) => dispatch(updateModelInfo({
-                                            id: model.id,
-                                            name: model.name,
-                                            description: e.target.value
-                                          }))}
-                                          className="bg-transparent border border-gray-500 rounded px-2 py-1 w-full resize-vertical"
-                                          rows={2}
-                                        />
-                                      </div>
-                                      {/* <hr className="my-1" /> */}
-                                    </div>
-                                  ))}
-                                </div>
+                              <h5 className="text-gray-400 p-1 font-bold">Description</h5>
+                              <div className="bg-background p-2">
+                                <textarea
+                                  value={model.description}
+                                  onChange={(e) => dispatch(updateModelInfo({
+                                    id: model.id,
+                                    name: model.name,
+                                    description: e.target.value
+                                  }))}
+                                  className="bg-transparent border border-gray-500 rounded px-2 py-1 w-full resize-vertical"
+                                  rows={4}
+                                />
                               </div>
+                              {/* <hr className="my-1" /> */}
                             </div>
-                          </div>
-                        )}
+                          ))}
+                        </div>
                       </div>
                     </div>
-                  </TabsContent>
-
-                  <TabsContent value="model-objects" className="my-0 px-1 py-2 rounded bg-background  overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 text-gray-200">
-                    {/* <div className="bg-background"> */}
-                      <div className="flex justify-between  p-1">
-                        <div className=" px-1 bg-background">
-                          <label htmlFor="model-select" className="mx-1 font-bold text-gray-400 inline-block">Current Model:</label>
-                          <select id="model-select" className="px-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
-                            {metis?.models.map((model: { name: string }) => (
-                              <option key={model.name} value={model.name}>{model.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <div className="bg-background">
-                          <label htmlFor="model-view-select" className="mx-2 font-bold text-gray-400 inline-block">Model View:</label>
-                          <select id="model-view-select" className="px-2 py-0 inline-block text-gray-400 inline-block" onChange={handleModelviewChange} value={currentModelview?.name}>
-                            {currentModel?.modelviews?.map((modelView: ModelView) => (
-                              <option key={modelView.id} value={modelView.name}>{modelView.name}</option>
-                            ))}
-                          </select>
-                        </div>
-                        <h3 className="flex mx-1 pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
-                      </div>
-                    {/* </div> */}
-                    {currentModel && (
-                      <ObjectCard model={{
-                        id: currentModel.id,
-                        name: currentModel.name,
-                        description: currentModel.description,
-                        objects: currentModel.objects?.map(obj => ({
-                          id: obj.id || '',
-                          name: obj.name || '',
-                          description: obj.description || '',
-                          proposedType: obj.proposedType || '',
-                          typeRef: obj.typeRef || '',
-                          typeName: obj.typeName || '',
-                          category: obj.category || ''
-                        })) || [],
-                        relships: currentModel.relships || [],
-                        metamodelRef: currentModel.metamodelRef,
-                        modelviews: currentModel.modelviews
-                      }} />
-                    )}
-                  </TabsContent>
-                </Tabs>
-              </Card>
-              : <div className="flex justify-center items-center h-screen">
-                <LoadingCircularProgress />
+                  </div>
+                )}
               </div>
-            }
-          </div>
+            </div>
+          </TabsContent>
+          <TabsContent value="model-list" className="flex-1 overflow-auto mt-0">
+            <div className="h-full">
+              {data.phData?.metis?.models?.length > 0 ? (
+                <div className="grid gap-4">
+                  {data.phData.metis.models.map((model, index) => (
+                    <div key={model.id || index} className="bg-gray-800/50 border border-gray-600 rounded-lg p-2">
+                      <h3 className="text-lg font-medium text-white mb-2">
+                        {model.name || `Model ${index + 1}`}
+                      </h3>
+                      <p className="text-gray-300 text-sm mb-3">
+                        {model.description || 'No description provided'}
+                      </p>
+                      <div className="grid grid-cols-3 gap-4 text-xs">
+                        <div>
+                          <span className="text-gray-400">Objects:</span>
+                          <span className="text-white ml-2">
+                            {model.objects?.length || 0}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Relationships:</span>
+                          <span className="text-white ml-2">
+                            {model.relships?.length || 0}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-gray-400">Model Views:</span>
+                          <span className="text-white ml-2">
+                            {model.modelviews?.length || 0}
+                          </span>
+                        </div>
+                      </div>
+                      {data.phFocus?.focusModel?.id === model.id && (
+                        <div className="mt-2 text-xs text-blue-400 bg-blue-900/20 px-2 py-1 rounded">
+                          Currently focused model
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Package className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                  <p className="text-gray-400">No models in suite yet</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Use the Model Builder to create your first model
+                  </p>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+
+          <TabsContent value="model-objects" className="my-0 px-1 py-2 rounded bg-background  overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 text-gray-200">
+            {currentModel && (
+              <ObjectCard model={{
+                id: currentModel.id,
+                name: currentModel.name,
+                description: currentModel.description,
+                objects: currentModel.objects?.map(obj => ({
+                  id: obj.id || '',
+                  name: obj.name || '',
+                  description: obj.description || '',
+                  proposedType: obj.proposedType || '',
+                  typeRef: obj.typeRef || '',
+                  typeName: obj.typeName || '',
+                  category: obj.category || ''
+                })) || [],
+                relships: currentModel.relships || [],
+                metamodelRef: currentModel.metamodelRef,
+                modelviews: currentModel.modelviews
+              }} />
+            )}
+          </TabsContent>
+        </Tabs>
+        // </Card>
+        : <div className="flex justify-center items-center h-screen">
+          <LoadingCircularProgress />
         </div>
-      </div>
+      }
     </div>
   );
 }

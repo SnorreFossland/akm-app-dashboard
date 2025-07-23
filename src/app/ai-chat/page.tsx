@@ -11,6 +11,8 @@ import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
+import { ThreePanelLayout } from '@/components/ThreePanelLayout';
+import { FileOperations } from "@/components/FileOperations";
 
 export interface ChatComponentProps {
     onResponseChange: (response: string) => void;
@@ -27,24 +29,20 @@ export interface ChatComponentProps {
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
+    const documents = useSelector((state: RootState) => state.markdown.documents);
+    
 
     const [input, setInput] = useState<string>("");
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     const [mdContent, setMdContent] = useState<string>('')
-    const [showLeftPanel, setShowLeftPanel] = useState(false);
-    const [showRightPanel, setShowRightPanel] = useState(false);
-    const [leftPanelWidth, setLeftPanelWidth] = useState(360);
-    const [rightPanelWidth, setRightPanelWidth] = useState(360); // Initial width
-    const [leftPanelContent, setLeftPanelContent] = useState(''); // Default to 'document' content
-    const [activeLeftTab, setActiveLeftTab] = useState('document'); // Default to 'document' tab
     const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
-    const documents = useSelector((state: RootState) => state.markdown.documents);
 
     // replace your single openLibraryButtonRef with two refs:
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
+    const [currentDocument, setCurrentDocument] = useState<string>(documents.length > 0 ? documents[0].content : '');
     const mdFileInputRef = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -76,18 +74,6 @@ const AIChatPage = () => {
                 edgeLabelBorder: '#1e3a8a',
             }
         });
-    }, []);
-
-    // Check device type on component mount'
-    useEffect(() => {
-        const checkDeviceType = () => {
-            // Only change panel state on initial load, not on every resize
-            if (!showLeftPanel) {
-                // You can enable this if you want panel to open on desktop initially
-                const isDesktop = window.innerWidth >= 768;
-            }
-        };
-        checkDeviceType();
     }, []);
 
     useEffect(() => {
@@ -124,18 +110,16 @@ const AIChatPage = () => {
         }
     }, []);
 
-
     const handleShowInLeftPanel = (content: string, name: string) => {
-        setLeftPanelContent(content);
-        setShowLeftPanel(true);
-        // You might also want to update other state variables like mdContent
+        setMdContent(content);
+        setDocName(name);
+        console.log("Selected document from library:", { content, name });
     };
 
     const handleDocumentSelect = (content: string, name: string) => {
         setMdContent(content);
         setDocName(name);
         setIsEditing(false);
-        setActiveLeftTab('document'); // Switch to document tab
         setIsLibraryOpen(false); // Close the library modal after selection
         console.log("Selected document from library:", { content, name });
     };
@@ -291,72 +275,6 @@ const AIChatPage = () => {
         alert(`Conversation "${title}" saved successfully!`);
     };
 
-    const MIN_PANEL_WIDTH = 20;
-    const MAX_PANEL_WIDTH = () => window.innerWidth - 120; // leave at least 120px for the middle
-
-    const handleMouseDown = (e: React.MouseEvent, panel: 'left' | 'right') => {
-        // Check for primary (left) mouse button on initial click
-        if (e.button !== 0) return;
-
-        e.preventDefault();
-        e.stopPropagation(); // Prevent event bubbling
-
-        const startX = e.clientX;
-        const startLeftWidth = leftPanelWidth;
-        const startRightWidth = rightPanelWidth;
-
-        // Prevent text selection during drag
-        document.body.style.userSelect = 'none';
-        document.body.style.cursor = panel === 'left' ? 'col-resize' : 'col-resize';
-
-        const onMouseMove = (event: MouseEvent) => {
-            // Only proceed if left button is still pressed (buttons bitmask check)
-            if (!(event.buttons & 1)) {
-                onMouseUp();
-                return;
-            }
-
-            // Calculate distance moved
-            const deltaX = event.clientX - startX;
-
-            if (panel === 'left') {
-                const newWidth = Math.max(
-                    MIN_PANEL_WIDTH,
-                    Math.min(MAX_PANEL_WIDTH(), startLeftWidth + deltaX)
-                );
-                setLeftPanelWidth(newWidth);
-            } else if (panel === 'right') {
-                // For right panel, moving left increases width, moving right decreases width
-                // Calculate maximum allowed width considering left panel and minimum middle width
-                const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0; // +8 for drag bar
-                const minimumMiddleWidth = 320; // From your inline style
-                const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 20; // -20 for margins/padding
-
-                const newWidth = Math.max(
-                    MIN_PANEL_WIDTH,
-                    Math.min(maxRightWidth, startRightWidth - deltaX)
-                );
-                setRightPanelWidth(newWidth);
-            }
-        };
-
-        const onMouseUp = () => {
-            // Restore body styles
-            document.body.style.userSelect = '';
-            document.body.style.cursor = '';
-
-            document.removeEventListener('mousemove', onMouseMove, { capture: true });
-            document.removeEventListener('mouseup', onMouseUp, { capture: true });
-            document.removeEventListener('contextmenu', onMouseUp, { capture: true });
-        };
-
-        // Add event listeners with capture
-        document.addEventListener('mousemove', onMouseMove, { capture: true });
-        document.addEventListener('mouseup', onMouseUp, { capture: true });
-        document.addEventListener('contextmenu', onMouseUp, { capture: true }); // Handle right-click
-    };
-
-
     const handleResponseChange = (response: string) => { setLastResponse(response) };
 
     const handleViewInMarkdown = (response: string) => {
@@ -367,11 +285,7 @@ const AIChatPage = () => {
         };
         const cleanedResponse = cleanResponse(response);
         setMdPreview(cleanedResponse);
-        setShowRightPanel(true); // Show the right panel with markdown preview
-        // setShowLeftPanel(false); // Hide the left panel when viewing markdown
     };
-
-
 
     // Simple Modal component
     const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
@@ -394,290 +308,182 @@ const AIChatPage = () => {
         );
     };
 
+    // Define left panel content
+    const leftPanelContent = {
+        tabs: [
+            {
+                key: 'guide',
+                label: 'Guide',
+                content: (
+                    <div className="space-y-4 p-1 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
+                            <h3 className="text-lg font-medium text-secondary-foreground/70">1. Ask a Question Directly</h3>
+                            <div className='ms-2'>Type or paste your question in the provided input area.</div>
+                            <ul className="list-disc pl-4 text-secondary-foreground/70">
+                                <li>Click the <span className="text-blue-200">Send ↑</span> button to submit your question.</li>
+                                <li>Alternatively, you can quickly press the <span className="text-blue-200">Enter</span> key 2 times to send your question.</li>
+                            </ul>
+                        </div>
 
-    // #region Main Layout
+                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
+                            <h3 className="text-lg font-medium text-secondary-foreground/70">2. Use Prompt Templates</h3>
+                            <div className='ms-2'>Select a prompt template from the dropdown menu above the upper right corner of the input area.</div>
+                            <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
+                                <li>You can type or paste additional text under the template text.</li>
+                                <li>
+                                    <span className="inline-flex items-center">
+                                        Open the left panel (Click on the upperleft icon
+                                        <svg className="mx-1 inline-block" width="12" height="12" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                            <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                            <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                        </svg>
+                                    </span> to access the left panel.)
+                                    You can add text in the <span className="text-blue-200">Current Context.</span>This text will be used as context for the prompt.
+                                </li>
+                                <li>You can also click <FileText className="inline w-4 h-4 mr-1" />, to add a local text-file to use as context for your prompt.</li>
+                            </ul>
+                        </div>
+
+                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
+                            <h3 className="text-lg font-medium text-secondary-foreground/70">3. You can refine a document or text.</h3>
+                            <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
+                                <li>Alt. 1: Click the <span className="text-blue-200"> <FileText className="inline w-4 h-4 mx-1 mb-1" /> Load a file</span> button above the input area to select a local file to enhance or refine. (a new set of templates will appear).
+                                </li>
+                                <li>Alt. 2: Click the upper left button to open the left panel, then Context tab. <br />
+                                    (The document text will be inserted and used as context for your prompt.)</li>
+                            </ul>
+                        </div>
+                    </div>
+                )
+            },
+            {
+                key: 'context',
+                label: 'Context',
+                content: (
+                    <DocumentPanel
+                        mdContent={mdContent}
+                        setMdContent={setMdContent}
+                        setIsLibraryOpen={setIsLibraryOpen}
+                        isLibraryOpen={isLibraryOpen}
+                        panelType='left'
+                    />
+                )
+            },
+        ],
+        defaultTab: 'guide'
+    };
+
+    // Define right panel content
+    const rightPanelContent = {
+        tabs: [
+            {
+                key: 'preview',
+                label: 'Preview',
+                content: (
+                    <DocumentPanel
+                        mdContent={mdPreview}
+                        setMdContent={setMdPreview}
+                        setIsLibraryOpen={setIsLibraryOpen}
+                        isLibraryOpen={isLibraryOpen}
+                        panelType='right'
+                    />
+                )
+            }
+        ],
+        defaultTab: 'preview'
+    };
+
     return (
-        <div className="w-full min-h-1/3 bg-background text-gray-100 overflow-hidden">
-            <div className="flex flex-row flex-nowrap h-[100dvh-30rem] w-full bg-background text-gray-100">
-
-                {/* Left Panel:  ------------------------------------------------------------------------------ */}
-                {showLeftPanel && (
-                    <div
-                        className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 max-w-[95vw] overflow-auto"
-                        style={{
-                            width: `${leftPanelWidth}px`,
-                            minWidth: '200px' // Use inline style instead of conflicting Tailwind classes
-                        }}
-                    >
-                        <div className="flex justify-between items-center m-1 sm:m-2">
-                            <h2 className="text-lg sm:text-xl font-bold text-blue-400">
-                                Input: Context
-                            </h2>
-                            <div className="markdown-preview-header">
-                                <button
-                                    onClick={() => setShowLeftPanel(false)}
-                                    className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
+        <>
+            <ThreePanelLayout
+                moduleOperations={<FileOperations />}
+                leftPanelContent={leftPanelContent}
+                rightPanelContent={rightPanelContent}
+                // showAppHeader={true} // We'll handle the header ourselves for the tabs
+            >
+                <div className="flex flex-col h-full bg-background text-gray-100">
+                    <Tabs defaultValue="chat" className="flex flex-col h-full">
+                        <div className="flex items-center justify-between bg-primary-foreground px-2">
+                            {/* Tabs */}
+                            <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
+                                <TabsTrigger
+                                    value="chat"
+                                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                 >
-                                    Close
-                                </button>
+                                    AI Chat
+                                    <span
+                                        onClick={() => setShowGuideModal(true)}
+                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 border-b-0 rounded-full pl-1"
+                                        title="Open guide"
+                                    >
+                                        <HelpCircle className="h-3 w-3 ms-5" />
+                                    </span>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="saved-documents"
+                                    className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                                >
+                                    Current Document
+                                    <span
+                                        onClick={() => setShowGuideModal(true)}
+                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                                        title="Open guide"
+                                    >
+                                        <HelpCircle className="h-3 w-3 mx-2" />
+                                    </span>
+                                </TabsTrigger>
+                                <TabsTrigger
+                                    value="saved-chat"
+                                    className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                                >
+                                    Saved Chats
+                                    <span
+                                        onClick={() => setShowGuideModal(true)}
+                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                                        title="Open guide"
+                                    >
+                                        <HelpCircle className="h-3 w-3 mx-2" />
+                                    </span>
+                                </TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        {/* Chat Component */}
+                        <TabsContent value="chat" className="flex-1 px-1 mt-1 overflow-hidden">
+                            <div className="h-full overflow-auto bg-gray-800/20 rounded">
+                                <ChatComponent
+                                    input={input}
+                                    setInput={setInput}
+                                    selectedModel={selectedModel}
+                                    setSelectedModel={setSelectedModel}
+                                    onResponseChange={handleResponseChange}
+                                    onViewInMarkdown={handleViewInMarkdown}
+                                    setShowLeftPanel={() => { }} // This is now handled by ThreePanelLayout
+                                    chatInput={chatInput}
+                                    onAddMD={handleAddMD}
+                                    mdContent={mdContent}
+                                    setMdContent={setMdContent}
+                                    mdPreview={mdPreview}
+                                    setMdPreview={setMdPreview}
+                                    setCurrentMessages={setCurrentMessages}
+                                    gettingStartedGuide={<GettingStartedGuide />}
+                                />
                             </div>
-                        </div>
-                        <DocumentPanel
-                            mdContent={mdContent}
-                            setMdContent={setMdContent}
-                            setIsLibraryOpen={setIsLibraryOpen}
-                            isLibraryOpen={isLibraryOpen}
-                            panelType='left'
-                        />
-                    </div>
-                )}
-                {/* Draggable Bar for Left Panel */}
-                {showLeftPanel && (
-                    <div className="w-2 bg-gray-700 cursor-col-resize relative flex-shrink-0"
-                        onMouseDown={(e) => handleMouseDown(e, 'left')}
-                    >
-                        <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
-                    </div>
-                )}
+                        </TabsContent>
 
-                {/* Middle Panel: AI Chat ------------------------------------------------------------------------------- */}
-                <div className="flex p-1 sm:px-2 flex-col flex-grow"
-                    style={{
-                        minWidth: '320px', // Ensure middle panel has a minimum width
-                    }}>
-                    <div className="flex justify-between items-center rounded-md bg-primary-foreground px-1 sm:px-1">
-                        <div className="flex flex-col flex-grow bg-background text-gray-100">
-                            <Tabs defaultValue="chat" className="flex flex-col my-0 h-full">
-                                <div className="flex items-center justify-between">
-                                    {/* Left Panel Button */}
-                                    <button
-                                        onClick={() => setShowLeftPanel(!showLeftPanel)}
-                                        className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                                        title='Show Left pane'
-                                    >
-                                        <span>
-                                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                                <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                            </svg>
-                                        </span>
-                                        <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
-                                    </button>
-
-                                    {/* Tabs */}
-                                    <TabsList className="grid grid-cols-5 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
-                                        <TabsTrigger
-                                            value="chat"
-                                            className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                        >
-                                            AI Chat
-                                            <span
-                                                onClick={() => setShowGuideModal(true)}
-                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 border-b-0 rounded-full pl-1"
-                                                title="Open guide"
-                                            >
-                                                <HelpCircle className="h-3 w-3 ms-5" />
-                                            </span>
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="saved-documents"
-                                            className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                        >
-                                            Saved Documents
-                                            <span
-                                                onClick={() => setShowGuideModal(true)}
-                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
-                                                title="Open guide"
-                                            >
-                                                <HelpCircle className="h-3 w-3 mx-2" />
-                                            </span>
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="saved-chat"
-                                            className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                        >
-                                            Saved Chats
-                                            <span
-                                                onClick={() => setShowGuideModal(true)}
-                                                className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
-                                                title="Open guide"
-                                            >
-                                                <HelpCircle className="h-3 w-3 mx-2" />
-                                            </span>
-                                        </TabsTrigger>
-                                    </TabsList>
-
-                                    {/* Right Panel Button */}
-                                    <button
-                                        onClick={() => setShowRightPanel(!showRightPanel)}
-                                        className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                                        title='Show Right pane'
-                                    >
-                                        <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
-                                        <span>
-                                            <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                                <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                            </svg>
-                                        </span>
-                                    </button>
-                                </div>
-                                {/* Chat Component */}
-                                <TabsContent value="chat" className="flex-1 px-1 mt-1">
-                                    <div className="flex-1 overflow-auto bg-gray-800/20 rounded">
-                                        <ChatComponent
-                                            input={input}
-                                            setInput={setInput}
-                                            selectedModel={selectedModel}
-                                            setSelectedModel={setSelectedModel}
-                                            onResponseChange={handleResponseChange}
-                                            onViewInMarkdown={handleViewInMarkdown}
-                                            setShowLeftPanel={setShowLeftPanel}
-                                            chatInput={chatInput}
-                                            onAddMD={handleAddMD}
-                                            mdContent={mdContent}
-                                            setMdContent={setMdContent}
-                                            mdPreview={mdPreview}
-                                            setMdPreview={setMdPreview}
-                                            setCurrentMessages={setCurrentMessages}
-                                            gettingStartedGuide={<GettingStartedGuide />}
-                                        />
-                                    </div>
-                                </TabsContent>
-                                {/* Saved Documents */}
-                                <TabsContent value="saved-documents" className="flex-1 px-1 mt-1">
-                                    <div
-                                        className="bg-background rounded-lg p-4"
-                                        onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
-                                    >
-                                        <div className="flex justify-between items-center mb-4">
-                                            <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                                            <div className="flex space-x-2">
-
-                                                <button
-                                                    onClick={handleExportLibrary}
-                                                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                                                    disabled={documents.length === 0}
-                                                >
-                                                    Export Library
-                                                </button>
-                                                <input
-                                                    type="file"
-                                                    ref={fileInputRef}
-                                                    onChange={handleFileSelection}
-                                                    accept=".json"
-                                                    style={{ display: 'none' }}
-                                                />
-                                                <button
-                                                    onClick={handleImportLibrary}
-                                                    className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                                                >
-                                                    <span>Import Library</span>
-                                                </button>
-                                                <button
-                                                    onClick={() => setIsLibraryOpen(false)}
-                                                    className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
-                                                >
-                                                    Close
-                                                </button>
-                                            </div>
-                                        </div>
-                                        {/* Pass export functionality to library component */}
-                                        <div className="text-sm text-gray-400 mb-2 overflow-auto">
-                                            <MarkdownLibrary
-                                                onSelect={handleDocumentSelect}
-                                                onShowInLeftPanel={handleShowInLeftPanel}
-                                                hideExportLibraryButton={false}
-                                            />
-                                        </div>
-                                    </div>
-                                </TabsContent>
-                                {/* Saved Conversations*/}
-                                <TabsContent value="saved-chat" className="flex-1 px-1 mt-1">
-                                    <div className="p-2">
-                                        <ConversationsPanel
-                                            conversations={conversations}
-                                            onSelectConversation={handleSelectConversation}
-                                            onDeleteConversation={handleDeleteConversation}
-                                            onSaveConversation={handleSaveCurrentConversation}
-                                            currentMessages={currentMessages} // Pass this prop to enable/disable save button
-                                            onViewInMarkdown={handleViewInMarkdown}
-                                            mdPreview={mdPreview}
-
-
-                                        />
-                                    </div>
-                                </TabsContent>
-                            </Tabs>
-                        </div>
-                    </div >
-                </div >
-
-                {/* Draggable Bar for Right Panel */}
-                {
-                    showRightPanel && (
-                        <div
-                            className="w-2 bg-gray-700 hover:bg-gray-500 cursor-col-resize relative flex-shrink-0"
-                            onMouseDown={(e) => handleMouseDown(e, 'right')}
-                            style={{ zIndex: 10 }}
-                        >
-                            <div className="absolute top-1/2 -translate-y-1/2 h-8 sm:h-12 bg-gray-500 w-1 mx-auto"></div>
-                        </div>
-                    )
-                }
-
-                {/* Right Panel: Markdown Preview ------------------------------------------------------------------------*/}
-                {
-                    showRightPanel && (
-                        <div className="flex-shrink-0 p-1 bg-primary-foreground sm:px-2 overflow-auto flex flex-col"
-                            style={{
-                                width: `${rightPanelWidth}px`,
-                                minWidth: '200px',
-                                maxWidth: '65%'
-                            }}>
-                            <div className="flex justify-between items-center mb-2">
-                                <h2 className="text-lg sm:text-xl font-bold text-blue-400">Output Preview</h2>
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => setShowRightPanel(false)}
-                                        className="text-xs bg-muted hover:bg-gray-600 text-white px-2 py-1 rounded"
-                                    >
-                                        Close
-                                    </button>
-                                </div>
-                            </div>
-                            {(mdPreview) &&
+                        {/* Saved Documents */}
+                        <TabsContent value="saved-documents" className="flex-1 px-1 mt-1 overflow-hidden">
+                            <div className="bg-background rounded-lg p-4 h-full overflow-auto">
                                 <DocumentPanel
-                                    mdContent={mdPreview}
-                                    setMdContent={setMdPreview}
+                                    mdContent={currentDocument}
+                                    setMdContent={setCurrentDocument}
                                     setIsLibraryOpen={setIsLibraryOpen}
                                     isLibraryOpen={isLibraryOpen}
-                                    panelType='right'
+                                    panelType='middle'
                                 />
-                            }
-                        </div>
-                    )
-                }
-                {/* <div className="flex w-full justify-between items-center p-2 bg-primary-foreground">
-                </div > */}
-                <div className="max-h-[5px] mt-1">
-                    <hr className="border-gray-700" />
-                </div>
-                <>
-                    {/* Library Modal */}
-                    {isLibraryOpen && (
-                        <div
-                            className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
-                            onClick={() => setIsLibraryOpen(false)}
-                        >
-                            <div
-                                className="bg-background rounded-lg p-4 w-[600px]"
-                                onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
-                            >
-                                <div className="flex justify-between items-center mb-4">
+                                {/* <div className="flex justify-between items-center mb-4">
                                     <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
                                     <div className="flex space-x-2">
-
                                         <button
                                             onClick={handleExportLibrary}
                                             className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
@@ -698,35 +504,94 @@ const AIChatPage = () => {
                                         >
                                             <span>Import Library</span>
                                         </button>
-                                        <button
-                                            onClick={() => setIsLibraryOpen(false)}
-                                            className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
-                                        >
-                                            Close
-                                        </button>
                                     </div>
                                 </div>
-                                {/* Pass export functionality to library component */}
-                                <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
+                                <div className="text-sm text-gray-400 mb-2 overflow-auto">
                                     <MarkdownLibrary
                                         onSelect={handleDocumentSelect}
                                         onShowInLeftPanel={handleShowInLeftPanel}
                                         hideExportLibraryButton={false}
                                     />
-                                </div>
+                                </div> */}
+                            </div>
+                        </TabsContent>
+
+                        {/* Saved Conversations*/}
+                        <TabsContent value="saved-chat" className="flex-1 px-1 mt-1 overflow-hidden">
+                            <div className="p-2 h-full overflow-auto">
+                                <ConversationsPanel
+                                    conversations={conversations}
+                                    onSelectConversation={handleSelectConversation}
+                                    onDeleteConversation={handleDeleteConversation}
+                                    onSaveConversation={handleSaveCurrentConversation}
+                                    currentMessages={currentMessages}
+                                    onViewInMarkdown={handleViewInMarkdown}
+                                    mdPreview={mdPreview}
+                                />
+                            </div>
+                        </TabsContent>
+                    </Tabs>
+                </div>
+            </ThreePanelLayout>
+
+            {/* Library Modal */}
+            {isLibraryOpen && (
+                <div
+                    className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
+                    onClick={() => setIsLibraryOpen(false)}
+                >
+                    <div
+                        className="bg-background rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto"
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={handleExportLibrary}
+                                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
+                                    disabled={documents.length === 0}
+                                >
+                                    Export Library
+                                </button>
+                                <input
+                                    type="file"
+                                    ref={fileInputRef}
+                                    onChange={handleFileSelection}
+                                    accept=".json"
+                                    style={{ display: 'none' }}
+                                />
+                                <button
+                                    onClick={handleImportLibrary}
+                                    className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
+                                >
+                                    <span>Import Library</span>
+                                </button>
+                                <button
+                                    onClick={() => setIsLibraryOpen(false)}
+                                    className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
+                                >
+                                    Close
+                                </button>
                             </div>
                         </div>
-                    )}
-                </>
+                        <div className="text-sm text-gray-400 mb-2">
+                            <MarkdownLibrary
+                                onSelect={handleDocumentSelect}
+                                onShowInLeftPanel={handleShowInLeftPanel}
+                                hideExportLibraryButton={false}
+                            />
+                        </div>
+                    </div>
+                </div>
+            )}
 
-            </div >
-            {/* Add the modal at the end of the component */}
-            < Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
+            {/* Guide Modal */}
+            <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
                 <GettingStartedGuide />
-            </Modal >
-        </div >
+            </Modal>
+        </>
     );
 };
-// #endregion
 
 export default AIChatPage;

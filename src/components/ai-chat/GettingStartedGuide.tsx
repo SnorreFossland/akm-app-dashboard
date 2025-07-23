@@ -10,47 +10,40 @@ const GettingStartedGuide: React.FC = () => {
                         <h2 className="text-xl font-semibold text-blue-200 mb-3">Getting Started</h2>
                         <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
                             <div className="md:col-span-3 space-y-4">
-                                <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                                    <h3 className="text-lg font-medium text-secondary-foreground/70">1. Ask a Question Directly</h3>
-                                    <div className='ms-2'>Type or paste your question in the provided input area below.</div>
-                                    <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                        <li>Click the <span className="text-blue-200">Send ↑</span> button to submit your question.</li>
-                                        <li>Alternatively, you can quickly press the <span className="text-blue-200">Enter</span> key 2 times to send your question.</li>
-                                    </ul>
-                                </div>
 
-                                <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                                    <h3 className="text-lg font-medium text-secondary-foreground/70">2. Use Prompt Templates</h3>
-                                    <div className='ms-2'>Select a prompt template from the dropdown menu above the upper right corner of the input area.</div>
+                                <div className="p-2 border border-gray-700 rounded-lg bg-secondary/40">
+                                    <h5 className="text-lg font-medium text-secondary-foreground/70">Open the Guide in the left panel!</h5>
                                     <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                        <li>You can type or paste additional text under the template text.</li>
                                         <li>
                                             <span className="inline-flex items-center">
-                                                Open the left panel (Click on the upperleft icon  
+                                                Open the left panel (Click on the upperleft icon
                                                 <svg className="mx-1 inline-block" width="12" height="12" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
                                                     <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                                                     <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
                                                 </svg>
                                             </span> to access the left panel.)
-                                            You can add text in the <span className="text-blue-200">Current Context.</span>This text will be used as context for the prompt.
+                                            Open the <span className="text-blue-200">Guide</span> tab and follow the instructions.
                                         </li>
-                                        <li>You can also click <FileText className="inline w-4 h-4 mr-1" /> below, to add a local text-file to use as context for your prompt.</li>
                                     </ul>
                                 </div>
 
-                                <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                                    <h3 className="text-lg font-medium text-secondary-foreground/70">3. You can refine a document or text.</h3>
+                                <div className="p-2 border border-gray-700 rounded-lg bg-secondary/40">
+                                    <h3 className="text-lg font-medium text-secondary-foreground/70">Try this example.</h3>
                                     <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                        <li>Alt. 1: Click the <span className="text-blue-200"> <FileText className="inline w-4 h-4 mx-1 mb-1" /> Load a file</span> button above the input area to select a local file to enhance or refine. (a new set of templates will appear).
-                                        </li>
-                                        <li>Alt. 2: Click the upper left button to open the left panel, then Context tab. <br />
-                                            (The document text will be inserted and used as context for your prompt.)</li>
+                                        <li>Click on the Prompt Templates dropdown menu below.</li>
+                                        <li>Select "<span className="text-blue-200">Plan a walk</span>"</li>
+                                        <li>Click on the Insert "<span className="text-blue-200">Insert location</span>" button, and type i.e. a City name</li>
+                                        <li>Click on the next <span className="text-blue-200">blue</span> button, and type the content</li>
+                                        <li>Finish all the buttons and then click on the <span className="text-blue-200">Send</span> button to send the request to the AI.</li>
+                                        <li>Then Click on the <span className="text-blue-200">Show Markdown Preview</span> button to see the response in Markdown format.</li>
+                                        <li>Click on the <BookmarkPlus className="inline w-4 h-4 mr-1" /><span className="text-blue-200">Save to Library</span> button to save the response to a document.</li>
+                                        <li>Click on the <FileText className="inline w-4 h-4 mr-1" /><span className="text-blue-200">Save to File</span> button to access the saved documents.</li>
                                     </ul>
                                 </div>
                             </div>
 
                             <div className="md:col-span-2 space-y-4">
-                                <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
+                                <div className="p-2 border border-gray-700 rounded-lg bg-secondary/40">
                                     <h3 className="text-lg font-medium text-blue-200 mb-2">Tips</h3>
                                     <ul className="list-disc pl-6 space-y-2 text-secondary-foreground/70">
                                         <li>You can specify format in your question for specific response formats (e.g., JSON, XML, MD (Markdown), etc.)</li>

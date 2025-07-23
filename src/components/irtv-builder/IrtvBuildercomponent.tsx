@@ -65,7 +65,10 @@ Focus on:
 - Test data specifications
 - Verification criteria
 - Traceability requirements
-- Documentation standards`;
+- Documentation standards
+
+Verify that your responses are based on the provided context and requirements.
+`;
 
 const IRTVUserPrompt = `Generate IRTV documentation for the given requirements. Include:
 1. Information Requirements Matrix

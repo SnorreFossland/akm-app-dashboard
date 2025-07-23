@@ -11,6 +11,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { FileOperations } from "@/components/FileOperations";
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ModelComponent from "@/features/model-universe/components/ModelComponent";
+import UniverseComponent from "@/features/model-universe/components/UniverseComponent";
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { saveMarkdownDocument } from "@/features/documents/markdownSlice";
@@ -24,13 +25,13 @@ export default function home() {
   const dispatch = useDispatch();
   const router = useRouter();
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
-    const [focusModel, setFocusModel] = useState<{ id: string; name: string } | null>(null);
+  const [focusModel, setFocusModel] = useState<{ id: string; name: string } | null>(null);
 
   // State for panel management
   const [activeTab, setActiveTab] = useState("ai-chat");
   const [activeSubTab, setActiveSubTab] = useState("overview");
   const [showLeftPanel, setShowLeftPanel] = useState(true);
-  const [showRightPanel, setShowRightPanel] = useState(true);
+  const [showRightPanel, setShowRightPanel] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState(400);
   const [rightPanelWidth, setRightPanelWidth] = useState(400);
   const [activeLeftTab, setActiveLeftTab] = useState<'document' | 'library' | 'guide'>('guide');
@@ -54,12 +55,12 @@ export default function home() {
   const MIN_PANEL_WIDTH = 300;
   const MAX_PANEL_WIDTH = () => window.innerWidth * 0.6;
 
-    useEffect(() => {
-      if (data.phFocus) {
-        setFocusModel(data.phFocus.focusModel);
-        setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
-      }
-    }, [data.phFocus, data.phData.metis, focusModel?.id]);
+  useEffect(() => {
+    if (data.phFocus) {
+      setFocusModel(data.phFocus.focusModel);
+      setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
+    }
+  }, [data.phFocus, data.phData.metis, focusModel?.id]);
 
   // Update refs when state changes
   useEffect(() => {
@@ -242,7 +243,7 @@ export default function home() {
   };
 
   const handleSaveDocument = (content: string, name: string) => {
-    dispatch(saveMarkdownDocument({ content, name }));
+    dispatch(saveMarkdownDocument({ id: Date.now().toString(), name, type: 'markdown', content, createdAt: new Date().toISOString() }));
   };
 
   const handleShowInLeftPanel = (content: string, name: string) => {
@@ -261,6 +262,18 @@ export default function home() {
           <div className="p-4">
             <div className="space-y-4">
               <div className="bg-gray-700/50 p-4 rounded-lg">
+                <h3 className="text-lg font-semibold text-white mb-2">Workplace</h3>
+                <p className="text-sm text-gray-300 mb-4">
+                  The AI Assisted Workplace is designed to help you create and enhance documents and to build and analyze models using AI.
+                </p>
+                <p className="text-sm text-gray-300 mb-4">The workplace has three panels: left, middle (main), and right.</p>
+                <ul className="space-y-2 text-sm text-gray-300">
+                  <li>• The left panel is setting the input context.</li>
+                  <li>• The middle panel is where the work happens and showing the current status on documents and models</li>
+                  <li>• The right panel is for preview and edit output from the AI Chat and reports from the current models.</li>
+                </ul>
+              </div>
+              <div className="bg-gray-700/50 p-4 rounded-lg">
                 <h3 className="text-lg font-semibold text-white mb-2">Quick Tips</h3>
                 <ul className="space-y-2 text-sm text-gray-300">
                   <li>• Drag panel borders to resize</li>
@@ -268,12 +281,6 @@ export default function home() {
                   <li>• Save frequently used documents</li>
                   <li>• Explore the AI tools for assistance</li>
                 </ul>
-              </div>
-              <div className="bg-gray-700/50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-2">Navigation</h3>
-                <p className="text-sm text-gray-300">
-                  Use the sidebar to access different tools and features. Each tool has its own specialized interface for specific tasks.
-                </p>
               </div>
             </div>
           </div>
@@ -322,45 +329,48 @@ export default function home() {
       //   ) : <div className="p-4 text-gray-400">No model selected</div>
       // }
     ],
-    defaultTab: 'guide'  
+    defaultTab: 'guide'
   };
 
   // Define right panel content without the Model tab
   const rightPanelContent = {
     tabs: [
-      {
-        key: 'document',
-        label: 'Context',
-        content: (
-          <DocumentPanel
-            mdContent={mdContent}
-            setMdContent={setMdContent}
-            onSave={(content: string) => handleSaveDocument(content, docName)}
-            isLibraryOpen={isLibraryOpen}
-            setIsLibraryOpen={setIsLibraryOpen}
-            panelType='left'
-          />
-        )
-      },
+      // {
+      //   key: 'document',
+      //   label: 'Preview',
+      //   content: (
+      //     <DocumentPanel
+      //       mdContent={mdContent}
+      //       setMdContent={setMdContent}
+      //       onSave={(content: string) => handleSaveDocument(content, docName)}
+      //       isLibraryOpen={isLibraryOpen}
+      //       setIsLibraryOpen={setIsLibraryOpen}
+      //       panelType='right'
+      //     />
+      //   )
+      // },
       {
         key: 'help',
-        label: 'Help',
+        label: '...',
         content: (
           <div className="p-4">
             <div className="space-y-4">
               <div className="bg-gray-700/50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-2">Quick Tips</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">This is the Output Panel</h3>
+                <p className="text-sm text-gray-300 mb-4">
+                  Use this panel to view and interact with the output from the AI chat.
+                </p>
                 <ul className="space-y-2 text-sm text-gray-300">
-                  <li>• Drag panel borders to resize</li>
-                  <li>• Use tabs to switch between views</li>
-                  <li>• Save frequently used documents</li>
-                  <li>• Explore the AI tools for assistance</li>
+                  <li>• Preview response text from AI chat</li>
+                  <li>• Edit the response</li>
+                  <li>• Save the response preview to the library (store it for later use)</li>
+                  <li>• Save to a local file</li>
                 </ul>
               </div>
               <div className="bg-gray-700/50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-2">Navigation</h3>
+                <h3 className="text-lg font-semibold text-white mb-2">Modelling</h3>
                 <p className="text-sm text-gray-300">
-                  Use the sidebar to access different tools and features. Each tool has its own specialized interface for specific tasks.
+                  Use this panel to approve, edit and modify your AI generated Mimris model artifacts.
                 </p>
               </div>
             </div>
@@ -377,19 +387,18 @@ export default function home() {
         moduleOperations={<FileOperations />}
         leftPanelContent={leftPanelContent}
         rightPanelContent={rightPanelContent}
-
       >
         <Tabs defaultValue="overview" className="flex flex-col flex-1">
           {/* Main Tabs */}
-          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto pt-3 z-20">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto pt-2 z-20">
+            <TabsTrigger value="overview">AI Chat</TabsTrigger>
             <TabsTrigger value="model">Current Universe</TabsTrigger>
             <TabsTrigger value="about">About</TabsTrigger>
             <TabsTrigger value="help">Help</TabsTrigger>
           </TabsList>
 
           {/* Tab Content */}
-          <TabsContent value="overview" className="flex-1 px-1 mt-1">
+          <TabsContent value="overview" className="flex-1 px-1 mt-0">
             <div className="flex-1 overflow-auto bg-gray-800/20">
               <div className="max-w-4xl mx-auto">
                 <div className="text-center mb-8">
@@ -505,7 +514,13 @@ export default function home() {
             </div>
           </TabsContent>
 
-          <TabsContent value="about" className="flex-1 px-1 mt-1">
+          <TabsContent value="model" className="flex-1 px-1 mt-0">
+            <div className="flex-1 overflow-auto bg-gray-800/20 p-0">
+              <UniverseComponent />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="about" className="flex-1 px-1 mt-0">
             <div className="flex-1 overflow-auto bg-gray-800/20 p-4">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-2xl font-bold text-white mb-6">Platform Overview</h2>
@@ -548,17 +563,11 @@ export default function home() {
             </div>
           </TabsContent>
 
-          <TabsContent value="model" className="flex-1 px-1 mt-1">
-            <div className="flex-1 overflow-auto bg-gray-800/20 p-2">
-              <ModelComponent />
-            </div>
-          </TabsContent>
 
-          <TabsContent value="help" className="flex-1 px-1 mt-1">
+          <TabsContent value="help" className="flex-1 px-1 mt-0">
             <div className="flex-1 overflow-auto bg-gray-800/20 p-4">
               <div className="max-w-4xl mx-auto">
                 <h2 className="text-2xl font-bold text-white mb-6">Help & Support</h2>
-
                 <div className="space-y-6">
                   <div className="bg-gray-800/50 p-6 rounded-lg">
                     <h3 className="text-xl font-semibold text-orange-400 mb-3">Getting Help</h3>
@@ -584,7 +593,7 @@ export default function home() {
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-200">Saving Work</h4>
-                        <p className="text-sm text-gray-400">All documents are automatically saved to your library</p>
+                        <p className="text-sm text-gray-400">Click on <span className="font-semibold">save</span> to your library</p>
                       </div>
                       <div>
                         <h4 className="font-medium text-gray-200">Navigation</h4>

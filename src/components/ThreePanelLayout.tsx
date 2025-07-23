@@ -347,7 +347,7 @@ export function ThreePanelLayout({
                 {/* Right Panel */}
                 {showRightPanel && (
                     <div
-                        className="bg-gray-800 border-l border-gray-600 flex flex-col overflow-hidden"
+                        className="bg-gray-800 border-l border-background flex flex-col overflow-hidden"
                         style={{ width: `${rightPanelWidth}px`, minWidth: `${MIN_PANEL_WIDTH}px` }}
                     >
                         <div className="flex justify-between items-center p-2 border-b border-gray-600">
@@ -362,7 +362,7 @@ export function ThreePanelLayout({
                         </div>
 
                         <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
-                            <TabsList className="grid grid-cols-1 w-full">
+                            <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
                                 {finalRightPanelContent.tabs.map((tab) => (
                                     <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
                                         {tab.label}
@@ -371,7 +371,7 @@ export function ThreePanelLayout({
                             </TabsList>
 
                             {finalRightPanelContent.tabs.map((tab) => (
-                                <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto">
+                                <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
                                     {tab.content}
                                 </TabsContent>
                             ))}

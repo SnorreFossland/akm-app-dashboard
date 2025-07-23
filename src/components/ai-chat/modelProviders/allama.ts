@@ -17,7 +17,7 @@ export async function clearALLama(messages: Message[], model: string, temperatur
     body: {
       model: model,
       messages: messages,
-      temperature: temperature || 0.7,
+      temperature: temperature || 0.5,
     },
     responseHandler: (data) => data.choices[0].message.content
   });
@@ -49,7 +49,7 @@ export async function streamALLama(
       body: JSON.stringify({
         model: model,
         messages: messages,
-        temperature: temperature || 0.7,
+        temperature: temperature || 0.5,
         stream: true
       })
     });

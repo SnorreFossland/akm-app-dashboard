@@ -29,7 +29,7 @@ export async function callClaude(messages: Message[], model: string, temperature
     body: {
       model: model,
       messages: formattedMessages,
-      temperature: temperature || 0.7,
+      temperature: temperature || 0.5,
       // top_k: 40,
       // top_p: 0.9,
       // stop_sequences: ['\n\n'],
@@ -74,7 +74,7 @@ export async function streamClaude(
       body: JSON.stringify({
         model: model,
         messages: formattedMessages,
-        temperature: temperature || 0.7,
+        temperature: temperature || 0.5,
         stream: true,
         max_tokens: 4096
       })

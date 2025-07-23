@@ -101,6 +101,8 @@ Error & Uncertainty Handling:
 - If unsure, acknowledge uncertainty and provide your best-guess rationale.
 
 When providing information, aim to be accurate. If you're unsure about something, acknowledge it rather than making up facts.
+
+Verify that the text is based on the provided context.
 `
     };
 
