@@ -21,6 +21,12 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
         content: "Refine the text below or in the #Context section below to make it more concise and clear."
     },
     {
+        title: "Expand text",
+        category: "Document Refinement",
+        usage: "Communication",
+        content: "Expand the text below or in the #Context section below to add more detail and depth."
+    },
+    {
         title: "Domain Definition",
         category: "Domain Definition",
         usage: "Domain Definition",
@@ -211,7 +217,7 @@ Include the following sections:
         title: "Research Paper",
         category: "Research",
         usage: "Business",
-        content: "Outline a research paper on the following topic:\n"
+        content: "Suggesta research paper on the following topic:\n"
     },
     {
         title: "Feedback Request",

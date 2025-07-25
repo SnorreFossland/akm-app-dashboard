@@ -46,8 +46,8 @@ export function ThreePanelLayout({
     const documents = useSelector((state: RootState) => state.markdown.documents);
 
     // State for panel management
-    const [showLeftPanel, setShowLeftPanel] = useState(true);
-    const [showRightPanel, setShowRightPanel] = useState(true);
+    const [showLeftPanel, setShowLeftPanel] = useState(false);
+    const [showRightPanel, setShowRightPanel] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
     const [activeLeftTab, setActiveLeftTab] = useState(

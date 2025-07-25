@@ -1,13 +1,14 @@
 'use client';
 
 import { useState, useRef, useEffect, useCallback } from 'react';
-import { useDispatch } from 'react-redux'; // Add this import
+import { useDispatch, useSelector } from 'react-redux'; // Add this import
 import { usePathname } from 'next/navigation';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import MarkdownPreview from './MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
+import { RootState } from '@/store';
 import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
 import { systemPrompt as promptBuilderPrompt } from '@/app/prompt-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -39,6 +40,7 @@ export interface ChatComponentProps {
     setInput: (input: string) => void;
     selectedModel: string;
     setSelectedModel: (model: string) => void;
+    currentDocument?: string; // Add this prop to pass current document content
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (content: string) => void;
     setShowLeftPanel: (show: boolean) => void;
@@ -81,12 +83,15 @@ export default function ChatComponent({
     onAddMD,
     mdContent,
     setMdContent,
+    currentDocument,
     mdPreview,
     setMdPreview,
     setCurrentMessages,
     gettingStartedGuide
 }: ChatComponentProps) {
     const dispatch = useDispatch();
+    
+    const documents = useSelector((state: RootState) => state.markdown.documents);
     const [messages, setMessages] = useState<Message[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
@@ -697,28 +702,28 @@ END OF DOCUMENT: ${file.name}
             const messagesToSend: Message[] = [];
 
             // First add system messages if context is attached
-            if (contextContent && isContextAttached) {
-                messagesToSend.push(
-                    {
-                        role: 'system',
-                        content: systemPrompt
-                    },
-                    {
-                        role: 'user',
-                        content: `# Context:\n Here are the context and documents you must reference:\n\n${contextContent}`
-                    }
-                );
-            } else if (mdContent && mdContent.trim().length > 0) {
-                messagesToSend.push({
-                    role: 'user',
-                    content: mdContent
-                });
-            } else {
+            // if (contextContent && isContextAttached) {
+            //     messagesToSend.push(
+            //         {
+            //             role: 'system',
+            //             content: systemPrompt
+            //         },
+            //         {
+            //             role: 'user',
+            //             content: `# Context:\n Here are the context and documents you must reference:\n\n${contextContent}`
+            //         }
+            //     );
+            // } else if (mdContent && mdContent.trim().length > 0) {
+            //     messagesToSend.push({
+            //         role: 'user',
+            //         content: mdContent
+            //     });
+            // } else {
                 messagesToSend.push({
                     role: 'system',
                     content: systemPrompt
                 });
-            }
+            // }
 
             console.log(`Sending context to the model (${contextContent.length} chars)`);
             // Add conversation messages
@@ -769,7 +774,7 @@ END OF DOCUMENT: ${file.name}
                 setIsStreaming(false);
                 return;
             }
-
+            console.log('777 Messages to send:', messagesToSend);
             // Send the messages via POST
             fetch('/api/chat/create-stream', {
                 method: 'POST',
@@ -935,7 +940,7 @@ END OF DOCUMENT: ${file.name}
         let userMessageContent = input;
 
         if (docRefine) {
-            userMessageContent = `${userMessageContent} #Content:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} #Content:\n ${documents[0].content} #Context:\n ${mdContent}`;
         } else {
             userMessageContent = `${userMessageContent} #Context:\n ${mdContent}`;
         }
@@ -1087,8 +1092,8 @@ END OF DOCUMENT: ${file.name}
                                 </div>
                             )}
                         </div>
-                    ) : null}
-                    {/* (
+                    ) : 
+                    (
                         messages.length === 0 && (
                             <div className="flex flex-col border border-gray-600 rounded-lg p-4 gap-2 text-gray-400 text-sm h-full items-center justify-start w-full bg-secondary/40 overflow-auto">
                                 <div className="flex items-center gap-2">
@@ -1096,7 +1101,7 @@ END OF DOCUMENT: ${file.name}
                                 </div>
                             </div>
                         )
-                    )} */}
+                    )}
 
                     <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
                         {messages.map((message, index) => (
@@ -1339,14 +1344,14 @@ END OF DOCUMENT: ${file.name}
                                     className="hidden"
                                     onChange={handleMDFileSelect}
                                 />
-                                {mdContent && (
+                                {currentDocument && (
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={docRefine && !mdContent}
-                                            disabled={!mdContent || isLoading}
+                                            checked={docRefine && !currentDocument ? false : docRefine  }
+                                            disabled={!currentDocument || isLoading}
                                             onChange={() => {
-                                                if (!mdContent) {
+                                                if (!currentDocument) {
                                                     setDocRefine(true);
                                                     setInput('');
                                                 } else {
@@ -1357,18 +1362,18 @@ END OF DOCUMENT: ${file.name}
                                             }}
                                             className="sr-only" // Hide default checkbox but keep it accessible
                                         />
-                                        <div className={`h-5 w-5 border ${docRefine && mdContent ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                        <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
                                             {docRefine && mdContent && (
                                                 <div className="h-2 w-2 bg-white rounded-full"></div>
                                             )}
                                         </div>
-                                        <span className="text-gray-500">{mdContent ? "Refine text" : "No document in the left panel"}</span>
+                                        <span className="text-gray-500">{currentDocument ? "Refine document" : "No document in the left panel"}</span>
                                     </label>
                                 )}
                             </div>
                             <div className="flex items-center gap-2">
                                 {/* Template selection */}
-                                {mdContent && docRefine &&
+                                {currentDocument && docRefine &&
                                     <div className="flex items-center gap-2">
                                         <select
                                             title="Select a style for the document"
@@ -1380,7 +1385,7 @@ END OF DOCUMENT: ${file.name}
                                                     // setDocRefine(true);
                                                 }
                                             }}
-                                            disabled={isLoading || !mdContent}
+                                            disabled={isLoading || !currentDocument}
                                         >
                                             <option value="">Select style...</option>
                                             {Object.keys(refineTemplates).map((key) => (

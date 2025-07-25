@@ -136,13 +136,13 @@ function ModelComponent() {
             >
               Model Suite Summary
             </TabsTrigger>
-                                            <TabsTrigger
-                                                value="model-list"
-                                                className="flex items-center gap-2 group-data-[state=active]:bg-purple-600/20 group-data-[state=active]:text-purple-400"
-                                            >
-                                                <Package className="w-4 h-4" />
-                                                Model list
-                                            </TabsTrigger>
+            <TabsTrigger
+              value="model-list"
+              className="flex items-center gap-2 group-data-[state=active]:bg-purple-600/20 group-data-[state=active]:text-purple-400"
+            >
+              <Package className="w-4 h-4" />
+              Model list
+            </TabsTrigger>
             <TabsTrigger
               value="model-objects"
               className="flex items-center gap-2 group-data-[state=active]:bg-blue-600/20 group-data-[state=active]:text-blue-400"

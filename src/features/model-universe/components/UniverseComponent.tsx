@@ -137,31 +137,6 @@ const UniverseComponent: React.FC = () => {
                             <div className="grid gap-4">
                                 {ontology ? (
                                     <OntologyCard domainData={domain} ontologyData={ontology} />
-
-
-                                    // <div key={ontology.name} className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
-                                    //     <h3 className="text-lg font-medium text-white mb-2">
-                                    //         {ontology.name || 'Default Ontology'}
-                                    //     </h3>
-                                    //     <p className="text-gray-300 text-sm mb-3">
-                                    //         {ontology.description || 'No description provided'}
-                                    //     </p>
-                                    //     <div className="grid grid-cols-2 gap-4 text-xs">
-                                    //         <div>
-                                    //             <span className="text-gray-400">Concepts:</span>
-                                    //             <span className="text-white ml-2">
-                                    //                 {ontology.concepts?.length || 0}
-                                    //             </span>
-                                    //         </div>
-                                    //         <div>
-                                    //             <span className="text-gray-400">Relations:</span>
-                                    //             <span className="text-white ml-2">
-                                    //                 {ontology.relationships?.length || 0}
-                                    //             </span>
-                                    //         </div>
-                                    //     </div>
-                                    // </div>
-
                                 ) : (
                                     <div className="text-center py-8">
                                         <Network className="w-12 h-12 text-gray-500 mx-auto mb-4" />

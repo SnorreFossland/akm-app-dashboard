@@ -234,9 +234,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
 
                     <TabsContent value="objects" className="rounded  w-full mt-0 ">
                         <Card className="pt-1">
-                            {/* <CardHeader className="px-3 pt-3 pb-0">
-                                <CardTitle className="bg-background px-2 text-1xl rounded">Concepts</CardTitle>
-                            </CardHeader> */}
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
                                 {/* <CardContent className="max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
                                 {model && <ObjectTable data={model.objects} />}
@@ -246,9 +243,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
 
                     <TabsContent value="relationships" className="rounded  w-full mt-0 ">
                         <Card className="pt-1">
-                            {/* <CardHeader className="px-3 pt-3 pb-0">
-                                <CardTitle className="bg-background px-2 text-1xl rounded">Relations</CardTitle>
-                            </CardHeader> */}
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
                                 {model && <RelshipTable data={model.relships.map(rel => ({ ...rel, description: '' }))} />}
                             </CardContent>

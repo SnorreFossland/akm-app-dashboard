@@ -30,7 +30,7 @@ export interface ChatComponentProps {
 const AIChatPage = () => {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.markdown.documents);
-    
+
 
     const [input, setInput] = useState<string>("");
     const [chatInput, setChatInput] = useState('');
@@ -42,7 +42,7 @@ const AIChatPage = () => {
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
-    const [currentDocument, setCurrentDocument] = useState<string>(documents.length > 0 ? documents[0].content : '');
+    const [currentDocument, setCurrentDocument] = useState<string>('');
     const mdFileInputRef = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -108,7 +108,26 @@ const AIChatPage = () => {
                 console.error('Error parsing saved conversations:', error);
             }
         }
+
+        // Load currentDocument from localStorage
+        const storedCurrentDocument = localStorage.getItem('currentDocument');
+        if (storedCurrentDocument) {
+            try {
+                setCurrentDocument(storedCurrentDocument);
+                console.log('Loaded current document from localStorage');
+            } catch (error) {
+                console.error('Error loading current document:', error);
+            }
+        }
     }, []);
+
+    // Add useEffect to save currentDocument to localStorage whenever it changes
+    useEffect(() => {
+        if (currentDocument) {
+            localStorage.setItem('currentDocument', currentDocument);
+            console.log('Saved current document to localStorage');
+        }
+    }, [currentDocument]);
 
     const handleShowInLeftPanel = (content: string, name: string) => {
         setMdContent(content);
@@ -127,6 +146,7 @@ const AIChatPage = () => {
     const handleAddMD = () => {
         mdFileInputRef.current?.click()
     }
+
 
     const handleExportLibrary = () => {
         if (documents.length === 0) return;
@@ -358,7 +378,7 @@ const AIChatPage = () => {
             },
             {
                 key: 'context',
-                label: 'Context',
+                label: 'Add. Context',
                 content: (
                     <DocumentPanel
                         mdContent={mdContent}
@@ -399,7 +419,7 @@ const AIChatPage = () => {
                 moduleOperations={<FileOperations />}
                 leftPanelContent={leftPanelContent}
                 rightPanelContent={rightPanelContent}
-                // showAppHeader={true} // We'll handle the header ourselves for the tabs
+            // showAppHeader={true} // We'll handle the header ourselves for the tabs
             >
                 <div className="flex flex-col h-full bg-background text-gray-100">
                     <Tabs defaultValue="chat" className="flex flex-col h-full">
@@ -420,7 +440,7 @@ const AIChatPage = () => {
                                     </span>
                                 </TabsTrigger>
                                 <TabsTrigger
-                                    value="saved-documents"
+                                    value="current-document"
                                     className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                 >
                                     Current Document
@@ -456,6 +476,7 @@ const AIChatPage = () => {
                                     setInput={setInput}
                                     selectedModel={selectedModel}
                                     setSelectedModel={setSelectedModel}
+                                    currentDocument={currentDocument}
                                     onResponseChange={handleResponseChange}
                                     onViewInMarkdown={handleViewInMarkdown}
                                     setShowLeftPanel={() => { }} // This is now handled by ThreePanelLayout
@@ -471,48 +492,36 @@ const AIChatPage = () => {
                             </div>
                         </TabsContent>
 
-                        {/* Saved Documents */}
-                        <TabsContent value="saved-documents" className="flex-1 px-1 mt-1 overflow-hidden">
+                        {/* Current Document */}
+                        <TabsContent value="current-document" className="flex-1 px-1 mt-1 overflow-hidden">
                             <div className="bg-background rounded-lg p-4 h-full overflow-auto">
-                                <DocumentPanel
-                                    mdContent={currentDocument}
-                                    setMdContent={setCurrentDocument}
-                                    setIsLibraryOpen={setIsLibraryOpen}
-                                    isLibraryOpen={isLibraryOpen}
-                                    panelType='middle'
-                                />
-                                {/* <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                                    <div className="flex space-x-2">
-                                        <button
-                                            onClick={handleExportLibrary}
-                                            className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                                            disabled={documents.length === 0}
-                                        >
-                                            Export Library
-                                        </button>
-                                        <input
-                                            type="file"
-                                            ref={fileInputRef}
-                                            onChange={handleFileSelection}
-                                            accept=".json"
-                                            style={{ display: 'none' }}
-                                        />
-                                        <button
-                                            onClick={handleImportLibrary}
-                                            className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                                        >
-                                            <span>Import Library</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                <div className="text-sm text-gray-400 mb-2 overflow-auto">
-                                    <MarkdownLibrary
-                                        onSelect={handleDocumentSelect}
-                                        onShowInLeftPanel={handleShowInLeftPanel}
-                                        hideExportLibraryButton={false}
+                                <div className="space-y-4">
+                                    {/* Current Document Panel */}
+                                    <DocumentPanel
+                                        mdContent={currentDocument}
+                                        setMdContent={setCurrentDocument}
+                                        setIsLibraryOpen={setIsLibraryOpen}
+                                        isLibraryOpen={isLibraryOpen}
+                                        panelType='middle'
                                     />
-                                </div> */}
+
+                                    {/* Library Button - Now opens popup instead of inline display */}
+                                    {/* <div className="border-t border-gray-600 pt-4">
+                                        <div className="flex items-center justify-between">
+                                            <h3 className="text-lg font-bold text-blue-400 mb-4">Document Library</h3>
+                                            <button
+                                                onClick={() => setIsLibraryOpen(true)}
+                                                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
+                                            >
+                                                <Library className="h-4 w-4" />
+                                                Open Library
+                                            </button>
+                                        </div>
+                                        <p className="text-gray-400 text-sm">
+                                            Click "Open Library" to browse and select documents from your saved library.
+                                        </p>
+                                    </div> */}
+                                </div>
                             </div>
                         </TabsContent>
 
@@ -541,7 +550,7 @@ const AIChatPage = () => {
                     onClick={() => setIsLibraryOpen(false)}
                 >
                     <div
-                        className="bg-background rounded-lg p-4 w-[600px] max-h-[80vh] overflow-auto"
+                        className="bg-background rounded-lg p-4 w-[100vw-24rem] max-w-4xl max-h-[90vh] overflow-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex justify-between items-center mb-4">
@@ -552,7 +561,7 @@ const AIChatPage = () => {
                                     className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
                                     disabled={documents.length === 0}
                                 >
-                                    Export Library
+                                    Save Documents to File
                                 </button>
                                 <input
                                     type="file"
@@ -565,7 +574,7 @@ const AIChatPage = () => {
                                     onClick={handleImportLibrary}
                                     className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
                                 >
-                                    <span>Import Library</span>
+                                    <span>Import Documents from File</span>
                                 </button>
                                 <button
                                     onClick={() => setIsLibraryOpen(false)}
@@ -575,10 +584,11 @@ const AIChatPage = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="text-sm text-gray-400 mb-2">
+                        <div className="text-sm text-gray-400 mb-2 max-h-[80vh] overflow-auto">
                             <MarkdownLibrary
                                 onSelect={handleDocumentSelect}
                                 onShowInLeftPanel={handleShowInLeftPanel}
+                                onSetCurrentDocument={setCurrentDocument}  // Add this line
                                 hideExportLibraryButton={false}
                             />
                         </div>

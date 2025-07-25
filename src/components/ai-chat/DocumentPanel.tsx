@@ -1,9 +1,10 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { usePathname } from 'next/navigation';
+import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
-import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-react';
+import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
 import { setDomainData } from '@/features/model-universe/modelSlice';
 
@@ -18,13 +19,18 @@ interface DocumentPanelProps {
     onSaveToLibrary?: (content: string) => void;
     setIsLibraryOpen?: (isOpen: boolean) => void;
     isLibraryOpen?: boolean;
-    documentId?: string; // Optional document ID for updates
-    panelType?: 'left' | 'right' | 'middle'; // Optional panel type for layout
+    documentId?: string;
+    panelType?: 'left' | 'right' | 'middle';
+    // Add these new props
+    onSelect?: (content: string, name: string) => void;
+    currentDocument?: string;
+    onSetCurrentDocument?: (content: string, name: string) => void;
 }
 
 export default function DocumentPanel({
     mdContent,
     setMdContent,
+    onSelect = () => { },
     onEdit = () => { },
     onPaste = () => { },
     onLibrary = () => { },
@@ -40,9 +46,11 @@ export default function DocumentPanel({
     // console.log('DocumentPanel render - mdContent length:', mdContent?.length || 0);
 
     const dispatch = useDispatch();
+    const documents = useSelector((state: RootState) => state.markdown.documents);
     const pathname = usePathname();
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(mdContent || '');
+    const [showDocumentList, setShowDocumentList] = useState(true);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
@@ -82,6 +90,13 @@ export default function DocumentPanel({
         setTemplatePlaceholders(placeholders);
     }, [editContent]);
 
+    // Handle document selection from the list
+    const handleDocumentSelect = (doc: any) => {
+        setMdContent(doc.content);
+        setEditContent(doc.content);
+        setShowDocumentList(false);
+        onSelect(doc.content, doc.name);
+    };
 
     // Add this function with your other handler functions
     const handleSaveToFile = (content: string) => {
@@ -187,7 +202,7 @@ export default function DocumentPanel({
                     to start writing or paste text.
                     Click
                     <Library className="inline-block h-4 w-4 mx-1" />
-                    to load text from library.
+                    to load text from library document.
                 </span>
             );
         }
@@ -272,10 +287,60 @@ export default function DocumentPanel({
     }
 
     return (
-        <div className="p-2">
-            <>
+        <div className="p-2 flex h-full">
+            {/* Document List Sidebar */}
+            {showDocumentList && (
+                <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
+                    <div className="flex items-center justify-between p-3 border-b border-gray-600">
+                        <h3 className="text-sm font-medium text-gray-300">Documents</h3>
+                        <button
+                            onClick={() => setShowDocumentList(false)}
+                            className="text-gray-400 hover:text-white"
+                            title="Hide document list"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                    </div>
+                    <div className="flex-1 overflow-y-auto p-2">
+                        {documents.length === 0 ? (
+                            <div className="text-gray-400 text-sm p-4 text-center">
+                                No documents in library
+                            </div>
+                        ) : (
+                            <div className="space-y-1">
+                                {documents.map((doc) => (
+                                    <button
+                                        key={doc.id}
+                                        onClick={() => handleDocumentSelect(doc)}
+                                        className="w-full text-left p-2 text-sm text-gray-300 hover:bg-gray-700 rounded transition-colors truncate"
+                                        title={doc.name}
+                                    >
+                                        {doc.name}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {/* Main Content Area */}
+            <div className="flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-2 px-1">
-                    <div className="text-sm text-gray-400">{(panelType === 'left' ? 'Current text' : (panelType === 'middle' ? 'Current' : 'Markdown Preview'))}</div>
+                    <div className="flex items-center gap-2">
+                        {!showDocumentList && (
+                            <button
+                                onClick={() => setShowDocumentList(true)}
+                                className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
+                                title="Show document list"
+                            >
+                                <ChevronRight className="h-4 w-4" />
+                            </button>
+                        )}
+                        <div className="text-sm text-gray-400">
+                            {(panelType === 'left' ? 'Current text' : (panelType === 'middle' ? 'Current' : 'Markdown Preview'))}
+                        </div>
+                    </div>
                     <div className="flex gap-2">
                         {(panelType === 'right') ? (
                             <>
@@ -284,7 +349,6 @@ export default function DocumentPanel({
                                     onClick={handleSaveToLibrary}
                                     className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
                                 >
-
                                     <BookmarkPlus className="h-4 w-4" />
                                 </button>
 
@@ -305,7 +369,6 @@ export default function DocumentPanel({
                                             setIsEditing(false);
                                             // Also call onSave to notify parent components
                                             onSave(editContent);
-
                                             console.log('After setMdContent - editContent applied:', editContent.substring(0, 100) || 'empty');
                                         }}
                                         className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
@@ -333,7 +396,7 @@ export default function DocumentPanel({
                                         // onEdit(); // Call parent edit handler
                                     }}
                                     className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md"
-                                    title="Cancel editing"
+                                    title="Clear content"
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
@@ -392,7 +455,7 @@ export default function DocumentPanel({
                                         onEdit(); // Call parent edit handler
                                     }}
                                     className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md"
-                                    title="Cancel editing"
+                                    title="Clear content"
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
@@ -400,10 +463,10 @@ export default function DocumentPanel({
                         )}
                     </div>
                 </div>
-            </>
-            {
-                isEditing ? (
-                    <div className="relative">
+
+                {/* Content Area */}
+                {isEditing ? (
+                    <div className="relative flex-1">
                         {/* Add placeholder jump buttons */}
                         {templatePlaceholders.length > 0 && (
                             <div className="flex gap-2 mb-2 flex-wrap">
@@ -466,7 +529,7 @@ export default function DocumentPanel({
                         </button>
                     </div>
                 ) : (
-                    <div className="prose prose-invert custom-markdown markdown-preview bg-primary-foreground p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
+                    <div className="prose prose-invert custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words flex-1">
                         {mdContent ? (
                             <MarkdownPreview mdPreview={mdContent} />
                         ) : (
@@ -475,8 +538,8 @@ export default function DocumentPanel({
                             </div>
                         )}
                     </div>
-                )
-            }
-        </div >
+                )}
+            </div>
+        </div>
     );
 }

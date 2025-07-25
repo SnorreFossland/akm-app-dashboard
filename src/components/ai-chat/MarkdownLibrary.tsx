@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { deleteMarkdownDocument } from '@/features/documents/markdownSlice';
@@ -9,12 +9,15 @@ interface MarkdownLibraryProps {
   onSelect: (content: string, name: string) => void;
   hideExportLibraryButton?: boolean;
   onShowInLeftPanel?: (content: string, name: string) => void; // New prop for showing in left panel
+  onSetCurrentDocument?: (content: string, name: string) => void; // New prop for setting current document
+  currentDocument?: string; // Add this missing prop
 }
-
 const MarkdownLibrary = ({
   onSelect,
   hideExportLibraryButton,
-  onShowInLeftPanel
+  onShowInLeftPanel,
+  onSetCurrentDocument, // Add this parameter
+  currentDocument
 }: MarkdownLibraryProps) => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const dispatch = useDispatch();
@@ -22,11 +25,27 @@ const MarkdownLibrary = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null); // Track which document is expanded
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const expandedContentRef = useRef<HTMLDivElement>(null);
 
   const filteredDocuments = documents.filter(doc =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // Auto-scroll when expanded content is rendered
+  useEffect(() => {
+    if (expandedDocId && expandedContentRef.current) {
+      // Small delay to ensure the DOM has updated
+      setTimeout(() => {
+        if (expandedContentRef.current) {
+          expandedContentRef.current.scrollIntoView({
+            behavior: 'smooth',
+            block: 'nearest'
+          });
+        }
+      }, 100);
+    }
+  }, [expandedDocId]);
 
   const handleDelete = (id: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -103,7 +122,8 @@ const MarkdownLibrary = ({
   // Handle clicking on document line to expand/collapse
   const handleDocumentClick = (docId: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    setExpandedDocId(expandedDocId === docId ? null : docId);
+    const newExpandedId = expandedDocId === docId ? null : docId;
+    setExpandedDocId(newExpandedId);
   };
 
   // Handle showing document in left panel
@@ -147,7 +167,7 @@ const MarkdownLibrary = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          {filteredDocuments.map((doc) => (
+          {filteredDocuments.map((doc, index) => (
             <div key={doc.id} className="bg-gray-700 rounded-lg transition-colors">
               {/* Document Header - Clickable to expand/collapse */}
               <div
@@ -167,28 +187,35 @@ const MarkdownLibrary = ({
                     <span className="text-xs text-gray-400">
                       {new Date(doc.createdAt).toLocaleDateString()}
                     </span>
-                    <button
-                      onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
-                      className="text-xs bg-green-800 hover:bg-green-700 text-white px-2 py-1 rounded"
-                    >
-                      Export
-                    </button>
-                    <button
-                      onClick={(e) => handleDelete(doc.id, e)}
-                      className="text-xs bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded"
-                    >
-                      Delete
-                    </button>
                   </div>
                 </div>
-                <p className="text-sm text-gray-300 line-clamp-2">
-                  {doc.content.substring(0, 150)}...
-                </p>
+                <div className="flex items-center gap-2 ms-auto">
+                  <p className="text-sm text-gray-300 line-clamp-2">
+                    {doc.content.substring(0, 150)}...
+                  </p>
+                <div className="flex justify-end items-center gap-2 ms-auto">
+                  <button
+                    onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
+                    className="text-xs bg-green-800 hover:bg-green-700 text-white px-2 py-1 rounded"
+                  >
+                    Save to File
+                  </button>
+                  <button
+                    onClick={(e) => handleDelete(doc.id, e)}
+                    className="text-xs bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                </div>
+                </div>
               </div>
 
               {/* Expanded Content - Shows when document is clicked */}
               {expandedDocId === doc.id && (
-                <div className="border-t border-gray-600 bg-gray-800">
+                <div
+                  ref={expandedContentRef}
+                  className="border-t border-gray-600 bg-gray-800"
+                >
                   <div className="p-3">
                     <div className="bg-gray-900 rounded p-3 mb-3 max-h-60 overflow-y-auto">
                       <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono">
@@ -197,16 +224,9 @@ const MarkdownLibrary = ({
                     </div>
                     <div className="flex justify-between items-center">
                       <div className="text-xs text-gray-400">
-                        Click to expand/collapse • {doc.content.length} characters
+                        • {doc.content.length} characters
                       </div>
                       <div className="flex gap-2">
-                        {/* <button
-                          onClick={(e) => handleShowInLeftPanel(doc.content, doc.name, e)}
-                          className="flex items-center gap-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                        >
-                          <Eye className="h-3 w-3" />
-                          Show in Left Panel
-                        </button> */}
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -214,8 +234,22 @@ const MarkdownLibrary = ({
                           }}
                           className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
                         >
-                          <Eye className="h-3 w-3" />
-                          Show in left panel
+                          {/* <Eye className="h-3 w-3" /> */}
+                          Add as context
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (onSetCurrentDocument) {
+                              onSetCurrentDocument(doc.content, doc.name);
+                            } else {
+                              onSelect(doc.content, doc.name);
+                            }
+                          }}
+                          className="flex items-center gap-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                        >
+                          {/* <Eye className="h-3 w-3" /> */}
+                          Add as current Document
                         </button>
                       </div>
                     </div>
