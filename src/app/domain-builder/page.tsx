@@ -1,7 +1,7 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from "react-redux";
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
 import type { RootState } from "@/store";
 import { usePathname } from 'next/navigation';
 import ReactMarkdown from "react-markdown";

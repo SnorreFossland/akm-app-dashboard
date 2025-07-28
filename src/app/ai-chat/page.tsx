@@ -422,13 +422,12 @@ const AIChatPage = () => {
                 showRightPanel={showRightPanel}
                 setShowRightPanel={setShowRightPanel}
                 className="h-full min-w-0 bg-background text-gray-100"
-                maxMiddlePanelWidth={800} // Set max width for the middle panel
             >
                 <div className="flex flex-col h-full min-w-0 bg-background text-gray-100">
                     <Tabs defaultValue="chat" className="flex flex-col h-full">
                         <div className="flex items-center justify-between bg-primary-foreground px-2 min-w-0">
                             {/* Tabs */}
-                            <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10 min-w-0">
+                            <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10 min-w-0">
                                 <TabsTrigger
                                     value="chat"
                                     className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
@@ -446,7 +445,7 @@ const AIChatPage = () => {
                                     value="current-document"
                                     className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                 >
-                                    Current Document
+                                    Current Doc
                                     <span
                                         onClick={() => setShowGuideModal(true)}
                                         className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
@@ -473,7 +472,7 @@ const AIChatPage = () => {
 
                         {/* Chat Component */}
                         <TabsContent value="chat" className="flex-1 px-1 mt-1 overflow-hidden">
-                            <div className="h-full min-w-0 overflow-auto bg-gray-800/20 rounded">
+                            <div className="h-full min-w-0 overflow-y-auto bg-gray-800/20 rounded">
                                 <ChatComponent
                                     input={input}
                                     setInput={setInput}
@@ -493,6 +492,7 @@ const AIChatPage = () => {
                                     setMdPreview={setMdPreview}
                                     setCurrentMessages={setCurrentMessages}
                                     gettingStartedGuide={<GettingStartedGuide />}
+                                    isMobile={false}
                                 />
                             </div>
                         </TabsContent>

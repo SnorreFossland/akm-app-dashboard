@@ -12,13 +12,20 @@ import { handleGetLocalFileClick } from '@/features/model-universe/components/Ha
 import { handleGetDefaultFile } from '@/features/model-universe/components/HandleGetDefaultFile';
 import { clearStore, clearModel, updateMetisInfo, updateModelInfo, updateProjectInfo } from '@/features/model-universe/modelSlice';
 import { getCurrentMenuItemDescription } from '@/utils/navigationHelpers';
+import {
+    ChevronLeft,
+    ChevronRight,
+    PanelLeft,
+    PanelRight,
+} from "lucide-react";
 
 interface AppHeaderProps {
-    showLeftPanel?: boolean;
-    showRightPanel?: boolean;
+    showLeftPanel: boolean;
+    showRightPanel: boolean;
     onToggleLeftPanel?: () => void;
     onToggleRightPanel?: () => void;
-    moduleOperations?: ReactNode;
+    moduleOperations?: React.ReactNode;
+    isMobile?: boolean;
 }
 
 export function AppHeader({
@@ -26,67 +33,46 @@ export function AppHeader({
     showRightPanel,
     onToggleLeftPanel,
     onToggleRightPanel,
-    moduleOperations
+    moduleOperations,
+    isMobile = false
 }: AppHeaderProps) {
-    // const phSource = useAppSelector((state) => state.modelUniverse.phSource);
-    // const data = useAppSelector((state) => state.modelUniverse);
-    // const dispatch = useAppDispatch();
-    // const fileInputRef = useRef<HTMLInputElement>(null);
-    // const pathname = usePathname();
     const [isClient, setIsClient] = useState(false);
 
     useEffect(() => {
         setIsClient(true);
     }, []);
 
-    // const currentDescription = getCurrentMenuItemDescription(pathname);
-
     return (
-        <header className="bg-gray-700 border-b flex items-center justify-around">
-            {/* Panel toggle buttons */}
-            {onToggleLeftPanel && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onToggleLeftPanel}
-                    // className={`flex flex-col flex-grow bg-transparent text-gray-100  ${showLeftPanel ? 'bg-muted' : ''}`}
-                    className="flex items-center text-xs bg-transparent hover:bg-gray-600 text-white px-1 pb-1 rounded"
-                    title={showLeftPanel ? 'Hide left panel' : 'Show left panel'}
-                >
-                    <span>
-                        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                    </span>
-                </Button>
-            )}
-            <div className="flex-1 min-w-0 mx-1">
-                {/* Module operations */}
-                {moduleOperations && (
-                    <div className="flex items-center gap-2 w-full">
-                        {moduleOperations}
-                    </div>
+        <header className="flex items-center justify-between p-2 bg-background border-b border-gray-600 h-14">
+            <div className="flex items-center space-x-2">
+                {onToggleLeftPanel && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleLeftPanel}
+                        title={showLeftPanel ? "Hide Left Panel" : "Show Left Panel"}
+                    >
+                        {showLeftPanel ? <ChevronLeft /> : <PanelLeft />}
+                    </Button>
                 )}
             </div>
-            {/* Right Panel toggle button */}
-            {onToggleRightPanel && (
-                <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={onToggleRightPanel}
-                    // className={`flex items-center my-0 py-0 ${showRightPanel ? 'bg-blue-600' : ''}`}
-                    className="flex items-center text-xs bg-transparent hover:bg-gray-600 text-white px-1 pb-1 rounded"
-                    title={showRightPanel ? 'Hide right panel' : 'Show right panel'}
-                >
-                    <span>
-                        <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                            <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                            <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                        </svg>
-                    </span>
-                </Button>
-            )}
+
+            <div className="flex-grow flex justify-center">
+                {moduleOperations}
+            </div>
+
+            <div className="flex items-center space-x-2">
+                {onToggleRightPanel && (
+                    <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={onToggleRightPanel}
+                        title={showRightPanel ? "Hide Right Panel" : "Show Right Panel"}
+                    >
+                        {showRightPanel ? <ChevronRight /> : <PanelRight />}
+                    </Button>
+                )}
+            </div>
         </header>
     );
 }

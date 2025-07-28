@@ -1,13 +1,17 @@
 "use client";
-import React, { useState, useEffect, useRef, ReactNode } from 'react';
-import { useSelector } from "react-redux";
-import type { RootState } from "@/store";
-import { X } from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import React, { useState, useEffect, ReactNode } from 'react';
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
 import { AppHeader } from "@/components/AppHeader";
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface ThreePanelLayoutProps {
     children: ReactNode;
@@ -34,7 +38,7 @@ interface ThreePanelLayoutProps {
     showAppHeader?: boolean;
     className?: string;
     moduleOperations?: ReactNode;
-    maxMiddlePanelWidth?: number;
+    isMobile?: boolean;
 }
 
 export function ThreePanelLayout({
@@ -50,10 +54,20 @@ export function ThreePanelLayout({
     setShowRightPanel,
 }: ThreePanelLayoutProps) {
     const MIN_PANEL_WIDTH = 150;
-    const MIN_MIDDLE_WIDTH = 200; // The minimum width for the middle panel
+    const MIN_MIDDLE_WIDTH = 200;
 
+    const [isMobile, setIsMobile] = useState(false);
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
     const [rightPanelWidth, setRightPanelWidth] = useState(400);
+
+    useEffect(() => {
+        const checkScreenSize = () => {
+            setIsMobile(window.innerWidth < 768);
+        };
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        return () => window.removeEventListener('resize', checkScreenSize);
+    }, []);
 
     const [activeLeftTab, setActiveLeftTab] = useState(
         leftPanelContent?.defaultTab || leftPanelContent?.tabs[0]?.key || 'guide'
@@ -70,7 +84,6 @@ export function ThreePanelLayout({
 
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, panel: 'left' | 'right') => {
         if ('button' in e && e.button !== 0) return;
-
         e.preventDefault();
         e.stopPropagation();
 
@@ -88,11 +101,11 @@ export function ThreePanelLayout({
             requestAnimationFrame(() => {
                 if (panel === 'left') {
                     const newWidth = startLeftWidth + deltaX;
-                    const maxLeftWidth = window.innerWidth - rightPanelWidth - MIN_MIDDLE_WIDTH - 16; // 16 for 2 drag bars
+                    const maxLeftWidth = window.innerWidth - rightPanelWidth - MIN_MIDDLE_WIDTH - 16;
                     setLeftPanelWidth(Math.max(MIN_PANEL_WIDTH, Math.min(newWidth, maxLeftWidth)));
-                } else if (panel === 'right') {
+                } else {
                     const newWidth = startRightWidth - deltaX;
-                    const maxRightWidth = window.innerWidth - leftPanelWidth - MIN_MIDDLE_WIDTH - 16; // 16 for 2 drag bars
+                    const maxRightWidth = window.innerWidth - leftPanelWidth - MIN_MIDDLE_WIDTH - 16;
                     setRightPanelWidth(Math.max(MIN_PANEL_WIDTH, Math.min(newWidth, maxRightWidth)));
                 }
             });
@@ -138,6 +151,73 @@ export function ThreePanelLayout({
     const finalLeftPanelContent = leftPanelContent || defaultLeftPanelContent;
     const finalRightPanelContent = rightPanelContent || defaultRightPanelContent;
 
+    if (isMobile) {
+        return (
+            <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
+                {showAppHeader && (
+                    <AppHeader
+                        showLeftPanel={showLeftPanel}
+                        showRightPanel={showRightPanel}
+                        onToggleLeftPanel={undefined}
+                        onToggleRightPanel={undefined}
+                        moduleOperations={moduleOperations}
+                        isMobile={isMobile}
+                    />
+                )}
+                <Accordion type="single" collapsible defaultValue="main-panel" className="w-full h-full overflow-auto">
+                    {leftPanelContent && (
+                        <AccordionItem value="input-panel">
+                            <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Input</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-200px)]">
+                                    <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1">
+                                        <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
+                                            {finalLeftPanelContent.tabs.map((tab) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                            ))}
+                                        </TabsList>
+                                        {finalLeftPanelContent.tabs.map((tab) => (
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                        ))}
+                                    </Tabs>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+
+                    <AccordionItem value="main-panel">
+                        <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Main</AccordionTrigger>
+                        <AccordionContent>
+                            <div className="flex-1 overflow-hidden min-w-0 w-full h-[calc(100vh-200px)] text-gray-100">
+                                {children}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem>
+
+                    {rightPanelContent && (
+                        <AccordionItem value="output-panel">
+                            <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Output</AccordionTrigger>
+                            <AccordionContent>
+                                <div className="bg-gray-800 border-t border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-200px)]">
+                                    <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
+                                        <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
+                                            {finalRightPanelContent.tabs.map((tab) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                            ))}
+                                        </TabsList>
+                                        {finalRightPanelContent.tabs.map((tab) => (
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                        ))}
+                                    </Tabs>
+                                </div>
+                            </AccordionContent>
+                        </AccordionItem>
+                    )}
+                </Accordion>
+            </div>
+        );
+    }
+
     return (
         <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
             <div className="flex flex-row h-full overflow-hidden">
@@ -149,7 +229,7 @@ export function ThreePanelLayout({
                         <div className="flex justify-between items-center p-2 border-b border-gray-600">
                             <h3 className="text-sm font-medium text-gray-300">Input</h3>
                             <button onClick={() => setShowLeftPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
-                                <X className="h-4 w-4" />
+                                <ChevronLeft className="h-4 w-4" />
                             </button>
                         </div>
                         <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1">
@@ -169,6 +249,7 @@ export function ThreePanelLayout({
                     <div
                         className="w-2 bg-gray-700 cursor-col-resize flex-shrink-0"
                         onMouseDown={(e) => handleMouseDown(e, 'left')}
+                        onTouchStart={(e) => handleMouseDown(e, 'left')}
                     />
                 )}
 
@@ -192,6 +273,7 @@ export function ThreePanelLayout({
                     <div
                         className="w-2 bg-gray-700 cursor-col-resize flex-shrink-0"
                         onMouseDown={(e) => handleMouseDown(e, 'right')}
+                        onTouchStart={(e) => handleMouseDown(e, 'right')}
                     />
                 )}
 
@@ -203,7 +285,7 @@ export function ThreePanelLayout({
                         <div className="flex justify-between items-center p-2 border-b border-gray-600">
                             <h3 className="text-sm font-medium text-gray-300">Output</h3>
                             <button onClick={() => setShowRightPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
-                                <X className="h-4 w-4" />
+                                <ChevronRight className="h-4 w-4" />
                             </button>
                         </div>
                         <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">

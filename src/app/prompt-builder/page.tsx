@@ -12,7 +12,7 @@ import PromptComponent from "@/components/prompt-builder/PromptComponent";
 import DraggableBar from "@/components/ui/DraggableBar";
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import { saveMarkdownDocument } from "@/features/documents/markdownSlice";
+import { saveMarkdownDocument } from "@/features/model-universe/modelSlice"; // Updated import
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import TemplatesPanel from '@/components/ai-chat/PromptRefinementPanel';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
@@ -73,6 +73,7 @@ export default function VercelAiPage() {
 
   const [domainContent, setDomainContent] = useState('');
   const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
+  const [currentDocument, setCurrentDocument] = useState<string>('');
 
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [lastResponse, setLastResponse] = useState<string>('');
@@ -97,6 +98,45 @@ export default function VercelAiPage() {
       </Button>
     );
   };
+
+
+  // Add this new useEffect to listen for localStorage changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      // Only react to changes to the 'currentDocument' key
+      if (e.key === 'currentDocument' && e.newValue !== null) {
+        console.log('localStorage currentDocument changed externally:', e.newValue?.substring(0, 100) || 'empty');
+        // Only update if the new value is different from current state
+        if (e.newValue !== currentDocument) {
+          setCurrentDocument(e.newValue);
+          console.log('Updated currentDocument from localStorage change');
+        }
+      }
+    };
+
+    // Listen for storage events (fired when localStorage changes in other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events within the same tab
+    const handleCustomStorageChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail.key === 'currentDocument' && customEvent.detail.newValue !== null) {
+        console.log('Custom storage event for currentDocument:', customEvent.detail.newValue?.substring(0, 100) || 'empty');
+        if (customEvent.detail.newValue !== currentDocument) {
+          setCurrentDocument(customEvent.detail.newValue);
+          console.log('Updated currentDocument from custom storage event');
+        }
+      }
+    };
+
+    window.addEventListener('localStorageChange', handleCustomStorageChange);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorageChange', handleCustomStorageChange);
+    };
+  }, [currentDocument]);
 
   const handleAddMD = () => {
     mdFileInputRef.current?.click()
@@ -141,7 +181,8 @@ export default function VercelAiPage() {
               name: doc.name,
               type: "markdown",
               content: doc.content,
-              createdAt: doc.createdAt || new Date().toISOString()
+              createdAt: doc.createdAt || new Date().toISOString(),
+              updatedAt: doc.updatedAt || new Date().toISOString()
             }));
           });
 
@@ -178,6 +219,7 @@ export default function VercelAiPage() {
 
     setMiddlePanelWidth(newWidth);
   };
+
 
   // Check device type on component mount'
   useEffect(() => {
@@ -501,10 +543,10 @@ export default function VercelAiPage() {
                     </span> */}
                   </TabsTrigger>
                   <TabsTrigger
-                    value="saved-documents"
+                    value="current-document"
                     className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                   >
-                    Saved Documents
+                    Current Doc
                     <span
                       onClick={() => setShowGuideModal(true)}
                       className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
@@ -615,51 +657,19 @@ export default function VercelAiPage() {
                   mdContent={mdContent}
                 />
               </TabsContent>
-              {/* Saved Documents */}
-              <TabsContent value="saved-documents" className="flex-1 px-1 mt-1">
-
-                <div
-                  className="bg-background rounded-lg p-4"
-                  onClick={(e) => e.stopPropagation()} // Prevent clicks on modal content from closing
-                >
-                  <div className="flex justify-between items-center mb-4">
-                    <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                    <div className="flex space-x-2">
-
-                      <button
-                        onClick={handleExportLibrary}
-                        className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                        disabled={documents.length === 0}
-                      >
-                        Export Library
-                      </button>
-                      <input
-                        type="file"
-                        ref={fileInputRef}
-                        onChange={handleFileSelection}
-                        accept=".json"
-                        style={{ display: 'none' }}
-                      />
-                      <button
-                        onClick={handleImportLibrary}
-                        className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                      >
-                        <span>Import Library</span>
-                      </button>
-                      <button
-                        onClick={() => setIsLibraryOpen(false)}
-                        className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-                  {/* Pass export functionality to library component */}
-                  <div className="text-sm text-gray-400 mb-2 overflow-auto">
-                    <MarkdownLibrary
-                      onSelect={handleDocumentSelect}
-                      onShowInLeftPanel={handleShowInLeftPanel}
-                      hideExportLibraryButton={false}
+              {/* Current Document */}
+              <TabsContent value="current-document" className="flex-1 px-1 mt-1 overflow-hidden">
+                <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+                  <div className="space-y-4">
+                    {/* Current Document Panel */}
+                    <DocumentPanel
+                      mdContent={currentDocument}
+                      setMdContent={setCurrentDocument}
+                      setIsLibraryOpen={setIsLibraryOpen}
+                      isLibraryOpen={isLibraryOpen}
+                      panelType='middle'
+                      currentDocumentContent={currentDocument}
+                      markdownPreviewContent={mdPreview}
                     />
                   </div>
                 </div>

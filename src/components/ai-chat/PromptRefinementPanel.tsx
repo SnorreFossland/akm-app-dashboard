@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
 import TextareaAutosize from 'react-textarea-autosize';
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
 interface TemplatesPanelProps {
     onApplyTemplate: (content: string) => void;
     selectedModel: string; // Add selectedModel to props
