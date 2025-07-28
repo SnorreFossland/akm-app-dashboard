@@ -58,7 +58,7 @@ export default function VercelAiPage() {
   const [activeTab, setActiveTab] = useState("chat");
   const [editableContent, setEditableContent] = useState('');
 
-  const documents = useSelector((state: RootState) => state.markdown.documents);
+  const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [mdContent, setMdContent] = useState<string>('')
   const [docName, setDocName] = useState<string>('New Document');
@@ -346,7 +346,7 @@ export default function VercelAiPage() {
         // For right panel, moving left increases width, moving right decreases width
         // Calculate maximum allowed width considering left panel and minimum middle width
         const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0; // +8 for drag bar
-        const minimumMiddleWidth = 320; // From your inline style
+        const minimumMiddleWidth = 150; // From your inline style
         const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 20; // -20 for margins/padding
 
         const newWidth = Math.max(

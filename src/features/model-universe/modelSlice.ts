@@ -10,17 +10,31 @@ interface DomainData {
   additionalContext?: string; // Make this optional since it's a new field
 }
 
+// Export the ontology interface separately
+export interface OntologyData {
+  name: string;
+  description: string;
+  presentation: string;
+  concepts: { name: string, description: string }[];
+  relationships: { name: string, description: string, nameFrom: string, nameTo: string }[];
+}
+
+// Export the document interface (moved from markdownSlice)
+export interface MarkdownDocument {
+  id: string;
+  name: string;
+  type: string; // e.g., 'markdown';
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface DataType {
   phData: {
     metis: Metis,
     domain: DomainData,
-    ontology: {
-      name: string,
-      description: string,
-      presentation: string,
-      concepts: { name: string, description: string }[],
-      relationships: { name: string, description: string, nameFrom: string, nameTo: string }[]
-    },
+    ontology: OntologyData,
+    documents: MarkdownDocument[], // Add documents here
   },
   phFocus: {
     focusModel: {
@@ -46,6 +60,12 @@ export interface DataType {
     focusRelshipview?: {
       id: string;
       name: string;
+    };
+    focusProj: {
+      id: string;
+      name: string;
+      description: string;
+
     };
   },
   phUser: {
@@ -134,120 +154,26 @@ export interface ModelView {
 };
 
 
-export const initialState: DataType = { phData: { metis: { name: '', description: '', models: [], metamodels: [] }, domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' }, ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] } }, phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } }, phUser: { id: '', name: '', email: '' }, phSource: '', status: 'idle', error: null };
+export const initialState: DataType = {
+  phData: {
+    metis: { name: '', description: '', models: [], metamodels: [] },
+    domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' },
+    ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] },
+    documents: [] // Add documents to initial state
+  },
+  phFocus: {
+    focusModel: { id: '', name: '' },
+    focusModelview: { id: '', name: '' },
+    focusObject: { id: '', name: '' },
+    focusObjectview: { id: '', name: '' },
+    focusRelship: { id: '', name: '' },
+    focusRelshipview: { id: '', name: '' },
+    focusProj: { id: '', name: '', description: '' },
 
-
-
-
-//   phData: {
-//     metis: {
-//       name: 'AKMM Blank',
-//       description: 'AKMM blank model',
-//       models: [
-//         {
-//           id: 'm1',
-//           name: 'Blank Model 1',
-//           description: 'Blank Model 1 Description',
-//           metamodelRef: '42c16e69-49ec-45b9-080e-0ca3ab8e0223',
-//           objects: [
-//             {
-//               id: '1',
-//               name: 'Object 1',
-//               description: 'Object 1 Description',
-//               proposedType: 'Object',
-//               typeRef: '1',
-//               typeName: 'Object',
-//               category: 'Object',
-//             },
-//           ],
-//           relships: [
-//             {
-//               id: '1',
-//               name: 'Relationship 1',
-//               typeRef: '1',
-//               fromobjectRef: '1',
-//               nameFrom: 'Object 1',
-//               toobjectRef: '1',
-//               nameTo: 'Object 1',
-//             },
-//           ],
-//           modelviews: [
-//             {
-//               id: 'mv1',
-//               name: 'Model View 1',
-//               description: 'Model View 1 Description',
-//               modelRef: 'm1',
-//               modified: false,
-//               markedAsDeleted: false,
-//               objectviews: [
-//                 {
-//                   id: 'ov1',
-//                   name: 'Blank Object View 1',
-//                   type: 'Object',
-//                   loc: '0,0',
-//                   size: '100,100',
-//                   memberscale: 1,
-//                   objectRef: '1',
-//                   modified: false,
-//                   markedAsDeleted: false,
-//                   isSelect: false,
-//                   isGroup: false,
-//                   isExpanded: false,
-//                   image: '',
-//                   icon: '',
-//                   fillColor: '',
-//                   strokeColor: '',
-//                   strokeWidth: '',
-//                   strokeColor2: '',
-//                   textColor: '',
-//                   textColor2: '',
-//                   viewkind: '',
-//                 },
-//               ],
-//               relshipviews: [
-//                 {
-//                   id: 'rv1',
-//                   name: 'Relationship View 1',
-//                   relshipRef: '1',
-//                   fromobjviewRef: '1',
-//                   toobjviewRef: '1',
-//                   points: [1, 2, 3, 4],
-//                 },
-//               ],
-//             },
-//           ],
-//         },
-//       ],
-//       metamodels: [],
-//     },
-//     domain: { name: 'domain blank', description: 'domain blank description', prompt: 'domain prompt', presentation: 'domain blank presentation' },
-//     ontology: {
-//       name: 'Ontology blank domain',
-//       description: 'Ontology blank description.',
-//       presentation: 'Ontology blank Presentation',
-//       concepts: [],
-//       relationships: [],
-//     },
-//   },
-//   phFocus: {
-//     focusModel: {
-//       id: 'm1',
-//       name: 'Model 1',
-//     },
-//     focusModelview: {
-//       id: 'mv1',
-//       name: 'Model View 1',
-//     },
-//   },
-//   phUser: {
-//     id: '1',
-//     name: 'User 1',
-//     email: 'user@email.com'
-//   },
-//   phSource: 'AKM Blank',
-//   // status: 'idle',
-//   // error: null,
-// };
+  },
+  phUser: { id: '', name: '', email: '' },
+  phSource: '', status: 'idle', error: null
+};
 
 // Define the async thunk
 export const fetchOntology = createAsyncThunk(
@@ -499,6 +425,25 @@ const modelSlice = createSlice({
     clearStore() {
       return initialState;  //ToDo: should be only objects and relationships and modelviews so that the user dont have to reload the data from file
     },
+
+    // Add document management reducers
+    saveMarkdownDocument: (state, action: PayloadAction<MarkdownDocument>) => {
+      // Check if document with same name exists
+      const existingIndex = state.phData.documents.findIndex(
+        doc => doc.name === action.payload.name
+      );
+
+      if (existingIndex >= 0) {
+        // Update existing document
+        state.phData.documents[existingIndex] = action.payload;
+      } else {
+        // Add new document
+        state.phData.documents.push(action.payload);
+      }
+    },
+    deleteMarkdownDocument: (state, action: PayloadAction<string>) => {
+      state.phData.documents = state.phData.documents.filter(doc => doc.id !== action.payload);
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -532,11 +477,15 @@ export const {
   editRelationship,
   clearModel,
   clearStore,
-  deleteDomainPrompt, // Add the new action here
+  deleteDomainPrompt,
   setDomainAdditionalContext,
   resetDomainData,
   updateMetisInfo,
   updateModelInfo,
   updateProjectInfo,
+  // Add the new document actions
+  saveMarkdownDocument,
+  deleteMarkdownDocument,
 } = modelSlice.actions;
+
 export default modelSlice.reducer;

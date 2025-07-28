@@ -5,9 +5,9 @@ import { usePathname } from 'next/navigation';
 import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
-import { setDomainData } from '@/features/model-universe/modelSlice';
-
+import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import { current } from '@reduxjs/toolkit';
+import DiffModal from './DiffModal';
 
 interface DocumentPanelProps {
     mdContent: string;
@@ -21,10 +21,10 @@ interface DocumentPanelProps {
     isLibraryOpen?: boolean;
     documentId?: string;
     panelType?: 'left' | 'right' | 'middle';
-    // Add these new props
     onSelect?: (content: string, name: string) => void;
-    currentDocument?: string;
-    onSetCurrentDocument?: (content: string, name: string) => void;
+    // Add these new props for diff comparison
+    currentDocumentContent?: string; // Content from Current Document tab
+    markdownPreviewContent?: string; // Content from Markdown Preview (AI response)
 }
 
 export default function DocumentPanel({
@@ -39,29 +39,24 @@ export default function DocumentPanel({
     documentId,
     setIsLibraryOpen = () => { },
     isLibraryOpen = false,
-    panelType = 'middle' // Default to 'middle' panel type
+    panelType = 'middle',
+    currentDocumentContent = '', // Default to empty string
+    markdownPreviewContent = '' // Default to empty string
 }: DocumentPanelProps) {
-    // Add debugging
-    // console.log('DocumentPanel render - mdContent:', mdContent?.substring(0, 100) || 'empty');
-    // console.log('DocumentPanel render - mdContent length:', mdContent?.length || 0);
-
     const dispatch = useDispatch();
-    const documents = useSelector((state: RootState) => state.markdown.documents);
+    const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
     const pathname = usePathname();
     const [isEditing, setIsEditing] = useState(false);
     const [editContent, setEditContent] = useState(mdContent || '');
-    const [showDocumentList, setShowDocumentList] = useState(true);
+    const [showDocumentList, setShowDocumentList] = useState(false);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
     const message = { content: mdContent || '' }; // Default message content
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
+    const [showDiffModal, setShowDiffModal] = useState(false);
+    const [pendingSaveContent, setPendingSaveContent] = useState('');
 
-    // useEffect(() => {
-    //     if (!mdContent) {
-    //         setIsEditing(true);
-    //     }
-    // }, []);
     // Update editContent when mdContent changes from parent
     useEffect(() => {
         setEditContent(mdContent || '');
@@ -140,46 +135,173 @@ export default function DocumentPanel({
     };
 
     const handleSaveToLibrary = () => {
-        // Save to library in Redux store
         const contentToSave = isEditing ? editContent : mdContent;
+        console.log('135 DocumentPanel handleSaveToLibrary - content to save:', contentToSave?.substring(0, 100), 'mdContent', mdContent);
 
-        const firstLine = contentToSave.includes('Domain Name')
-            ? contentToSave.split('Domain Name:**')[1].split('\n')[1]?.trim().replace(/[#*/\\:?<>|"]/g, '') || ''
-            : (contentToSave.split('\n')[0] || 'Document');
-        const secondLine = contentToSave.includes('Domain Description')
-            ? contentToSave.split('Domain Description:**')[1].split('\n')[1]?.trim().replace(/[#*/\\:?<>|"]/g, '') || ''
-            : 'AIChat: Document';
+        // Determine what to compare based on panel type
+        let oldContent = '';
+        let newContent = contentToSave;
 
-        console.log('133 DocumentPanel handleSaveToLibrary - first:', firstLine, 'second:', secondLine, 'pathname:', pathname);
+        if (panelType === 'right') {
+            // For right panel (Markdown Preview), compare Current Document with Markdown Preview
+            oldContent = currentDocumentContent;
+            newContent = markdownPreviewContent;
+        } else if (panelType === 'middle') {
+            // For middle panel (Current Document), compare with itself
+            oldContent = mdContent;
+            newContent = contentToSave;
+        } else {
+            // For left panel, use existing logic
+            oldContent = mdContent;
+            newContent = contentToSave;
+        }
+
+        // Show diff if there's content to compare and they're different
+        if (oldContent && oldContent !== newContent && oldContent.trim() !== '') {
+            setPendingSaveContent(newContent);
+            setShowDiffModal(true);
+            return; // Don't save yet, wait for user confirmation
+        }
+
+        // If no existing content or no changes, save directly
+        performSaveToLibrary(contentToSave);
+    };
+    // Create a separate function to perform the actual save
+    const performSaveToLibrary = (contentToSave: string) => {
+        // Extract the title (first line) and subtitle (second line)
+        const lines = contentToSave.split('\n');
+        let firstLine = lines[0] || '';
+        let secondLine = lines[1] || '';
+
+        // Remove markdown headers from first line if present
+        firstLine = firstLine.replace(/^#+\s*/, '').trim();
+        secondLine = secondLine.replace(/^#+\s*/, '').trim();
+
+        // Fallback to first line of content if extraction failed
+        const finalFirstLine = firstLine || contentToSave.split('\n')[0] || 'Document';
+        const finalSecondLine = secondLine || 'AIChat: Document';
+
+        console.log('133 DocumentPanel handleSaveToLibrary - first:', finalFirstLine, 'second:', finalSecondLine, 'pathname:', pathname);
 
         if (pathname === '/domain-builder') {
             const domain = {
-                name: firstLine,
-                description: secondLine,
+                name: finalFirstLine,
+                description: finalSecondLine,
                 presentation: contentToSave,
                 prompt: '',
                 additionalContext: '',
             }
             console.log('141 DomainBuilderPage dispatching domain data:', domain);
             dispatch(setDomainData({ ...domain }));
+        } else if (pathname === '/ai-chat') {
+            // Check if a document with the same name already exists
+            const currentDocument = mdContent;
+            console.log('148 Existing document check:', currentDocument);
+            if (panelType === 'right' && !currentDocument) {
+                // Document exists - ask user what to do
+                const userChoice = window.confirm(
+                    `A document named "${finalFirstLine}" already exists.\n\n` +
+                    `Click "OK" to replace the existing document.\n` +
+                    `Click "Cancel" to save as a new document with a timestamp.`
+                );
+
+                if (!userChoice) {
+                    // User chose to replace - use the existing document's ID and update timestamps to indicate modification
+                    dispatch(saveMarkdownDocument({
+                        id: current.id,
+                        name: finalFirstLine,
+                        type: 'markdown',
+                        content: contentToSave,
+                        createdAt: new Date().toISOString(), // Update timestamp to indicate modification
+                        updatedAt: new Date().toISOString()
+                    }));
+                } else {
+                    const newDocumentId = Date.now().toString();
+                    const newDocument = {
+                        id: newDocumentId,
+                        name: finalFirstLine + ' ' + newDocumentId,
+                        type: 'markdown',
+                        content: contentToSave,
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                    };
+                    dispatch(saveMarkdownDocument(newDocument));
+                    localStorage.setItem('currentDocument', JSON.stringify(newDocument));
+                }
+            } else {
+                // No existing document - save normally
+                dispatch(saveMarkdownDocument({
+                    id: Date.now().toString(),
+                    name: finalFirstLine,
+                    type: 'markdown',
+                    content: contentToSave,
+                    createdAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }));
+            }
         } else {
             dispatch(saveMarkdownDocument({
-                id: Date.now().toString(),
-                name: firstLine,
+                id: documentId || Date.now().toString(),
+                name: finalFirstLine,
                 type: 'markdown',
                 content: contentToSave,
-                createdAt: new Date().toISOString()
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
             }));
-            onSaveToLibrary(contentToSave);
+            console.log('DocumentPanel handleSaveToLibrary - saved document:', finalFirstLine);
         }
+
+        // Exit editing mode first, then update content
+        if (isEditing) {
+            setIsEditing(false);
+        }
+
+        // Update the currentDocument state in the parent component
+        console.log('About to update parent with content:', contentToSave?.substring(0, 100));
+        setMdContent(contentToSave);
+
+        // Also update localStorage and dispatch custom event for same-tab updates
+        localStorage.setItem('currentDocument', contentToSave);
+
+        // Dispatch custom event to notify other components in the same tab
+        window.dispatchEvent(new CustomEvent('localStorageChange', {
+            detail: {
+                key: 'currentDocument',
+                newValue: contentToSave,
+                oldValue: localStorage.getItem('currentDocument')
+            }
+        }));
+
+        // Also call the prop callback for parent components
+        onSaveToLibrary(contentToSave);
+
+        // Show confirmation
+        setStatusMsg('Saved to library');
+        setTimeout(() => setStatusMsg(''), 3000);
+
+        // Close diff modal if it was open
+        setShowDiffModal(false);
+        setPendingSaveContent('');
     };
+
+    // Add the handlers for the diff modal
+    const handleDiffConfirm = () => {
+        performSaveToLibrary(pendingSaveContent);
+    };
+
+    const handleDiffCancel = () => {
+        setShowDiffModal(false);
+        setPendingSaveContent('');
+    };
+
     const handleSave = () => {
         dispatch(saveMarkdownDocument({
             id: documentId || Date.now().toString(),
             name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
             type: 'markdown',
             content: editContent,
-            createdAt: new Date().toISOString()
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString() // Add updatedAt for clarity
         }));
         onSave(editContent);
         setIsEditing(false);
@@ -289,7 +411,7 @@ export default function DocumentPanel({
     return (
         <div className="p-2 flex h-full">
             {/* Document List Sidebar */}
-            {showDocumentList && (
+            {showDocumentList && panelType === 'middle' && (
                 <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b border-gray-600">
                         <h3 className="text-sm font-medium text-gray-300">Documents</h3>
@@ -302,13 +424,13 @@ export default function DocumentPanel({
                         </button>
                     </div>
                     <div className="flex-1 overflow-y-auto p-2">
-                        {documents.length === 0 ? (
+                        {documents?.length === 0 ? (
                             <div className="text-gray-400 text-sm p-4 text-center">
                                 No documents in library
                             </div>
                         ) : (
                             <div className="space-y-1">
-                                {documents.map((doc) => (
+                                {documents?.map((doc) => (
                                     <button
                                         key={doc.id}
                                         onClick={() => handleDocumentSelect(doc)}
@@ -540,6 +662,20 @@ export default function DocumentPanel({
                     </div>
                 )}
             </div>
+
+            {/* Add the DiffModal at the end with updated props */}
+            <DiffModal
+                isOpen={showDiffModal}
+                onClose={handleDiffCancel}
+                onConfirm={handleDiffConfirm}
+                oldContent={panelType === 'right' ? currentDocumentContent : mdContent}
+                newContent={pendingSaveContent}
+                title={(() => {
+                    const lines = pendingSaveContent.split('\n');
+                    const firstLine = lines[0] || '';
+                    return firstLine.replace(/^#+\s*/, '').trim() || 'Document';
+                })()}
+            />
         </div>
     );
 }

@@ -231,7 +231,7 @@ export default function ConceptBuilderPage() {
         setLeftPanelWidth(newWidth);
       } else if (panel === 'right') {
         const leftPanelActualWidth = showLeftPanelRef.current ? leftPanelWidthRef.current + 8 : 0;
-        const minimumMiddleWidth = 320;
+        const minimumMiddleWidth = 150;
         const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 10;
 
         const newWidth = Math.max(

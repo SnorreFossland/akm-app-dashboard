@@ -6,37 +6,60 @@ import mermaid from 'mermaid';
 import { RootState } from '@/store';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import { FileOperations } from "@/components/FileOperations";
+import {
+    saveConversation,
+    loadConversation,
+    deleteConversation,
+    startNewConversation
+} from '@/features/chat/chatSlice';
 
 export interface ChatComponentProps {
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (response: string) => void;
     setShowLeftPanel: (show: boolean) => void;
-    error?: string; // Optional error prop
+    setShowRightPanel?: (show: boolean) => void; // Add this new prop
+    error?: string;
     chatInput?: string;
     input: string;
     setInput: (input: string) => void;
     setMdContent: (message: string) => void;
     mdContent: string;
     onAddMD?: () => void;
+    currentDocument?: string;
+    mdPreview: string;
+    setMdPreview: (preview: string) => void;
+    setCurrentMessages: (messages: any[]) => void;
+    gettingStartedGuide: React.ReactNode;
+    selectedModel: string;
+    setSelectedModel: (model: string) => void;
 }
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
-    const documents = useSelector((state: RootState) => state.markdown.documents);
+    const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
 
+    // Get chat data from Redux
+    const messages = useSelector((state: RootState) => state.chat.currentMessages);
+    const conversations = useSelector((state: RootState) => state.chat.conversations);
+    const activeConversationId = useSelector((state: RootState) => state.chat.activeConversationId);
 
     const [input, setInput] = useState<string>("");
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     const [mdContent, setMdContent] = useState<string>('')
     const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
+    const [showGuideModal, setShowGuideModal] = useState(false);
+
+    const [showLeftPanel, setShowLeftPanel] = useState(false);
+    const [showRightPanel, setShowRightPanel] = useState(false);
+    const [lastResponse, setLastResponse] = useState<string>("");
 
     // replace your single openLibraryButtonRef with two refs:
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -46,15 +69,42 @@ const AIChatPage = () => {
     const mdFileInputRef = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null);
 
-    // New state variables for conversations
-    const [conversations, setConversations] = useState<any[]>([]);
-    const [currentMessages, setCurrentMessages] = useState<any[]>([]);
-    const [showGuideModal, setShowGuideModal] = useState(false);
+    // Update conversation handlers to use Redux actions
+    const handleSelectConversation = (conversation: any) => {
+        if (conversation) {
+            dispatch(loadConversation(conversation.id));
+        } else {
+            dispatch(startNewConversation());
+        }
+        console.log('Selected conversation:', conversation);
+    };
 
-    const [lastResponse, setLastResponse] = useState<string>('');
-    const [activeTab, setActiveTab] = useState("chat");
-    const [editableContent, setEditableContent] = useState('');
-    const [domainContent, setDomainContent] = useState('');
+    const handleDeleteConversation = (id: string) => {
+        dispatch(deleteConversation(id));
+    };
+
+    const handleSaveCurrentConversation = () => {
+        console.log('Current messages to save:', messages);
+
+        // Don't allow saving if no messages
+        if (!messages || messages.length === 0) {
+            alert("No messages to save. Please have a conversation first.");
+            return;
+        }
+
+        // Save using Redux action (title will be auto-generated)
+        dispatch(saveConversation({}));
+    };
+
+    const handleStartNewConversation = () => {
+        dispatch(startNewConversation());
+    };
+
+    // Update setCurrentMessages to just be a no-op since we're using Redux
+    const setCurrentMessages = (messages: any[]) => {
+        // This is now handled by Redux, so we don't need to do anything here
+        // The messages prop in ChatComponent will come from Redux selector
+    };
 
     // Initialize mermaid when component mounts
     useEffect(() => {
@@ -96,20 +146,20 @@ const AIChatPage = () => {
         }
     }, [mdPreview, docName]);
 
-    // Add this useEffect to load saved conversations from localStorage
-    useEffect(() => {
-        const storedConversations = localStorage.getItem('savedConversations');
-        if (storedConversations) {
-            try {
-                const parsedConversations = JSON.parse(storedConversations);
-                setConversations(parsedConversations);
-                console.log('Loaded saved conversations:', parsedConversations);
-            } catch (error) {
-                console.error('Error parsing saved conversations:', error);
-            }
-        }
+    // Remove the useEffect that was trying to use setConversations (it doesn't exist)
+    // The conversations are now loaded from Redux state automatically
 
-        // Load currentDocument from localStorage
+    // Add useEffect to save currentDocument to localStorage whenever it changes
+    useEffect(() => {
+        console.log('currentDocument changed:', currentDocument?.substring(0, 100) || 'empty');
+        if (currentDocument) {
+            localStorage.setItem('currentDocument', currentDocument);
+            console.log('Saved current document to localStorage');
+        }
+    }, [currentDocument]);
+
+    // Load currentDocument from localStorage on mount
+    useEffect(() => {
         const storedCurrentDocument = localStorage.getItem('currentDocument');
         if (storedCurrentDocument) {
             try {
@@ -121,14 +171,49 @@ const AIChatPage = () => {
         }
     }, []);
 
-    // Add useEffect to save currentDocument to localStorage whenever it changes
+    // Add this new useEffect to listen for localStorage changes
     useEffect(() => {
-        if (currentDocument) {
-            localStorage.setItem('currentDocument', currentDocument);
-            console.log('Saved current document to localStorage');
-        }
+        const handleStorageChange = (e: StorageEvent) => {
+            // Only react to changes to the 'currentDocument' key
+            if (e.key === 'currentDocument' && e.newValue !== null) {
+                console.log('localStorage currentDocument changed externally:', e.newValue?.substring(0, 100) || 'empty');
+                // Only update if the new value is different from current state
+                if (e.newValue !== currentDocument) {
+                    setCurrentDocument(e.newValue);
+                    console.log('Updated currentDocument from localStorage change');
+                }
+            }
+        };
+
+        // Listen for storage events (fired when localStorage changes in other tabs/windows)
+        window.addEventListener('storage', handleStorageChange);
+
+        // Also listen for custom events within the same tab
+        const handleCustomStorageChange = (e: Event) => {
+            const customEvent = e as CustomEvent;
+            if (customEvent.detail.key === 'currentDocument' && customEvent.detail.newValue !== null) {
+                console.log('Custom storage event for currentDocument:', customEvent.detail.newValue?.substring(0, 100) || 'empty');
+                if (customEvent.detail.newValue !== currentDocument) {
+                    setCurrentDocument(customEvent.detail.newValue);
+                    console.log('Updated currentDocument from custom storage event');
+                }
+            }
+        };
+
+        window.addEventListener('localStorageChange', handleCustomStorageChange);
+
+        // Cleanup event listeners
+        return () => {
+            window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('localStorageChange', handleCustomStorageChange);
+        };
     }, [currentDocument]);
 
+    // const handleShowRightPanel = () => {
+    //     if (rightPanelToggleRef.current) {
+    //         rightPanelToggleRef.current();
+    //     }
+    // };
     const handleShowInLeftPanel = (content: string, name: string) => {
         setMdContent(content);
         setDocName(name);
@@ -146,7 +231,6 @@ const AIChatPage = () => {
     const handleAddMD = () => {
         mdFileInputRef.current?.click()
     }
-
 
     const handleExportLibrary = () => {
         if (documents.length === 0) return;
@@ -188,7 +272,8 @@ const AIChatPage = () => {
                             name: doc.name,
                             type: 'markdown',
                             content: doc.content,
-                            createdAt: doc.createdAt || new Date().toISOString()
+                            createdAt: doc.createdAt || new Date().toISOString(),
+                            updatedAt: doc.updatedAt || new Date().toISOString()
                         }));
                     });
 
@@ -204,95 +289,6 @@ const AIChatPage = () => {
 
         reader.readAsText(file);
         e.target.value = ''; // Reset the file input
-    };
-
-    // New handler functions for conversations
-    const handleSelectConversation = (conversation: any) => {
-        // Logic to load a saved conversation into the chat
-        // You would need to integrate this with your ChatComponent
-        console.log('Selected conversation:', conversation);
-    };
-
-    const handleDeleteConversation = (id: string) => {
-        setConversations(conversations.filter(conv => conv.id !== id));
-        // Also remove from local storage if you're using that
-        const storedConversations = JSON.parse(localStorage.getItem('savedConversations') || '[]');
-        localStorage.setItem('savedConversations',
-            JSON.stringify(storedConversations.filter((conv: any) => conv.id !== id))
-        );
-    };
-
-    const handleSaveCurrentConversation = () => {
-        console.log('Current messages to save:', currentMessages);
-
-        // Don't allow saving if no messages
-        if (!currentMessages || currentMessages.length === 0) {
-            alert("No messages to save. Please have a conversation first.");
-            return;
-        }
-
-        // Extract the first sentence from the first user message or after #content marker
-        let title = '';
-        if (currentMessages && currentMessages.length > 0) {
-            // First, check if any message contains #content marker
-            const contentMarkerMessage = currentMessages.find(msg =>
-                typeof msg.content === 'string' && msg.content.includes('#content')
-            );
-
-            if (contentMarkerMessage) {
-                // Extract text after #content
-                const contentParts = contentMarkerMessage.content.split('#content');
-                if (contentParts.length > 1) {
-                    // Find the first sentence after #content
-                    const match = contentParts[1].match(/^\s*(.*?[.!?])/);
-                    if (match) {
-                        title = match[1].trim();
-                    }
-                }
-            }
-            if (!title) {
-                const firstAssistantMessage = currentMessages.find(msg => msg.role === 'assistant');
-                if (firstAssistantMessage && firstAssistantMessage.content) {
-                    const match = firstAssistantMessage.content.match(/^.*?[.!?]/);
-                    title = match ? match[0].trim() : firstAssistantMessage.content.trim().substring(0, 50);
-                }
-            }
-            console.log('266 Extracted title from #content:', title, contentMarkerMessage, currentMessages);
-            // If no title from #content, fall back to first user message
-            if (!title) {
-                const firstUserMessage = currentMessages.find(msg => msg.role === 'user');
-                if (firstUserMessage && firstUserMessage.content) {
-                    // Extract the first sentence - look for the first period, question mark, or exclamation
-                    const match = firstUserMessage.content.match(/^.*?[.!?]/);
-                    title = match ? match[0].trim() : firstUserMessage.content.trim().substring(0, 50);
-                }
-            }
-
-            // If it's too long, truncate it
-            if (title.length > 50) {
-                title = title.substring(0, 47) + '...';
-            }
-        }
-
-        // If we couldn't extract a title, use a default title with timestamp
-        if (!title) {
-            title = `Conversation ${new Date().toLocaleString()}`;
-        }
-
-        const newConversation = {
-            id: Date.now().toString(),
-            title,
-            date: new Date().toLocaleString(),
-            messages: currentMessages,
-        };
-
-        const updatedConversations = [...conversations, newConversation];
-        setConversations(updatedConversations);
-
-        // Save to localStorage for persistence
-        localStorage.setItem('savedConversations', JSON.stringify(updatedConversations));
-
-        alert(`Conversation "${title}" saved successfully!`);
     };
 
     const handleResponseChange = (response: string) => { setLastResponse(response) };
@@ -393,7 +389,7 @@ const AIChatPage = () => {
         defaultTab: 'guide'
     };
 
-    // Define right panel content
+    // Define right panel content with the new props
     const rightPanelContent = {
         tabs: [
             {
@@ -406,6 +402,8 @@ const AIChatPage = () => {
                         setIsLibraryOpen={setIsLibraryOpen}
                         isLibraryOpen={isLibraryOpen}
                         panelType='right'
+                        currentDocumentContent={currentDocument} // Pass Current Document content
+                        markdownPreviewContent={mdPreview} // Pass Markdown Preview content
                     />
                 )
             }
@@ -419,13 +417,18 @@ const AIChatPage = () => {
                 moduleOperations={<FileOperations />}
                 leftPanelContent={leftPanelContent}
                 rightPanelContent={rightPanelContent}
-            // showAppHeader={true} // We'll handle the header ourselves for the tabs
+                showLeftPanel={showLeftPanel}
+                setShowLeftPanel={setShowLeftPanel}
+                showRightPanel={showRightPanel}
+                setShowRightPanel={setShowRightPanel}
+                className="h-full min-w-0 bg-background text-gray-100"
+                maxMiddlePanelWidth={800} // Set max width for the middle panel
             >
-                <div className="flex flex-col h-full bg-background text-gray-100">
+                <div className="flex flex-col h-full min-w-0 bg-background text-gray-100">
                     <Tabs defaultValue="chat" className="flex flex-col h-full">
-                        <div className="flex items-center justify-between bg-primary-foreground px-2">
+                        <div className="flex items-center justify-between bg-primary-foreground px-2 min-w-0">
                             {/* Tabs */}
-                            <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
+                            <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10 min-w-0">
                                 <TabsTrigger
                                     value="chat"
                                     className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
@@ -470,7 +473,7 @@ const AIChatPage = () => {
 
                         {/* Chat Component */}
                         <TabsContent value="chat" className="flex-1 px-1 mt-1 overflow-hidden">
-                            <div className="h-full overflow-auto bg-gray-800/20 rounded">
+                            <div className="h-full min-w-0 overflow-auto bg-gray-800/20 rounded">
                                 <ChatComponent
                                     input={input}
                                     setInput={setInput}
@@ -479,7 +482,9 @@ const AIChatPage = () => {
                                     currentDocument={currentDocument}
                                     onResponseChange={handleResponseChange}
                                     onViewInMarkdown={handleViewInMarkdown}
-                                    setShowLeftPanel={() => { }} // This is now handled by ThreePanelLayout
+                                    showLeftPanel={showLeftPanel}
+                                    setShowLeftPanel={setShowLeftPanel}
+                                    setShowRightPanel={setShowRightPanel}
                                     chatInput={chatInput}
                                     onAddMD={handleAddMD}
                                     mdContent={mdContent}
@@ -503,24 +508,9 @@ const AIChatPage = () => {
                                         setIsLibraryOpen={setIsLibraryOpen}
                                         isLibraryOpen={isLibraryOpen}
                                         panelType='middle'
+                                        currentDocumentContent={currentDocument}
+                                        markdownPreviewContent={mdPreview}
                                     />
-
-                                    {/* Library Button - Now opens popup instead of inline display */}
-                                    {/* <div className="border-t border-gray-600 pt-4">
-                                        <div className="flex items-center justify-between">
-                                            <h3 className="text-lg font-bold text-blue-400 mb-4">Document Library</h3>
-                                            <button
-                                                onClick={() => setIsLibraryOpen(true)}
-                                                className="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg flex items-center gap-2 transition-colors"
-                                            >
-                                                <Library className="h-4 w-4" />
-                                                Open Library
-                                            </button>
-                                        </div>
-                                        <p className="text-gray-400 text-sm">
-                                            Click "Open Library" to browse and select documents from your saved library.
-                                        </p>
-                                    </div> */}
                                 </div>
                             </div>
                         </TabsContent>
@@ -533,9 +523,9 @@ const AIChatPage = () => {
                                     onSelectConversation={handleSelectConversation}
                                     onDeleteConversation={handleDeleteConversation}
                                     onSaveConversation={handleSaveCurrentConversation}
-                                    currentMessages={currentMessages}
                                     onViewInMarkdown={handleViewInMarkdown}
                                     mdPreview={mdPreview}
+                                    currentMessages={messages}
                                 />
                             </div>
                         </TabsContent>
@@ -550,16 +540,22 @@ const AIChatPage = () => {
                     onClick={() => setIsLibraryOpen(false)}
                 >
                     <div
-                        className="bg-background rounded-lg p-4 w-[100vw-24rem] max-w-4xl max-h-[90vh] overflow-auto"
+                        className="bg-background rounded-lg p-4 w-[80%] max-w-4xl max-h-[90vh] overflow-auto"
                         onClick={(e) => e.stopPropagation()}
                     >
                         <div className="flex justify-between items-center mb-4">
                             <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
                             <div className="flex space-x-2">
                                 <button
+                                    onClick={handleImportLibrary}
+                                    className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
+                                >
+                                    <span>Import Documents from File</span>
+                                </button>
+                                <button
                                     onClick={handleExportLibrary}
                                     className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                                    disabled={documents.length === 0}
+                                    disabled={documents?.length === 0}
                                 >
                                     Save Documents to File
                                 </button>
@@ -570,17 +566,12 @@ const AIChatPage = () => {
                                     accept=".json"
                                     style={{ display: 'none' }}
                                 />
-                                <button
-                                    onClick={handleImportLibrary}
-                                    className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                                >
-                                    <span>Import Documents from File</span>
-                                </button>
+
                                 <button
                                     onClick={() => setIsLibraryOpen(false)}
-                                    className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
+                                    className="text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 rounded"
                                 >
-                                    Close
+                                    X
                                 </button>
                             </div>
                         </div>

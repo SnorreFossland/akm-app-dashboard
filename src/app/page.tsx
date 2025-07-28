@@ -14,14 +14,14 @@ import ModelComponent from "@/features/model-universe/components/ModelComponent"
 import UniverseComponent from "@/features/model-universe/components/UniverseComponent";
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import { saveMarkdownDocument } from "@/features/documents/markdownSlice";
+
 import { ThreePanelLayout } from "@/components/ThreePanelLayout";
 import { ObjectCard } from '@/components/object-card';
-import { Model } from '@/features/model-universe/modelSlice';
+import { Model, saveMarkdownDocument, deleteMarkdownDocument } from '@/features/model-universe/modelSlice';
 
 export default function home() {
   const data = useSelector((state: RootState) => state.modelUniverse);
-  const documents = useSelector((state: RootState) => state.markdown.documents);
+  const documents = useSelector((state: RootState) => data.documents);
   const dispatch = useDispatch();
   const router = useRouter();
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
@@ -79,7 +79,7 @@ export default function home() {
   useEffect(() => {
     const handleResize = () => {
       const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0;
-      const minimumMiddleWidth = 320;
+      const minimumMiddleWidth = 150;
       const dragBarWidth = 8;
       const padding = 80;
       const maxRightWidth = Math.max(
@@ -135,7 +135,7 @@ export default function home() {
         setLeftPanelWidth(newWidth);
       } else if (panel === 'right') {
         const leftPanelActualWidth = showLeftPanelRef.current ? leftPanelWidthRef.current + 8 : 0;
-        const minimumMiddleWidth = 320;
+        const minimumMiddleWidth = 150;
         const dragBarWidth = 8;
         const padding = 40;
         const maxRightWidth = Math.max(

@@ -31,7 +31,7 @@ export default function TemplatesPanel({
     mdContent,
 }: TemplatesPanelProps) {
     const dispatch = useDispatch();
-    const documents = useSelector((state: RootState) => state.markdown.documents);
+    const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
     const [activeTab, setActiveTab] = useState<'templates' | 'document'>('templates')
     const [selectedTemplate, setSelectedTemplate] = useState<number | null>(null);
     const [selectedTemplateKey, setSelectedTemplateKey] = useState<string | null>(null);

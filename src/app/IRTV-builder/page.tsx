@@ -43,8 +43,8 @@ const IRTVBuilderPage = () => {
     const dispatch = useDispatch();
     const [dispatchDone, setDispatchDone] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
-    // const documents = useSelector((state: RootState) => state.documents.documents);
-    const documents = useSelector((state: RootState) => state.markdown.documents);
+    // const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents.documents);
+    const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
 
     const [activeTab, setActiveTab] = useState('ai-irtv');
     const [activeSubTab, setActiveSubTab] = useState('model-summary');
@@ -132,7 +132,7 @@ const IRTVBuilderPage = () => {
     useEffect(() => {
         const handleResize = () => {
             const leftPanelActualWidth = showLeftPanel ? leftPanelWidth + 8 : 0;
-            const minimumMiddleWidth = 320;
+            const minimumMiddleWidth = 150;
             const dragBarWidth = 8;
             const padding = 80;
             const maxRightWidth = Math.max(
@@ -208,7 +208,7 @@ const IRTVBuilderPage = () => {
                 setLeftPanelWidth(newWidth);
             } else if (panel === 'right') {
                 const leftPanelActualWidth = showLeftPanelRef.current ? leftPanelWidthRef.current + 8 : 0;
-                const minimumMiddleWidth = 320;
+                const minimumMiddleWidth = 150;
                 const dragBarWidth = 8; // Width of the draggable bar
                 const padding = 40; // Additional padding for safety
                 const maxRightWidth = Math.max(

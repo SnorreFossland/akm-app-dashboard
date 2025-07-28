@@ -135,7 +135,7 @@ const ConversationsPanel: React.FC<ConversationsPanelProps> = ({
                                                         {/* message content */}
                                                         <div
                                                             className={`flex flex-col flex-1 p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
-                                                            style={{ overflowWrap: 'anywhere' }}
+                                                            // style={{ overflowWrap: 'anywhere' }}
                                                         >
                                                             {message.content}
                                                         </div>

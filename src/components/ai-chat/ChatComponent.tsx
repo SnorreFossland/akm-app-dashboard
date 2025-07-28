@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux'; // Add this import
 import { usePathname } from 'next/navigation';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
@@ -9,6 +9,11 @@ import MarkdownPreview from './MarkdownPreview';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
 import { RootState } from '@/store';
+import {
+    addMessage,
+    setMessages,
+    Message
+} from '@/features/chat/chatSlice';
 import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
 import { systemPrompt as promptBuilderPrompt } from '@/app/prompt-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -19,7 +24,7 @@ import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
 import ModelSelector from './ModelSelector';
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from './DigitalRainIntro';
 // import GettingStartedGuide from './GettingStartedGuide';
@@ -30,29 +35,32 @@ import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
-interface Message {
-    role: 'user' | 'assistant' | 'system';
-    content: string;
-}
+// interface Message {
+//     role: 'user' | 'assistant' | 'system';
+//     content: string;
+// }
 
 export interface ChatComponentProps {
+    onResponseChange: (response: string) => void;
+    onViewInMarkdown: (response: string) => void;
+    showLeftPanel: boolean;
+    setShowLeftPanel: (show: boolean) => void;
+    showRightPanel?: boolean; // Add this line to the destructuring
+    setShowRightPanel?: (show: boolean) => void; // Add this line to the destructuring
+    error?: string;
+    chatInput?: string;
     input: string;
     setInput: (input: string) => void;
+    setMdContent: (message: string) => void;
+    mdContent: string;
+    onAddMD?: () => void;
+    currentDocument?: string;
+    mdPreview: string;
+    setMdPreview: (preview: string) => void;
+    setCurrentMessages: (messages: any[]) => void;
+    gettingStartedGuide: React.ReactNode;
     selectedModel: string;
     setSelectedModel: (model: string) => void;
-    currentDocument?: string; // Add this prop to pass current document content
-    onResponseChange: (response: string) => void;
-    onViewInMarkdown: (content: string) => void;
-    setShowLeftPanel: (show: boolean) => void;
-    chatInput?: string;
-    onAddMD: () => void;
-    mdContent: string;
-    setMdContent: (content: string) => void;
-    mdPreview: string;
-    setMdPreview: (content: string) => void;
-    setCurrentMessages: (messages: any[]) => void;
-    previewMessageIndex?: number | null;
-    gettingStartedGuide?: React.ReactNode;
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -78,7 +86,10 @@ export default function ChatComponent({
     setSelectedModel,
     onResponseChange,
     onViewInMarkdown,
+    showLeftPanel,
     setShowLeftPanel,
+    showRightPanel,
+    setShowRightPanel,
     chatInput,
     onAddMD,
     mdContent,
@@ -90,9 +101,10 @@ export default function ChatComponent({
     gettingStartedGuide
 }: ChatComponentProps) {
     const dispatch = useDispatch();
-    
-    const documents = useSelector((state: RootState) => state.markdown.documents);
-    const [messages, setMessages] = useState<Message[]>([]);
+
+    const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
+    // Get messages from Redux instead of local state
+    const messages = useSelector((state: RootState) => state.chat.currentMessages);
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -129,6 +141,32 @@ export default function ChatComponent({
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
     const [streamedContent, setStreamedContent] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
+
+    // Add throttling for stream updates
+    const streamUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const pendingStreamContentRef = useRef<string>('');
+
+    // Throttled function to update streamed content
+    const updateStreamedContent = useCallback((content: string) => {
+        pendingStreamContentRef.current = content;
+
+        if (streamUpdateTimeoutRef.current) {
+            clearTimeout(streamUpdateTimeoutRef.current);
+        }
+
+        streamUpdateTimeoutRef.current = setTimeout(() => {
+            setStreamedContent(pendingStreamContentRef.current);
+        }, 50); // Update every 50ms instead of every character
+    }, []);
+
+    // Cleanup timeout on unmount
+    useEffect(() => {
+        return () => {
+            if (streamUpdateTimeoutRef.current) {
+                clearTimeout(streamUpdateTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // New state for system prompt modal
     const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
@@ -235,11 +273,11 @@ Do not use its contents as contextual input for other questions--I want it impro
     // Scroll to bottom whenever there is messages or messages change or loading completes
     useEffect(() => {
         const scrollToBottom = () => {
-            if (messagesEndRef.current && messages.length > 0) {
-                // Only scroll if we actually have messages
+            if (messagesEndRef.current && (messages.length > 0 || (isStreaming && streamedContent))) {
+                // Scroll if we have messages OR if we're streaming content
                 setTimeout(() => {
                     messagesEndRef.current?.scrollIntoView({
-                        behavior: 'auto',
+                        behavior: 'smooth', // Changed to 'smooth' for better UX during streaming
                         block: 'end',
                     });
 
@@ -250,22 +288,44 @@ Do not use its contents as contextual input for other questions--I want it impro
                     }
 
                     // Try scrolling the main container as well
-                    const messageContainer = document.querySelector('.flex-1.min-h-0.overflow-y-auto');
+                    const messageContainer = document.getElementById('message-container');
                     if (messageContainer) {
-                        (messageContainer as HTMLElement).scrollTop = (messageContainer as HTMLElement).scrollHeight;
+                        messageContainer.scrollTop = messageContainer.scrollHeight;
                     }
-                }, 200);
+                }, 100); // Reduced timeout for more responsive scrolling
             }
         };
 
-        // Only scroll if we have messages
-        if (messages.length > 0) {
+        // Scroll when messages change OR when streaming content updates
+        if (messages.length > 0 || (isStreaming && streamedContent)) {
             scrollToBottom();
-            const fallbackTimer = setTimeout(scrollToBottom, 500);
+            const fallbackTimer = setTimeout(scrollToBottom, 300);
             return () => clearTimeout(fallbackTimer);
         }
         setCurrentMessages(messages);
-    }, [messages, isLoading]);
+    }, [messages, isLoading, isStreaming, streamedContent]); // Added isStreaming and streamedContent to dependencies
+
+    // Also add a separate useEffect specifically for streaming updates to ensure frequent scrolling
+    useEffect(() => {
+        if (isStreaming && streamedContent) {
+            const scrollToBottom = () => {
+                const messageContainer = document.getElementById('message-container');
+                if (messageContainer) {
+                    messageContainer.scrollTop = messageContainer.scrollHeight;
+                }
+
+                if (messagesEndRef.current) {
+                    messagesEndRef.current.scrollIntoView({
+                        behavior: 'auto', // Use 'auto' for immediate scrolling during streaming
+                        block: 'end',
+                    });
+                }
+            };
+
+            // Scroll immediately when streaming content updates
+            scrollToBottom();
+        }
+    }, [streamedContent, isStreaming]); // This will trigger every time streamedContent updates
 
     useEffect(() => {
         const lastAssistant = messages.findLast((m) => m.role === 'assistant');
@@ -296,7 +356,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         window.addEventListener('mousemove', handleUserActivity);
         window.addEventListener('click', handleUserActivity);
         window.addEventListener('keydown', handleUserActivity);
-''
+        ''
         return () => {
             if (inactivityTimerRef.current) {
                 clearTimeout(inactivityTimerRef.current);
@@ -611,6 +671,7 @@ Size: ${(file.size / 1024).toFixed(1)} KB
     };
 
     // Handle file selection for context
+    // Handle file selection for context
     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
         const files = event.target.files;
         if (!files || files.length === 0) return;
@@ -691,7 +752,6 @@ END OF DOCUMENT: ${file.name}
         if (fileInputRef.current) fileInputRef.current.value = '';
     };
 
-    // Function to send messages to the API
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
         setIsStreaming(false);
@@ -701,39 +761,19 @@ END OF DOCUMENT: ${file.name}
             // Create messagesToSend array as you did before
             const messagesToSend: Message[] = [];
 
-            // First add system messages if context is attached
-            // if (contextContent && isContextAttached) {
-            //     messagesToSend.push(
-            //         {
-            //             role: 'system',
-            //             content: systemPrompt
-            //         },
-            //         {
-            //             role: 'user',
-            //             content: `# Context:\n Here are the context and documents you must reference:\n\n${contextContent}`
-            //         }
-            //     );
-            // } else if (mdContent && mdContent.trim().length > 0) {
-            //     messagesToSend.push({
-            //         role: 'user',
-            //         content: mdContent
-            //     });
-            // } else {
-                messagesToSend.push({
-                    role: 'system',
-                    content: systemPrompt
-                });
-            // }
+            messagesToSend.push({
+                role: 'system',
+                content: systemPrompt
+            });
 
             console.log(`Sending context to the model (${contextContent.length} chars)`);
-            // Add conversation messages
             // Add conversation messages
             if (newMessages && newMessages.length > 0) {
                 messagesToSend.push(...newMessages);
             } else {
                 console.error('No messages in newMessages array');
                 setStatusMsg('Error: No prompt detected. Please enter a question or message.');
-                return; // Exit early if no messages
+                return;
             }
 
             // Final safety check
@@ -751,7 +791,7 @@ END OF DOCUMENT: ${file.name}
             };
 
             // Log what we're sending (for debugging)
-            console.log('744 Sending to API:', {
+            console.log('Sending to API:', {
                 model: selectedModel,
                 messagesCount: messagesToSend.length,
                 hasContext: Boolean(contextContent && isContextAttached),
@@ -774,7 +814,7 @@ END OF DOCUMENT: ${file.name}
                 setIsStreaming(false);
                 return;
             }
-            console.log('777 Messages to send:', messagesToSend);
+            console.log('Messages to send:', messagesToSend);
             // Send the messages via POST
             fetch('/api/chat/create-stream', {
                 method: 'POST',
@@ -804,13 +844,18 @@ END OF DOCUMENT: ${file.name}
                     try {
                         // Check for end of stream
                         if (event.data === "[DONE]") {
-                            console.log('794 Stream complete, adding full response to messages', accumulatedResponse);
-                            // Stream complete, add the assistant message with the full response
-                            console.log('797 ', ((prev: Message[]) => [...prev, { role: 'assistant', content: accumulatedResponse }]));
-                            setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
+                            console.log('Stream complete, adding full response to messages', accumulatedResponse);
+                            // Clear any pending updates and set final content
+                            if (streamUpdateTimeoutRef.current) {
+                                clearTimeout(streamUpdateTimeoutRef.current);
+                            }
+                            setStreamedContent(accumulatedResponse);
+
+                            // Add the assistant message to Redux store instead of local state
+                            dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
                             setIsLoading(false);
                             setIsStreaming(false);
-                            console.log('801EventSource closed after completion', messages);
+                            console.log('EventSource closed after completion');
                             eventSource.close();
                             return;
                         }
@@ -823,7 +868,8 @@ END OF DOCUMENT: ${file.name}
                             }
 
                             accumulatedResponse += data.content;
-                            setStreamedContent(accumulatedResponse);
+                            // Use throttled update instead of direct setState
+                            updateStreamedContent(accumulatedResponse);
                         }
                     } catch (error) {
                         console.error('Error parsing SSE message:', error);
@@ -841,8 +887,6 @@ END OF DOCUMENT: ${file.name}
                         messageCount: messagesToSend.length
                     };
 
-                    // console.error('EventSource error:', errorDetails);
-
                     // User-friendly error handling based on readyState
                     let errorMessage = 'Error connecting to AI. ';
 
@@ -859,7 +903,7 @@ END OF DOCUMENT: ${file.name}
 
                     // If we have accumulated some content, still show it
                     if (accumulatedResponse) {
-                        setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
+                        dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
                     }
                 };
             }).catch(error => {
@@ -886,11 +930,11 @@ END OF DOCUMENT: ${file.name}
                     : `Failed to communicate with AI ${selectedModel}: ${errorMessage}`
             );
         } finally {
-            console.log('876 AI request completed', messages);
+            console.log('AI request completed');
             setIsLoading(false);
             retryInProgress.current = false;
         }
-    }, [selectedModel, contextContent, isContextAttached, contextFiles]);
+    }, [selectedModel, contextContent, isContextAttached, contextFiles, dispatch, systemPrompt, temperature, updateStreamedContent]);
 
     // When selectedModel changes, retry sending the last non-retry user message
     useEffect(() => {
@@ -920,7 +964,7 @@ END OF DOCUMENT: ${file.name}
                     role: 'user',
                     content: `Retry with model: ${selectedModel} `,
                 };
-                setMessages((prev) => [...prev, modelChangeMessage]);
+                dispatch(addMessage(modelChangeMessage));
                 setModelRetryCount((prev) => prev + 1);
                 sendMessageToAPI([lastUserMessage, modelChangeMessage]).finally(() => {
                     retryInProgress.current = false;
@@ -930,9 +974,9 @@ END OF DOCUMENT: ${file.name}
 
         // Update for next comparison
         previousModelRef.current = selectedModel;
-    }, [selectedModel, sendMessageToAPI, modelRetryCount, messages, statusMsg]);
+    }, [selectedModel, sendMessageToAPI, modelRetryCount, messages, statusMsg, dispatch]);
 
-
+    // Update handleSubmit to use Redux actions
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!input?.trim()) return;
@@ -947,8 +991,9 @@ END OF DOCUMENT: ${file.name}
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
 
-        // Add the user message to conversation history without truncating it
-        setMessages((prev) => [...prev, userMessage]);
+        // Add the user message to Redux store instead of local state
+        dispatch(addMessage(userMessage));
+
         // Send all messages including the new one to maintain conversation context
         await sendMessageToAPI([...messages, userMessage]);
 
@@ -1066,49 +1111,47 @@ END OF DOCUMENT: ${file.name}
         );
     };
 
-
     // Function to open system prompt modal
     const handleSystemPromptClick = () => {
         setIsSystemPromptOpen(true);
     };
 
     return (
-        <>
-            <div className="flex flex-col max-h-[calc(100vh-4rem)] rounded-lg overflow-hidden relative">
+            <div className="flex flex-col max-h-[calc(100vh-4rem)] min-w-0 rounded-lg overflow-hidden relative">
                 {/* Message container with scrollable area */}
-                <div className="flex-1 overflow-y-auto w-full" id="message-container">
-                    {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
-                    {messages.length < 1 && (!input || input.trim() === "") ? (
-                        <div className="flex flex-col items-center justify-start w-full  overflow-auto">
-                            {showDigitalRain ? (
-                                <DigitalRainIntro
-                                    onInteraction={() => setShowDigitalRain(false)}
-                                    speed={4}
-                                    backgroundColor="rgba(10, 20, 10, 0.03)"
-                                />
-                            ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-40rem)] overflow-auto p-4 gap-4 text-gray-400 text-sm">
-                                    {gettingStartedGuide}
-                                </div>
-                            )}
-                        </div>
-                    ) : 
-                    (
-                        messages.length === 0 && (
-                            <div className="flex flex-col border border-gray-600 rounded-lg p-4 gap-2 text-gray-400 text-sm h-full items-center justify-start w-full bg-secondary/40 overflow-auto">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-gray-400">No messages yet. Start a conversation!</span>
-                                </div>
+                <div className="flex-1 overflow-y-auto w-full min-w-0 message-container" id="message-container">
+                    {messages.length < 1 && (!input || input.trim() === "")
+                        ? (
+                            <div className="flex flex-col items-center justify-start w-full  overflow-auto">
+                                {showDigitalRain ? (
+                                    <DigitalRainIntro
+                                        onInteraction={() => setShowDigitalRain(false)}
+                                        speed={4}
+                                        backgroundColor="rgba(10, 20, 10, 0.03)"
+                                    />
+                                ) : (
+                                    <div className="flex flex-col items-center justify-center min-h-[calc(100vh-40rem)] overflow-auto p-4 gap-4 text-gray-400 text-sm">
+                                        {gettingStartedGuide}
+                                    </div>
+                                )}
                             </div>
-                        )
-                    )}
+                        ) :
+                        (
+                            messages.length === 0 && (
+                                <div className="flex flex-col border border-gray-600 rounded-lg p-4 gap-2 text-gray-400 text-sm h-full items-center justify-start w-full bg-secondary/40 overflow-auto">
+                                    <div className="flex items-center gap-2 justify-center h-[calc(100vh-20rem)]">
+                                        <span className="text-gray-400">No messages yet. Start a conversation!</span>
+                                    </div>
+                                </div>
+                            )
+                        )}
 
-                    <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
+                    <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto min-w-0">
                         {messages.map((message, index) => (
                             <div key={index}
-                                className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
-                                    ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
-                                    : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
+                                className={`mb-4 p-3 rounded-lg flex flex-col gap-2 min-w-0 w-fit break-words ${message.role === 'user'
+                                    ? 'bg-card ml-auto text-card-foreground flex-col border border-blue-900'
+                                    : 'bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary'
                                     } `}
                             >
                                 {/* header with avatar/role */}
@@ -1181,6 +1224,9 @@ END OF DOCUMENT: ${file.name}
                                                         onClick={() => {
                                                             console.log('Previewing message in markdown:', message.content);
                                                             onViewInMarkdown(message.content);
+                                                            if (setShowRightPanel) {
+                                                                setShowRightPanel(true);
+                                                            }
                                                             // Toggle preview state locally
                                                             if (previewMessageIndex === index) {
                                                                 setPreviewMessageIndex(null);
@@ -1190,7 +1236,7 @@ END OF DOCUMENT: ${file.name}
                                                         }}
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
-                                                        Show Markdown Preview
+                                                        Show Preview
                                                     </button>
                                                 </>
                                             )}
@@ -1199,17 +1245,8 @@ END OF DOCUMENT: ${file.name}
                                 </div>
 
                                 {/* message content */}
-                                <div
-                                    className={`flex w-full p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
-                                    style={{ overflowWrap: 'anywhere' }}
-                                >
-                                    {/* {previewMessageIndex === index ? (
-                                        <div className="prose prose-invert custom-markdown markdown-preview w-full">
-                                            <MarkdownPreview mdPreview={mdPreview} />
-                                        </div>
-                                    ) : ( */}
+                                <div className="p-2 min-w-0 bg-primary-foreground whitespace-pre-wrap break-words overflow-auto">
                                     {message.content}
-                                    {/* )} */}
                                 </div>
 
                                 {/*  bottom buttons */}
@@ -1228,6 +1265,9 @@ END OF DOCUMENT: ${file.name}
                                                     onClick={() => {
                                                         console.log('Previewing message in markdown:', message.content);
                                                         onViewInMarkdown(message.content);
+                                                        if (setShowRightPanel) {
+                                                            setShowRightPanel(true);
+                                                        }
                                                         // Toggle preview state locally
                                                         if (previewMessageIndex === index) {
                                                             setPreviewMessageIndex(null);
@@ -1237,11 +1277,9 @@ END OF DOCUMENT: ${file.name}
                                                     }}
                                                     className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                 >
-                                                    Show Markdown Preview
+                                                    Show Preview
                                                     {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                 </button>
-
-
                                             </>
                                         )}
                                     </div>
@@ -1250,7 +1288,7 @@ END OF DOCUMENT: ${file.name}
                         ))}
                         {/* Display the currently streaming message */}
                         {isStreaming && streamedContent && (
-                            <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary">
+                            <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary min-w-0 w-fit break-words">
                                 <div className="flex items-center justify-between gap-3 ps-1">
                                     <div className="flex-shrink-0">
                                         <svg
@@ -1273,10 +1311,7 @@ END OF DOCUMENT: ${file.name}
                                     </div>
                                 </div>
 
-                                <div
-                                    className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
-                                    style={{ overflowWrap: 'anywhere' }}
-                                >
+                                <div className="p-1 px-4 whitespace-pre-wrap break-words overflow-auto min-w-0 w-full">
                                     {streamedContent}
                                 </div>
                             </div>
@@ -1293,8 +1328,8 @@ END OF DOCUMENT: ${file.name}
                     </div>
                 </div>
 
-                {/* Add  message display 
-                    statusMsg && (
+                {/* Add  message display */}
+                {/* statusMsg && (
                         <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
                             <Info className="w-4 h-4 mr-2" />
                             <span>{statusMsg}</span>
@@ -1308,12 +1343,12 @@ END OF DOCUMENT: ${file.name}
                                 </button>
                             )}
                         </div>
-                    )
-                }
+                    ) */}
+
                 {/* Input area always at the bottom */}
-                <div className="flex-shrink-0 bg-popover border-t border-gray-600">
+                <div className="flex-shrink-0 bg-popover border-t border-gray-600 min-w-0">
                     {pathname === '/ai-chat' &&
-                        <div className="flex items-center justify-between p-2">
+                        <div className="flex items-center justify-between p-2 min-w-0">
                             {/* button row above the chat */}
                             <div className="flex items-center gap-2">
                                 {/* System Prompt Button */}
@@ -1348,7 +1383,7 @@ END OF DOCUMENT: ${file.name}
                                     <label className="flex items-center gap-2 cursor-pointer">
                                         <input
                                             type="checkbox"
-                                            checked={docRefine && !currentDocument ? false : docRefine  }
+                                            checked={docRefine && !currentDocument ? false : docRefine}
                                             disabled={!currentDocument || isLoading}
                                             onChange={() => {
                                                 if (!currentDocument) {
@@ -1543,7 +1578,7 @@ END OF DOCUMENT: ${file.name}
                 </div>
 
                 {/* START FORM */}
-                <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg">
+                <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0">
                     {/* Add placeholder jump buttons */}
                     {templatePlaceholders.length > 0 && (
                         <div className="flex gap-2 mt-2 mb-2 flex-wrap">
@@ -1597,7 +1632,6 @@ END OF DOCUMENT: ${file.name}
                                     nextPlaceholder = templatePlaceholders[0];
                                 }
 
-                                // Select the placeholder if found
                                 if (nextPlaceholder) {
                                     selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
                                 }
@@ -1644,6 +1678,7 @@ END OF DOCUMENT: ${file.name}
                             </button>
                         </div>
                     </div>
+
                 </form>
 
                 {/* System Prompt Modal */}
@@ -1683,6 +1718,5 @@ END OF DOCUMENT: ${file.name}
                     </div>
                 </Modal>
             </div >
-        </>
     )
 }

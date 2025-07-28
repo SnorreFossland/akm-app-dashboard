@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { deleteMarkdownDocument } from '@/features/documents/markdownSlice';
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+import { saveMarkdownDocument, deleteMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import { ChevronDown, ChevronRight, Eye } from 'lucide-react';
 
 interface MarkdownLibraryProps {
@@ -21,13 +20,13 @@ const MarkdownLibrary = ({
 }: MarkdownLibraryProps) => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const dispatch = useDispatch();
-  const documents = useSelector((state: RootState) => state.markdown.documents);
+  const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null); // Track which document is expanded
   const fileInputRef = useRef<HTMLInputElement>(null);
   const expandedContentRef = useRef<HTMLDivElement>(null);
 
-  const filteredDocuments = documents.filter(doc =>
+  const filteredDocuments = documents?.filter(doc =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
@@ -138,7 +137,7 @@ const MarkdownLibrary = ({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-4 w-full h-full p-4 bg-gray-800 rounded-lg">
       <input
         type="file"
         ref={fileInputRef}
@@ -159,7 +158,9 @@ const MarkdownLibrary = ({
         </div>
       </div>
 
-      {filteredDocuments.length === 0 ? (
+      {!filteredDocuments && <div className="text-gray-400 text-center p-4">No documents found.</div>}
+      
+      {filteredDocuments?.length === 0 ? (
         <div className="text-gray-400 text-center p-4">
           Select a document to view or edit
           <br />
@@ -167,7 +168,7 @@ const MarkdownLibrary = ({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-3">
-          {filteredDocuments.map((doc, index) => (
+          {filteredDocuments?.map((doc, index) => (
             <div key={doc.id} className="bg-gray-700 rounded-lg transition-colors">
               {/* Document Header - Clickable to expand/collapse */}
               <div
@@ -193,20 +194,20 @@ const MarkdownLibrary = ({
                   <p className="text-sm text-gray-300 line-clamp-2">
                     {doc.content.substring(0, 150)}...
                   </p>
-                <div className="flex justify-end items-center gap-2 ms-auto">
-                  <button
-                    onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
-                    className="text-xs bg-green-800 hover:bg-green-700 text-white px-2 py-1 rounded"
-                  >
-                    Save to File
-                  </button>
-                  <button
-                    onClick={(e) => handleDelete(doc.id, e)}
-                    className="text-xs bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                </div>
+                  <div className="flex justify-end items-center gap-2 ms-auto">
+                    <button
+                      onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
+                      className="text-xs bg-green-800 hover:bg-green-700 text-white px-2 py-1 rounded"
+                    >
+                      Save to File
+                    </button>
+                    <button
+                      onClick={(e) => handleDelete(doc.id, e)}
+                      className="text-xs bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded"
+                    >
+                      Delete
+                    </button>
+                  </div>
                 </div>
               </div>
 

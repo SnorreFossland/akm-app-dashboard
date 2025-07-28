@@ -6,6 +6,48 @@ import rootReducer from './rootReducer'; // Import rootReducer
 const persistConfig = {
     key: 'root',
     storage,
+    migrate: (state: any) => {
+        // Handle migration from old state structure
+        if (state && state.documents) {
+            // Move documents from old location to new location
+            if (!state.modelUniverse) {
+                state.modelUniverse = {
+                    phData: {
+                        metis: { name: '', description: '', models: [], metamodels: [] },
+                        domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' },
+                        ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] },
+                        documents: []
+                    },
+                    phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } },
+                    phUser: { id: '', name: '', email: '' },
+                    phSource: '',
+                    status: 'idle',
+                    error: null
+                };
+            }
+
+            // Migrate documents to new location
+            if (state.documents && Array.isArray(state.documents)) {
+                state.modelUniverse.phData.documents = state.documents;
+            } else if (state.documents && state.documents.documents) {
+                state.modelUniverse.phData.documents = state.documents.documents;
+            }
+
+            // Remove old documents key
+            delete state.documents;
+
+            // Also remove old markdown key if it exists
+            if (state.markdown) {
+                if (state.markdown.documents) {
+                    state.modelUniverse.phData.documents = state.markdown.documents;
+                }
+                delete state.markdown;
+            }
+        }
+
+        return Promise.resolve(state);
+    },
+    version: 1 // Increment version to trigger migration
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

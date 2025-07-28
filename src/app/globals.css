@@ -493,3 +493,42 @@
 [data-collapsible="icon"] .sidebar-content span:not(.sr-only) {
     display: none !important;
 }
+
+.dragging * {
+    pointer-events: none !important;
+    user-select: none !important;
+}
+
+.drag-handle {
+    will-change: transform;
+    transform: translateZ(0);
+    /* Force GPU acceleration */
+}
+
+/* Add these styles for drag performance and width constraints */
+.dragging * {
+    pointer-events: none !important;
+    user-select: none !important;
+}
+
+.middle-panel-container {
+    min-width: 0 !important;
+    /* Allow shrinking below content width */
+    max-width: 100% !important;
+    /* Prevent overflow */
+    overflow: hidden !important;
+    /* Hide overflow */
+}
+
+.message-container {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+}
+
+.chat-message {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+}

@@ -21,20 +21,20 @@ export const promptSlice = createSlice({
     reducers: {
         savePromptDocument: (state, action: PayloadAction<PromptDocument>) => {
             // Check if document with same name exists
-            const existingIndex = state.documents.findIndex(
+            const existingIndex = state.modelUniverse.phData.documents.findIndex(
                 doc => doc.name === action.payload.name
             );
 
             if (existingIndex >= 0) {
                 // Update existing document
-                state.documents[existingIndex] = action.payload;
+                state.modelUniverse.phData.documents[existingIndex] = action.payload;
             } else {
                 // Add new document
-                state.documents.push(action.payload);
+                state.modelUniverse.phData.documents.push(action.payload);
             }
         },
         deletePromptDocument: (state, action: PayloadAction<string>) => {
-            state.documents = state.documents.filter(doc => doc.id !== action.payload);
+            state.modelUniverse.phData.documents = state.modelUniverse.phData.documents.filter(doc => doc.id !== action.payload);
         },
     },
 });

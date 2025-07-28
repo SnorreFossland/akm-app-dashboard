@@ -71,7 +71,7 @@ export default function DomainBuilderPage() {
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [docName, setDocName] = useState<string>('New Document');
-  const documents = useSelector((state: RootState) => state.markdown.documents);
+  const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
 
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
 
@@ -273,7 +273,7 @@ export default function DomainBuilderPage() {
         setLeftPanelWidth(newWidth);
       } else if (panel === 'right') {
         const leftPanelActualWidth = showLeftPanelRef.current ? leftPanelWidthRef.current + 8 : 0;
-        const minimumMiddleWidth = 320;
+        const minimumMiddleWidth = 150;
         const maxRightWidth = window.innerWidth - leftPanelActualWidth - minimumMiddleWidth - 20;
 
         const newWidth = Math.max(
