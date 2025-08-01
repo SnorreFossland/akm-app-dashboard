@@ -3,7 +3,7 @@ import { Edit, Check, FileText, Paperclip, Library, BookmarkPlus } from 'lucide-
 
 const GettingStartedGuide: React.FC = () => {
     return (
-        <div className="flex-1 p-2 text-primary bg-secondary overflow-auto min-h-0 max-h-[calc(100vh-14rem)]">
+        <div className="flex-1 px-2 text-primary bg-secondary overflow-auto min-h-0 max-h-[calc(100vh-14rem)]">
             <div className="flex flex-col items-center justify-start w-full pb-6">
                 <div className="mx-auto">
                     <section>

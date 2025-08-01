@@ -429,7 +429,7 @@ const modelSlice = createSlice({
     // Add document management reducers
     saveMarkdownDocument: (state, action: PayloadAction<MarkdownDocument>) => {
       // Check if document with same name exists
-      const existingIndex = state.phData.documents.findIndex(
+      const existingIndex = state.phData.documents?.findIndex(
         doc => doc.name === action.payload.name
       );
 

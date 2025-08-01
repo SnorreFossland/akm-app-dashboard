@@ -8,7 +8,7 @@ import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-r
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingCircularProgress } from "@/components/loading";
 
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
 import { ObjectCard } from '@/components/object-card';
 import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';

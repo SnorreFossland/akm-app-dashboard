@@ -1,6 +1,6 @@
 // src/features/model-universe/components/HandleGetLocalFile.ts
 import { setFileData } from '../modelSlice';
-import { AppDispatch } from '@/store/store';
+// import { AppDispatch } from '@/store/store';
 
 export const handleGetDefaultFile = (event: React.ChangeEvent<HTMLInputElement>, dispatch: AppDispatch) => {
   const fileUrl = '/AKM-Core-Template_PR.json';

@@ -191,7 +191,7 @@ export const navigationData: NavigationData = {
                 },
                 {
                     title: "IRTV Model Builder",
-                    url: "/IRTV-builder",
+                    url: "/Irtv-builder",
                     icon: SquareUser,
                     description: "Active Knowledge Modelling with IRTV",
                 },

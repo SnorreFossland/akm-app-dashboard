@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useSelector, useDispatch } from "react-redux";
 import { useRouter } from 'next/navigation';
 import type { RootState } from "@/store";
-import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Card, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
@@ -21,7 +21,7 @@ import { Model, saveMarkdownDocument, deleteMarkdownDocument } from '@/features/
 
 export default function home() {
   const data = useSelector((state: RootState) => state.modelUniverse);
-  const documents = useSelector((state: RootState) => data.documents);
+  const documents = useSelector((state: RootState) => data.phData.documents);
   const dispatch = useDispatch();
   const router = useRouter();
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
@@ -43,6 +43,7 @@ export default function home() {
   const [docName, setDocName] = useState<string>('Welcome');
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
 
   // Refs for panel management
   const leftPanelWidthRef = useRef(leftPanelWidth);
@@ -256,32 +257,56 @@ export default function home() {
   const leftPanelContent = {
     tabs: [
       {
-        key: 'guide',
-        label: 'Guide',
+        key: 'current-context',
+        label: 'Current Context',
         content: (
           <div className="p-4">
-            <div className="space-y-4">
-              <div className="bg-gray-700/50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-2">Workplace</h3>
-                <p className="text-sm text-gray-300 mb-4">
-                  The AI Assisted Workplace is designed to help you create and enhance documents and to build and analyze models using AI.
-                </p>
-                <p className="text-sm text-gray-300 mb-4">The workplace has three panels: left, middle (main), and right.</p>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li>• The left panel is setting the input context.</li>
-                  <li>• The middle panel is where the work happens and showing the current status on documents and models</li>
-                  <li>• The right panel is for preview and edit output from the AI Chat and reports from the current models.</li>
-                </ul>
-              </div>
-              <div className="bg-gray-700/50 p-4 rounded-lg">
-                <h3 className="text-lg font-semibold text-white mb-2">Quick Tips</h3>
-                <ul className="space-y-2 text-sm text-gray-300">
-                  <li>• Drag panel borders to resize</li>
-                  <li>• Use tabs to switch between views</li>
-                  <li>• Save frequently used documents</li>
-                  <li>• Explore the AI tools for assistance</li>
-                </ul>
-              </div>
+            <div className="space-y-4 p-1 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+              This Left panel is the Input area for the activity in your Workplace. It can be current context or additional context you want to add to your documents/Models.
+            </div>
+            <div className="bg-gray-700/50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-white mb-2">Current Context</h3>
+              <p className="text-sm text-gray-300 mb-4">
+                is the context you are working on. It can be:
+              </p>
+              <ul className="list-disc pl-6 text-sm text-gray-300 space-y-1">
+                <li>
+                  a document you are editing or refining.
+                </li>
+                <li>
+                  a Domain description / definition for your current project or product.
+                </li>
+                <li>
+                  an Ontology with terms and relationships.
+                </li>
+                <li>
+                  a Model with objects and relationships.
+                </li>
+              </ul>
+              ...
+              <p>You can add additional context by loading a file, or by typing or pasting text, lists etc.</p>
+            </div>
+            <div className="bg-gray-700/50 p-4 rounded-lg">
+              <h3 className="text-lg font-semibold text-white mb-2">Additional Context</h3>
+              <p className="text-sm text-gray-300 mb-4">
+                is the context you add to your work. It can be:
+              </p>
+              <ul className="list-disc pl-6 text-sm text-gray-300 space-y-1">
+                <li>
+                  a document you want to add.
+                </li>
+                <li>
+                  a text or subdomain you want to add to your current Domain description / definition for your current project or product.
+                </li>
+                <li>
+                  terms and relationships you want to add to your current Ontology with.
+                </li>
+                <li>
+                  objects and relationship you want to add to your model.
+                </li>
+              </ul>
+              ...
+              <p>You can add additional context by loading a file, or by typing or pasting text, lists etc.</p>
             </div>
           </div>
         )
@@ -329,7 +354,7 @@ export default function home() {
       //   ) : <div className="p-4 text-gray-400">No model selected</div>
       // }
     ],
-    defaultTab: 'guide'
+    defaultTab: 'current-context'
   };
 
   // Define right panel content without the Model tab
@@ -387,6 +412,11 @@ export default function home() {
         moduleOperations={<FileOperations />}
         leftPanelContent={leftPanelContent}
         rightPanelContent={rightPanelContent}
+        showLeftPanel={showLeftPanel}
+        setShowLeftPanel={setShowLeftPanel}
+        showRightPanel={showRightPanel}
+        setShowRightPanel={setShowRightPanel}
+        className="h-full min-w-0 bg-background text-gray-100"
       >
         <Tabs defaultValue="overview" className="flex flex-col flex-1">
           {/* Main Tabs */}
@@ -399,118 +429,176 @@ export default function home() {
 
           {/* Tab Content */}
           <TabsContent value="overview" className="flex-1 px-1 mt-0">
-            <div className="flex-1 overflow-auto bg-gray-800/20">
-              <div className="max-w-4xl mx-auto">
-                <div className="text-center mb-8">
-                  <h1 className="text-2xl font-bold text-white my-2">
-                    Welcome to the AI Assisted Workplace
-                  </h1>
-                  <p className="text-xl text-gray-300 mb-6">
-                    Your comprehensive platform for AI-powered model building and analysis
-                  </p>
+            <div className="p-2 flex h-full">
+              {/* Guide Sidebar */}
+              {showGuide && (
+                <div className="flex flex-col items-center mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-full max-w-md h-full">
+                  <div className="flex items-center justify-between w-full px-1">
+                    <div className="text-lg font-semibold text-orange-500/60">
+                      Guide
+                    </div>
+                    {showGuide && (
+                      <button
+                        onClick={() => setShowGuide(false)}
+                        title="Close Guide"
+                        className="ml-auto"
+                      >
+                        <ChevronLeft className="h-4 w-4" />
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex-1 overflow-y-auto p-2 bg-yellow-900/60 ">
+                    <div className="flex flex-col gap-2">
+                      <div className="space-y-4 p-1 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/80">
+                          <h3 className="text-lg font-semibold text-white mb-2">Workplace</h3>
+                          <p className="text-sm text-gray-300 mb-4">
+                            The AI Assisted Workplace is designed to help you create and enhance documents and to build and analyze models using AI.
+                          </p>
+                          <p className="text-sm text-gray-300 mb-4">The workplace has three panels: left, middle (main), and right.</p>
+                          <ul className="space-y-2 text-sm text-gray-300">
+                            <li>• The left panel is setting the input context.</li>
+                            <li>• The middle panel is where the work happens and showing the current status on documents and models</li>
+                            <li>• The right panel is for preview and edit output from the AI Chat and reports from the current models.</li>
+                          </ul>
+                        </div>
+                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/80">
+                          <h3 className="text-lg font-semibold text-white mb-2">Quick Tips</h3>
+                          <ul className="space-y-2 text-sm text-gray-300">
+                            <li>• Drag panel borders to resize</li>
+                            <li>• Use tabs to switch between views</li>
+                            <li>• Save frequently used documents</li>
+                            <li>• Explore the AI tools for assistance</li>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-green-400 mb-3">Quick Start</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      New to the platform? Start with our guided tutorials and examples.
+              )}
+              <div className="flex-1 overflow-auto bg-gray-800/20">
+                <div className="flex items-center gap-2">
+                  {!showGuide && (
+                    <button
+                      onClick={() => setShowGuide(true)}
+                      className="text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
+                      title="Show Guide"
+                    >
+                      <HelpCircle className="bg-yellow-700 text-white rounded h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+                <div className="max-w-4xl mx-auto">
+                  <div className="text-center mb-8">
+                    <h1 className="text-2xl font-bold text-white my-2">
+                      Welcome to the AI Assisted Workplace
+                    </h1>
+                    <p className="text-xl text-gray-300 mb-6">
+                      Your comprehensive platform for AI-powered model building and analysis
                     </p>
-                    <Button
-                      onClick={() => router.push('/ai-chat')}
-                      className="w-full bg-green-600 hover:bg-green-700 mt-auto">
-                      Get Started
-                    </Button>
-                  </Card>
+                  </div>
 
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-blue-400 mb-3">AI Chat</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      Interact with AI assistant using predefined Template prompts to get the most out of AI Chat!
-                    </p>
-                    <Button
-                      onClick={() => router.push('/ai-chat')}
-                      className="w-full bg-blue-600 hover:bg-blue-700 mt-auto">
-                      Open Chat
-                    </Button>
-                  </Card>
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-green-400 mb-3">Quick Start</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        New to the platform? Start with our guided tutorials and examples.
+                      </p>
+                      <Button
+                        onClick={() => router.push('/ai-chat')}
+                        className="w-full bg-green-600 hover:bg-green-700 mt-auto">
+                        Get Started
+                      </Button>
+                    </Card>
 
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-blue-400 mb-3">Prompt Generator</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      Interact with AI assistant to generate the perfect prompt!
-                    </p>
-                    <Button
-                      onClick={() => router.push('/prompt-builder')}
-                      className="w-full bg-blue-600 hover:bg-blue-700 mt-auto">
-                      Generate Prompt
-                    </Button>
-                  </Card>
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-blue-400 mb-3">AI Chat</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        Interact with AI assistant using predefined Template prompts to get the most out of AI Chat!
+                      </p>
+                      <Button
+                        onClick={() => router.push('/ai-chat')}
+                        className="w-full bg-blue-600 hover:bg-blue-700 mt-auto">
+                        Open Chat
+                      </Button>
+                    </Card>
 
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-orange-400 mb-3">Scope Domain</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      Scope and Define the actual Domain with AI assistance.
-                    </p>
-                    <Button
-                      onClick={() => router.push('/domain-builder')}
-                      className="w-full bg-orange-600/70 hover:bg-orange-700 mt-auto">
-                      Define Domain
-                    </Button>
-                  </Card>
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-orange-400 mb-3">Ontology Builder</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      Create and manage the atual Ontology Concepts and Relationships with AI assistance.
-                    </p>
-                    <Button
-                      onClick={() => router.push('/ontology-builder')}
-                      className="w-full bg-orange-600/70 hover:bg-orange-700 mt-auto">
-                      Build Ontology Concepts
-                    </Button>
-                  </Card>
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-blue-400 mb-3">Prompt Generator</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        Interact with AI assistant to generate the perfect prompt!
+                      </p>
+                      <Button
+                        onClick={() => router.push('/prompt-builder')}
+                        className="w-full bg-blue-600 hover:bg-blue-700 mt-auto">
+                        Generate Prompt
+                      </Button>
+                    </Card>
 
-                  </Card>
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-orange-400 mb-3">Scope Domain</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        Scope and Define the actual Domain with AI assistance.
+                      </p>
+                      <Button
+                        onClick={() => router.push('/domain-builder')}
+                        className="w-full bg-orange-600/70 hover:bg-orange-700 mt-auto">
+                        Define Domain
+                      </Button>
+                    </Card>
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-orange-400 mb-3">Ontology Builder</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        Create and manage the atual Ontology Concepts and Relationships with AI assistance.
+                      </p>
+                      <Button
+                        onClick={() => router.push('/ontology-builder')}
+                        className="w-full bg-orange-600/70 hover:bg-orange-700 mt-auto">
+                        Build Ontology Concepts
+                      </Button>
+                    </Card>
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
 
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-purple-400 mb-3">POPS Model Builder</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      Create and manage sophisticated POPS models with AI assistance.
-                    </p>
-                    <Button
-                      onClick={() => router.push('/domain-builder')}
-                      className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
-                      Build POPS Models
-                    </Button>
-                  </Card>
+                    </Card>
 
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-purple-400 mb-3">IRTV Model Builder</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      Create and manage sophisticated IRTV models with AI assistance.
-                    </p>
-                    <Button
-                      onClick={() => router.push('/domain-builder')}
-                      className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
-                      Build IRTV Models
-                    </Button>
-                  </Card>
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-purple-400 mb-3">POPS Model Builder</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        Create and manage sophisticated POPS models with AI assistance.
+                      </p>
+                      <Button
+                        onClick={() => router.push('/domain-builder')}
+                        className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
+                        Build POPS Models
+                      </Button>
+                    </Card>
 
-                  <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
-                    <CardTitle className="text-purple-400 mb-3">META Model Builder</CardTitle>
-                    <p className="text-gray-300 mb-4 flex-grow">
-                      Create and manage sophisticated META models with AI assistance.
-                    </p>
-                    <Button
-                      onClick={() => router.push('/domain-builder')}
-                      className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
-                      Build META Models
-                    </Button>
-                  </Card>
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-purple-400 mb-3">IRTV Model Builder</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        Create and manage sophisticated IRTV models with AI assistance.
+                      </p>
+                      <Button
+                        onClick={() => router.push('/domain-builder')}
+                        className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
+                        Build IRTV Models
+                      </Button>
+                    </Card>
+
+                    <Card className="p-6 bg-gray-800/50 border-gray-600 flex flex-col">
+                      <CardTitle className="text-purple-400 mb-3">META Model Builder</CardTitle>
+                      <p className="text-gray-300 mb-4 flex-grow">
+                        Create and manage sophisticated META models with AI assistance.
+                      </p>
+                      <Button
+                        onClick={() => router.push('/domain-builder')}
+                        className="w-full bg-purple-600 hover:bg-purple-700 mt-auto">
+                        Build META Models
+                      </Button>
+                    </Card>
+                  </div>
                 </div>
               </div>
-
             </div>
           </TabsContent>
 

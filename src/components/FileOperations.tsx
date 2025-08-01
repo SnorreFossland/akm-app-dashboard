@@ -43,26 +43,34 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     };
 
     const onSaveFile = () => {
-        handleSaveToLocalFile(data.phData);
+        handleSaveToLocalFile(data, dispatch);
     };
 
     const onClearModel = () => {
-        dispatch(clearModel());
+        // dispatch(clearModel({}));
+        dispatch(clearStore());
+        localStorage.clear();
+        // // Clear only Redux persist data (more targeted approach)
+        // localStorage.removeItem('persist:root');
+        // // Optional: Reload the page to ensure the app starts fresh
+        // window.location.reload();
+        window.location.reload();
     };
 
     return (
-        <div className={`flex flex-col md:flex-row items-center gap-2 w-full ${className}`}>
-            <div className="flex-shrink-0 min-w-0 w-full md:flex-1 md:max-w-md flex items-center gap-2">
-                <span className="text-sm text-white whitespace-nowrap">Universe:</span>
+        <div className={`flex md:flex-row items-center justify-between w-full ${className}`}>
+            <div className="flex items-center gap-2 w-full justify-between">
+                <span className="text-sm text-white whitespace-nowrap flex-shrink-0 ps-1">Universe:</span>
                 <input
                     type="text"
-                    value={modelUniverse}
+                    value={modelUniverse || ''} // Add fallback empty string to ensure value is never undefined
                     onChange={(e) => dispatch(setSource(e.target.value))}
-                    className="bg-gray-800 px-2 py-1 rounded text-sm text-white min-w-0 w-full md:w-48"
+                    className="bg-gray-800 px-2 py-1 rounded text-sm text-white min-w-0 flex-1"
                     placeholder="Universe name"
                 />
-                <div className="text-xs text-gray-500 whitespace-nowrap">File: {modelUniverse}.json</div>
+                <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {modelUniverse}.json</div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
+
                     <input
                         ref={fileInputRef}
                         type="file"

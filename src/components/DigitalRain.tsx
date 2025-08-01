@@ -106,7 +106,7 @@ const DigitalRain = ({
     >
       <canvas 
         ref={canvasRef} 
-        className="absolute inset-0 z-10 bg-background bg-opacity-20"
+        className="absolute inset-0 z-10 bg-background bg-opacity-20 h-full w-full"
       />
     </div>
   );

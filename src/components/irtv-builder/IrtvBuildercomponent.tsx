@@ -38,7 +38,7 @@ interface Message {
     content: string;
 }
 // IRTV Builder specific props interface
-interface IRTVBuilderComponentProps {
+interface IrtvBuilderComponentProps {
     input: string;
     setInput: (input: string) => void;
     selectedModel: string;
@@ -54,30 +54,7 @@ interface IRTVBuilderComponentProps {
     setCurrentMessages: (messages: any[]) => void;
 }
 
-const MAX_MODEL_RETRIES = 4;
-
-// IRTV-specific prompts (you'll need to create these)
-const IRTVSystemPrompt = `You are an expert IRTV (Information Requirements for Testing and Verification) analyst. 
-Your task is to analyze requirements and generate comprehensive IRTV documentation that identifies all information needs for testing and verification activities.
-
-Focus on:
-- Information Requirements identification
-- Test data specifications
-- Verification criteria
-- Traceability requirements
-- Documentation standards
-
-Verify that your responses are based on the provided context and requirements.
-`;
-
-const IRTVUserPrompt = `Generate IRTV documentation for the given requirements. Include:
-1. Information Requirements Matrix
-2. Test Data Requirements
-3. Verification Information Needs
-4. Traceability Information
-5. Documentation Requirements`;
-
-const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
+export default function IrtvBuilderComponent({
     input,
     setInput,
     selectedModel,
@@ -91,7 +68,7 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
     irtvPreview,
     setIrtvPreview,
     setCurrentMessages
-}) => {
+}: IrtvBuilderComponentProps) {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
 
@@ -163,7 +140,28 @@ const IRTVBuilderComponent: React.FC<IRTVBuilderComponentProps> = ({
     const [mdPreview, setMdPreview] = useState('');
 
 
+    const MAX_MODEL_RETRIES = 4;
 
+    // IRTV-specific prompts (you'll need to create these)
+    const IRTVSystemPrompt = `You are an expert IRTV (Information Requirements for Testing and Verification) analyst. 
+Your task is to analyze requirements and generate comprehensive IRTV documentation that identifies all information needs for testing and verification activities.
+
+Focus on:
+- Information Requirements identification
+- Test data specifications
+- Verification criteria
+- Traceability requirements
+- Documentation standards
+
+Verify that your responses are based on the provided context and requirements.
+`;
+
+    const IRTVUserPrompt = `Generate IRTV documentation for the given requirements. Include:
+1. Information Requirements Matrix
+2. Test Data Requirements
+3. Verification Information Needs
+4. Traceability Information
+5. Documentation Requirements`;
 
     // Generate categories list dynamically from templates
     const CATEGORIES = [...Array.from(
@@ -1438,7 +1436,6 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
     );
 };
 
-export default IRTVBuilderComponent;
 
 
 

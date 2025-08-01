@@ -1,10 +1,9 @@
 'use client';
-'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch } from 'react-redux';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-react';
-import { saveMarkdownDocument } from '@/features/documents/markdownSlice';
+import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
 
 interface DocumentPanelProps {
     mdContent: string;

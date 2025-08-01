@@ -11,11 +11,20 @@ interface DigitalRainIntroProps {
 const DigitalRainIntro: React.FC<DigitalRainIntroProps> = ({
     onInteraction,
     speed = 4,
-    backgroundColor = "rgba(10, 20, 10, 0.03)"
+    backgroundColor = "rgba(10, 20, 10, 0.03)",
 }) => {
+    const containerStyle: React.CSSProperties = {   
+        position: 'relative',
+        width: '100%',
+        height: '100%',
+        overflow: 'hidden',
+        backgroundColor: '#000',
+        borderRadius: '0.5rem',
+    };
     return (
-        <div className="relative w-full h-[calc(100vh-20rem)] min-h-[400px]">
-            <div className="absolute inset-0 z-20">
+        <div className="relative w-full h-full overflow-hidden flex items-center justify-center bg-gray-900 text-white rounded-lg shadow-lg p-4">
+            <div className="relative inset-0 z-20"
+            >
                 <DigitalRain
                     onInteraction={onInteraction}
                     speed={speed}

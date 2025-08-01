@@ -69,6 +69,19 @@ export function ThreePanelLayout({
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
 
+    useEffect(() => {
+        const checkScreenSize = () => {
+            setIsMobile(window.innerWidth < 768);
+            // Calculate header height dynamically
+            const headerElement = document.querySelector('header') || document.querySelector('.app-header');
+            const headerHeight = headerElement ? headerElement.offsetHeight : 200;
+            document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
+        };
+        checkScreenSize();
+        window.addEventListener('resize', checkScreenSize);
+        return () => window.removeEventListener('resize', checkScreenSize);
+    }, []);
+
     const [activeLeftTab, setActiveLeftTab] = useState(
         leftPanelContent?.defaultTab || leftPanelContent?.tabs[0]?.key || 'guide'
     );
@@ -188,7 +201,7 @@ export function ThreePanelLayout({
                     <AccordionItem value="main-panel">
                         <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Main</AccordionTrigger>
                         <AccordionContent>
-                            <div className="flex-1 overflow-hidden min-w-0 w-full h-[calc(100vh-200px)] text-gray-100">
+                            <div className="flex-1 overflow-hidden min-w-0 w-full h-[calc(100vh-225px)] text-gray-100">
                                 {children}
                             </div>
                         </AccordionContent>
@@ -198,7 +211,7 @@ export function ThreePanelLayout({
                         <AccordionItem value="output-panel">
                             <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Output</AccordionTrigger>
                             <AccordionContent>
-                                <div className="bg-gray-800 border-t border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-200px)]">
+                                <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-var(--header-height,220px))]">
                                     <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
                                         <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
                                             {finalRightPanelContent.tabs.map((tab) => (
@@ -220,86 +233,94 @@ export function ThreePanelLayout({
 
     return (
         <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
-            <div className="flex flex-row h-full overflow-hidden">
-                {showLeftPanel && (
-                    <div
-                        className="bg-gray-800 border-r border-gray-600 flex flex-col overflow-hidden flex-shrink-0"
-                        style={{ width: `${leftPanelWidth}px` }}
-                    >
-                        <div className="flex justify-between items-center p-2 border-b border-gray-600">
-                            <h3 className="text-sm font-medium text-gray-300">Input</h3>
-                            <button onClick={() => setShowLeftPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
-                                <ChevronLeft className="h-4 w-4" />
-                            </button>
-                        </div>
-                        <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1">
-                            <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
-                                {finalLeftPanelContent.tabs.map((tab) => (
-                                    <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
-                                ))}
-                            </TabsList>
-                            {finalLeftPanelContent.tabs.map((tab) => (
-                                <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
-                            ))}
-                        </Tabs>
-                    </div>
-                )}
-
-                {showLeftPanel && (
-                    <div
-                        className="w-2 bg-gray-700 cursor-col-resize flex-shrink-0"
-                        onMouseDown={(e) => handleMouseDown(e, 'left')}
-                        onTouchStart={(e) => handleMouseDown(e, 'left')}
+            <div className="flex flex-col h-full overflow-auto">
+                {showAppHeader && (
+                    <AppHeader
+                        showLeftPanel={showLeftPanel}
+                        showRightPanel={showRightPanel}
+                        onToggleLeftPanel={handleToggleLeftPanel}
+                        onToggleRightPanel={handleToggleRightPanel}
+                        moduleOperations={moduleOperations}
                     />
                 )}
 
-                <div
-                    className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden"
-                    style={{ minWidth: `${MIN_MIDDLE_WIDTH}px` }}
-                >
-                    {showAppHeader && (
-                        <AppHeader
-                            showLeftPanel={showLeftPanel}
-                            showRightPanel={showRightPanel}
-                            onToggleLeftPanel={handleToggleLeftPanel}
-                            onToggleRightPanel={handleToggleRightPanel}
-                            moduleOperations={moduleOperations}
+                <div className="flex flex-row h-full overflow-hidden">
+                    {/* Left Panel (Input) */}
+                    {showLeftPanel && (
+                        <div className="flex flex-col bg-gray-800 border-r border-gray-600 overflow-hidden flex-shrink-0"
+                            style={{ width: `${leftPanelWidth}px` }}>
+                            <div className="flex justify-between items-center p-2 border-b border-gray-600">
+                                <h3 className="text-sm font-medium text-gray-300">Input</h3>
+                                <button onClick={() => setShowLeftPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
+                                    <ChevronLeft className="h-4 w-4" />
+                                </button>
+                            </div>
+                            <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1 overflow-hidden">
+                                <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
+                                    {finalLeftPanelContent.tabs.map((tab) => (
+                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                    ))}
+                                </TabsList>
+                                {finalLeftPanelContent.tabs.map((tab) => (
+                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
+                                        {tab.content}
+                                    </TabsContent>
+                                ))}
+                            </Tabs>
+                        </div>
+                    )}
+
+                    {/* Resizable divider between left panel and main content */}
+                    {showLeftPanel && (
+                        <div
+                            className="w-2 bg-gray-700 cursor-col-resize flex-shrink-0"
+                            onMouseDown={(e) => handleMouseDown(e, 'left')}
+                            onTouchStart={(e) => handleMouseDown(e, 'left')}
                         />
                     )}
-                    <div className="flex-1 overflow-hidden min-w-0 w-full">{children}</div>
-                </div>
 
-                {showRightPanel && (
+                    {/* Main content area */}
                     <div
-                        className="w-2 bg-gray-700 cursor-col-resize flex-shrink-0"
-                        onMouseDown={(e) => handleMouseDown(e, 'right')}
-                        onTouchStart={(e) => handleMouseDown(e, 'right')}
-                    />
-                )}
-
-                {showRightPanel && (
-                    <div
-                        className="bg-gray-800 border-l border-background flex flex-col overflow-hidden flex-shrink-0"
-                        style={{ width: `${rightPanelWidth}px` }}
+                        className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden"
+                        style={{ minWidth: `${MIN_MIDDLE_WIDTH}px` }}
                     >
-                        <div className="flex justify-between items-center p-2 border-b border-gray-600">
-                            <h3 className="text-sm font-medium text-gray-300">Output</h3>
-                            <button onClick={() => setShowRightPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
-                                <ChevronRight className="h-4 w-4" />
-                            </button>
-                        </div>
-                        <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
-                            <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
-                                {finalRightPanelContent.tabs.map((tab) => (
-                                    <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
-                                ))}
-                            </TabsList>
-                            {finalRightPanelContent.tabs.map((tab) => (
-                                <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
-                            ))}
-                        </Tabs>
+                        <div className="flex-1 overflow-hidden min-w-0 w-full">{children}</div>
                     </div>
-                )}
+
+                    {/* Resizable divider between main content and right panel */}
+                    {showRightPanel && (
+                        <div
+                            className="w-2 bg-gray-700 cursor-col-resize flex-shrink-0"
+                            onMouseDown={(e) => handleMouseDown(e, 'right')}
+                            onTouchStart={(e) => handleMouseDown(e, 'right')}
+                        />
+                    )}
+
+                    {/* Right Panel (Output) */}
+                    {showRightPanel && (
+                        <div className="flex flex-col bg-gray-800 border-l border-gray-600 overflow-hidden flex-shrink-0"
+                            style={{ width: `${rightPanelWidth}px` }}>
+                            <div className="flex justify-between items-center p-2 border-b border-gray-600">
+                                <h3 className="text-sm font-medium text-gray-300">Output</h3>
+                                <button onClick={() => setShowRightPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
+                                    <ChevronRight className="h-4 w-4" />
+                                </button>
+                            </div>
+                            <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
+                                <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
+                                    {finalRightPanelContent.tabs.map((tab) => (
+                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                    ))}
+                                </TabsList>
+                                {finalRightPanelContent.tabs.map((tab) => (
+                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
+                                        {tab.content}
+                                    </TabsContent>
+                                ))}
+                            </Tabs>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

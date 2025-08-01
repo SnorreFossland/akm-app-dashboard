@@ -362,7 +362,7 @@ export default function VercelAiPage() {
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 4: Preview</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
-                As you build your prompt, the <span className="text-blue-400 font-semibold">'Preview'</span> in the right panel will show you the potential output. 
+                As you build your prompt, the <span className="text-blue-400 font-semibold">'Preview'</span> in the right panel will show you the potential output.
               </p>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
@@ -374,8 +374,8 @@ export default function VercelAiPage() {
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 6: Iterate and Refine</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
-               You can refine this Current Prompt by going back to the <span className="text-blue-400 font-semibold">'AI Assistant'</span> tab and making adjustments based on the AI's feedback.
-               The Current Prompt will be used as a base for your next iteration. You can add more context by using the <span className="text-blue-400 font-semibold">'Add. Context'</span> tab.
+                You can refine this Current Prompt by going back to the <span className="text-blue-400 font-semibold">'AI Assistant'</span> tab and making adjustments based on the AI's feedback.
+                The Current Prompt will be used as a base for your next iteration. You can add more context by using the <span className="text-blue-400 font-semibold">'Add. Context'</span> tab.
               </p>
             </div>
           </div>
@@ -435,33 +435,17 @@ export default function VercelAiPage() {
       >
         <div className="flex flex-col flex-grow bg-background text-gray-100 ">
           <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0 h-full">
-
             {/* Tab Structure with Left and Right buttons */}
             <div className="flex items-center justify-between">
-              {/* Left Panel toggle button */}
-              <button
-                onClick={() => setShowLeftPanel(!showLeftPanel)}
-                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                title='Show Left pane'
-              >
-                <span>
-                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </span>
-                <span className="ml-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showLeftPanel}</span>
-              </button>
-
               {/* Tabs */}
               <TabsList className="grid grid-cols-6 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
-                {/* AI Assistant 1 */}
+                {/* AI Prompt Assistant  */}
                 <TabsTrigger
                   value="chat"
                   className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                   title="AI Prompt Assistant"
                 >
-                  AI Assistant 1
+                  AI Prompt Assistant
                   <span className="mx-1"></span>
                   {/* <span
                       onClick={() => setShowGuideModal(true)}
@@ -471,7 +455,21 @@ export default function VercelAiPage() {
                       <HelpCircle className="h-4 w-4" />
                     </span> */}
                 </TabsTrigger>
-                {/* AI Assistant 2 */}
+                {/* Current Document */}
+                <TabsTrigger
+                  value="current-document"
+                  className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
+                >
+                  Current Prompt
+                  {/* <span
+                    onClick={() => setShowGuideModal(true)}
+                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
+                    title="Open guide"
+                  >
+                    <HelpCircle className="h-3 w-3 mx-2" />
+                  </span> */}
+                </TabsTrigger>
+                {/* AI Prompt Assistant 2 */}
                 <TabsTrigger
                   value="ai-prompt"
                   className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
@@ -502,19 +500,7 @@ export default function VercelAiPage() {
                       <HelpCircle className="h-3 w-3 ms-5" />
                     </span> */}
                 </TabsTrigger>
-                <TabsTrigger
-                  value="current-document"
-                  className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                >
-                  Current Doc
-                  <span
-                    onClick={() => setShowGuideModal(true)}
-                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
-                    title="Open guide"
-                  >
-                    <HelpCircle className="h-3 w-3 mx-2" />
-                  </span>
-                </TabsTrigger>
+
                 {/* Current Prompt */}
                 <TabsTrigger
                   value="current-prompt"
@@ -549,22 +535,7 @@ export default function VercelAiPage() {
               <div className="flex items-center gap-2">
                 {/* <div className="text-orange-700">AI-Powered Dashboard</div> */}
                 {/* <FontAwesomeIcon icon={faRobot} className="fa-2lg text-orange-700" /> */}
-                {/* Right Panel Button - moved here */}
 
-                {/* Right Panel Button */}
-                <button
-                  onClick={() => setShowRightPanel(!showRightPanel)}
-                  className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                  title='Show Right pane'
-                >
-                  <span className="mr-1 hidden bg-muted hover:bg-gray-600 text-white sm:inline">{!showRightPanel}</span>
-                  <span>
-                    <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                      <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                      <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    </svg>
-                  </span>
-                </button>
               </div>
             </div>
             <TabsContent value="chat" className="flex-1 px-1 mt-1">
@@ -574,9 +545,12 @@ export default function VercelAiPage() {
                   setInput={setInput}
                   selectedModel={selectedModel}
                   setSelectedModel={setSelectedModel}
+                  currentDocument={currentDocument}
                   onResponseChange={() => { }}
                   onViewInMarkdown={handleViewInMarkdown}
+                  showLeftPanel={showLeftPanel}
                   setShowLeftPanel={setShowLeftPanel}
+                  setShowRightPanel={setShowRightPanel}
                   chatInput={chatInput}
                   onAddMD={handleAddMD}
                   mdContent={mdContent}
@@ -585,7 +559,25 @@ export default function VercelAiPage() {
                   setMdPreview={setMdPreview}
                   setCurrentMessages={setCurrentMessages}
                   gettingStartedGuide={<GettingStartedGuide />}
+                  isMobile={false}
                 />
+              </div>
+            </TabsContent>
+            {/* Current Document */}
+            <TabsContent value="current-document" className="flex-1 px-1 mt-1 overflow-hidden">
+              <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+                <div className="space-y-4">
+                  {/* Current Document Panel */}
+                  <DocumentPanel
+                    mdContent={currentDocument}
+                    setMdContent={setCurrentDocument}
+                    setIsLibraryOpen={setIsLibraryOpen}
+                    isLibraryOpen={isLibraryOpen}
+                    panelType='middle'
+                    currentDocumentContent={currentDocument}
+                    markdownPreviewContent={mdPreview}
+                  />
+                </div>
               </div>
             </TabsContent>
             <TabsContent value="ai-prompt" className="flex-1 px-1 mt-1">
@@ -617,23 +609,7 @@ export default function VercelAiPage() {
                 mdContent={mdContent}
               />
             </TabsContent>
-            {/* Current Document */}
-            <TabsContent value="current-document" className="flex-1 px-1 mt-1 overflow-hidden">
-              <div className="bg-background rounded-lg p-4 h-full overflow-auto">
-                <div className="space-y-4">
-                  {/* Current Document Panel */}
-                  <DocumentPanel
-                    mdContent={currentDocument}
-                    setMdContent={setCurrentDocument}
-                    setIsLibraryOpen={setIsLibraryOpen}
-                    isLibraryOpen={isLibraryOpen}
-                    panelType='middle'
-                    currentDocumentContent={currentDocument}
-                    markdownPreviewContent={mdPreview}
-                  />
-                </div>
-              </div>
-            </TabsContent>
+
             {/* Current Prompt */}
             <TabsContent value="current-prompt" className="flex-1 px-1 mt-1">
               <div className="flex-1 overflow-auto bg-gray-800/20 p-1 overflow-hidden h-full">

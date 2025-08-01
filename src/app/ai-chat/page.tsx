@@ -43,6 +43,7 @@ export interface ChatComponentProps {
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
+    const [isMobile, setIsMobile] = useState(false);
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
 
     // Get chat data from Redux
@@ -106,7 +107,17 @@ const AIChatPage = () => {
         // The messages prop in ChatComponent will come from Redux selector
     };
 
-    // Initialize mermaid when component mounts
+    useEffect(() => {
+        const checkIsMobile = () => {
+            setIsMobile(window.innerWidth < 768); // Set mobile breakpoint at 768px
+        };
+
+        checkIsMobile();
+        window.addEventListener('resize', checkIsMobile);
+        return () => window.removeEventListener('resize', checkIsMobile);
+    }, []);
+    // Initialize mermaid when 
+    // component mounts
     useEffect(() => {
         mermaid.initialize({
             theme: 'dark',
@@ -328,47 +339,11 @@ const AIChatPage = () => {
     const leftPanelContent = {
         tabs: [
             {
-                key: 'guide',
-                label: 'Guide',
+                key: 'current-context',
+                label: 'Current Context',
                 content: (
-                    <div className="space-y-4 p-1 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">1. Ask a Question Directly</h3>
-                            <div className='ms-2'>Type or paste your question in the provided input area.</div>
-                            <ul className="list-disc pl-4 text-secondary-foreground/70">
-                                <li>Click the <span className="text-blue-200">Send ↑</span> button to submit your question.</li>
-                                <li>Alternatively, you can quickly press the <span className="text-blue-200">Enter</span> key 2 times to send your question.</li>
-                            </ul>
-                        </div>
-
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">2. Use Prompt Templates</h3>
-                            <div className='ms-2'>Select a prompt template from the dropdown menu above the upper right corner of the input area.</div>
-                            <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                <li>You can type or paste additional text under the template text.</li>
-                                <li>
-                                    <span className="inline-flex items-center">
-                                        Open the left panel (Click on the upperleft icon
-                                        <svg className="mx-1 inline-block" width="12" height="12" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                            <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                            <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                        </svg>
-                                    </span> to access the left panel.)
-                                    You can add text in the <span className="text-blue-200">Current Context.</span>This text will be used as context for the prompt.
-                                </li>
-                                <li>You can also click <FileText className="inline w-4 h-4 mr-1" />, to add a local text-file to use as context for your prompt.</li>
-                            </ul>
-                        </div>
-
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">3. You can refine a document or text.</h3>
-                            <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
-                                <li>Alt. 1: Click the <span className="text-blue-200"> <FileText className="inline w-4 h-4 mx-1 mb-1" /> Load a file</span> button above the input area to select a local file to enhance or refine. (a new set of templates will appear).
-                                </li>
-                                <li>Alt. 2: Click the upper left button to open the left panel, then Context tab. <br />
-                                    (The document text will be inserted and used as context for your prompt.)</li>
-                            </ul>
-                        </div>
+                    <div className="space-y-4 p-2 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                        Current context is the current document. You can edit it, save it, or load a new one.
                     </div>
                 )
             },
@@ -433,39 +408,39 @@ const AIChatPage = () => {
                                     className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                 >
                                     AI Chat
-                                    <span
+                                    {/* <span
                                         onClick={() => setShowGuideModal(true)}
                                         className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 border-b-0 rounded-full pl-1"
                                         title="Open guide"
                                     >
                                         <HelpCircle className="h-3 w-3 ms-5" />
-                                    </span>
+                                    </span> */}
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="current-document"
                                     className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                 >
                                     Current Doc
-                                    <span
+                                    {/* <span
                                         onClick={() => setShowGuideModal(true)}
                                         className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
                                         title="Open guide"
                                     >
                                         <HelpCircle className="h-3 w-3 mx-2" />
-                                    </span>
+                                    </span> */}
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="saved-chat"
                                     className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                 >
                                     Saved Chats
-                                    <span
+                                    {/* <span
                                         onClick={() => setShowGuideModal(true)}
                                         className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
                                         title="Open guide"
                                     >
                                         <HelpCircle className="h-3 w-3 mx-2" />
-                                    </span>
+                                    </span> */}
                                 </TabsTrigger>
                             </TabsList>
                         </div>
@@ -492,7 +467,8 @@ const AIChatPage = () => {
                                     setMdPreview={setMdPreview}
                                     setCurrentMessages={setCurrentMessages}
                                     gettingStartedGuide={<GettingStartedGuide />}
-                                    isMobile={false}
+                                    isMobile={isMobile}
+                                    setIsMobile={setIsMobile}
                                 />
                             </div>
                         </TabsContent>

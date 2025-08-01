@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux'; // Add this import
 import { usePathname } from 'next/navigation';
-import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed, ChevronLeft, ChevronRight } from 'lucide-react';
 import MarkdownPreview from './MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
@@ -28,7 +28,7 @@ import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // 
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from './DigitalRainIntro';
 // import GettingStartedGuide from './GettingStartedGuide';
-import { refineTemplates } from '@/features/documents/refine-templates';
+// import { refineTemplates } from '@/features/documents/refine-templates';
 import { REFINE_TEMPLATES } from './refineTemplates';
 import { error } from 'console';
 import { Messages } from 'openai/resources/beta/threads/messages.mjs';
@@ -63,6 +63,7 @@ export interface ChatComponentProps {
     selectedModel: string;
     setSelectedModel: (model: string) => void;
     isMobile?: boolean; // Add this line to the destructuring
+    setIsMobile?: (isMobile: boolean) => void; // Add this line to the destructuring
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -101,7 +102,8 @@ export default function ChatComponent({
     setMdPreview,
     setCurrentMessages,
     gettingStartedGuide,
-    isMobile = false // Default to false if not provided
+    isMobile = false, // Default to false if not provided
+    setIsMobile
 }: ChatComponentProps) {
     const dispatch = useDispatch();
 
@@ -133,7 +135,7 @@ export default function ChatComponent({
     const [docRefine, setDocRefine] = useState(false);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
-
+    const [showGuide, setShowGuide] = useState(false);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
@@ -161,6 +163,8 @@ export default function ChatComponent({
             setStreamedContent(pendingStreamContentRef.current);
         }, 50); // Update every 50ms instead of every character
     }, []);
+
+
 
     // Cleanup timeout on unmount
     useEffect(() => {
@@ -213,7 +217,7 @@ Do not use its contents as contextual input for other questions--I want it impro
 
         inactivityTimerRef.current = setTimeout(() => {
             setShowDigitalRain(true);
-        }, 100000); // 100 seconds
+        }, 10000); // 10 seconds
     }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -827,7 +831,7 @@ END OF DOCUMENT: ${file.name}
                 },
                 body: JSON.stringify({
                     sessionId,
-                    messages: messagesToSend,  // Add messages here
+                    messages: messagesToSend,
                     model: selectedModel,
                     temperature: temperature
                 })
@@ -835,12 +839,24 @@ END OF DOCUMENT: ${file.name}
                 if (!response.ok) {
                     throw new Error(`HTTP error! Status: ${response.status}`);
                 }
+                return response.json();
+            }).then(data => {
+                // Only create EventSource after successful POST
+                console.log('Create-stream successful, now starting EventSource');
 
-                // Now create EventSource with sessionId AND messages
-                const encodedMessages = encodeURIComponent(JSON.stringify(messagesToSend));
-                const eventSource = new EventSource(
-                    `/api/chat/stream?sessionId=${sessionId}&messages=${encodedMessages}&model=${selectedModel}&temperature=${temperature}`
-                );
+                const streamUrl = `/api/chat/stream?sessionId=${sessionId}&model=${selectedModel}&temperature=${temperature}`;
+                console.log('Creating EventSource with URL:', streamUrl);
+
+                const eventSource = new EventSource(streamUrl);
+
+                // Add connection state logging
+                eventSource.onopen = (event) => {
+                    console.log('EventSource connection opened successfully:', {
+                        readyState: eventSource.readyState,
+                        url: eventSource.url,
+                        timestamp: new Date().toISOString()
+                    });
+                };
 
                 let accumulatedResponse = '';
 
@@ -868,7 +884,9 @@ END OF DOCUMENT: ${file.name}
                         if (data.content) {
                             // Check if this is a rate limit message
                             if (data.content.includes('rate limit')) {
-                                setStatusMsg(`Rate limit reached for ${selectedModel}. Consider waiting a minute or switching models.`);
+                                setStatusMsg('Rate limit exceeded. Please wait a moment before sending another message.');
+                                setTimeout(() => setStatusMsg(''), 10000);
+                                return;
                             }
 
                             accumulatedResponse += data.content;
@@ -888,8 +906,19 @@ END OF DOCUMENT: ${file.name}
                         url: eventSource.url,
                         timestamp: new Date().toISOString(),
                         model: selectedModel,
-                        messageCount: messagesToSend.length
+                        messageCount: messagesToSend.length,
+                        sessionId: sessionId,
+                        error: error,
+                        errorType: typeof error,
+                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                        errorStack: error instanceof Error ? error.stack : 'No stack trace'
                     };
+
+                    console.error('EventSource error details:', errorDetails);
+                    console.error('Full error object:', error);
+
+                    // Also log the EventSource URL for debugging
+                    console.log('EventSource URL that failed:', eventSource.url);
 
                     // User-friendly error handling based on readyState
                     let errorMessage = 'Error connecting to AI. ';
@@ -898,7 +927,12 @@ END OF DOCUMENT: ${file.name}
                         errorMessage += 'The connection was closed unexpectedly.';
                     } else if (eventSource.readyState === 0) { // CONNECTING
                         errorMessage += 'Unable to establish connection. The server may be unavailable.';
+                    } else if (eventSource.readyState === 1) { // OPEN
+                        errorMessage += 'Connection was open but encountered an error.';
                     }
+
+                    // Add specific debugging info to the error message
+                    errorMessage += ` (ReadyState: ${eventSource.readyState}, Session: ${sessionId})`;
 
                     setStatusMsg(errorMessage);
                     setIsLoading(false);
@@ -988,7 +1022,7 @@ END OF DOCUMENT: ${file.name}
         let userMessageContent = input;
 
         if (docRefine) {
-            userMessageContent = `${userMessageContent} #Content:\n ${documents[0].content} #Context:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} #Content:\n ${documents[0]?.content} #Context:\n ${mdContent}`;
         } else {
             userMessageContent = `${userMessageContent} #Context:\n ${mdContent}`;
         }
@@ -1121,88 +1155,170 @@ END OF DOCUMENT: ${file.name}
     };
 
     return (
-        <div className={`flex flex-col ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-14rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
-            {/* Message container with scrollable area */}
-            <div className="flex-1 overflow-y-auto w-full min-w-0 message-container" id="message-container">
-                {messages.length < 1 && (!input || input.trim() === "")
-                    ? (
-                        <div className="flex flex-col items-center justify-start w-full  overflow-auto">
-                            {showDigitalRain ? (
-                                <DigitalRainIntro
-                                    onInteraction={() => setShowDigitalRain(false)}
-                                    speed={4}
-                                    backgroundColor="rgba(10, 20, 10, 0.03)"
-                                />
-                            ) : (
-                                <div className="flex flex-col items-center justify-center min-h-[calc(100vh-40rem)] overflow-auto p-4 gap-4 text-gray-400 text-sm">
-                                    {gettingStartedGuide}
-                                </div>
-                            )}
+        <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-20rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
+            {/* Guide Sidebar and Main Chat Container - Side by Side */}
+            <div className="flex h-full bg-secondary/40">
+                {/* Guide Sidebar */}
+                {showGuide && (
+                    <div className="flex flex-col items-center justify-between mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
+                        <div className="flex items-center justify-between w-full px-1">
+                            <div className="text-lg font-semibold text-orange-500/60">
+                                Guide
+                            </div>
+                            <button
+                                onClick={() => setShowGuide(false)}
+                                className="text-gray-400 hover:text-white"
+                                title="Close Guide"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
                         </div>
-                    ) :
-                    (
-                        messages.length === 0 && (
-                            <div className="flex flex-col border border-gray-600 rounded-lg p-4 gap-2 text-gray-400 text-sm h-full items-center justify-start w-full bg-secondary/40 overflow-auto">
-                                <div className="flex items-center gap-2 justify-center h-[calc(100vh-20rem)]">
-                                    <span className="text-gray-400">No messages yet. Start a conversation!</span>
+                        <div className="flex-1 max-h-[calc(100vh-20rem)] overflow-y-auto p-2 bg-yellow-900/60">
+                            <div className="flex flex-col gap-2">
+                                <div className="space-y-4 p-1 max-h-[calc(100vh-22rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/80">
+                                        <h3 className="text-lg font-medium text-secondary-foreground">1. Ask a Question Directly</h3>
+                                        <div className='ms-2'>Type or paste your question in the provided input area.</div>
+                                        <ul className="list-disc pl-4 text-secondary-foreground">
+                                            <li>Click the <span className="text-blue-200">Send ↑</span> button to submit your question.</li>
+                                            <li>Alternatively, you can quickly press the <span className="text-blue-200">Enter</span> key 2 times to send your question.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/90">
+                                        <h3 className="text-lg font-medium text-secondary-foreground">2. Use Prompt Templates</h3>
+                                        <div className='ms-2'>Select a prompt template from the dropdown menu above the upper right corner of the input area.</div>
+                                        <ul className="list-disc pl-6 mt-1 text-secondary-foreground">
+                                            <li>You can type or paste additional text under the template text.</li>
+                                            <li>
+                                                Open the left panel <br /> (Click on the upperleft icon
+                                                <span className="inline-flex items-center">
+                                                    <svg className="inline-block mx-1 " width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                                        <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                        <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
+                                                    </svg>
+                                                </span> to access the left panel.)
+                                                You can add text in the <span className="text-blue-200">Current Context.</span>This text will be used as context for the prompt.
+                                            </li>
+                                            <li>You can also click <FileText className="inline w-4 h-4 mr-1" />, to add a local text-file to use as context for your prompt.</li>
+                                        </ul>
+                                    </div>
+
+                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/85">
+                                        <h3 className="text-lg font-medium text-secondary-foreground">3. You can refine a document or text.</h3>
+                                        <ul className="list-disc pl-6 mt-1 text-secondary-foreground">
+                                            <li>Alt. 1: Click the <span className="text-blue-200"> <FileText className="inline w-4 h-4 mx-1 mb-1" /> Load a file</span> button above the input area to select a local file to enhance or refine. (a new set of templates will appear).
+                                            </li>
+                                            <li>Alt. 2: Click the upper left button to open the left panel, then Context tab. <br />
+                                                (The document text will be inserted and used as context for your prompt.)</li>
+                                        </ul>
+                                    </div>
                                 </div>
                             </div>
-                        )
-                    )}
-
-                <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto min-w-0">
-                    {messages.map((message, index) => (
-                        <div key={index}
-                            className={`mb-4 p-3 rounded-lg flex flex-col gap-2 min-w-0 w-fit break-words ${message.role === 'user'
-                                ? 'bg-card ml-auto text-card-foreground flex-col border border-blue-900'
-                                : 'bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary'
-                                } `}
-                        >
-                            {/* header with avatar/role */}
-                            <div className="flex items-center justify-between gap-3 ps-1">
-                                <div className="flex-shrink-0">
-                                    {message.role === 'user' ? (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="w-6 h-6 text-blue-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M5.121 17.804A4 4 0 0112 15a4 4 0 016.879 2.804M12 11a4 4 0 100-8 4 4 0 000 8z"
-                                            />
-                                        </svg>
+                        </div>
+                    </div>
+                )}
+                {/* Main chat container */}
+                <div className="flex flex-1 flex-col h-full bg-secondary/40 overflow-hidden relative">
+                    <div className="flex items-center gap-2">
+                        {!showGuide && (
+                            <button
+                                onClick={() => setShowGuide(true)}
+                                className="text-gray-400 hover:text-blue-400 hover:bg-gray-800 pt-1 rounded-md"
+                                title="Show Guide"
+                            >
+                                <HelpCircle className="bg-yellow-700 text-white rounded h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                    {/* Message container with scrollable area */}
+                    <div className="flex-1 overflow-y-auto w-full min-w-0 message-container pb-24 md:pb-40" id="message-container">
+                        {messages.length < 1 && (!input || input.trim() === "")
+                            ? (
+                                // Give DigitalRain the full available height
+                                <div className="w-full h-full flex-1 flex flex-col">
+                                    {showDigitalRain ? (
+                                        <DigitalRainIntro
+                                            onInteraction={() => setShowDigitalRain(false)}
+                                            speed={4}
+                                            backgroundColor="rgba(10, 20, 10, 0.03)"
+                                        />
                                     ) : (
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="w-6 h-6 text-gray-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                        >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
-                                            />
-                                        </svg>
+                                        <div className="flex flex-col items-center justify-center h-full w-full overflow-auto p-4 gap-4 text-gray-400 text-sm flex-1">
+                                            {gettingStartedGuide}
+                                        </div>
                                     )}
                                 </div>
-                                <div className="text-xs text-gray-400 me-auto overflow-auto">
-                                    {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
-                                </div>
+                            ) :
+                            (
+                                messages.length === 0 && (
+                                    <div className="flex flex-col border border-gray-600 rounded-lg p-4 gap-2 text-gray-400 text-sm h-full items-center justify-start w-full bg-secondary/40 overflow-auto">
+                                        <div className="flex items-center gap-2 justify-center h-[calc(100vh-22rem)] w-full">
+                                            <span className="text-gray-400">No messages yet. Start a conversation!</span>
+                                        </div>
+                                    </div>
+                                )
+                            )}
+                        {/* Render messages */}
+                        <div className="max-h-[calc(100vh-23rem)] p-4 rounded-lg w-full bg-transparent overflow-y-auto overflow-x-hidden">
+                            {messages.map((message, index) => (
+                                // <div key={index}
+                                //     className={`mb-4 p-3 rounded-lg flex flex-col gap-2 min-w-0 w-fit break-words ${message.role === 'user'
+                                //         ? 'bg-card ml-auto text-card-foreground flex-col border border-blue-900'
+                                //         : 'bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary'
+                                //         } `}
+                                // >
+                                <div key={index}
+                                    className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
+                                        ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
+                                        : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
+                                        } `}
+                                >
+                                    {/* header with avatar/role */}
+                                    <div className="flex items-center justify-between gap-3 ps-1">
+                                        <div className="flex-shrink-0">
+                                            {message.role === 'user' ? (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-6 h-6 text-blue-400"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M5.121 17.804A4 4 0 0112 15a4 4 0 016.879 2.804M12 11a4 4 0 100-8 4 4 0 000 8z"
+                                                    />
+                                                </svg>
+                                            ) : (
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-6 h-6 text-gray-400"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
+                                                    />
+                                                </svg>
+                                            )}
+                                        </div>
+                                        <div className="text-xs text-gray-400 me-auto overflow-auto">
+                                            {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
+                                        </div>
 
-                                {message.role === 'assistant' && (
-                                    <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
                                         {message.role === 'assistant' && (
-                                            <>
-                                                {/* Add Save to Library button */}
-                                                {/* <button
+                                            <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                                {message.role === 'assistant' && (
+                                                    <>
+                                                        {/* Add Save to Library button */}
+                                                        {/* <button
                                                         title="Save to Library"
                                                         onClick={() => handleSaveToLibrary(message.content)}
                                                         className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
@@ -1218,129 +1334,133 @@ END OF DOCUMENT: ${file.name}
                                                     >
                                                         <Save className="h-4 w-4" />
                                                     </button> */}
-                                                <button
-                                                    onClick={() => handleCopyMessage(message.content, index)}
-                                                    className="ms-2 text-xs text-gray-400 hover:text-gray-200"
-                                                >
-                                                    {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        console.log('Previewing message in markdown:', message.content);
-                                                        onViewInMarkdown(message.content);
-                                                        if (setShowRightPanel) {
-                                                            setShowRightPanel(true);
-                                                        }
-                                                        // Toggle preview state locally
-                                                        if (previewMessageIndex === index) {
-                                                            setPreviewMessageIndex(null);
-                                                        } else {
-                                                            setPreviewMessageIndex(index);
-                                                        }
-                                                    }}
-                                                    className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
-                                                >
-                                                    Show Preview
-                                                </button>
-                                            </>
+                                                        <button
+                                                            onClick={() => handleCopyMessage(message.content, index)}
+                                                            className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                                        >
+                                                            {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                console.log('Previewing message in markdown:', message.content);
+                                                                onViewInMarkdown(message.content);
+                                                                if (setShowRightPanel) {
+                                                                    setShowRightPanel(true);
+                                                                }
+                                                                // Toggle preview state locally
+                                                                if (previewMessageIndex === index) {
+                                                                    setPreviewMessageIndex(null);
+                                                                } else {
+                                                                    setPreviewMessageIndex(index);
+                                                                }
+                                                            }}
+                                                            className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                                        >
+                                                            Show Preview
+                                                        </button>
+                                                    </>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
 
-                            {/* message content */}
-                            <div className="p-2 min-w-0 bg-primary-foreground whitespace-pre-wrap break-words overflow-auto">
-                                {message.content}
-                            </div>
+                                    {/* message content */}
+                                    <div className="p-2 min-w-0 bg-primary-foreground whitespace-pre-wrap break-words overflow-auto">
+                                        {message.content}
+                                    </div>
 
-                            {/*  bottom buttons */}
-                            {message.role === 'assistant' && (
-                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                    {/*  bottom buttons */}
                                     {message.role === 'assistant' && (
-                                        <>
-                                            {/* Add Save to Library button */}
-                                            <button
-                                                onClick={() => handleCopyMessage(message.content, index)}
-                                                className="ms-2 text-xs text-gray-400 hover:text-gray-200"
-                                            >
-                                                {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                            </button>
-                                            <button
-                                                onClick={() => {
-                                                    console.log('Previewing message in markdown:', message.content);
-                                                    onViewInMarkdown(message.content);
-                                                    if (setShowRightPanel) {
-                                                        setShowRightPanel(true);
-                                                    }
-                                                    // Toggle preview state locally
-                                                    if (previewMessageIndex === index) {
-                                                        setPreviewMessageIndex(null);
-                                                    } else {
-                                                        setPreviewMessageIndex(index);
-                                                    }
-                                                }}
-                                                className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
-                                            >
-                                                Show Preview
-                                                {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
-                                            </button>
-                                        </>
+                                        <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                            {message.role === 'assistant' && (
+                                                <>
+                                                    {/* Add Save to Library button */}
+                                                    <button
+                                                        onClick={() => handleCopyMessage(message.content, index)}
+                                                        className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                                    >
+                                                        {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                                    </button>
+                                                    <button
+                                                        onClick={() => {
+                                                            console.log('Previewing message in markdown:', message.content);
+                                                            onViewInMarkdown(message.content);
+                                                            if (setShowRightPanel) {
+                                                                setShowRightPanel(true);
+                                                            }
+                                                            // Toggle preview state locally
+                                                            if (previewMessageIndex === index) {
+                                                                setPreviewMessageIndex(null);
+                                                            } else {
+                                                                setPreviewMessageIndex(index);
+                                                            }
+                                                        }}
+                                                        className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                                    >
+                                                        Show Preview
+                                                        {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
+                                                    </button>
+                                                </>
+                                            )}
+                                        </div>
                                     )}
                                 </div>
+                            ))}
+                            {/* Display the currently streaming message */}
+                            {isStreaming && streamedContent && (
+                                <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary min-w-0 w-fit break-words">
+                                    <div className="flex items-center justify-between gap-3 ps-1">
+                                        <div className="flex-shrink-0">
+                                            <svg
+                                                xmlns="http://www.w3.org/2000/svg"
+                                                className="w-6 h-6 text-gray-400"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth="2"
+                                                    d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
+                                                />
+                                            </svg>
+                                        </div>
+                                        <div className="text-xs text-gray-400 me-auto overflow-auto">
+                                            {`Assistant (${selectedModel}) - Accumulating response...`}
+                                        </div>
+                                    </div>
+
+                                    <div className="p-1 px-4 whitespace-pre-wrap break-words overflow-auto min-w-0 w-full">
+                                        {streamedContent}
+                                    </div>
+                                </div>
                             )}
-                        </div>
-                    ))}
-                    {/* Display the currently streaming message */}
-                    {isStreaming && streamedContent && (
-                        <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary min-w-0 w-fit break-words">
-                            <div className="flex items-center justify-between gap-3 ps-1">
-                                <div className="flex-shrink-0">
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        className="w-6 h-6 text-gray-400"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                    >
-                                        <path
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                            strokeWidth="2"
-                                            d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
-                                        />
-                                    </svg>
-                                </div>
-                                <div className="text-xs text-gray-400 me-auto overflow-auto">
-                                    {`Assistant (${selectedModel}) - Accumulating response...`}
-                                </div>
-                            </div>
 
-                            <div className="p-1 px-4 whitespace-pre-wrap break-words overflow-auto min-w-0 w-full">
-                                {streamedContent}
+                            {isLoading && (
+                                <div className="flex justify-start my-4">
+                                    <ThinkingAnimation />
+                                    <div className="h-6" />
+                                </div>
+                            )}
+                            {/* This is the end of the messages */}
+                            <div ref={messagesEndRef}></div>
+                        </div>
+                            {messages.length > 0 && (
+                            <div className="flex justify-end w-full">
+                                <button
+                                    onClick={() => dispatch(setMessages([]))}
+                                    title="Clear chat history"
+                                    className="py-1 text-xs text-red-500 hover:text-red-700"
+                                >
+                                    <X className="w-4 h-4" />
+                                </button>
                             </div>
-                        </div>
-                    )}
-
-                    {isLoading && (
-                        <div className="flex justify-start my-4">
-                            <ThinkingAnimation />
-                            <div className="h-6" />
-                        </div>
-                    )}
-                    {/* This is the end of the messages */}
-                    <div ref={messagesEndRef}></div>
+                            )}
+                    </div>
                 </div>
-            </div>
-                <button
-                    onClick={() => dispatch(setMessages([]))}
-                    title="Clear chat history"
-                    className="relative ms-auto py-1 text-xs text-red-500 hover:text-red-700"
-                >
-                    <X className="w-4 h-4" />
-                </button>
-
-            {/* Add  message display */}
-            {/* statusMsg && (
+                {/* Add  message display */}
+                {/* statusMsg && (
                         <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
                             <Info className="w-4 h-4 mr-2" />
                             <span>{statusMsg}</span>
@@ -1355,9 +1475,13 @@ END OF DOCUMENT: ${file.name}
                             )}
                         </div>
                     ) */}
+                {/* <div className="pb-[600px]"></div> */}
+            </div>
 
             {/* Input area always at the bottom */}
-            <div className="flex-shrink-0 bg-popover border-t border-gray-600 min-w-0">
+            {/* <div className={`flex  ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-18rem)]'} min-w-0 rounded-lg overflow-hidden relative`}></div> */}
+            {/* <div className="fixed bottom-0 left-10 right-1  bg-popover border-t border-gray-600 z-10"> */}
+            <div className={`${isMobile ? 'fixed bottom-6 left-0 right-0 px-2' : 'fixed bottom-1 left-11 right-2'} bg-popover border-t border-gray-600 z-10`}>
                 {pathname === '/ai-chat' &&
                     <div className="flex items-center justify-between p-2 min-w-0">
                         {/* button row above the chat */}
@@ -1444,7 +1568,7 @@ END OF DOCUMENT: ${file.name}
                             {/* Template dropdown for prompt templates */}
                             <div className="flex items-center gap-2">
                                 {!docRefine &&
-                                    <div className="relative">
+                                    <div className="">
                                         <button
                                             className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
                                             onClick={() => {
@@ -1540,16 +1664,16 @@ END OF DOCUMENT: ${file.name}
                 {pathname === '/prompt-builder' &&
                     <div className="flex items-center justify-between p-2">
                         {/* button row above the chat */}
-                            {/* System Prompt Button */}
-                            <div
-                                className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
-                                onClick={handleSystemPromptClick}
-                                title="Click to view system prompt"
-                            >
-                                <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                    <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
-                                </span>
-                            </div>
+                        {/* System Prompt Button */}
+                        <div
+                            className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
+                            onClick={handleSystemPromptClick}
+                            title="Click to view system prompt"
+                        >
+                            <span className="flex items-center gap-1 text-gray-400 text-xs">
+                                <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
+                            </span>
+                        </div>
 
                         <div className="flex items-center  gap-2">
                             <button
@@ -1600,114 +1724,117 @@ END OF DOCUMENT: ${file.name}
                     </div>
 
                 }
+
                 <div className="flex items-center gap-2"></div>
+
+                {/* START FORM */}
+                <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0 w-full">
+                    {/* Add placeholder jump buttons */}
+                    {templatePlaceholders.length > 0 && (
+                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                            {templatePlaceholders.map((placeholder, idx) => (
+                                <button
+                                    key={idx}
+                                    type="button" // Add this to prevent form submission
+                                    onClick={() => selectTemplatePlaceholder(idx)}
+                                    className={buttonAccent}
+                                >
+                                    {placeholder.text.length > 50
+                                        ? `${placeholder.text.substring(0, 49)}...`
+                                        : placeholder.text}
+                                </button>
+                            ))}
+                        </div>
+                    )}
+                    <TextareaAutosize
+                        ref={textareaRef}
+                        value={input || ''}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                const now = Date.now();
+                                // Use a custom property on the event target to track the last Enter key time
+                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                    e.preventDefault();
+                                    // If two returns occur within 2 seconds, submit the form
+                                    handleSubmit(e);
+                                    textarea.lastEnterTime = 0;
+                                } else {
+                                    // Set the last enter time and allow the default new line insertion
+                                    textarea.lastEnterTime = now;
+                                }
+                            }
+
+                            // Add tab key navigation for placeholders
+                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                e.preventDefault(); // Prevent default tab behavior
+
+                                // Get current cursor position
+                                const cursorPos = e.currentTarget.selectionStart;
+
+                                // Find the next placeholder after cursor position
+                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                                // If no next placeholder, loop back to the first one
+                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                    nextPlaceholder = templatePlaceholders[0];
+                                }
+
+                                if (nextPlaceholder) {
+                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                }
+                            }
+                        }}
+                        placeholder="Ask anything …"
+                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minRows={6}
+                        maxRows={12}
+                        disabled={isLoading}
+                    />
+                    <div className="flex justify-between">
+                        <div className="flex items-center gap-2"></div>
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                    // Persist selected model to localStorage
+                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                }}
+                            />
+                            <TemperatureSelector />
+                        </div>
+
+                        {/* now include the send‐button here */}
+                        <div className="flex justify-between px-2 ">
+                            <button
+                                type="submit"
+                                className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
+                                disabled={isLoading || !input?.trim()}
+                                title="Send your question"
+                            >Send
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-8 h-8"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+
+                </form>
             </div>
 
-            {/* START FORM */}
-            <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0">
-                {/* Add placeholder jump buttons */}
-                {templatePlaceholders.length > 0 && (
-                    <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                        <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                        {templatePlaceholders.map((placeholder, idx) => (
-                            <button
-                                key={idx}
-                                type="button" // Add this to prevent form submission
-                                onClick={() => selectTemplatePlaceholder(idx)}
-                                className={buttonAccent}
-                            >
-                                {placeholder.text.length > 50
-                                    ? `${placeholder.text.substring(0, 49)}...`
-                                    : placeholder.text}
-                            </button>
-                        ))}
-                    </div>
-                )}
-                <TextareaAutosize
-                    ref={textareaRef}
-                    value={input || ''}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            const now = Date.now();
-                            // Use a custom property on the event target to track the last Enter key time
-                            const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                            if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                e.preventDefault();
-                                // If two returns occur within 2 seconds, submit the form
-                                handleSubmit(e);
-                                textarea.lastEnterTime = 0;
-                            } else {
-                                // Set the last enter time and allow the default new line insertion
-                                textarea.lastEnterTime = now;
-                            }
-                        }
-
-                        // Add tab key navigation for placeholders
-                        if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                            e.preventDefault(); // Prevent default tab behavior
-
-                            // Get current cursor position
-                            const cursorPos = e.currentTarget.selectionStart;
-
-                            // Find the next placeholder after cursor position
-                            let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                            // If no next placeholder, loop back to the first one
-                            if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                nextPlaceholder = templatePlaceholders[0];
-                            }
-
-                            if (nextPlaceholder) {
-                                selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                            }
-                        }
-                    }}
-                    placeholder="Ask anything …"
-                    className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    minRows={6}
-                    maxRows={12}
-                    disabled={isLoading}
-                />
-                <div className="flex justify-between">
-                    <div className="flex items-center gap-2"></div>
-                    <div className="flex items-center text-foreground gap-1">
-                        <ModelSelector
-                            selectedModel={selectedModel}
-                            onModelChange={(newModel) => {
-                                setSelectedModel(newModel);
-                                // Persist selected model to localStorage
-                                localStorage.setItem('aiDashboard_selectedModel', newModel);
-                            }}
-                        />
-                        <TemperatureSelector />
-                    </div>
-
-                    {/* now include the send‐button here */}
-                    <div className="flex justify-between px-2 ">
-                        <button
-                            type="submit"
-                            className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
-                            disabled={isLoading || !input?.trim()}
-                            title="Send your question"
-                        >Send
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                className="w-8 h-8"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                            </svg>
-                        </button>
-                    </div>
-                </div>
-
-            </form>
 
             {/* System Prompt Modal */}
+
             <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
                 <div>
                     <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
@@ -1743,6 +1870,8 @@ END OF DOCUMENT: ${file.name}
                     </div>
                 </div>
             </Modal>
+            {/* Add padding at the bottom of the message container to prevent content being hidden behind the fixed input */}
+
         </div >
     )
 }
