@@ -32,13 +32,17 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
         return <div className="text-gray-400 p-4">No content to display</div>;
     }
 
+    // Clean up extra newlines before tables and remove trailing spaces
+    const cleanedMdPreview = mdPreview.replace(/(\r\n|\n|\r){2,}/g, '\n\n');
+
+
     return (
         <>
             {/* Add global styles for code blocks to ensure they don't expand containers */}
 
             <div className="prose prose-invert condensed-prose custom-markdown markdown-preview bg-transparent text-primary p-4 rounded-md overflow-auto max-w-[800px] mx-auto whitespace-pre-wrap break-words break-all leading-tight">
                 <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}  
+                    remarkPlugins={[remarkGfm]}
                     rehypePlugins={[rehypeRaw]}
                     components={{
                         code: ({ node, inline, className, children, ...props }: any) => {
@@ -69,7 +73,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview }) => {
                         }
                     }}
                 >
-                    {mdPreview}
+                    {cleanedMdPreview}
                 </ReactMarkdown>
             </div>
         </>

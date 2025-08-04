@@ -8,6 +8,7 @@ import MarkdownPreview from './MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
+
 import { RootState } from '@/store';
 import {
     addMessage,
@@ -56,14 +57,16 @@ export interface ChatComponentProps {
     mdContent: string;
     onAddMD?: () => void;
     currentDocument?: string;
+    setCurrentDocument?: (doc: string) => void; // Add this line to the destructuring
     mdPreview: string;
     setMdPreview: (preview: string) => void;
     setCurrentMessages: (messages: any[]) => void;
-    gettingStartedGuide: React.ReactNode;
     selectedModel: string;
     setSelectedModel: (model: string) => void;
     isMobile?: boolean; // Add this line to the destructuring
     setIsMobile?: (isMobile: boolean) => void; // Add this line to the destructuring
+    gettingStartedGuide: React.ReactNode;
+    guide?: React.ReactNode;
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -98,10 +101,12 @@ export default function ChatComponent({
     mdContent,
     setMdContent,
     currentDocument,
+    setCurrentDocument,
     mdPreview,
     setMdPreview,
     setCurrentMessages,
     gettingStartedGuide,
+    guide,
     isMobile = false, // Default to false if not provided
     setIsMobile
 }: ChatComponentProps) {
@@ -217,7 +222,7 @@ Do not use its contents as contextual input for other questions--I want it impro
 
         inactivityTimerRef.current = setTimeout(() => {
             setShowDigitalRain(true);
-        }, 10000); // 10 seconds
+        }, 1000000); // 1000 seconds
     }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -558,213 +563,214 @@ Do not use its contents as contextual input for other questions--I want it impro
     };
 
     // Enhanced text extraction function with DOCX support
-    const extractTextFromFile = async (file: File): Promise<string> => {
-        const fileName = file.name;
-        const fileType = fileName.split('.').pop()?.toLowerCase() || '';
+    //     const extractTextFromFile = async (file: File): Promise<string> => {
+    //         const fileName = file.name;
+    //         const fileType = fileName.split('.').pop()?.toLowerCase() || '';
 
-        // For text-based files, use the native text() method
-        if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-            try {
-                return await file.text();
-            } catch (error) {
-                console.error(`Error reading text from ${fileName}:`, error);
-                return `[Failed to read text content from ${fileName}]`;
-            }
-        }
+    //         // For text-based files, use the native text() method
+    //         if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
+    //             try {
+    //                 return await file.text();
+    //             } catch (error) {
+    //                 console.error(`Error reading text from ${fileName}:`, error);
+    //                 return `[Failed to read text content from ${fileName}]`;
+    //             }
+    //         }
 
-        // Handle DOCX files using mammoth.js
-        if (fileType === 'docx') {
-            try {
-                setStatusMsg(`Converting DOCX file: ${fileName}...`);
-                // Read file as ArrayBuffer
-                const arrayBuffer = await file.arrayBuffer();
-                // Use mammoth to extract text
-                const result = await mammoth.extractRawText({ arrayBuffer });
-                console.log(`Extracted ${result.value.length} characters from DOCX`);
-                if (result.value.length > 0) {
-                    return result.value;
-                } else {
-                    return `[DOCX file ${fileName} appears to be empty or could not be parsed]`;
-                }
-            } catch (error) {
-                console.error(`Error extracting text from DOCX ${fileName}:`, error);
-                return `[Failed to extract text from DOCX file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-            }
-        }
+    //         // Handle DOCX files using mammoth.js
+    //         if (fileType === 'docx') {
+    //             try {
+    //                 setStatusMsg(`Converting DOCX file: ${fileName}...`);
+    //                 // Read file as ArrayBuffer
+    //                 const arrayBuffer = await file.arrayBuffer();
+    //                 // Use mammoth to extract text
+    //                 const result = await mammoth.extractRawText({ arrayBuffer });
+    //                 console.log(`Extracted ${result.value.length} characters from DOCX`);
+    //                 if (result.value.length > 0) {
+    //                     return result.value;
+    //                 } else {
+    //                     return `[DOCX file ${fileName} appears to be empty or could not be parsed]`;
+    //                 }
+    //             } catch (error) {
+    //                 console.error(`Error extracting text from DOCX ${fileName}:`, error);
+    //                 return `[Failed to extract text from DOCX file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
+    //             }
+    //         }
 
-        // Handle PDF files using pdfjs-dist
-        // if (fileType === 'pdf') {
-        //     try {
-        //         setErrorMsg(`Extracting PDF file: ${fileName}...`);
-        //         const arrayBuffer = await file.arrayBuffer();
-        //         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-        //         let extractedText = '';
+    //         // Handle PDF files using pdfjs-dist
+    //         // if (fileType === 'pdf') {
+    //         //     try {
+    //         //         setErrorMsg(`Extracting PDF file: ${fileName}...`);
+    //         //         const arrayBuffer = await file.arrayBuffer();
+    //         //         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+    //         //         let extractedText = '';
 
-        //         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-        //             const page = await pdf.getPage(pageNumber);
-        //             const textContent = await page.getTextContent();
-        //             const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
-        //             extractedText += pageText + '\n\n';
-        //         }
+    //         //         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
+    //         //             const page = await pdf.getPage(pageNumber);
+    //         //             const textContent = await page.getTextContent();
+    //         //             const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
+    //         //             extractedText += pageText + '\n\n';
+    //         //         }
 
-        //         if (extractedText.trim().length > 0) {
-        //             return extractedText;
-        //         } else {
-        //             return `[PDF file ${fileName} appears to be empty or could not be parsed]`;
-        //         }
-        //     } catch (error) {
-        //         console.error(`Error extracting text from PDF ${fileName}:`, error);
-        //         return `[Failed to extract text from PDF file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-        //     }
-        // }
+    //         //         if (extractedText.trim().length > 0) {
+    //         //             return extractedText;
+    //         //         } else {
+    //         //             return `[PDF file ${fileName} appears to be empty or could not be parsed]`;
+    //         //         }
+    //         //     } catch (error) {
+    //         //         console.error(`Error extracting text from PDF ${fileName}:`, error);
+    //         //         return `[Failed to extract text from PDF file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
+    //         //     }
+    //         // }
 
-        // For other binary files, provide a more explicit message about limitations
-        return `[File: ${fileName}
-Type: ${fileType.toUpperCase()} (Binary file)
-Size: ${(file.size / 1024).toFixed(1)} KB
-"I'm sorry, but AI unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
-"However, you can copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
-`;
-    };
+    //         // For other binary files, provide a more explicit message about limitations
+    //         return `[File: ${fileName}
+    // Type: ${fileType.toUpperCase()} (Binary file)
+    // Size: ${(file.size / 1024).toFixed(1)} KB
+    // "I'm sorry, but AI unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
+    // "However, you can copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
+    // `;
+    //     };
 
-    const handleSaveToLibrary = (content: string) => {
-        // Extract title from first line of content
-        const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-        const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
+    // const handleSaveToLibrary = (content: string) => {
+    //     // Extract title from first line of content
+    //     const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+    //     const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
 
-        const documentTitle = cleanTitle || 'Untitled Document';
+    //     const documentTitle = cleanTitle || 'Untitled Document';
 
-        // Save to Redux store
-        dispatch(saveMarkdownDocument({
-            id: Date.now().toString(),
-            name: documentTitle,
-            content: content,
-            type: 'markdown',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        }));
+    //     // Save to Redux store
+    //     dispatch(saveMarkdownDocument({
+    //         id: Date.now().toString(),
+    //         name: documentTitle,
+    //         content: content,
+    //         type: 'markdown',
+    //         createdAt: new Date().toISOString(),
+    //         updatedAt: new Date().toISOString()
+    //     }));
 
-        // Show confirmation to user
-        setStatusMsg(`Saved "${documentTitle}" to library`);
-        setTimeout(() => setStatusMsg(''), 30000);
-    };
+    //     // Show confirmation to user
+    //     setStatusMsg(`Saved "${documentTitle}" to library`);
+    //     setTimeout(() => setStatusMsg(''), 30000);
+    // };
 
-    // Add this function with your other handler functions
-    const handleSaveToFile = (content: string) => {
-        // Create a blob with the content
-        const blob = new Blob([content], { type: 'text/markdown' });
+    // // Add this function with your other handler functions
+    // const handleSaveToFile = (content: string) => {
+    //     // Create a blob with the content
+    //     const blob = new Blob([content], { type: 'text/markdown' });
 
-        // Create a URL for the blob
-        const url = URL.createObjectURL(blob);
+    //     // Create a URL for the blob
+    //     const url = URL.createObjectURL(blob);
 
-        // Extract title from first line for filename
-        const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-        const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
-        const fileName = `${cleanTitle || 'document'}.md`;
+    //     // Extract title from first line for filename
+    //     const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
+    //     const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
+    //     const fileName = `${cleanTitle || 'document'}.md`;
 
-        // Create a temporary anchor element
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
+    //     // Create a temporary anchor element
+    //     const a = document.createElement('a');
+    //     a.href = url;
+    //     a.download = fileName;
 
-        // Trigger download
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
+    //     // Trigger download
+    //     document.body.appendChild(a);
+    //     a.click();
+    //     document.body.removeChild(a);
+    //     URL.revokeObjectURL(url);
 
-        // Show confirmation
-        setStatusMsg(`Saved "${fileName}" to downloads`);
-        setTimeout(() => setStatusMsg(''), 30000);
-    };
+    //     // Show confirmation
+    //     setStatusMsg(`Saved "${fileName}" to downloads`);
+    //     setTimeout(() => setStatusMsg(''), 30000);
+    // };
 
     // Handle file selection for context
     // Handle file selection for context
-    const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-        const files = event.target.files;
-        if (!files || files.length === 0) return;
-        const selectedFiles = Array.from(files);
-        setContextFiles(selectedFiles);
-        setIsProcessingFile(true);
-        setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
+//     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+//         const files = event.target.files;
+//         if (!files || files.length === 0) return;
+//         const selectedFiles = Array.from(files);
+//         setContextFiles(selectedFiles);
+//         setIsProcessingFile(true);
+//         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
 
-        try {
-            // Process files one by one with status updates
-            const fileContents = [];
-            const binaryFiles = [];
+//         try {
+//             // Process files one by one with status updates
+//             const fileContents = [];
+//             const binaryFiles = [];
 
-            for (const file of selectedFiles) {
-                setStatusMsg(`Reading ${file.name}...`);
-                const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+//             for (const file of selectedFiles) {
+//                 setStatusMsg(`Reading ${file.name}...`);
+//                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
 
-                // Track binary files to show warning later
-                if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-                    binaryFiles.push(file.name);
-                }
+//                 // Track binary files to show warning later
+//                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
+//                     binaryFiles.push(file.name);
+//                 }
 
-                const text = await extractTextFromFile(file);
-                console.log(`File processed: ${file.name}, size: ${text.length} chars`);
+//                 const text = await extractTextFromFile(file);
+//                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
 
-                fileContents.push(`
-====================
-DOCUMENT: ${file.name}
-====================
+//                 fileContents.push(`
+// ====================
+// DOCUMENT: ${file.name}
+// ====================
 
-${text}
+// ${text}
 
-====================
-END OF DOCUMENT: ${file.name}
-====================`);
-            }
+// ====================
+// END OF DOCUMENT: ${file.name}
+// ====================`);
+//             }
 
-            const combinedContent = fileContents.join('\n\n');
-            setContextContent(combinedContent);
-            setIsContextAttached(true);
-            console.log(`Total context size: ${combinedContent.length} chars`);
+//             const combinedContent = fileContents.join('\n\n');
+//             setContextContent(combinedContent);
+//             setIsContextAttached(true);
+//             console.log(`Total context size: ${combinedContent.length} chars`);
 
-            // Show user feedback about attached files
-            let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
+//             // Show user feedback about attached files
+//             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
 
-            // Add warning about binary files if any were attached
-            if (binaryFiles.length > 0) {
-                message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-                message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-            }
+//             // Add warning about binary files if any were attached
+//             if (binaryFiles.length > 0) {
+//                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
+//                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
+//             }
 
-            setStatusMsg(message);
-            setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-        } catch (error) {
-            console.error('Error processing files:', error);
-            setStatusMsg(
-                error instanceof Error
-                    ? `Error processing files: ${error.message}`
-                    : `Error processing files: ${String(error)}`
-            );
-        } finally {
-            setIsProcessingFile(false);
-        }
-    };
+//             setStatusMsg(message);
+//             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
+//         } catch (error) {
+//             console.error('Error processing files:', error);
+//             setStatusMsg(
+//                 error instanceof Error
+//                     ? `Error processing files: ${error.message}`
+//                     : `Error processing files: ${String(error)}`
+//             );
+//         } finally {
+//             setIsProcessingFile(false);
+//         }
+//     };
 
     // Open file picker
-    const handleAddContext = () => {
-        if (fileInputRef.current) {
-            fileInputRef.current.click();
-        }
-    };
+    // const handleAddContext = () => {
+    //     if (fileInputRef.current) {
+    //         fileInputRef.current.click();
+    //     }
+    // };
 
-    // Remove context
-    const handleRemoveContext = () => {
-        setContextFiles([]);
-        setContextContent('');
-        setIsContextAttached(false);
-        if (fileInputRef.current) fileInputRef.current.value = '';
-    };
+    // // Remove context
+    // const handleRemoveContext = () => {
+    //     setContextFiles([]);
+    //     setContextContent('');
+    //     setIsContextAttached(false);
+    //     if (fileInputRef.current) fileInputRef.current.value = '';
+    // };
 
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
         setIsStreaming(false);
         setStreamedContent('');
-
+        console.log('770 sendMessageToAPI called with messages:', newMessages);
+        
         try {
             // Create messagesToSend array as you did before
             const messagesToSend: Message[] = [];
@@ -1016,18 +1022,23 @@ END OF DOCUMENT: ${file.name}
 
     // Update handleSubmit to use Redux actions
     const handleSubmit = async (e: React.FormEvent) => {
+        console.log('1022 handleSubmit called!', { input, docRefine }); // Add this first
         e.preventDefault();
+        console.log('1024 Submitting message:', docRefine, input, currentDocument, mdContent);
         if (!input?.trim()) return;
+
 
         let userMessageContent = input;
 
         if (docRefine) {
-            userMessageContent = `${userMessageContent} #Content:\n ${documents[0]?.content} #Context:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} #Content:\n ${currentDocument} #Context:\n ${mdContent}`;
         } else {
             userMessageContent = `${userMessageContent} #Context:\n ${mdContent}`;
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
+
+        console.log('1039 User message to send:', userMessage);
 
         // Add the user message to Redux store instead of local state
         dispatch(addMessage(userMessage));
@@ -1173,48 +1184,8 @@ END OF DOCUMENT: ${file.name}
                                 <X className="h-4 w-4" />
                             </button>
                         </div>
-                        <div className="flex-1 max-h-[calc(100vh-20rem)] overflow-y-auto p-2 bg-yellow-900/60">
-                            <div className="flex flex-col gap-2">
-                                <div className="space-y-4 p-1 max-h-[calc(100vh-22rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/80">
-                                        <h3 className="text-lg font-medium text-secondary-foreground">1. Ask a Question Directly</h3>
-                                        <div className='ms-2'>Type or paste your question in the provided input area.</div>
-                                        <ul className="list-disc pl-4 text-secondary-foreground">
-                                            <li>Click the <span className="text-blue-200">Send ↑</span> button to submit your question.</li>
-                                            <li>Alternatively, you can quickly press the <span className="text-blue-200">Enter</span> key 2 times to send your question.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/90">
-                                        <h3 className="text-lg font-medium text-secondary-foreground">2. Use Prompt Templates</h3>
-                                        <div className='ms-2'>Select a prompt template from the dropdown menu above the upper right corner of the input area.</div>
-                                        <ul className="list-disc pl-6 mt-1 text-secondary-foreground">
-                                            <li>You can type or paste additional text under the template text.</li>
-                                            <li>
-                                                Open the left panel <br /> (Click on the upperleft icon
-                                                <span className="inline-flex items-center">
-                                                    <svg className="inline-block mx-1 " width="16" height="16" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                                        <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                                        <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                                                    </svg>
-                                                </span> to access the left panel.)
-                                                You can add text in the <span className="text-blue-200">Current Context.</span>This text will be used as context for the prompt.
-                                            </li>
-                                            <li>You can also click <FileText className="inline w-4 h-4 mr-1" />, to add a local text-file to use as context for your prompt.</li>
-                                        </ul>
-                                    </div>
-
-                                    <div className="p-4 border border-gray-700 rounded-lg bg-secondary/85">
-                                        <h3 className="text-lg font-medium text-secondary-foreground">3. You can refine a document or text.</h3>
-                                        <ul className="list-disc pl-6 mt-1 text-secondary-foreground">
-                                            <li>Alt. 1: Click the <span className="text-blue-200"> <FileText className="inline w-4 h-4 mx-1 mb-1" /> Load a file</span> button above the input area to select a local file to enhance or refine. (a new set of templates will appear).
-                                            </li>
-                                            <li>Alt. 2: Click the upper left button to open the left panel, then Context tab. <br />
-                                                (The document text will be inserted and used as context for your prompt.)</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
+                        <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
+                           {guide}
                         </div>
                     </div>
                 )}
@@ -1236,7 +1207,7 @@ END OF DOCUMENT: ${file.name}
                         {messages.length < 1 && (!input || input.trim() === "")
                             ? (
                                 // Give DigitalRain the full available height
-                                <div className="w-full h-full flex-1 flex flex-col">
+                                <div className="w-full h-[calc(100vh-22rem)] flex-1 flex flex-col">
                                     {showDigitalRain ? (
                                         <DigitalRainIntro
                                             onInteraction={() => setShowDigitalRain(false)}
@@ -1244,7 +1215,7 @@ END OF DOCUMENT: ${file.name}
                                             backgroundColor="rgba(10, 20, 10, 0.03)"
                                         />
                                     ) : (
-                                        <div className="flex flex-col items-center justify-center h-full w-full overflow-auto p-4 gap-4 text-gray-400 text-sm flex-1">
+                                        <div className="flex flex-col items-center justify-center max-h-[calc(100vh-22rem)] w-full overflow-auto p-4 gap-4 text-gray-400 text-sm flex-1">
                                             {gettingStartedGuide}
                                         </div>
                                     )}
@@ -1651,13 +1622,6 @@ END OF DOCUMENT: ${file.name}
                                     </div>
                                 }
                             </div>
-                            {/* <button
-                                onClick={() => dispatch(setMessages([]))}
-                                title="Clear chat history"
-                                className="px-2 py-1 text-xs text-red-500 hover:text-red-700"
-                            >
-                                <X className="w-4 h-4" />
-                            </button> */}
                         </div>
                     </div>
                 }
@@ -1715,15 +1679,17 @@ END OF DOCUMENT: ${file.name}
                             type="button"
                             className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
                             onClick={() => {
-                                setInput('Create a domain with the following: Domain Name: [Domain Name], Domain Description: [Domain Description]')
+                                setDocRefine(true);
+                                setInput((currentDocument !== "") 
+                                ? `You are a Domain  Expert. Please Expand on the domain definition in the content below:` 
+                                : `You are a Domain Expert. Please create a domain definition based on the following: Domain Name: [Domain Name]`)
                             }}
                         >
                             Define & Scope Domain
                         </button>
-
                     </div>
-
                 }
+
 
                 <div className="flex items-center gap-2"></div>
 
@@ -1752,7 +1718,9 @@ END OF DOCUMENT: ${file.name}
                         value={input || ''}
                         onChange={(e) => setInput(e.target.value)}
                         onKeyDown={(e) => {
+                            console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
                             if (e.key === 'Enter' && !e.shiftKey) {
+                                console.log('Enter pressed without shift - should submit'); // Add this
                                 const now = Date.now();
                                 // Use a custom property on the event target to track the last Enter key time
                                 const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };

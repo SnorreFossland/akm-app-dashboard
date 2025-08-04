@@ -560,7 +560,7 @@ Size: ${(file.size / 1024).toFixed(1)} KB
 
 
     // Add a new function to handle concept builder specifically
-    const handleConceptBuilder = async () => {
+    const handleOntologyBuilder = async () => {
         setIsLoading(true);
         setActiveTab('suggested-concepts');
 
@@ -672,7 +672,7 @@ Size: ${(file.size / 1024).toFixed(1)} KB
         // setMessages((prev) => [...prev, userMessage]);
         // Send all messages including the new one to maintain conversation context
         // await sendMessageToAPI([...messages, userMessage]);
-        handleConceptBuilder();
+        handleOntologyBuilder();
 
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed

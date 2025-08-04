@@ -19,6 +19,7 @@ import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import OutputPanel from '@/components/irtv-builder/OutputPanel';
 import ConversationsPanel from '@/components/irtv-builder/ConversationsPanel';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
+import Guide from '@/components/irtv-builder/Guide';
 // import IRTVTemplatesPanel from '@/components/irtv-builder/IRTVTemplatesPanel';
 // Uncomment and fix these imports at the top of your file
 import { ObjectCard } from '@/components/object-card';
@@ -98,7 +99,7 @@ const IrtvBuilderPage = () => {
     const handleCloseModal = () => setIsModalOpen(false);
 
     useEffect(() => {
-        setCurrentModel(data?.phData.metis.models.find(model => model.id === data.phFocus?.focusModel?.id) || null);
+        setCurrentModel(data?.phData?.metis?.models.find(model => model.id === data.phFocus?.focusModel?.id) || null);
         currentModel && setModel(currentModel);
     });
 
@@ -244,44 +245,28 @@ const IrtvBuilderPage = () => {
 
     const leftPanelContent = {
         tabs: [
-            {
-                key: 'guide',
-                label: 'Guide',
-                content: (
-                    <div className="space-y-4 p-1 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">Step 1: Set the Context</h3>
-                            <p className="text-sm text-secondary-foreground/60 mt-1">
-                                Use the tabs in this panel to provide context. You can use a saved conversation, the current model, or other documents.
-                            </p>
-                        </div>
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">Step 2: Interact with the AI</h3>
-                            <p className="text-sm text-secondary-foreground/60 mt-1">
-                                Use the <span className="text-blue-400 font-semibold">'AI IRTV Modelling Assistant'</span> in the main panel to describe the model or view you want to create.
-                            </p>
-                        </div>
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">Step 3: Preview the Output</h3>
-                            <p className="text-sm text-secondary-foreground/60 mt-1">
-                                The <span className="text-blue-400 font-semibold">'IRTV Preview'</span> panel on the right will show the generated model or view as you work.
-                            </p>
-                        </div>
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">Step 4: View in Modeller</h3>
-                            <p className="text-sm text-secondary-foreground/60 mt-1">
-                                Switch to the <span className="text-blue-400 font-semibold">'Model'</span> tab in the main panel to see a graphical representation of your work in the modeller.
-                            </p>
-                        </div>
-                        <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-                            <h3 className="text-lg font-medium text-secondary-foreground/70">Step 5: Save Your Work</h3>
-                            <p className="text-sm text-secondary-foreground/60 mt-1">
-                                Use the file operations in the top bar to save your model and views.
-                            </p>
-                        </div>
-                    </div>
-                )
-            },
+      {
+        key: 'current-domain',
+        label: 'Current Domain',
+        content: (
+          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+            {data.phData.domain ? (
+              <div className="p-2 bg-gray-800 rounded">
+                {/* <div className="text-xl text-gray-400">{data.phData.domain.name}</div> */}
+                {/* <div className="text-sm text-gray-400">{data.phData.domain.description}</div> */}
+                {/* <div className="text-sm text-gray-400 mt-1">Definition:</div> */}
+                <MarkdownPreview
+                  mdPreview={data.phData.domain.presentation || 'No domain definition available'}
+                />
+              </div>
+            ) : (
+              <div className="p-2 bg-gray-800 rounded">
+                <div className="text-sm text-gray-400">No domain found</div>
+              </div>
+            )}
+          </div>
+        )
+      },
             {
                 key: 'conversations',
                 label: 'Conversations',
@@ -401,7 +386,7 @@ const IrtvBuilderPage = () => {
 
                                     title="Current Universe"
                                 >
-                                    Universe: {currentDomain?.name || 'Domain name'}
+                                    Current Model Universe
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="model"
@@ -435,6 +420,8 @@ const IrtvBuilderPage = () => {
                                     irtvPreview={irtvPreview}
                                     setIrtvPreview={setIrtvPreview}
                                     setCurrentMessages={setCurrentMessages}
+                                    gettingStartedGuide={<GettingStartedGuide />}
+                                    guide={<Guide />}
                                 />
                             </div>
                         </TabsContent>

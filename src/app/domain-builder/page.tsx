@@ -1,7 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from "react-redux";
-import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
 import type { RootState } from "@/store";
 import { usePathname } from 'next/navigation';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -11,15 +10,19 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
+import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import DomainBuilder from "@/components/domain-builder/DomainBuilder";
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import { LoadingCircularProgress } from "@/components/loading";
 import GettingStartedGuide from '@/components/domain-builder/GettingStartedGuide';
+import Guide from '@/components/domain-builder/Guide';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import { FileOperations } from '@/components/FileOperations';
+import UniverseComponent from '@/features/model-universe/components/UniverseComponent';
 
 export interface ChatComponentProps {
   onResponseChange: (response: string) => void;
@@ -33,6 +36,8 @@ export interface ChatComponentProps {
   mdContent: string;
   onAddMD?: () => void;
   gettingStartedGuide?: React.ReactNode;
+  guide?: React.ReactNode;
+  mdPreview?: string;
 }
 
 export default function DomainBuilderPage() {
@@ -59,6 +64,7 @@ export default function DomainBuilderPage() {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [docName, setDocName] = useState<string>('New Document');
   const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
+  const [currentDocument, setCurrentDocument] = useState<string>(domainData?.presentation || '');
 
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
 
@@ -75,8 +81,47 @@ export default function DomainBuilderPage() {
       setDomainName(domainData.name || '');
       setDomainDescription(domainData.description || '');
       setDomainPresentation(domainData.presentation || '');
+      setCurrentDocument(domainData.presentation || '');
     }
   }, [domainData]);
+
+  // Add this new useEffect to listen for localStorage changes
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      // Only react to changes to the 'currentDocument' key
+      if (e.key === 'currentDocument' && e.newValue !== null) {
+        console.log('localStorage currentDocument changed externally:', e.newValue?.substring(0, 100) || 'empty');
+        // Only update if the new value is different from current state
+        if (e.newValue !== currentDocument) {
+          setCurrentDocument(e.newValue);
+          console.log('Updated currentDocument from localStorage change');
+        }
+      }
+    };
+
+    // Listen for storage events (fired when localStorage changes in other tabs/windows)
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also listen for custom events within the same tab
+    const handleCustomStorageChange = (e: Event) => {
+      const customEvent = e as CustomEvent;
+      if (customEvent.detail.key === 'currentDocument' && customEvent.detail.newValue !== null) {
+        console.log('Custom storage event for currentDocument:', customEvent.detail.newValue?.substring(0, 100) || 'empty');
+        if (customEvent.detail.newValue !== currentDocument) {
+          setCurrentDocument(customEvent.detail.newValue);
+          console.log('Updated currentDocument from custom storage event');
+        }
+      }
+    };
+
+    window.addEventListener('localStorageChange', handleCustomStorageChange);
+
+    // Cleanup event listeners
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('localStorageChange', handleCustomStorageChange);
+    };
+  }, [currentDocument]);
 
   // Function to dispatch form field changes
   const handleSaveDomainData = () => {
@@ -240,40 +285,21 @@ export default function DomainBuilderPage() {
   const leftPanelContent = {
     tabs: [
       {
-        key: 'guide',
-        label: 'Guide',
+        key: 'current-content',
+        label: 'Current Content',
         content: (
-          <div className="space-y-4 p-1 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-              <h3 className="text-lg font-medium text-secondary-foreground/70">Step 1: Define Domain Core</h3>
-              <p className="text-sm text-secondary-foreground/60 mt-1">
-                Use the <span className="text-blue-400 font-semibold">'AI Domain Builder'</span> tab to chat with the AI. Describe the core concepts, entities, and relationships of your domain.
-              </p>
-            </div>
-            <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-              <h3 className="text-lg font-medium text-secondary-foreground/70">Step 2: Provide Context</h3>
-              <p className="text-sm text-secondary-foreground/60 mt-1">
-                Switch to the <span className="text-blue-400 font-semibold">'Add. Context'</span> tab to upload or write supporting documents. This gives the AI the raw material to build upon.
-              </p>
-            </div>
-            <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-              <h3 className="text-lg font-medium text-secondary-foreground/70">Step 3: Preview Output</h3>
-              <p className="text-sm text-secondary-foreground/60 mt-1">
-                The <span className="text-blue-400 font-semibold">'Output Preview'</span> panel on the right shows the generated output in Markdown.
-              </p>
-            </div>
-            <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-              <h3 className="text-lg font-medium text-secondary-foreground/70">Step 4: Save Your Domain</h3>
-              <p className="text-sm text-secondary-foreground/60 mt-1">
-                Once you are satisfied with the domain, click the <span className="text-blue-400 font-semibold">'Save'</span> button in the top bar to persist your changes.
-              </p>
-            </div>
-            <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
-              <h3 className="text-lg font-medium text-secondary-foreground/70">Step 5: Review and Refine</h3>
-              <p className="text-sm text-secondary-foreground/60 mt-1">
-                Check the <span className="text-blue-400 font-semibold">'Current Domain'</span> tab to see the generated domain details. Use the AI chat to refine the name, description, and presentation.
-              </p>
-            </div>
+          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+            {currentDocument ? (
+              <div className="p-2 bg-gray-800 rounded">
+                <MarkdownPreview
+                  mdPreview={currentDocument || 'No definition available'}
+                />
+              </div>
+            ) : (
+              <div className="p-2 bg-gray-800 rounded">
+                <div className="text-sm text-gray-400">No domain found</div>
+              </div>
+            )}
           </div>
         )
       },
@@ -291,14 +317,15 @@ export default function DomainBuilderPage() {
         )
       },
     ],
-    defaultTab: 'guide'
+    defaultTab: 'context'
   };
 
+  // Define right panel content with the new props
   const rightPanelContent = {
     tabs: [
       {
         key: 'preview',
-        label: 'Output Preview',
+        label: 'Preview',
         content: (
           <DocumentPanel
             mdContent={mdPreview}
@@ -306,6 +333,8 @@ export default function DomainBuilderPage() {
             setIsLibraryOpen={setIsLibraryOpen}
             isLibraryOpen={isLibraryOpen}
             panelType='right'
+            currentDocumentContent={currentDocument} // Pass Current Document content
+            markdownPreviewContent={mdPreview} // Pass Markdown Preview content
           />
         )
       }
@@ -329,20 +358,6 @@ export default function DomainBuilderPage() {
           <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0 h-full">
             {/* Tab Navigation */}
             <div className="flex items-center justify-between px-2">
-              {/* Left Panel Button */}
-              <button
-                onClick={() => setShowLeftPanel(!showLeftPanel)}
-                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                title="Show Left pane"
-              >
-                <span>
-                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="2" y1="17" x2="14" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </span>
-              </button>
-
               {/* Tabs */}
               <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
                 <TabsTrigger value="chat" className="text-xs sm:text-sm mt-0">
@@ -352,10 +367,9 @@ export default function DomainBuilderPage() {
                     className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
                     title="Open Domain Builder guide"
                   >
-                    <HelpCircle className="h-3 w-3 ms-5" />
                   </span>
                 </TabsTrigger>
-                <TabsTrigger value="domain" className="text-xs sm:text-sm mt-0">
+                <TabsTrigger value="current-document" className="text-xs sm:text-sm mt-0">
                   Current Domain
                 </TabsTrigger>
                 <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">
@@ -365,20 +379,6 @@ export default function DomainBuilderPage() {
                   Domain Builder2
                 </TabsTrigger>
               </TabsList>
-
-              {/* Right Panel Button */}
-              <button
-                onClick={() => setShowRightPanel(!showRightPanel)}
-                className="flex items-center text-xs bg-muted hover:bg-gray-600 text-white ps-1 pb-1 rounded"
-                title="Show Right pane"
-              >
-                <span>
-                  <svg width="22" height="22" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-                    <line x1="2" y1="7" x2="22" y2="7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                    <line x1="6" y1="17" x2="18" y2="17" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-                  </svg>
-                </span>
-              </button>
             </div>
 
             {/* Tab Content */}
@@ -400,61 +400,64 @@ export default function DomainBuilderPage() {
                   setMdContent={setMdContent}
                   mdPreview={mdPreview}
                   setMdPreview={setMdPreview}
+                  currentDocument={currentDocument}
                   setCurrentMessages={setCurrentMessages}
                   gettingStartedGuide={<GettingStartedGuide />}
+                  guide={<Guide />}
                 />
               </div>
             </TabsContent>
-            {/* Domain Tab Content  */}
-            <TabsContent value="domain" className="flex-1 p-1 mt-1  h-[calc(100vh-8rem)]">
-              <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-bold text-gray-200">Domain Configuration</h2>
-                  <button
-                    onClick={handleSaveDomainData}
-                    className="text-green-400 hover:text-green-200 text-white rounded text-xs"
-                  >
-                    <BookmarkPlus className="h-4 w-4" />
-                  </button>
+
+            {/* Current Document */}
+            <TabsContent value="current-document" className="flex-1 px-1 mt-1 overflow-hidden">
+              <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+                <div className="flex flex-col space-y-4 mb-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Name</label>
+                    <input
+                      type="text"
+                      value={domainName}
+                      onChange={(e) => handleFieldChange('name', e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter domain name"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-300">Description</label>
+                    <textarea
+                      value={domainDescription}
+                      onChange={(e) => handleFieldChange('description', e.target.value)}
+                      className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                      placeholder="Enter domain description"
+                      rows={3}
+                    />
+                  </div>
                 </div>
-
-                <h5 className="text-gray-400 font-bold">Name</h5>
-                <input
-                  type="text"
-                  value={domainName}
-                  onChange={(e) => handleFieldChange('name', e.target.value)}
-                  className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-3"
-                />
-
-                <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                <textarea
-                  value={domainDescription}
-                  onChange={(e) => handleFieldChange('description', e.target.value)}
-                  className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical mb-3"
-                  rows={5}
-                />
-
-                <h5 className="text-gray-400 p-1 font-bold">Presentation</h5>
-                <textarea
-                  value={domainPresentation}
-                  onChange={(e) => handleFieldChange('presentation', e.target.value)}
-                  className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
-                  rows={25}
-                />
+                <div className="space-y-4">
+                  {/* Current Document Panel */}
+                  <DocumentPanel
+                    mdContent={currentDocument}
+                    setMdContent={setCurrentDocument}
+                    setIsLibraryOpen={setIsLibraryOpen}
+                    isLibraryOpen={isLibraryOpen}
+                    panelType='middle'
+                    currentDocumentContent={currentDocument}
+                    markdownPreviewContent={mdPreview}
+                  />
+                </div>
               </div>
             </TabsContent>
             {/* Model */}
             <TabsContent value="model" className="flex-1 px-1 mt-1 h-full">
               <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
-                <h2 className="text-xl font-bold mb-4">Model View</h2>
-                <ModelComponent />
+                <UniverseComponent />
               </div>
             </TabsContent>
             {/* Domain Builder */}
             <TabsContent value="domain2" className="flex-1 px-1 mt-1 h-full">
               <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
                 <div className="flex overflow-hidden h-full">
-                  <DomainBuilder
+                  {/* <DomainBuilder
                     input={chatInput}
                     setInput={setChatInput}
                     mdContent={mdContent}
@@ -464,7 +467,7 @@ export default function DomainBuilderPage() {
                     mdPreview={mdPreview}
                     setMdPreview={setMdPreview}
                     onViewInMarkdown={(content) => setMdPreview(content)}
-                  />
+                  /> */}
                 </div>
               </div>
             </TabsContent>
@@ -491,7 +494,7 @@ export default function DomainBuilderPage() {
                 <button
                   onClick={handleExportLibrary}
                   className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                  disabled={documents.length === 0}
+                  disabled={documents?.length === 0}
                 >
                   Export Library
                 </button>

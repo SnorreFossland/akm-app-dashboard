@@ -38,17 +38,7 @@ export default function DomainBuilder({
     mdPreview,
     setMdPreview,
     onViewInMarkdown
-}: DomainBuilderProps = {
-        input,
-        setInput,
-        mdContent,
-        setMdContent,
-        setIsLibraryOpen,
-        isLibraryOpen,
-        mdPreview,
-        setMdPreview,
-        onViewInMarkdown
-    }) {
+}: DomainBuilderProps) {
     const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
     const dispatch = useDispatch();
 

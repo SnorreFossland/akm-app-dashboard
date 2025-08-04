@@ -1,6 +1,7 @@
 import * as React from "react"
 
-const MOBILE_BREAKPOINT = 768
+// Increase breakpoint to treat tablets as mobile for sidebar behavior
+const MOBILE_BREAKPOINT = 1024 // was 768
 
 export function useIsMobile() {
   const [isMobile, setIsMobile] = React.useState<boolean | undefined>(undefined)

@@ -235,6 +235,7 @@ const modelSlice = createSlice({
   initialState,
   reducers: {
     setFileData(state, action: PayloadAction<DataType>) {
+      console.log('238 setFileData action.payload', action.payload, 'state', state);
       state.phData = { ...action.payload.phData };
       state.phFocus = { ...action.payload.phFocus };
       state.phUser = { ...action.payload.phUser };
@@ -327,11 +328,14 @@ const modelSlice = createSlice({
       state.phSource = action.payload;
     },
     setDomainData(state, action: PayloadAction<DomainData>) {
-      // Preserve any existing fields not provided in the payload
-      state.phData.domain = {
-        ...state.phData.domain,
-        ...action.payload
-      };
+      if (typeof action.payload === 'object' && action.payload !== null) {
+        state.phData.domain = {
+          ...state.phData.domain,
+          ...action.payload
+        };
+      } else {
+        console.error("setDomainData received an invalid payload:", action.payload);
+      }
     },
     setDomainPrompt(state, action: PayloadAction<DataType['phData']['domain']['prompt']>) {
       console.log('375 action.payload', action.payload, state);
@@ -428,8 +432,13 @@ const modelSlice = createSlice({
 
     // Add document management reducers
     saveMarkdownDocument: (state, action: PayloadAction<MarkdownDocument>) => {
+      // Ensure documents array exists
+      if (!state.phData.documents) {
+        state.phData.documents = [];
+      }
+
       // Check if document with same name exists
-      const existingIndex = state.phData.documents?.findIndex(
+      const existingIndex = state.phData.documents.findIndex(
         doc => doc.name === action.payload.name
       );
 
@@ -442,6 +451,11 @@ const modelSlice = createSlice({
       }
     },
     deleteMarkdownDocument: (state, action: PayloadAction<string>) => {
+      // Ensure documents array exists before filtering
+      if (!state.phData.documents) {
+        state.phData.documents = [];
+        return;
+      }
       state.phData.documents = state.phData.documents.filter(doc => doc.id !== action.payload);
     },
   },

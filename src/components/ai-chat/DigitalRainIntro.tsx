@@ -13,31 +13,34 @@ const DigitalRainIntro: React.FC<DigitalRainIntroProps> = ({
     speed = 4,
     backgroundColor = "rgba(10, 20, 10, 0.03)",
 }) => {
-    const containerStyle: React.CSSProperties = {   
-        position: 'relative',
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden',
-        backgroundColor: '#000',
-        borderRadius: '0.5rem',
-    };
     return (
-        <div className="relative w-full h-full overflow-hidden flex items-center justify-center bg-gray-900 text-white rounded-lg shadow-lg p-4">
-            <div className="relative inset-0 z-20"
-            >
+        <div className="relative w-full h-full overflow-hidden bg-black rounded-lg">
+            {/* Digital Rain Background - Full size */}
+            <div className="absolute inset-0 w-full h-full">
                 <DigitalRain
                     onInteraction={onInteraction}
                     speed={speed}
                     backgroundColor={backgroundColor}
+                    containerStyle={{
+                        width: '100%',
+                        height: '100%',
+                        position: 'absolute',
+                        top: 0,
+                        left: 0,
+                    }}
                 />
             </div>
-            <div className="absolute inset-0 z-20 flex items-center justify-center transform -translate-y-5">
-                <div className="relative flex flex-col justify-center items-center bg-transparent px-6 py-0 rounded-lg min-h-0">
-                    <AnimatedAICircle className="absolute inset-0 z-0" />
+            
+            {/* Animated AI Circle Overlay */}
+            <div className="absolute inset-0 flex items-center justify-center z-20 pointer-events-none">
+                <div className="relative">
+                    <AnimatedAICircle className="w-52 h-52" />
                 </div>
             </div>
-            <div className="z-20 m-5 text-green-400 text-xl font-mono text-center">
-                Click to start typing...
+            
+            {/* Optional interaction hint */}
+            <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 z-30 text-green-400 text-sm font-mono text-center opacity-70 pointer-events-none">
+                Click anywhere to start...
             </div>
         </div>
     );

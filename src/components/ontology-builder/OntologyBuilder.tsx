@@ -15,6 +15,7 @@ import { OntologyCard } from '@/components/ontology-card';
 import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
 
 import {
     SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt
@@ -42,7 +43,7 @@ interface Ontology {
     presentation: string;
 }
 
-const ConceptBuilder = (
+const OntologyBuilder = (
     {
         suggestedOntologyData,
         setSuggestedOntologyData
@@ -52,6 +53,7 @@ const ConceptBuilder = (
     }
 ) => {
     const data = useSelector((state: RootState) => state.modelUniverse);
+    const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
     const dispatch = useDispatch<AppDispatch>();
     const [dispatchDone, setDispatchDone] = useState(false);
     const [isLoading, setIsLoading] = useState(false);
@@ -70,6 +72,11 @@ const ConceptBuilder = (
     const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
     const [domainDesc, setDomainDesc] = useState("");
     const [descrString, setDescrString] = useState("");
+
+    const [domainName, setDomainName] = useState(domainData?.name || '');
+    const [domainDescription, setDomainDescription] = useState(domainData?.description || '');
+    const [domainPresentation, setDomainPresentation] = useState(domainData?.presentation || '');
+    const [currentDocument, setCurrentDocument] = useState<string>(domainData?.presentation || '');
     // const [suggestedOntologyData, setSuggestedOntologyData] = useState<Ontology | null>(null);
     // const [ontologyDataList, setOntologyDataList] = useState<Ontology | null>(null);
     // const [suggestedConceptData, setSuggestedConceptData] = useState("");
@@ -119,6 +126,15 @@ const ConceptBuilder = (
         // setTopicDescr(data.phData.domain?.presentation || "");
     }, [data.phData.domain]);
 
+    // Update local state when Redux state changes
+    useEffect(() => {
+        if (domainData) {
+            setDomainName(domainData.name || '');
+            setDomainDescription(domainData.description || '');
+            setDomainPresentation(domainData.presentation || '');
+            setCurrentDocument(domainData.presentation || '');
+        }
+    }, [domainData]);
 
     // Memoize the prompt building logic
     const promptData = useMemo(() => {
@@ -129,7 +145,7 @@ const ConceptBuilder = (
         }
 
         const userPrompt = `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}`;
-        const userInput = `${UserInput} \n\n ${topicDescr}`;
+        const userInput = `${UserInput} \n\n ${domainData?.presentation || ""} \n\n ${domainPresentation} \n\n ${topicDescr}`;
         const newSystemPrompt = SystemPrompt;
         const newSystemBehaviorGuidelines = SystemBehaviorGuidelines;
         const newContextOntology = (impOntologyString) ? `${ExistingOntology} ${impOntologyString}` : "";
@@ -233,7 +249,7 @@ const ConceptBuilder = (
         setDispatchDone(true);
     };
 
-    const handleConceptBuilder = async () => {
+    const handleOntologyBuilder = async () => {
         setIsLoading(true);
         setStep(1);
         setActiveTab('suggested-concepts');
@@ -331,7 +347,28 @@ const ConceptBuilder = (
         }
     };
 
+    // Handle individual field changes with auto-save
+    const handleFieldChange = (field: string, value: string) => {
+        const updatedData = {
+            ...domainData,
+            [field]: value
+        };
 
+        dispatch(setDomainData(updatedData));
+
+        // Update local state
+        switch (field) {
+            case 'name':
+                setDomainName(value);
+                break;
+            case 'description':
+                setDomainDescription(value);
+                break;
+            case 'presentation':
+                setDomainPresentation(value);
+                break;
+        }
+    };
     // Update the ontologyDataList useMemo to ensure clean data:
 
     const ontologyDataList = useMemo(() => {
@@ -393,155 +430,141 @@ const ConceptBuilder = (
 
     return (
         <div className="flex flex-col h-[calc(100vh-4rem)] w-full bg-transparent">
-            {/* <CardTitle className="flex justify-start text-gray-400 text-xl">
-                <span className="text-active-item me-auto px-2">Ontology Builder</span>
-                <span className="mx-auto text-center">AI Powered Active Knowledge Canvas</span>
-            </CardTitle> */}
-            <div className="flex h-[calc(100vh-1rem)] w-full overflow-hidden">
-                <div className="border-solid flex flex-col overflow-y-auto">
-                    {/* <div className="flex justify-between items-center flex-gro ps-1 bg-gray-600 border border-gray-700">
-                        <CardTitle className="flex justify-between items-center flex-grow ps-1">
-                            Define Domain Ontology:
-                        </CardTitle>
-                    </div> */}
+            <div className="flex flex-col h-full w-full overflow-hidden">
+                <div className="border-solid flex flex-col">
                     <div className="flex flex-wrap items-start m-1">
-                        <label htmlFor="chatOutput" className="text-white mt-2">Current Domain Definition:</label>
-                        <div className="flex-grow p-4 rounded bg-gray-700 text-white overflow-y-auto max-h-[calc(100vh-10rem)]">
-                            {definition}
+                        <div className="flex flex-col flex-grow">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300">Name</label>
+                                <input
+                                    type="text"
+                                    value={domainName}
+                                    onChange={(e) => handleFieldChange('name', e.target.value)}
+                                    className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    placeholder="Enter domain name"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300">Description</label>
+                                <textarea
+                                    value={domainDescription}
+                                    onChange={(e) => handleFieldChange('description', e.target.value)}
+                                    className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    placeholder="Enter domain description"
+                                    rows={3}
+                                />
+                            </div>
                         </div>
-                        {/* <Textarea
-                            style={{ width: "100%", minWidth: "500px" }}
-                            id="chatOutput"
-                            className="flex-grow p-1 rounded bg-background"
-                            value={`${descrString} \n\n ${topicDescr}`}
-                            disabled={isLoading}
-                            onChange={(e) => setDescrString(e.target.value)}
-                            rows={22}
-                            placeholder="Domain Summary"
-                        /> */}
-                        {/* <label htmlFor="topicDescr" className="text-white">Domain Topic</label>
-                        <Textarea
-                            id="topicDescr"
-                            className="flex-grow p-1 rounded bg-gray-600"
-                            value={topicDescr}
-                            disabled={isLoading}
-                            onChange={(e) => setTopicDescr(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                    e.preventDefault();
-                                    handleConceptBuilder();
-                                }
-                            }}
-                            placeholder="Type Domain or topic"
-                            rows={3}
-                        /> */}
-                        <details className="m-2 w-full">
-                            <summary className="text-white cursor-pointer">More ...</summary>
-                            <div className="mt-2">
-                                <div className="flex flex-col flex-grow">
-                                    <label htmlFor="suggestedConcepts" className="text-white mt-2">Domain name </label>
-                                    <Input
-                                        id="suggestedConcepts"
-                                        className="flex-grow p-1 rounded bg-background"
-                                        value={domainDesc}
-                                        disabled={isLoading}
-                                        onChange={(e) => setDomainDesc(e.target.value)}
-                                        placeholder="Enter your domain name i.e.: E-Scooter Rental Services"
-                                    />
-                                    <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts</label>
-                                    <Input
-                                        id="suggestedConcepts"
-                                        className="flex-grow p-1 rounded bg-background"
-                                        value={Array.isArray(suggestedOntologyData?.concepts) ? suggestedOntologyData.concepts.map(concept => concept.name).join(', ') : ""}
-                                        disabled={isLoading}
-                                        onChange={(e) => setSuggestedOntologyData({ ...suggestedOntologyData, concepts: e.target.value })}
-                                        placeholder="Enter your concepts i.e.: Scooter, User, booking"
-                                    />
-                                </div>
-                                <div className="cursor-pointer">Import Ontology</div>
-                                <div className="flex-grow bg-gray-700 text-gray-500">
-                                    <Textarea
-                                        id="ontologyUrl"
-                                        className="ontology-input flex-grow bg-gray-600 text-white"
-                                        value={ontologyUrl}
-                                        onChange={(e) => setOntologyUrl(e.target.value)}
-                                        placeholder="Paste ontology URL here"
-                                    />
-                                    <div className="flex justify-between">
-                                        <Button
-                                            onClick={() => {
-                                                handleFetchOntology();
-                                                setActiveTab('imported-ontology');
-                                            }}
-                                            className="bg-green-800 text-white text-sm rounded w-full"
-                                        >
-                                            Load Ontology
-                                        </Button>
-                                    </div>
-                                </div>
-                            </div>
-                        </details>
-                        <CardTitle
-                            className={`flex justify-between items-center flex-grow ps-1 mt-auto bg-gray-600 border border-gray-700 ${(suggestedOntologyData) ? 'text-green-600' : 'text-green-200'}`}
-                        >
-                            Ask GPT to suggest Concepts
-                            <div className="flex items-center ml-auto">
-                                {(isLoading) ? (
-                                    <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                        <LoadingCircularProgress />
-                                    </div>
-                                ) : (
-                                    <div style={{ marginLeft: 8, marginRight: 8, color: (suggestedOntologyData) ? 'green' : 'gray' }}>
-                                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                                    </div>
-                                )}
-                                <Button
-                                    onClick={() => {
-                                        handleConceptBuilder();
-                                        setActiveTab('suggested-concepts');
-                                    }}
-                                    disabled={!isPromptDataReady || isLoading}
-                                    className="rounded text-xl p-4 bg-green-700 text-white disabled:bg-gray-500"
-                                >
-                                    <FontAwesomeIcon icon={faRobot} size="1x" />
-                                </Button>
-                            </div>
-                        </CardTitle>
                     </div>
-                    <div className="mt-auto">
-                        <CardTitle
-                            className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(dispatchDone) ? 'text-green-600' : 'text-green-200'}`}
-                        >
-                            <div
-                                className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
-                            >
-                                Keep
-                                <div className="flex items-center ml-auto">
-                                    {!dispatchDone && step === 2 ? (
-                                        <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                            <LoadingCircularProgress />
-                                        </div>
-                                    ) : (
-                                        <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone && step === 2 ? 'green' : 'gray' }}>
-                                            <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                                        </div>
-                                    )}
+                    <label htmlFor="chatOutput" className="text-white mt-2">Current Domain Definition:</label>
+                    <div className="flex-grow p-4 rounded bg-gray-700 text-white overflow-y-auto max-h-[calc(100vh-24rem)]">
+                        {definition}
+                    </div>
+                </div>
+                <div className="relative w-full h-10">
+                    <details className="absolute bottom-full w-full">
+                        <summary className="bg-gray-800 text-white cursor-pointer p-1">Add Ontology Concepts...</summary>
+                        <div className="w-full rounded-md border border-gray-600 bg-gray-800 p-2">
+                            <div className="flex flex-col flex-grow">
+                                {/* <label htmlFor="suggestedConcepts" className="text-white mt-2">Domain name </label>
+                                <Input
+                                    id="suggestedConcepts"
+                                    className="flex-grow p-1 rounded bg-background"
+                                    value={domainDesc}
+                                    disabled={isLoading}
+                                    onChange={(e) => setDomainDesc(e.target.value)}
+                                    placeholder="Enter your domain name i.e.: E-Scooter Rental Services"
+                                /> */}
+                                <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts</label>
+                                <Input
+                                    id="suggestedConcepts"
+                                    className="flex-grow p-1 rounded bg-background"
+                                    value={Array.isArray(suggestedOntologyData?.concepts) ? suggestedOntologyData.concepts.map(concept => concept.name).join(', ') : ""}
+                                    disabled={isLoading}
+                                    onChange={(e) => setSuggestedOntologyData({ ...suggestedOntologyData, concepts: e.target.value })}
+                                    placeholder="Enter your concepts i.e.: Scooter, User, booking"
+                                />
+                            </div>
+                            <div className="cursor-pointer">Import Ontology</div>
+                            <div className="flex-grow bg-gray-700 text-gray-500">
+                                <Textarea
+                                    id="ontologyUrl"
+                                    className="ontology-input flex-grow bg-gray-600 text-white"
+                                    value={ontologyUrl}
+                                    onChange={(e) => setOntologyUrl(e.target.value)}
+                                    placeholder="Paste ontology URL here"
+                                />
+                                <div className="flex justify-between">
                                     <Button
                                         onClick={() => {
-                                            setStep(2);
-                                            handleDispatchOntologyData();
+                                            handleFetchOntology();
+                                            setActiveTab('imported-ontology');
                                         }}
-                                        className="rounded text-xl p-4 bg-green-700 text-white">
-                                        <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
+                                        className="bg-green-800 text-white text-sm rounded w-full"
+                                    >
+                                        Load Ontology
                                     </Button>
                                 </div>
                             </div>
-                        </CardTitle>
-                    </div>
+                        </div>
+                    </details>
                 </div>
             </div>
+            <div className="mt-auto mb-3">
+                <CardTitle className={`flex justify-between items-center flex-grow ps-1 mt-auto bg-gray-600 border border-gray-700 ${(suggestedOntologyData) ? 'text-green-600' : 'text-green-200'}`}>
+                    Ask AI to suggest Concepts
+                    <div className="flex items-center ml-auto">
+                        {(isLoading) ? (
+                            <div style={{ marginLeft: 8, marginRight: 8 }}>
+                                <LoadingCircularProgress />
+                            </div>
+                        ) : (
+                            <div style={{ marginLeft: 8, marginRight: 8, color: (suggestedOntologyData) ? 'green' : 'gray' }}>
+                                <FontAwesomeIcon icon={faCheckCircle} size="2x" />
+                            </div>
+                        )}
+                        <Button
+                            onClick={() => {
+                                handleOntologyBuilder();
+                                setActiveTab('suggested-concepts');
+                            }}
+                            disabled={!isPromptDataReady || isLoading}
+                            className="rounded text-xl p-4 bg-green-700 text-white disabled:bg-gray-500"
+                        >
+                            <FontAwesomeIcon icon={faRobot} size="1x" />
+                        </Button>
+                    </div>
+                </CardTitle>
+                <CardTitle
+                    className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(dispatchDone) ? 'text-green-600' : 'text-green-200'}`}
+                >
+                    <div className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}>
+                        Save
+                        <div className="flex items-center ml-auto">
+                            {!dispatchDone && step === 2 ? (
+                                <div style={{ marginLeft: 8, marginRight: 8 }}>
+                                    <LoadingCircularProgress />
+                                </div>
+                            ) : (
+                                <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone && step === 2 ? 'green' : 'gray' }}>
+                                    <FontAwesomeIcon icon={faCheckCircle} size="2x" />
+                                </div>
+                            )}
+                            <Button
+                                onClick={() => {
+                                    setStep(2);
+                                    handleDispatchOntologyData();
+                                }}
+                                className="rounded text-xl p-4 bg-green-700 text-white">
+                                <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
+                            </Button>
+                        </div>
+                    </div>
+                </CardTitle>
+            </div>
         </div>
+
     );
 }
 
-export default ConceptBuilder;
+export default OntologyBuilder;

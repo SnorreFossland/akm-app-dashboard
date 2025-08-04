@@ -51,7 +51,7 @@ export default function DocumentPanel({
     const dispatch = useDispatch();
     const [dispatchDone, setDispatchDone] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editContent, setEditContent] = useState(irtvContent || '');
+    const [editContent, setEditContent] = useState(typeof irtvContent === 'string' ? irtvContent : (irtvContent?.description || ''));
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";

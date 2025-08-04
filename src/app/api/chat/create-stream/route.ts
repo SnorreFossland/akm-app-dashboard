@@ -18,10 +18,10 @@ export async function POST(request: NextRequest) {
         });
 
         // Validate required fields
-        if (!sessionId || !messages || !Array.isArray(messages)) {
-            console.error('Invalid request data:', { sessionId, messagesIsArray: Array.isArray(messages) });
+        if (!sessionId || !messages || !Array.isArray(messages) || messages.length === 0) {
+            console.error('Invalid request data:', { sessionId, messagesIsArray: Array.isArray(messages), messageLength: messages?.length });
             return NextResponse.json(
-                { error: 'Missing required fields: sessionId, messages' },
+                { error: 'Missing required fields: sessionId and a non-empty messages array' },
                 { status: 400 }
             );
         }

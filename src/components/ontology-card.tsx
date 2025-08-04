@@ -12,11 +12,6 @@ import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import 'tailwindcss/tailwind.css';
 
 interface OntologyCardProps {
-    domainData: {
-        name: string;
-        description: string;
-        presentation: string;
-    };
     ontologyData: {
         name: string;
         description: string;
@@ -52,7 +47,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
 
-    if (debug) console.log('35 ontology-card', ontologyData);
+    if (!debug) console.log('35 ontology-card', ontologyData);
 
     // Initialize Mermaid once
     useEffect(() => {
@@ -60,14 +55,14 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
             startOnLoad: false,
             theme: 'dark',
             themeVariables: {
-                primaryColor: '#4CAF50',
+                primaryColor: '#808080',
                 edgeLabelBackground: '#21313c15',
                 secondaryColor: '#8888ff',
                 tertiaryColor: '#ddddff',
                 primaryTextColor: '#ffeeee',
                 secondaryTextColor: '#ccffcc',
                 tertiaryTextColor: '#0000ff',
-                lineColor: '#dddddd',
+                lineColor: '#f0f0f0',
                 background: '#ffffff',
                 nodeBorderRadius: '25px',
                 rough: true,
@@ -78,7 +73,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
     // Memoize the diagram generation to prevent infinite loops
     const generateMermaidDiagram = useCallback(() => {
-        if (!ontologyData || !ontologyData.concepts || ontologyData.concepts.length === 0) {
+        if (!ontologyData) {
             setMermaidDiagram('');
             setRenderedSvg('');
             return;
@@ -86,29 +81,38 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
         try {
             let diagram = 'graph TD;\n';
-            const validNodes = new Set();
+            const allNodes = new Set<string>();
 
-            // Add concepts as nodes with better sanitization
-            ontologyData.concepts.forEach((concept, index) => {
-                if (concept && concept.name && concept.name.trim()) {
-                    // Create a more robust node ID
-                    const nodeId = concept.name
-                        .replace(/[^a-zA-Z0-9]/g, '_')
-                        .replace(/_+/g, '_')
-                        .replace(/^_|_$/g, '') || `concept_${index}`;
+            // Gather all nodes from concepts and relationships
+            if (ontologyData.concepts) {
+                ontologyData.concepts.forEach(c => c && c.name && allNodes.add(c.name));
+            }
+            if (ontologyData.relationships) {
+                ontologyData.relationships.forEach(r => {
+                    if (r && r.nameFrom) allNodes.add(r.nameFrom);
+                    if (r && r.nameTo) allNodes.add(r.nameTo);
+                });
+            }
 
-                    const nodeName = concept.name.replace(/"/g, "'"); // Escape quotes
-                    diagram += `    ${nodeId}["${nodeName}"];\n`;
-                    validNodes.add(concept.name);
+            if (allNodes.size === 0) {
+                setMermaidDiagram('');
+                setRenderedSvg('');
+                return;
+            }
+
+            // Add all unique concepts as nodes
+            allNodes.forEach((nodeName) => {
+                if (nodeName && nodeName.trim()) {
+                    const nodeId = nodeName.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
+                    const escapedNodeName = nodeName.replace(/"/g, "'");
+                    diagram += `    ${nodeId}["${escapedNodeName}"];\n`;
                 }
             });
 
-            // Add relationships as edges only for valid nodes
+            // Add relationships as edges
             if (ontologyData.relationships && ontologyData.relationships.length > 0) {
                 ontologyData.relationships.forEach((rel, index) => {
-                    if (rel && rel.nameFrom && rel.nameTo && rel.name &&
-                        validNodes.has(rel.nameFrom) && validNodes.has(rel.nameTo)) {
-
+                    if (rel && rel.nameFrom && rel.nameTo && rel.name) {
                         const fromId = rel.nameFrom
                             .replace(/[^a-zA-Z0-9]/g, '_')
                             .replace(/_+/g, '_')
@@ -246,6 +250,9 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
     return (
         <div className="w-full h-full overflow-hidden bg-gray-800 rounded-lg shadow-lg">
+            {/* <pre className="text-xs bg-gray-900 text-white p-2 rounded m-2 overflow-auto max-h-40">
+                {JSON.stringify(ontologyData, null, 2)}
+            </pre> */}
             <Tabs value={activeTab} defaultValue='domain-ontology' onValueChange={setActiveTab} className=" p-1">
                 <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-7 flex-1 mx-2 relative z-10">
                     {pathname === '/model-builder' && (
@@ -260,7 +267,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         value="domain-ontology"
                         className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
                     >
-                        Ontology presentation
+                        Presentation
                     </TabsTrigger>
                     <TabsTrigger
                         value="concepts"
@@ -272,7 +279,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         value="relationships"
                         className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
                     >
-                        Relationships
+                        Relships
                     </TabsTrigger>
                     <TabsTrigger
                         value="diagram"

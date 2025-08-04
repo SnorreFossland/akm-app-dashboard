@@ -205,6 +205,11 @@
     line-height: 1 !important;
 }
 
+.condensed-prose table {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
 /* More specific selectors to overcome Tailwind's prose classes */
 .prose.prose-invert.custom-markdown.condensed-prose ol,
 .condensed-prose ol {
@@ -347,6 +352,35 @@
     display: block;
     max-width: 100%;
     overflow-x: auto;
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.prose table {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.prose figure {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
+}
+
+.prose thead,
+.prose tbody,
+.prose tr {
+    border-color: inherit;
+}
+
+.prose th,
+.prose td {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid;
+    border-color: inherit;
+}
+
+.prose table p {
+    margin: 0;
 }
 
 .tabs-trigger {
@@ -531,4 +565,10 @@
     min-width: 0 !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+}
+
+.prose.markdown-preview table,
+.prose.markdown-preview figure {
+    margin-top: 0 !important;
+    margin-bottom: 0 !important;
 }

@@ -43,7 +43,7 @@ export function AppHeader({
     }, []);
 
     return (
-        <header className="flex items-center justify-between bg-background border-b border-gray-600 h-10 ps-5 text-gray-100">
+        <header className="flex items-center justify-between bg-background border-b border-gray-600 h-10 text-gray-100">
             <div className="flex items-center ">
                 {onToggleLeftPanel && (
                     <Button

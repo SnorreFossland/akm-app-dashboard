@@ -12,6 +12,7 @@ import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface ThreePanelLayoutProps {
     children: ReactNode;
@@ -56,23 +57,15 @@ export function ThreePanelLayout({
     const MIN_PANEL_WIDTH = 150;
     const MIN_MIDDLE_WIDTH = 200;
 
-    const [isMobile, setIsMobile] = useState(false);
+    // Use the same mobile detection as sidebar
+    const isMobile = useIsMobile();
     const [leftPanelWidth, setLeftPanelWidth] = useState(400);
-    const [rightPanelWidth, setRightPanelWidth] = useState(400);
+    const [rightPanelWidth, setRightPanelWidth] = useState(500);
 
+    // Remove duplicate mobile detection useEffect
     useEffect(() => {
+        // Calculate header height dynamically
         const checkScreenSize = () => {
-            setIsMobile(window.innerWidth < 768);
-        };
-        checkScreenSize();
-        window.addEventListener('resize', checkScreenSize);
-        return () => window.removeEventListener('resize', checkScreenSize);
-    }, []);
-
-    useEffect(() => {
-        const checkScreenSize = () => {
-            setIsMobile(window.innerWidth < 768);
-            // Calculate header height dynamically
             const headerElement = document.querySelector('header') || document.querySelector('.app-header');
             const headerHeight = headerElement ? headerElement.offsetHeight : 200;
             document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
@@ -182,9 +175,10 @@ export function ThreePanelLayout({
                         <AccordionItem value="input-panel">
                             <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Input</AccordionTrigger>
                             <AccordionContent>
-                                <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-200px)]">
+                                <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-12rem)]">
                                     <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1">
-                                        <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
+                                        {/* Reduce z-index to avoid conflicts with sidebar */}
+                                        <TabsList className="grid grid-cols-3 w-full pt-3 z-10">
                                             {finalLeftPanelContent.tabs.map((tab) => (
                                                 <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
                                             ))}
@@ -201,7 +195,7 @@ export function ThreePanelLayout({
                     <AccordionItem value="main-panel">
                         <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Main</AccordionTrigger>
                         <AccordionContent>
-                            <div className="flex-1 overflow-hidden min-w-0 w-full h-[calc(100vh-225px)] text-gray-100">
+                            <div className="flex-1 overflow-hidden min-w-0 w-full h-[calc(100vh-14rem)] text-gray-100 pb-5">
                                 {children}
                             </div>
                         </AccordionContent>
@@ -213,7 +207,8 @@ export function ThreePanelLayout({
                             <AccordionContent>
                                 <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-var(--header-height,220px))]">
                                     <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
-                                        <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
+                                        {/* Reduce z-index to avoid conflicts with sidebar */}
+                                        <TabsList className="grid grid-cols-3 w-full pt-3 z-10">
                                             {finalRightPanelContent.tabs.map((tab) => (
                                                 <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
                                             ))}
@@ -234,15 +229,6 @@ export function ThreePanelLayout({
     return (
         <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
             <div className="flex flex-col h-full overflow-auto">
-                {showAppHeader && (
-                    <AppHeader
-                        showLeftPanel={showLeftPanel}
-                        showRightPanel={showRightPanel}
-                        onToggleLeftPanel={handleToggleLeftPanel}
-                        onToggleRightPanel={handleToggleRightPanel}
-                        moduleOperations={moduleOperations}
-                    />
-                )}
 
                 <div className="flex flex-row h-full overflow-hidden">
                     {/* Left Panel (Input) */}
@@ -284,6 +270,16 @@ export function ThreePanelLayout({
                         className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden"
                         style={{ minWidth: `${MIN_MIDDLE_WIDTH}px` }}
                     >
+                        {showAppHeader && (
+                            <AppHeader
+                                showLeftPanel={showLeftPanel}
+                                showRightPanel={showRightPanel}
+                                onToggleLeftPanel={handleToggleLeftPanel}
+                                onToggleRightPanel={handleToggleRightPanel}
+                                moduleOperations={moduleOperations}
+                            />
+                        )}
+
                         <div className="flex-1 overflow-hidden min-w-0 w-full">{children}</div>
                     </div>
 

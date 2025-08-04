@@ -7,10 +7,12 @@ import { RootState } from '@/store';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
+import Guide from '@/components/ai-chat/Guide';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import { FileOperations } from "@/components/FileOperations";
 import {
@@ -45,6 +47,7 @@ const AIChatPage = () => {
     const dispatch = useDispatch();
     const [isMobile, setIsMobile] = useState(false);
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
+
 
     // Get chat data from Redux
     const messages = useSelector((state: RootState) => state.chat.currentMessages);
@@ -339,11 +342,21 @@ const AIChatPage = () => {
     const leftPanelContent = {
         tabs: [
             {
-                key: 'current-context',
-                label: 'Current Context',
+                key: 'current-content',
+                label: 'Current Content',
                 content: (
-                    <div className="space-y-4 p-2 max-h-[calc(100vh-5rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        Current context is the current document. You can edit it, save it, or load a new one.
+                    <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                        {currentDocument ? (
+                            <div className="p-2 bg-gray-800 rounded">
+                                <MarkdownPreview
+                                    mdPreview={currentDocument || 'No definition available'}
+                                />
+                            </div>
+                        ) : (
+                            <div className="p-2 bg-gray-800 rounded">
+                                <div className="text-sm text-gray-400">No domain found</div>
+                            </div>
+                        )}
                     </div>
                 )
             },
@@ -361,7 +374,7 @@ const AIChatPage = () => {
                 )
             },
         ],
-        defaultTab: 'guide'
+        defaultTab: 'context'
     };
 
     // Define right panel content with the new props
@@ -454,6 +467,7 @@ const AIChatPage = () => {
                                     selectedModel={selectedModel}
                                     setSelectedModel={setSelectedModel}
                                     currentDocument={currentDocument}
+                                    setCurrentDocument={setCurrentDocument}
                                     onResponseChange={handleResponseChange}
                                     onViewInMarkdown={handleViewInMarkdown}
                                     showLeftPanel={showLeftPanel}
@@ -467,6 +481,7 @@ const AIChatPage = () => {
                                     setMdPreview={setMdPreview}
                                     setCurrentMessages={setCurrentMessages}
                                     gettingStartedGuide={<GettingStartedGuide />}
+                                    guide={<Guide />}
                                     isMobile={isMobile}
                                     setIsMobile={setIsMobile}
                                 />

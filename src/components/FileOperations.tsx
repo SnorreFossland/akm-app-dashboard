@@ -9,8 +9,10 @@ import { usePathname } from 'next/navigation';
 import { handleSaveToLocalFile } from '@/features/model-universe/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/model-universe/components/HandleGetLocalFile';
 import { handleGetDefaultFile } from '@/features/model-universe/components/HandleGetDefaultFile';
-import { clearStore, clearModel, updateMetisInfo, updateModelInfo, updateProjectInfo, setSource } from '@/features/model-universe/modelSlice';
+import { clearStore, clearModel, updateMetisInfo, updateModelInfo, updateProjectInfo, setSource, setFileData } from '@/features/model-universe/modelSlice';
 import { getCurrentMenuItemDescription } from '@/utils/navigationHelpers';
+import { persistor } from '@/store/store';
+
 
 interface FileOperationsProps {
     className?: string;
@@ -35,7 +37,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     }, []);
 
     const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
-        handleGetLocalFile(event, dispatch, updateModelInfo, updateProjectInfo, updateMetisInfo);
+        handleGetLocalFile(event, dispatch, data);
     };
 
     const onGetDefaultFile = () => {
@@ -47,14 +49,21 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     };
 
     const onClearModel = () => {
-        // dispatch(clearModel({}));
         dispatch(clearStore());
-        localStorage.clear();
-        // // Clear only Redux persist data (more targeted approach)
-        // localStorage.removeItem('persist:root');
-        // // Optional: Reload the page to ensure the app starts fresh
-        // window.location.reload();
-        window.location.reload();
+
+        // Clear only Redux persist data (more targeted approach)
+        localStorage.removeItem('persist:root');
+
+        // Clear sessionStorage items related to chat
+        Object.keys(sessionStorage).forEach(key => {
+            if (key.startsWith('chat_session_')) {
+                sessionStorage.removeItem(key);
+            }
+        });
+
+        persistor.purge().then(() => {
+            window.location.reload();
+        });
     };
 
     return (

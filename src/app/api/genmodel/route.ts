@@ -11,11 +11,13 @@ const debug = false;
 // Model provider mapping
 const MODEL_PROVIDERS = {
   'gpt-4o': 'openai',
-  'gpt-4o-mini': 'openai',
-  'gpt-4-turbo': 'openai',
+  // 'gpt-4o-mini': 'openai',
+  // 'gpt-4-turbo': 'openai',
   'gpt-4': 'openai',
-  'gpt-3.5-turbo': 'openai',
+  // 'gpt-3.5-turbo': 'openai',
   'deepseek-chat': 'deepseek',
+  'deepseek-r1': 'deepseek-r1',
+  'mistral-mistral-small-24b-instruct-2501': 'mistral-24b',
   'mistral-small-latest': 'mistral',
   'dummy': 'dummy'
 };

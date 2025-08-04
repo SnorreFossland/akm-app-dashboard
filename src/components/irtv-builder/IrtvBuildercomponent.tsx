@@ -52,6 +52,8 @@ interface IrtvBuilderComponentProps {
     irtvPreview: string;
     setIrtvPreview: (preview: string) => void;
     setCurrentMessages: (messages: any[]) => void;
+    gettingStartedGuide: React.ReactNode;
+    guide: React.ReactNode;
 }
 
 export default function IrtvBuilderComponent({
@@ -67,7 +69,9 @@ export default function IrtvBuilderComponent({
     setIrtvContent,
     irtvPreview,
     setIrtvPreview,
-    setCurrentMessages
+    setCurrentMessages,
+    gettingStartedGuide,
+    guide
 }: IrtvBuilderComponentProps) {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
@@ -95,6 +99,7 @@ export default function IrtvBuilderComponent({
     const mdFileInputRef = useRef<HTMLInputElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const [showGuideModal, setShowGuideModal] = useState(false);
+    const [showGuide, setShowGuide] = useState(false);
     // IRTV specific state
     const [irtvAnalysis, setIrtvAnalysis] = useState<any>(null);
     const [requirements, setRequirements] = useState<string>('');
@@ -188,21 +193,18 @@ Verify that your responses are based on the provided context and requirements.
     };
 
     useEffect(() => {
-        if (data) {
-            const metis = data.phData?.metis;
-            if (!metis) {
-                console.error('Data does not contain metis:', data);
-                return;
-            }
-
-            if (metis?.metamodels) {
+        if (data?.phData?.metis) {
+            const metis = data.phData.metis;
+            if (metis.metamodels) {
                 const metamodel = metis.metamodels.find((mmodel: { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }) => mmodel.name.includes('IRTV'));
                 if (metamodel) {
                     setCurMetamodel(metamodel);
                 }
             }
         } else {
-            console.error('Data is null or undefined:', data);
+            if (!data) {
+                console.error('Data is null or undefined:', data);
+            }
         }
     }, [data]); // Only depend on data
 
@@ -239,7 +241,7 @@ Verify that your responses are based on the provided context and requirements.
 ${filteredObjTypes?.map(objtype => `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`).join('\n')}\n\n
 ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`).join('\n')}\n\n
 `;
-// ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
+        // ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
 
         const contextmetatypesString = `## **Metamodel**\n\n${metatypesString}`;
 
@@ -293,7 +295,7 @@ ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, fro
         };
         const existingObjectNames = newExistingInfoObjects.objects.map((obj: any) => obj.name);
 
-        let conceptString =`**Existing Context**\n\n
+        let conceptString = `**Existing Context**\n\n
 **The following objects and relationships are already defined in the current model and is only used for connecting new relationships.**\n\n
 - Before creating a new object, check if its name exists in the 'existingObjectNames' list.
 - If it exists(case -insensitive match), skip its creation.
@@ -469,7 +471,17 @@ ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, fro
             // setInput(refinePrompt);
 
             setStatusMsg(`Loaded file"${file.name}".`);
-            setIrtvContent(content); // This will be shown in the preview
+            // Create a valid Model object
+            const newModel: Model = {
+                id: `model-${Date.now()}`,
+                name: file.name,
+                description: `Content from ${file.name}`,
+                objects: [],
+                relships: [],
+                metamodelRef: curMetamodel?.id || '',
+                presentation: content,
+            };
+            setIrtvContent(newModel); // This will be shown in the preview
         } catch (err) {
             console.error(err);
             setStatusMsg(`Failed to load ${file.name}`);
@@ -647,8 +659,8 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
         setIsLoading(true);
         setStep(1);
         setActiveTab('model');
-        if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n', 
-            'systemPrompt\n', systemPrompt, '\n\n', 
+        if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',
+            'systemPrompt\n', systemPrompt, '\n\n',
             'systemBehaviorGuidelines\n', systemBehaviorGuidelines, '\n\n',
             'userPrompt\n', userPrompt, '\n\n',
             'userInput\n', input, '\n\n',
@@ -844,17 +856,17 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
 
         // setUserInput(input.trim()); // Set user input to the trimmed value
 
-        
+
         let userMessageContent = input;
-        
+
         if (docRefine) {
             userMessageContent = `${userMessageContent} #Content:\n ${irtvContent}`;
         } else {
             userMessageContent = `${userMessageContent}`;
         }
-        
+
         const userMessage: Message = { role: 'user', content: userMessageContent };
-        
+
         if (!debug) console.log('857 handleSubmit userInput:', userInput, 'input', input, 'docRefine:', docRefine, 'irtvContent:', irtvContent);
         // Add the user message to conversation history without truncating it
         setMessages((prev) => [...prev, userMessage]);
@@ -927,252 +939,286 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
     return (
         <>
             <div className="flex flex-col min-h-0 h-[96%] rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
-                {/* Message container with scrollable area */}
-                <div className="flex-1 min-h-0 max-h-[calc(100vh-17rem)] overflow-y-auto pb-[150px] w-full" id="message-container">
-                    {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
-                    {messages.length < 1 && (!input || input.trim() === "") ? (
-                        <div className="flex flex-col items-center justify-start w-full overflow-auto">
-                            {showDigitalRain ? (
-                                <DigitalRainIntro
-                                    onInteraction={() => setShowDigitalRain(false)}
-                                    speed={4}
-                                    backgroundColor="rgba(10, 20, 10, 0.03)"
-                                />
-                            ) : (
-                                <GettingStartedGuide />
+                {/* Guide Sidebar and Main Chat Container - Side by Side */}
+                <div className="flex h-full bg-secondary/40">
+                    {/* Guide Sidebar */}
+                    {showGuide && (
+                        <div className="flex flex-col items-center mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
+                            <div className="flex items-center justify-between w-full px-1">
+                                <div className="text-lg font-semibold text-orange-500/60">
+                                    Guide
+                                </div>
+                                <button
+                                    onClick={() => setShowGuide(false)}
+                                    className="text-gray-400 hover:text-white"
+                                    title="Close Guide"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
+                            </div>
+                            <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
+                                {guide}
+                            </div>
+                        </div>
+                    )}
+                    {/* Main chat container */}
+                    <div className="flex flex-1 flex-col h-full bg-secondary/40 overflow-hidden relative">
+                        <div className="flex items-center gap-2">
+                            {!showGuide && (
+                                <button
+                                    onClick={() => setShowGuide(true)}
+                                    className="text-gray-400 hover:text-blue-400 hover:bg-gray-800 pt-1 rounded-md"
+                                    title="Show Guide"
+                                >
+                                    <HelpCircle className="bg-yellow-700 text-white rounded h-4 w-4" />
+                                </button>
                             )}
                         </div>
-                    ) : null}
-
-                    <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
-                        {messages.map((message, index) => (
-                            <div key={index}
-                                className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
-                                    ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
-                                    : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
-                                    } `}
-                            >
-                                {/* header with avatar/role */}
-                                <div className="flex items-center justify-between gap-3 ps-1">
-                                    <div className="flex-shrink-0">
-                                        {message.role === 'user' ? (
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-6 h-6 text-blue-400"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    d="M5.121 17.804A4 4 0 0112 15a4 4 0 016.879 2.804M12 11a4 4 0 100-8 4 4 0 000 8z"
-                                                />
-                                            </svg>
-                                        ) : (
-                                            <svg
-                                                xmlns="http://www.w3.org/2000/svg"
-                                                className="w-6 h-6 text-gray-400"
-                                                fill="none"
-                                                viewBox="0 0 24 24"
-                                                stroke="currentColor"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth="2"
-                                                    d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
-                                                />
-                                            </svg>
-                                        )}
-                                    </div>
-                                    <div className="text-xs text-gray-400 me-auto overflow-auto">
-                                        {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
-                                    </div>
-
-                                    {message.role === 'assistant' && (
-                                        <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
-                                            {message.role === 'assistant' && (
-                                                <>
-                                                    {/* Add Save to Library button */}
-                                                    <button
-                                                        title="Save to Library"
-                                                        onClick={() => handleSaveToLibrary(message.content)}
-                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                                                    >
-
-                                                        <BookmarkPlus className="h-4 w-4" />
-                                                    </button>
-
-                                                    <button
-                                                        title="Save to File"
-                                                        onClick={() => handleSaveToFile(message.content)}
-                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
-                                                    >
-                                                        <Save className="h-4 w-4" />
-                                                    </button>
-                                                    <button
-                                                        onClick={() => handleCopyMessage(message.content, index)}
-                                                        className="ms-2 text-xs text-gray-400 hover:text-gray-200"
-                                                    >
-                                                        {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                                    </button>
-                                                    <button
-                                                        onClick={() => {
-                                                            console.log('Previewing message in markdown:', message.content);
-                                                            onViewInMarkdown(message.content);
-                                                            // Toggle preview state locally
-                                                            if (previewMessageIndex === index) {
-                                                                setPreviewMessageIndex(null);
-                                                            } else {
-                                                                setPreviewMessageIndex(index);
-                                                            }
-                                                        }}
-                                                        className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
-                                                    >
-                                                        Show Markdown Preview
-                                                        {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
-                                                    </button>
-                                                </>
-                                            )}
-                                        </div>
+                        {/* Message container with scrollable area */}
+                        <div className="flex-1 min-h-0 max-h-[calc(100vh-17rem)] overflow-y-auto pb-[150px] w-full" id="message-container">
+                            {/* style={{ height: `${ topHeight } px` }}> this is for draggable bar*/}
+                            {messages.length < 1 && (!input || input.trim() === "") ? (
+                                <div className="flex flex-col items-center justify-start w-full overflow-auto">
+                                    {showDigitalRain ? (
+                                        <DigitalRainIntro
+                                            onInteraction={() => setShowDigitalRain(false)}
+                                            speed={4}
+                                            backgroundColor="rgba(10, 20, 10, 0.03)"
+                                        />
+                                    ) : (
+                                        <GettingStartedGuide />
                                     )}
                                 </div>
+                            ) : null}
 
-                                {/* message content */}
-                                <div
-                                    className={`flex w-full p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
-                                    style={{ overflowWrap: 'anywhere' }}
-                                >
-                                    {/* {previewMessageIndex === index ? (
+                            <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
+                                {messages.map((message, index) => (
+                                    <div key={index}
+                                        className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
+                                            ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
+                                            : 'bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary'
+                                            } `}
+                                    >
+                                        {/* header with avatar/role */}
+                                        <div className="flex items-center justify-between gap-3 ps-1">
+                                            <div className="flex-shrink-0">
+                                                {message.role === 'user' ? (
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="w-6 h-6 text-blue-400"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth="2"
+                                                            d="M5.121 17.804A4 4 0 0112 15a4 4 0 016.879 2.804M12 11a4 4 0 100-8 4 4 0 000 8z"
+                                                        />
+                                                    </svg>
+                                                ) : (
+                                                    <svg
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        className="w-6 h-6 text-gray-400"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                    >
+                                                        <path
+                                                            strokeLinecap="round"
+                                                            strokeLinejoin="round"
+                                                            strokeWidth="2"
+                                                            d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
+                                                        />
+                                                    </svg>
+                                                )}
+                                            </div>
+                                            <div className="text-xs text-gray-400 me-auto overflow-auto">
+                                                {message.role === 'user' ? 'You' : `Assistant (${selectedModel})`}
+                                            </div>
+
+                                            {message.role === 'assistant' && (
+                                                <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                                    {message.role === 'assistant' && (
+                                                        <>
+                                                            {/* Add Save to Library button */}
+                                                            <button
+                                                                title="Save to Library"
+                                                                onClick={() => handleSaveToLibrary(message.content)}
+                                                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                                                            >
+
+                                                                <BookmarkPlus className="h-4 w-4" />
+                                                            </button>
+
+                                                            <button
+                                                                title="Save to File"
+                                                                onClick={() => handleSaveToFile(message.content)}
+                                                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                                            >
+                                                                <Save className="h-4 w-4" />
+                                                            </button>
+                                                            <button
+                                                                onClick={() => handleCopyMessage(message.content, index)}
+                                                                className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                                            >
+                                                                {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                                            </button>
+                                                            <button
+                                                                onClick={() => {
+                                                                    console.log('Previewing message in markdown:', message.content);
+                                                                    onViewInMarkdown(message.content);
+                                                                    // Toggle preview state locally
+                                                                    if (previewMessageIndex === index) {
+                                                                        setPreviewMessageIndex(null);
+                                                                    } else {
+                                                                        setPreviewMessageIndex(index);
+                                                                    }
+                                                                }}
+                                                                className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                                            >
+                                                                Show Markdown Preview
+                                                                {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
+                                                            </button>
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* message content */}
+                                        <div
+                                            className={`flex w-full p-4 ${message.role === 'assistant' ? 'bg-primary-foreground' : ''} whitespace-pre-wrap break-words break-all overflow-auto`}
+                                            style={{ overflowWrap: 'anywhere' }}
+                                        >
+                                            {/* {previewMessageIndex === index ? (
                                         <div className="prose prose-invert custom-markdown markdown-preview w-full">
                                             <MarkdownPreview mdPreview={irtvPreview} />
                                         </div>
                                     ) : ( */}
-                                        {message.content}
-                                    {/* )} */}
-                                </div>
+                                            {message.content}
+                                            {/* )} */}
+                                        </div>
 
-                                {/*  bottom buttons */}
-                                {message.role === 'assistant' && (
-                                    <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                        {/*  bottom buttons */}
                                         {message.role === 'assistant' && (
-                                            <>
-                                                {/* Add Save to Library button */}
+                                            <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
+                                                {message.role === 'assistant' && (
+                                                    <>
+                                                        {/* Add Save to Library button */}
 
-                                                <button
-                                                    title="Save to Library"
-                                                    onClick={() => handleSaveToLibrary(message.content)}
-                                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                                                >
+                                                        <button
+                                                            title="Save to Library"
+                                                            onClick={() => handleSaveToLibrary(message.content)}
+                                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                                                        >
 
-                                                    <BookmarkPlus className="h-4 w-4" />
-                                                </button>
+                                                            <BookmarkPlus className="h-4 w-4" />
+                                                        </button>
 
-                                                <button
-                                                    title="Save to File"
-                                                    onClick={() => handleSaveToFile(message.content)}
-                                                    className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
-                                                >
-                                                    <Save className="h-4 w-4" />
-                                                </button>
-                                                <button
-                                                    onClick={() => handleCopyMessage(message.content, index)}
-                                                    className="ms-2 text-xs text-gray-400 hover:text-gray-200"
-                                                >
-                                                    {copiedIndex === index ? 'Copied!' : 'Copy'}
-                                                </button>
-                                                <button
-                                                    onClick={() => {
-                                                        console.log('Previewing message in markdown:', message.content);
-                                                        onViewInMarkdown(message.content);
-                                                        // Toggle preview state locally
-                                                        if (previewMessageIndex === index) {
-                                                            setPreviewMessageIndex(null);
-                                                        } else {
-                                                            setPreviewMessageIndex(index);
-                                                        }
-                                                    }}
-                                                    className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
-                                                >
-                                                    Show Markdown Preview
-                                                    {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
-                                                </button>
+                                                        <button
+                                                            title="Save to File"
+                                                            onClick={() => handleSaveToFile(message.content)}
+                                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                                        >
+                                                            <Save className="h-4 w-4" />
+                                                        </button>
+                                                        <button
+                                                            onClick={() => handleCopyMessage(message.content, index)}
+                                                            className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                                        >
+                                                            {copiedIndex === index ? 'Copied!' : 'Copy'}
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                console.log('Previewing message in markdown:', message.content);
+                                                                onViewInMarkdown(message.content);
+                                                                // Toggle preview state locally
+                                                                if (previewMessageIndex === index) {
+                                                                    setPreviewMessageIndex(null);
+                                                                } else {
+                                                                    setPreviewMessageIndex(index);
+                                                                }
+                                                            }}
+                                                            className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
+                                                        >
+                                                            Show Markdown Preview
+                                                            {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
+                                                        </button>
 
 
-                                            </>
+                                                    </>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
-                                )}
-                            </div>
-                        ))}
-                        {/* Display the currently streaming message */}
-                        {isStreaming && irtvAnalysis && (
-                            <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary">
-                                <div className="flex items-center justify-between gap-3 ps-1">
-                                    <div className="flex-shrink-0">
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            className="w-6 h-6 text-gray-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
+                                ))}
+                                {/* Display the currently streaming message */}
+                                {isStreaming && irtvAnalysis && (
+                                    <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto w-full text-card-foreground flex-col border-4 border-secondary">
+                                        <div className="flex items-center justify-between gap-3 ps-1">
+                                            <div className="flex-shrink-0">
+                                                <svg
+                                                    xmlns="http://www.w3.org/2000/svg"
+                                                    className="w-6 h-6 text-gray-400"
+                                                    fill="none"
+                                                    viewBox="0 0 24 24"
+                                                    stroke="currentColor"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
+                                                    />
+                                                </svg>
+                                            </div>
+                                            <div className="text-xs text-gray-400 me-auto overflow-auto">
+                                                {`Assistant (${selectedModel}) - Accumulating response...`}
+                                            </div>
+                                        </div>
+
+                                        <div
+                                            className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
+                                            style={{ overflowWrap: 'anywhere' }}
                                         >
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M12 2a7 7 0 00-7 7v6a7 7 0 007 7 7 7 0 007-7V9a7 7 0 00-7-7zm0 2a5 5 0 015 5v6a5 5 0 01-5 5 5 5 0 01-5-5V9a5 5 0 015-5zm-2 7h4m-2-2v4"
-                                            />
-                                        </svg>
+                                            {streamedContent}
+                                        </div>
                                     </div>
-                                    <div className="text-xs text-gray-400 me-auto overflow-auto">
-                                        {`Assistant (${selectedModel}) - Accumulating response...`}
+                                )}
+
+                                {isLoading && (
+                                    <div className="flex justify-start my-4">
+                                        <ThinkingAnimation />
+                                        <div className="h-6" />
                                     </div>
-                                </div>
-
-                                <div
-                                    className="flex w-full p-1 px-4 whitespace-pre-wrap break-words break-all overflow-auto"
-                                    style={{ overflowWrap: 'anywhere' }}
-                                >
-                                    {streamedContent}
-                                </div>
+                                )}
+                                {/* This is the end of the messages */}
+                                <div ref={messagesEndRef}></div>
                             </div>
-                        )}
+                        </div>
 
-                        {isLoading && (
-                            <div className="flex justify-start my-4">
-                                <ThinkingAnimation />
-                                <div className="h-6" />
-                            </div>
-                        )}
-                        {/* This is the end of the messages */}
-                        <div ref={messagesEndRef}></div>
+                        {/* Add  message display near the top */}
+                        {
+                            statusMsg && (
+                                <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
+                                    <Info className="w-4 h-4 mr-2" />
+                                    <span>{statusMsg}</span>
+                                    {(statusMsg.includes('timed out') || statusMsg.includes('Failed to communicate') || statusMsg.includes('An error occurred')) && (
+                                        <button
+                                            onClick={handleRetry}
+                                            className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                                            disabled={isLoading || retryInProgress.current}
+                                        >
+                                            {isLoading ? 'Retrying...' : 'Retry Request'}
+                                        </button>
+                                    )}
+                                </div>
+                            )
+                        }
                     </div>
                 </div>
-                {/* <SimpleDivider
-                currentSize={topHeight}
-                onResize={(newHeight) => setTopHeight(Math.max(40, newHeight))}
-                /> */}
-                {/* Add  message display near the top */}
-                {
-                    statusMsg && (
-                        <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
-                            <Info className="w-4 h-4 mr-2" />
-                            <span>{statusMsg}</span>
-                            {(statusMsg.includes('timed out') || statusMsg.includes('Failed to communicate') || statusMsg.includes('An error occurred')) && (
-                                <button
-                                    onClick={handleRetry}
-                                    className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
-                                    disabled={isLoading || retryInProgress.current}
-                                >
-                                    {isLoading ? 'Retrying...' : 'Retry Request'}
-                                </button>
-                            )}
-                        </div>
-                    )
-                }
                 {/* Input area always at the bottom */}
                 <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg">
                     <div className="flex items-center justify-between p-1">
@@ -1602,16 +1648,6 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
 
 //                 // If we have accumulated some content, still show it
 //                 if (accumulatedResponse) {
-//                     setMessages((prev) => [...prev, { role: 'assistant', content: accumulatedResponse }]);
-//                 }
-//             };
-//         }).catch(error => {
-//             console.error('Failed to initiate streaming:', error);
-//             setStatusMsg(`Failed to start AI response: ${error.message}`);
-//             setIsLoading(false);
-//             setIsStreaming(false);
-//         });
-//     } catch (error) {
 //         console.error('Error sending message:', error);
 //         const errorMessage = error instanceof Error
 //             ? error.message

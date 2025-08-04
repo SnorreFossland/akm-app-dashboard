@@ -38,7 +38,9 @@ export async function GET(request: NextRequest) {
             model: sessionData.model
         });
 
-        const { messages } = sessionData;
+        const { messages, model: sessionModel, temperature: sessionTemperature } = sessionData;
+        const modelToUse = sessionModel || model;
+        const temperatureToUse = sessionTemperature || temperature;
 
         // Create the stream
         const encoder = new TextEncoder();
@@ -46,25 +48,37 @@ export async function GET(request: NextRequest) {
             async start(controller) {
                 try {
                     // Make the API request to your AI service
-                    const apiUrl = process.env.NODE_ENV === 'production'
-                        ? 'https://api.mistral.ai/v1/chat/completions'
-                        : 'https://api.mistral.ai/v1/chat/completions';
+                    let apiUrl;
+                    let apiKey;
+
+                    if (modelToUse.startsWith('gpt-')) {
+                        apiUrl = 'https://api.openai.com/v1/chat/completions';
+                        apiKey = process.env.OPENAI_API_KEY;
+                    } else if (modelToUse.startsWith('deepseek')) {
+                        apiUrl = 'https://api.deepseek.com/v1/chat/completions';
+                        apiKey = process.env.DEEPSEEK_API_KEY;
+                    } else {
+                        apiUrl = 'https://api.mistral.ai/v1/chat/completions';
+                        apiKey = process.env.MISTRAL_API_KEY;
+                    }
 
                     const response = await fetch(apiUrl, {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
-                            'Authorization': `Bearer ${process.env.MISTRAL_API_KEY}`,
+                            'Authorization': `Bearer ${apiKey}`,
                         },
                         body: JSON.stringify({
-                            model: model,
+                            model: modelToUse,
                             messages: messages,
-                            temperature: temperature,
+                            temperature: temperatureToUse,
                             stream: true,
                         }),
                     });
 
                     if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error('API request failed with body:', errorBody);
                         throw new Error(`API request failed: ${response.status} ${response.statusText}`);
                     }
 
