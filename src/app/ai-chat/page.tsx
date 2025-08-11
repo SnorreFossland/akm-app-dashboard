@@ -400,7 +400,7 @@ const AIChatPage = () => {
     };
 
     return (
-        <>
+        <div className="flex flex-col h-screen bg-background text-gray-100">
             <ThreePanelLayout
                 moduleOperations={<FileOperations />}
                 leftPanelContent={leftPanelContent}
@@ -582,7 +582,7 @@ const AIChatPage = () => {
             <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
                 <GettingStartedGuide />
             </Modal>
-        </>
+        </div>
     );
 };
 

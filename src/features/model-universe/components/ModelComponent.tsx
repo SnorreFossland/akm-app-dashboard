@@ -126,9 +126,9 @@ function ModelComponent() {
       {data
         ?
         // <Card className="p-0 m-0 max-h-[calc(100vh-8px)] overflow-hidden">
-        <Tabs defaultValue="model-summary" value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 group">
+        <Tabs defaultValue="model-summary" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0 h-full">
           {/* <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="m-1"> */}
-          <TabsList className="grid w-full grid-cols-3 max-w-lg my-0 mx-2 pt-2 relative z-20">
+          <TabsList className="grid w-full grid-cols-3 max-w-lg my-0 h-7 mx-2 relative z-20">
 
             <TabsTrigger
               value="model-summary"
@@ -157,10 +157,8 @@ function ModelComponent() {
                 {data && data.phData && data.phData.metis && data.phData.metis.models && (
                   // Replace the section from line 262-317 with this editable version:
                   <div className="scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                    <div className="flex flex-wrap">
-                      <div className="px-2 col text-left mb-4 w-1/3">
-                        <h4 className="text-gray-400 font-bold">Model Suite:</h4>
-                        <div className="border border-gray-600 p-2">
+                          <h4 className="text-gray-400 font-bold">Model Suite:</h4>
+                        <div className="p-2 mb-1 rounded">
                           <h5 className="text-gray-400 font-bold">Name</h5>
                           <input
                             type="text"
@@ -182,8 +180,46 @@ function ModelComponent() {
                             rows={4}
                           />
                         </div>
+                    <div className="flex flex-wrap">
+                      <div className="px-4 col text-left w-2/3">
+                        <h4 className="px-1 mb-1 text-gray-400 font-bold">Models:</h4>
+                        <div className="border border-gray-600 p-1 max-h-[calc(100vh-23rem)] overflow-y-auto">
+                          {data.phData.metis.models.map((model: any, index: number) => (
+                            <div key={model.id} className="flex flex-col border border-gray-500 p-1 mb-1 last:border-b-0">
+                              <h5 className="text-gray-400 font-bold">Name</h5>
+                              <div className="bg-background p-2 flex items-center">
+                                <span className="text-gray-400 mr-2">{index}:</span>
+                                <input
+                                  type="text"
+                                  value={model.name}
+                                  onChange={(e) => dispatch(updateModelInfo({
+                                    id: model.id,
+                                    name: e.target.value,
+                                    description: model.description
+                                  }))}
+                                  className="bg-transparent border border-gray-500 rounded px-2 py-1 flex-1"
+                                />
+                              </div>
+                              <h5 className="text-gray-400 p-1 font-bold">Description</h5>
+                              <div className="bg-background p-2">
+                                <textarea
+                                  value={model.description}
+                                  onChange={(e) => dispatch(updateModelInfo({
+                                    id: model.id,
+                                    name: model.name,
+                                    description: e.target.value
+                                  }))}
+                                  className="bg-transparent border border-gray-500 rounded px-2 py-1 w-full resize-vertical"
+                                  rows={4}
+                                />
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                      <div className="px-2 col text-left mb-4 w-1/3">
                         <div className="col text-left">
-                          <h4 className="text-gray-400 font-bold">Repository:</h4>
+                          <h4 className="px-1 text-gray-400 font-bold mb-1">GitHub Repository:</h4>
                           <div className="border border-gray-600 p-2">
                             {data.phFocus && 'focusProj' in data.phFocus ? (
                               <>
@@ -255,43 +291,6 @@ function ModelComponent() {
                               <p className="text-gray-400">No project information available</p>
                             )}
                           </div>
-                        </div>
-                      </div>
-                      <div className="px-4 col text-left w-2/3">
-                        <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
-                        <div className="border border-gray-600 p-1">
-                          {data.phData.metis.models.map((model: any, index: number) => (
-                            <div key={model.id} className="flex flex-col border border-gray-500 p-1 mb-1 last:border-b-0">
-                              <h5 className="text-gray-400 font-bold">Name</h5>
-                              <div className="bg-background p-2 flex items-center">
-                                <span className="text-gray-400 mr-2">{index}:</span>
-                                <input
-                                  type="text"
-                                  value={model.name}
-                                  onChange={(e) => dispatch(updateModelInfo({
-                                    id: model.id,
-                                    name: e.target.value,
-                                    description: model.description
-                                  }))}
-                                  className="bg-transparent border border-gray-500 rounded px-2 py-1 flex-1"
-                                />
-                              </div>
-                              <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                              <div className="bg-background p-2">
-                                <textarea
-                                  value={model.description}
-                                  onChange={(e) => dispatch(updateModelInfo({
-                                    id: model.id,
-                                    name: model.name,
-                                    description: e.target.value
-                                  }))}
-                                  className="bg-transparent border border-gray-500 rounded px-2 py-1 w-full resize-vertical"
-                                  rows={4}
-                                />
-                              </div>
-                              {/* <hr className="my-1" /> */}
-                            </div>
-                          ))}
                         </div>
                       </div>
                     </div>

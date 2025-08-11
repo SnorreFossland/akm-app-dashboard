@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Package } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -245,46 +246,9 @@ const IrtvBuilderPage = () => {
 
     const leftPanelContent = {
         tabs: [
-      {
-        key: 'current-domain',
-        label: 'Current Domain',
-        content: (
-          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            {data.phData.domain ? (
-              <div className="p-2 bg-gray-800 rounded">
-                {/* <div className="text-xl text-gray-400">{data.phData.domain.name}</div> */}
-                {/* <div className="text-sm text-gray-400">{data.phData.domain.description}</div> */}
-                {/* <div className="text-sm text-gray-400 mt-1">Definition:</div> */}
-                <MarkdownPreview
-                  mdPreview={data.phData.domain.presentation || 'No domain definition available'}
-                />
-              </div>
-            ) : (
-              <div className="p-2 bg-gray-800 rounded">
-                <div className="text-sm text-gray-400">No domain found</div>
-              </div>
-            )}
-          </div>
-        )
-      },
-            {
-                key: 'conversations',
-                label: 'Conversations',
-                content: (
-                    <div className="p-2 bg-background h-[calc(100vh-6rem)]">
-                        <ConversationsPanel
-                            conversations={conversations}
-                            onSelectConversation={handleSelectConversation}
-                            onDeleteConversation={handleDeleteConversation}
-                            onSaveConversation={handleSaveCurrentConversation}
-                            currentMessages={currentMessages}
-                        />
-                    </div>
-                )
-            },
             {
                 key: 'model',
-                label: 'Model Context',
+                label: 'Current Model',
                 content: (
                     <div className="mt-2 text-xs h-[calc(100vh-5rem)] overflow-auto">
                         {currentModel && (
@@ -311,7 +275,7 @@ const IrtvBuilderPage = () => {
             },
             {
                 key: 'other-context',
-                label: 'Other Context',
+                label: 'Add Context',
                 content: (
                     <DocumentPanel
                         mdContent={irtvContent}
@@ -323,14 +287,14 @@ const IrtvBuilderPage = () => {
                 )
             }
         ],
-        defaultTab: 'guide'
+        defaultTab: 'model'
     };
 
     const rightPanelContent = {
         tabs: [
             {
                 key: 'preview',
-                label: 'IRTV Preview',
+                label: 'Model Preview',
                 content: (
                     <OutputPanel
                         irtvPreview={irtvPreview}
@@ -348,7 +312,7 @@ const IrtvBuilderPage = () => {
     };
 
     return (
-        <>
+        <div className="flex flex-col h-screen bg-background text-gray-100">
             <ThreePanelLayout
                 moduleOperations={<FileOperations />}
                 leftPanelContent={leftPanelContent}
@@ -365,20 +329,13 @@ const IrtvBuilderPage = () => {
                         {/* Tab Structure with Left and Right buttons */}
                         <div className="flex items-center justify-between">
                             {/* Tabs */}
-                            <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
+                            <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-7 flex-1 mx-2 relative z-10">
                                 <TabsTrigger
                                     value="ai-irtv"
                                     className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                     title="AI Modelling Assistant"
-                                >                                          AI IRTV Modelling Assistant
-                                    <span className="mx-1"></span>
-                                    <span
-                                        onClick={() => setShowGuideModal(true)}
-                                        className="bg-blue-900/50 hover:bg-blue-500 text-blue-300 rounded-full"
-                                        title="Open domain guide"
-                                    >
-                                        <HelpCircle className="h-4 w-4" />
-                                    </span>
+                                >                                          
+                                Modelling Assistant
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="universe"
@@ -390,9 +347,10 @@ const IrtvBuilderPage = () => {
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="model"
-                                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=active]:bg-green-100/90 data-[state=active]:text-gray-600 data-[state=inactive]:border-gray-600/30 relative z-20"
+                                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=active]:bg-gray-100/90 data-[state=active]:text-gray-600 data-[state=inactive]:border-gray-600/30 relative z-20"
                                     title="Model Universe"
                                 >
+                                    <Package className="w-4 h-4" />
                                     Model
                                 </TabsTrigger>
                                 <TabsTrigger
@@ -497,7 +455,7 @@ const IrtvBuilderPage = () => {
             <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
                 <GettingStartedGuide />
             </Modal>
-        </>
+        </div>
     );
 }
 export default IrtvBuilderPage;

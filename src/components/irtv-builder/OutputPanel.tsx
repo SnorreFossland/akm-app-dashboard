@@ -255,23 +255,58 @@ export default function DocumentPanel({
         document.body.removeChild(div);
         return result;
     }
+    // ...inside DocumentPanel component, above handleDispatchIrtvData (add helper)...
+    const mergeModels = (base: Model, incoming: Model): Model => {
+        if (!incoming) return base;
+        const mergeById = <T extends { id?: string }>(a: T[] = [], b: T[] = []) => {
+            const map = new Map<string, T>();
+            a.forEach(item => {
+                if (item?.id) map.set(item.id, { ...item });
+            });
+            b.forEach(item => {
+                if (item?.id) {
+                    map.set(item.id, { ...map.get(item.id), ...item });
+                }
+            });
+            return Array.from(map.values());
+        };
+
+        return {
+            ...base,
+            ...incoming, // incoming scalar fields override (name, description, etc.)
+            objects: mergeById(base.objects, incoming.objects),
+            relships: mergeById(base.relships, incoming.relships),
+            // Preserve modelviews if either side has them (merge by id similarly)
+            modelviews: mergeById(
+                (base as any).modelviews || [],
+                (incoming as any).modelviews || []
+            )
+        };
+    };
+
+
     const handleDispatchIrtvData = () => {
         console.log('69 HandleDispatch:', dispatchDone, modelview, model);
         if (!model && !modelview) {
             alert('No IRTV to dispatch');
             return;
         }
-        const metamodRef = curMetamodel?.id;
-        const curmod = data.phData.metis.models[0];
-        console.log('75 Curmod:', curmod, model);
 
-        const newMod = {
-            ...curmod,
-            ...(model || {})
+        const focusModel =
+            data?.phData?.metis?.models?.find((m: Model) => m.id === data?.phFocus?.focusModel?.id) ||
+            data?.phData?.metis?.models?.[0];
+
+        if (!focusModel) {
+            alert('No base model available');
+            return;
         }
-        console.log('82 NewMod:', newMod);
-        setCurmod(newMod);
-        dispatch(setNewModel(newMod));
+
+        // Merge: model (generated) into focusModel
+        const mergedModel = mergeModels(focusModel, model);
+
+        console.log('82 Merged Model:', mergedModel);
+        setCurmod(mergedModel);
+        dispatch(setNewModel(mergedModel));
 
         if (modelview) {
             const completeModelview = {
@@ -279,7 +314,7 @@ export default function DocumentPanel({
                 id: modelview.id || crypto.randomUUID(),
                 name: modelview.name || 'Default View',
                 description: modelview.description || '',
-                modelRef: curmod?.id || '',
+                modelRef: mergedModel.id || '',
                 modified: false,
                 markedAsDeleted: false,
                 objectviews: modelview.objectviews || [],

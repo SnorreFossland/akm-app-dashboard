@@ -76,10 +76,10 @@ export function ThreePanelLayout({
     }, []);
 
     const [activeLeftTab, setActiveLeftTab] = useState(
-        leftPanelContent?.defaultTab || leftPanelContent?.tabs[0]?.key || 'guide'
+        leftPanelContent?.defaultTab || leftPanelContent?.tabs[0]?.key || 'document'
     );
     const [activeRightTab, setActiveRightTab] = useState(
-        rightPanelContent?.defaultTab || rightPanelContent?.tabs[0]?.key || 'help'
+        rightPanelContent?.defaultTab || rightPanelContent?.tabs[0]?.key || 'document'
     );
 
     const [mdContent, setMdContent] = useState<string>('');
@@ -140,7 +140,6 @@ export function ThreePanelLayout({
 
     const defaultLeftPanelContent = {
         tabs: [
-            { key: 'guide', label: 'Guide', content: <div className="p-4"><GettingStartedGuide /></div> },
             { key: 'document', label: 'Document', content: <DocumentPanel mdContent={mdContent} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} panelType="left" /> },
             { key: 'library', label: 'Library', content: <div className="p-4"><MarkdownLibrary onSelect={handleSelectFromLibrary} hideExportLibraryButton={true} /></div> }
         ],
@@ -170,12 +169,12 @@ export function ThreePanelLayout({
                         isMobile={isMobile}
                     />
                 )}
-                <Accordion type="single" collapsible defaultValue="main-panel" className="w-full h-full overflow-auto">
+                <Accordion type="single" collapsible defaultValue="main-panel" className="w-full  overflow-auto">
                     {leftPanelContent && (
                         <AccordionItem value="input-panel">
                             <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Input</AccordionTrigger>
                             <AccordionContent>
-                                <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-[calc(100vh-12rem)]">
+                                <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-full">
                                     <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1">
                                         {/* Reduce z-index to avoid conflicts with sidebar */}
                                         <TabsList className="grid grid-cols-3 w-full pt-3 z-10">
@@ -248,7 +247,7 @@ export function ThreePanelLayout({
                                     ))}
                                 </TabsList>
                                 {finalLeftPanelContent.tabs.map((tab) => (
-                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
+                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 max-h-full">
                                         {tab.content}
                                     </TabsContent>
                                 ))}

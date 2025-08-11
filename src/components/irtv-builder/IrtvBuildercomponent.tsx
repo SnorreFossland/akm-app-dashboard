@@ -938,9 +938,9 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
 
     return (
         <>
-            <div className="flex flex-col min-h-0 h-[96%] rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
+            <div className="flex flex-col min-h-0 h-full rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
                 {/* Guide Sidebar and Main Chat Container - Side by Side */}
-                <div className="flex h-full bg-secondary/40">
+                <div className="flex-1 flex flex-col h-0 bg-secondary/40 overflow-hidden relative">
                     {/* Guide Sidebar */}
                     {showGuide && (
                         <div className="flex flex-col items-center mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
@@ -1220,7 +1220,7 @@ This IRTV analysis provides a comprehensive framework for testing and verificati
                     </div>
                 </div>
                 {/* Input area always at the bottom */}
-                <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg">
+                <div className="relative bottom-7 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
                     <div className="flex items-center justify-between p-1">
                         {/* button row above the chat */}
                         <div className="flex items-center gap-2">

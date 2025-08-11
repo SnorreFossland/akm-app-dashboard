@@ -343,7 +343,7 @@ export default function DomainBuilderPage() {
   };
 
   return (
-    <>
+    <div className="flex flex-col h-screen bg-background text-gray-100">
       <ThreePanelLayout
         moduleOperations={<FileOperations />}
         leftPanelContent={leftPanelContent}
@@ -528,6 +528,6 @@ export default function DomainBuilderPage() {
           </div>
         </div>
       )}
-    </>
+    </div>
   );
 }
