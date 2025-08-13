@@ -320,6 +320,10 @@ const modelSlice = createSlice({
       console.log('344 action.payload', action.payload, state);
       state.phFocus.focusModel = action.payload;
     },
+    setPhFocus(state, action: PayloadAction<DataType['phFocus']>) {
+      console.log('344 action.payload', action.payload, state);
+      state.phFocus = action.payload;
+    },
     setFocusModelview(state, action: PayloadAction<DataType['phFocus']['focusModelview']>) {
       console.log('344 action.payload', action.payload, state);
       state.phFocus.focusModelview = action.payload;
@@ -482,6 +486,7 @@ export const {
   setNewModelview,
   setFocusModel,
   setFocusModelview,
+  setPhFocus,
   setSource,
   setDomainPrompt,
   setDomainData,

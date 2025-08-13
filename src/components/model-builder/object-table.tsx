@@ -26,6 +26,9 @@ interface Concept {
     name: string;
     description: string;
     color?: string; // Optional color property
+    typeName: string;
+    typeId: string;
+    proposedType: string;
 }
 
 interface ObjectTableProps {
@@ -37,13 +40,13 @@ export interface ObjectTableMeta extends TableMeta<Concept> { // Exported Interf
     onDelete?: (id: string) => void;
 }
 
-const rowNumberColumn: ColumnDef<Concept> = {
+const rowNumberColumn: ColumnDef<Concept, any> = {
     id: 'rowNumber',
     header: '#',
     cell: (info) => info.row.index + 1,
 };
 
-const columnsWithRowNumber = [rowNumberColumn, ...columns];
+const columnsWithRowNumber: ColumnDef<Concept, any>[] = [rowNumberColumn, ...(columns as ColumnDef<Concept, any>[])];
 
 export const ObjectTable: React.FC<ObjectTableProps> = ({ data }) => {
     // Manage sorting state

@@ -12,6 +12,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import ReactMarkdown from "react-markdown";
 import { LoadingCircularProgress } from "@/components/loading";
 import { setDomainData } from "@/features/model-universe/modelSlice";
+import TemperatureSelector from "@/components/ai-chat/TemperatureSelector";
+import ModelSelector from "@/components/ai-chat/ModelSelector";
 
 const debug = false; // Set to true for debugging
 
@@ -369,19 +371,17 @@ Looking ahead, we can expect...`
             {/* <CardTitle className="flex justify-start items-center text-gray-400 text-xl"> */}
             {/* <span className="text-active-item me-auto px-2">Domain Definition Builder</span> */}
             {/* <span className="mx-auto text-center">AI Powered Domain Knowledge Canvas</span> */}
-            <div className="flex items-center gap-2 ml-auto">
-                <span className="text-sm">Model:</span>
-                <select
-                    value={selectedModel}
-                    onChange={(e) => setSelectedModel(e.target.value)}
-                    className="bg-background text-white text-xs rounded p-1 border border-gray-700"
-                >
-                    <option value="deepseek-coder">Deepseek Coder</option>
-                    <option value="gpt-4-turbo">GPT-4 Turbo</option>
-                    <option value="mistral-small-latest">Mistral Small Latest</option>
-                    <option value="dummy">Dummy (Testing)</option>
-                </select>
-            </div>
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                    // Persist selected model to localStorage
+                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                }}
+                            />
+                            <TemperatureSelector />
+                        </div>
             {/* </CardTitle> */}
         </div>
     );

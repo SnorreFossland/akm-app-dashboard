@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Package } from 'lucide-react';
+import { Network, Package } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
@@ -16,6 +16,8 @@ import { LoadingCircularProgress } from "@/components/loading";
 // Import components (note the correct file name)
 import UniverseComponent from "@/features/model-universe/components/UniverseComponent";
 import IrtvBuilderComponent from '@/components/irtv-builder/IrtvBuilderComponent';
+
+import { OntologyCard } from '@/components/ontology-card';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import OutputPanel from '@/components/irtv-builder/OutputPanel';
 import ConversationsPanel from '@/components/irtv-builder/ConversationsPanel';
@@ -39,6 +41,8 @@ interface IrtvConversation {
 
 const IrtvBuilderPage = () => {
     const data = useSelector((state: RootState) => state.modelUniverse);
+    const ontology = useSelector((state: { modelUniverse: any }) => data.phData.ontology);
+    const domain = useSelector((state: { modelUniverse: any }) => data.phData.domain);
     const dispatch = useDispatch();
     const [dispatchDone, setDispatchDone] = useState(false);
     const iframeRef = useRef<HTMLIFrameElement>(null);
@@ -73,6 +77,7 @@ const IrtvBuilderPage = () => {
     const [showRightPanel, setShowRightPanel] = useState(true);
     const [activeLeftTab, setActiveLeftTab] = useState<'conversations' | 'model' | 'other-context'>('other-context');
 
+    const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     // IRTV Builder specific state
     const [irtvContent, setIrtvContent] = useState<Model | null>(null);
     const [irtvPreview, setIrtvPreview] = useState('');
@@ -179,6 +184,15 @@ const IrtvBuilderPage = () => {
         // Handle library export logic
     };
 
+    const handleViewInMarkdown = (response: string) => {
+        const cleanResponse = (response: string) => {
+            let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
+            cleaned = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
+            return cleaned;
+        };
+        const cleanedResponse = cleanResponse(response);
+        setMdPreview(cleanedResponse);
+    };
 
     const handleSaveToFile = (content: string) => {
         // Create a blob with the content
@@ -248,29 +262,42 @@ const IrtvBuilderPage = () => {
         tabs: [
             {
                 key: 'model',
-                label: 'Current Model',
+                label: 'Current Ontology',
                 content: (
-                    <div className="mt-2 text-xs h-[calc(100vh-5rem)] overflow-auto">
-                        {currentModel && (
-                            <ObjectCard model={{
-                                id: currentModel.id,
-                                name: currentModel.name,
-                                description: currentModel.description,
-                                objects: currentModel.objects?.map(obj => ({
-                                    id: obj.id || '',
-                                    name: obj.name || '',
-                                    description: obj.description || '',
-                                    proposedType: obj.proposedType || '',
-                                    typeRef: obj.typeRef || '',
-                                    typeName: obj.typeName || '',
-                                    category: obj.category || ''
-                                })) || [],
-                                relships: currentModel.relships || [],
-                                metamodelRef: currentModel.metamodelRef || '',
-                                modelviews: currentModel.modelviews || []
-                            }} />
+                    <div className="grid gap-4">
+                        {ontology ? (
+                            <OntologyCard domainData={domain} ontologyData={ontology} />
+                        ) : (
+                            <div className="text-center py-8">
+                                <Network className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+                                <p className="text-gray-400">No ontologies defined yet</p>
+                                <p className="text-sm text-gray-500 mt-2">
+                                    Use the Ontology Builder to create your first ontology
+                                </p>
+                            </div>
                         )}
                     </div>
+                    // <div className="mt-2 text-xs h-[calc(100vh-5rem)] overflow-auto">
+                    //     {currentModel && (
+                    //         <ObjectCard model={{
+                    //             id: currentModel.id,
+                    //             name: currentModel.name,
+                    //             description: currentModel.description,
+                    //             objects: currentModel.objects?.map(obj => ({
+                    //                 id: obj.id || '',
+                    //                 name: obj.name || '',
+                    //                 description: obj.description || '',
+                    //                 proposedType: obj.proposedType || '',
+                    //                 typeRef: obj.typeRef || '',
+                    //                 typeName: obj.typeName || '',
+                    //                 category: obj.category || ''
+                    //             })) || [],
+                    //             relships: currentModel.relships || [],
+                    //             metamodelRef: currentModel.metamodelRef || '',
+                    //             modelviews: currentModel.modelviews || []
+                    //         }} />
+                    //     )}
+                    // </div>
                 )
             },
             {
@@ -334,8 +361,8 @@ const IrtvBuilderPage = () => {
                                     value="ai-irtv"
                                     className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                                     title="AI Modelling Assistant"
-                                >                                          
-                                Modelling Assistant
+                                >
+                                    Modelling Assistant
                                 </TabsTrigger>
                                 <TabsTrigger
                                     value="universe"
@@ -370,6 +397,7 @@ const IrtvBuilderPage = () => {
                                     selectedModel={selectedIrtvModel}
                                     setSelectedModel={setSelectedIrtvModel}
                                     onResponseChange={handleIrtvResponseChange}
+                                    onViewInMarkdown={handleViewInMarkdown}
                                     onViewInPreview={handleViewInIrtvPreview}
                                     setShowLeftPanel={setShowLeftPanel}
                                     onAddContent={handleAddContent}
@@ -395,7 +423,8 @@ const IrtvBuilderPage = () => {
                             <iframe
                                 style={{ height: "100%", width: "100%" }}
                                 ref={iframeRef}
-                                src="http://localhost:3000/modelling"
+                                src="https://mimris.vercel.app/modelling"
+                                // src="http://localhost:3000/modelling"
                                 className="w-full h-full border-none rounded"
                                 title="Embedded Mimris Modeller"
                                 allow="clipboard-read; clipboard-write"

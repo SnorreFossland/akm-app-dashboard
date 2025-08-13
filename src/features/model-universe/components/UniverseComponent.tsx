@@ -8,7 +8,7 @@ import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import { Onest } from 'next/font/google';
 import { OntologyCard } from '@/components/ontology-card';
 import ModelComponent from './ModelComponent';
-import { Model, ModelView } from '@/features/model-universe/modelSlice';
+import { Model, ModelView, setFocusModel } from '@/features/model-universe/modelSlice';
 
 const UniverseComponent: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -23,27 +23,31 @@ const UniverseComponent: React.FC = () => {
     const [currentModel, setCurrentModel] = useState<Model | null>(null);
     const [currentModelview, setCurrentModelview] = useState<ModelView | null>(null);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
-    const [focusModel, setFocusModel] = useState<{ id: string; name: string } | null>(null);
+    const [focusModelLocal, setFocusModelLocal] = useState<{ id: string; name: string } | null>(null);
     const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
     const [focusObject, setFocusObject] = useState<{ id: string; name: string } | null>(null);
     const [focusObjectview, setFocusObjectview] = useState<{ id: string; name: string } | null>(null);
 
+
+
     useEffect(() => {
         if (data.phFocus) {
-            setFocusModel(data.phFocus.focusModel);
+            setFocusModelLocal(data.phFocus.focusModel);
             setFocusModelview(data.phFocus.focusModelview);
             setMetis(data.phData.metis);
-            setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
+            setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModelLocal?.id) || null);
             setCurrentModelview((currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id) as ModelView) || null);
         }
-    }, [data.phFocus, data.phData.metis, focusModel?.id, focusModelview?.id, currentModel?.modelviews]);
+    }, [data.phFocus, data.phData.metis, focusModelLocal?.id, focusModelview?.id, currentModel?.modelviews]);
 
     const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
         const selectedModel = data.phData.metis.models.find(model => model.name === event.target.value);
-        dispatch({ type: 'modelUniverse/setFocusModel', payload: selectedModel });
         setCurrentModel(selectedModel || null);
-        setFocusModel(selectedModel || null);
+        setFocusModelLocal(selectedModel || null);
         setFocusModelview(selectedModel?.modelviews[0] || null);
+        if (selectedModel) {
+            dispatch(setFocusModel({ id: selectedModel.id, name: selectedModel.name }));
+        }
         // if (selectedModel) {
         //   setCurrentModelview(selectedModel.modelviews[0]);
         // }
@@ -130,13 +134,9 @@ const UniverseComponent: React.FC = () => {
 
                     <TabsContent value="ontology" className="h-full m-0 p-0">
                         <div className="space-y-4">
-                            {/* <div className="flex items-center justify-between">
-                                <h2 className="text-xl font-semibold text-green-400">Ontology Overview</h2>
-                            </div> */}
-
                             <div className="grid gap-4">
                                 {ontology ? (
-                                    <OntologyCard domainData={domain} ontologyData={ontology} />
+                                    <OntologyCard domainData={{ ...domain || "" }} ontologyData={ontology} />
                                 ) : (
                                     <div className="text-center py-8">
                                         <Network className="w-12 h-12 text-gray-500 mx-auto mb-4" />

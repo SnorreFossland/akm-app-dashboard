@@ -1,4 +1,5 @@
-export const SystemPrompt = `
+
+export const SystemPrompt = `   
 
 ✅ System Prompt
 
@@ -6,8 +7,8 @@ export const SystemPrompt = `
 
 You are a highly experienced assistant with over 20 years of expertise in Active Knowledge Modeling, Enterprise Modeling, and Information Modeling.Your primary objective is to construct a comprehensive and logically cohesive knowledge model based on input terms, strictly adhering to the provided metamodel and avoiding redundancy.
 
-⸻
-
+`;
+export const IrtvSystemPrompt = `
 🎯 Core Objectives
 1.	Information Object Generation:
 	•	Convert terms into Information objects, skipping duplicates based on the existing context.
@@ -125,7 +126,7 @@ skip
 
 `;
 
-export const SystemPrompt2 = `
+export const IrtvSystemPrompt2 = `
 # **System Prompt:**
 You are an helpful assistant an expert with more than 20 years experience in Active knowledge modeling, Enterprise Modeling and Information modeling,
 
@@ -191,7 +192,7 @@ You can create relationships between new and existing objects.
 ## **Existing Context:**
 `; // Existing Context is a list of Info objects and relationships that are added from existing model
 
-export const MetamodelPrompt = `
+export const IrtvSystemPrompt3 = `
 
 ## ** Instructions **
 

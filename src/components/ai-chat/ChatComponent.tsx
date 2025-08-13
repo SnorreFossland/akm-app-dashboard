@@ -25,6 +25,7 @@ import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
 import ModelSelector from './ModelSelector';
+import TemperatureSelector from './TemperatureSelector';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from './DigitalRainIntro';

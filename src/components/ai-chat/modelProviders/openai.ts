@@ -17,7 +17,7 @@ export async function callOpenAI(messages: Message[], model: string, temperature
     body: {
       model: model,
       messages: messages,
-      temperature: temperature || 0.5,
+      temperature: temperature || 0.3,
     },
     timeout: 10000, // OpenAI uses a shorter timeout
     responseHandler: (data) => data.choices[0].message.content
@@ -49,7 +49,7 @@ export async function streamOpenAI(
       body: JSON.stringify({
         model: model,
         messages: messages,
-        temperature: temperature || 0.5,
+        temperature: temperature || 0.3,
         stream: true
       })
     });

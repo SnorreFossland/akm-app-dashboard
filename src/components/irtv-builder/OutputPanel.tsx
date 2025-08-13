@@ -11,7 +11,9 @@ import { LoadingCircularProgress } from "@/components/loading";
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
 import { ObjectCard } from '@/components/object-card';
 import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
-import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
+import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, setPhFocus, Metis, Model } from '@/features/model-universe/modelSlice';
+import { object } from 'zod';
+import { ObjectSchema } from '@/objectSchema';
 
 interface DocumentPanelProps {
     irtvPreview: string; // The preview content to display
@@ -255,38 +257,9 @@ export default function DocumentPanel({
         document.body.removeChild(div);
         return result;
     }
-    // ...inside DocumentPanel component, above handleDispatchIrtvData (add helper)...
-    const mergeModels = (base: Model, incoming: Model): Model => {
-        if (!incoming) return base;
-        const mergeById = <T extends { id?: string }>(a: T[] = [], b: T[] = []) => {
-            const map = new Map<string, T>();
-            a.forEach(item => {
-                if (item?.id) map.set(item.id, { ...item });
-            });
-            b.forEach(item => {
-                if (item?.id) {
-                    map.set(item.id, { ...map.get(item.id), ...item });
-                }
-            });
-            return Array.from(map.values());
-        };
-
-        return {
-            ...base,
-            ...incoming, // incoming scalar fields override (name, description, etc.)
-            objects: mergeById(base.objects, incoming.objects),
-            relships: mergeById(base.relships, incoming.relships),
-            // Preserve modelviews if either side has them (merge by id similarly)
-            modelviews: mergeById(
-                (base as any).modelviews || [],
-                (incoming as any).modelviews || []
-            )
-        };
-    };
-
 
     const handleDispatchIrtvData = () => {
-        console.log('69 HandleDispatch:', dispatchDone, modelview, model);
+        console.log('69 HandleDispatch:', dispatchDone); //, modelview, model);
         if (!model && !modelview) {
             alert('No IRTV to dispatch');
             return;
@@ -296,17 +269,41 @@ export default function DocumentPanel({
             data?.phData?.metis?.models?.find((m: Model) => m.id === data?.phFocus?.focusModel?.id) ||
             data?.phData?.metis?.models?.[0];
 
+        console.log('270 Focus Model:', focusModel);
+
         if (!focusModel) {
             alert('No base model available');
             return;
         }
 
         // Merge: model (generated) into focusModel
-        const mergedModel = mergeModels(focusModel, model);
+        const mergedModel = {
+            ...focusModel,
+            name: irtvContent?.name || 'Generated Model',
+            description: irtvContent?.description || '',
+            objects: [
+                ...focusModel.objects,
+                ...irtvContent?.objects || [],
+            ],
+            relships: [
+                ...focusModel.relships,
+                ...irtvContent?.relships || [],
+            ]
+        }
 
-        console.log('82 Merged Model:', mergedModel);
+        const phFocus = {
+                focusModel: focusModel,
+                focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
+                focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
+                focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
+                focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
+        };
+
+        console.log('82 Merged Model:', focusModel, mergedModel);
         setCurmod(mergedModel);
         dispatch(setNewModel(mergedModel));
+        dispatch(setFocusModel({ id: mergedModel.id, name: mergedModel.name }));
+        dispatch(setPhFocus(phFocus));
 
         if (modelview) {
             const completeModelview = {
@@ -366,17 +363,26 @@ export default function DocumentPanel({
                                             description: irtvContent?.description || '',
                                             objects: irtvContent?.objects?.map(obj => ({
                                                 id: obj.id || crypto.randomUUID(),
-                                                name: obj.name || '',
-                                                description: obj.description || '',
+                                                name: obj.name,
+                                                description: obj.description,
                                                 proposedType: obj.proposedType || '',
-                                                typeRef: obj.typeRef || '',
-                                                typeName: obj.typeName || '',
-                                                category: obj.category || ''
+                                                typeRef: obj.typeRef,
+                                                typeName: obj.typeName,
+                                                category: obj.category,
                                             })) || [],
-                                            relships: irtvContent?.relships || [],
+                                            relships: irtvContent?.relships?.map(rel => ({
+                                                id: rel.id || crypto.randomUUID(),
+                                                name: rel.name || '',
+                                                typeRef: rel.typeRef || '',
+                                                fromobjectRef: rel.fromobjectRef || '',
+                                                nameFrom: rel.nameFrom || '',
+                                                toobjectRef: rel.toobjectRef || '',
+                                                nameTo: rel.nameTo || '',
+                                            })) || [],
                                             metamodelRef: irtvContent?.metamodelRef || '',
                                             modelviews: irtvContent?.modelviews || []
-                                        }} />
+                                        }}
+                                        />
                                     </div>
                                 </div>
                             </TabsContent>

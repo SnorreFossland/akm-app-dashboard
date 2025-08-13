@@ -193,7 +193,7 @@ export async function POST(req: Request) {
         messages: messages,
         response_format: zodResponseFormat(schema, `${schema.constructor.name.toLowerCase()}Schema`),
         stream: true,
-        temperature: 0.1,
+        temperature: 0.3,
       });
     } else {
       // For Deepseek and Mistral, add detailed JSON schema instructions and collect full response

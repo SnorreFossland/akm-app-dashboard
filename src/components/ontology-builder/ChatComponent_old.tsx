@@ -707,7 +707,7 @@ Size: ${(file.size / 1024).toFixed(1)} KB
                 <div className="flex items-center gap-1">
                     <span className="text-gray-400">Temp:</span>
                     <select
-                        value={temperature || '0.5'}
+                        value={temperature || '0.3'}
                         onChange={(e) => {
                             const newTemp = parseFloat(e.target.value);
                             setTemperature(newTemp);

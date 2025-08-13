@@ -22,7 +22,7 @@ export async function callGemini(messages: Message[], model: string, temperature
     body: {
       contents: formattedMessages,
       generationConfig: {
-        temperature: temperature || 0.5,
+        temperature: temperature || 0.3,
       }
     },
     responseHandler: (data) => data.candidates[0].content.parts[0].text
@@ -68,7 +68,7 @@ export async function streamGemini(
       body: JSON.stringify({
         contents: formattedMessages,
         generationConfig: {
-          temperature: temperature || 0.5,
+          temperature: temperature || 0.3,
         }
       })
     });

@@ -7,24 +7,11 @@ export interface PromptTemplate {
 }
 // Export the templates array
 export const PROMPT_TEMPLATES: PromptTemplate[] = [
-    {
-        title: "Add Information Objects",
-        category: "Business",
-        usage: "Business",
-        content: "Add information objects for the following concepts:\n[concepts]."
-    },
 
     {
-        title: "Add Information Objects with Views and Tasks",
+        title: "Add Object types",
         category: "Business",
         usage: "Business",
-        content: "Add information objects with views and tasks for the following concepts:\n[concepts]."
-    },
-
-    {
-        title: "Add Information Objects, Views, Tasks and Roles",
-        category: "Business",
-        usage: "Business",
-        content: "Add information objects with views, tasks and roles for the following concepts:\n[concepts]."
+        content: "Add object types:"
     }
 ];

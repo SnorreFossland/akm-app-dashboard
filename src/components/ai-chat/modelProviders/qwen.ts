@@ -32,7 +32,7 @@ export async function callQwen(messages: Message[], model: string, temperature: 
             body: JSON.stringify({
                 model: model,
                 messages: qwenMessages,
-                temperature: 0.7,
+                temperature: 0.3,
                 max_tokens: 2000
             })
         });
@@ -77,7 +77,7 @@ export async function streamQwen(
                     messages: messages
                 },
                 parameters: {
-                    temperature: temperature || 0.7
+                    temperature: temperature || 0.3
                 },
                 stream: true
             })

@@ -19,6 +19,12 @@ interface OntologyCardProps {
         relationships: Relationship[];
         presentation: string;
     } | null;
+    domainData?: {
+        name: string;   
+        description: string;
+        presentation: string;
+        prompt: string;
+    }
 }
 
 interface Concept {

@@ -433,7 +433,7 @@ Now, refine the user input domain prompt into an exceptional domain prompt:
                 body: JSON.stringify({
                     messages,
                     model: selectedModel,
-                    temperature: 0.7,
+                    temperature: 0.3,
                 })
             });
 
@@ -557,7 +557,7 @@ Now, refine the following user input into an exceptional prompt:
                 body: JSON.stringify({
                     messages,
                     model: selectedModel,
-                    temperature: 0.7,
+                    temperature: 0.3,
                 })
             });
 
