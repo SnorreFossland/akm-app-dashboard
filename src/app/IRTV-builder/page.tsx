@@ -3,7 +3,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
-import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
+import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed, ListStart, List } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Network, Package } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
@@ -17,6 +17,7 @@ import { LoadingCircularProgress } from "@/components/loading";
 import UniverseComponent from "@/features/model-universe/components/UniverseComponent";
 import IrtvBuilderComponent from '@/components/irtv-builder/IrtvBuilderComponent';
 
+import ModelComponent from '@/features/model-universe/components/ModelComponent';
 import { OntologyCard } from '@/components/ontology-card';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import OutputPanel from '@/components/irtv-builder/OutputPanel';
@@ -41,6 +42,7 @@ interface IrtvConversation {
 
 const IrtvBuilderPage = () => {
     const data = useSelector((state: RootState) => state.modelUniverse);
+    const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
     const ontology = useSelector((state: { modelUniverse: any }) => data.phData.ontology);
     const domain = useSelector((state: { modelUniverse: any }) => data.phData.domain);
     const dispatch = useDispatch();
@@ -66,6 +68,8 @@ const IrtvBuilderPage = () => {
     const [currentModelview, setCurrentModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
     const [model, setModel] = useState<Model>(currentModel ?? { id: '', name: '', description: '', objects: [], relships: [], metamodelRef: '', modelviews: [] });
     const [curmod, setCurmod] = useState<Model | null>(null);
+    const [focusModelLocal, setFocusModelLocal] = useState<{ id: string; name: string } | null>(null);
+    const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
     const [isModelviewOpen, setIsModelviewOpen] = useState(false);
     const [isModelviewEditOpen, setIsModelviewEditOpen] = useState(false);
 
@@ -127,6 +131,22 @@ const IrtvBuilderPage = () => {
                 </div>
             </div>
         );
+    };
+
+    const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedModel = data.phData.metis.models.find(model => model.name === event.target.value);
+        setCurrentModel(selectedModel || null);
+        setFocusModelLocal(selectedModel || null);
+        setFocusModelview(selectedModel?.modelviews[0] || null);
+        if (selectedModel) {
+            dispatch(setFocusModel({ id: selectedModel.id, name: selectedModel.name }));
+        }
+        // if (selectedModel) {
+        //   setCurrentModelview(selectedModel.modelviews[0]);
+        // }
+    };
+
+    const handleModelviewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     };
 
     // IRTV Builder handlers
@@ -258,6 +278,7 @@ const IrtvBuilderPage = () => {
         setDispatchDone(true);
     };
 
+
     const leftPanelContent = {
         tabs: [
             {
@@ -317,6 +338,108 @@ const IrtvBuilderPage = () => {
         defaultTab: 'model'
     };
 
+    const middlePanelContent = {
+        tabs: [
+            {
+                key: 'ai-irtv',
+                label: 'AI Modelling Assistant',
+                content: (
+                    <div className="flex-1 overflow-auto bg-gray-800/20 h-full">
+                        <IrtvBuilderComponent
+                            input={irtvInput}
+                            setInput={setIrtvInput}
+                            selectedModel={selectedIrtvModel}
+                            setSelectedModel={setSelectedIrtvModel}
+                            onResponseChange={handleIrtvResponseChange}
+                            onViewInMarkdown={handleViewInMarkdown}
+                            onViewInPreview={handleViewInIrtvPreview}
+                            setShowLeftPanel={setShowLeftPanel}
+                            onAddContent={handleAddContent}
+                            irtvContent={irtvContent}
+                            setIrtvContent={setIrtvContent}
+                            irtvPreview={irtvPreview}
+                            setIrtvPreview={setIrtvPreview}
+                            setCurrentMessages={setCurrentMessages}
+                            gettingStartedGuide={<GettingStartedGuide />}
+                            guide={<Guide />}
+                        />
+                    </div>
+                ),
+            },
+            {
+                key: 'suite',
+                label: (
+                    <span className="inline-flex items-center gap-1">
+                        <List className="w-4 h-4" />
+                        {model?.name || 'Model'}
+                    </span>
+                ),
+                content: (
+                    <div className="space-y-4">
+                        {currentModel && (
+                            <ObjectCard model={{
+                                id: currentModel.id,
+                                name: currentModel.name,
+                                description: currentModel.description,
+                                objects: currentModel.objects?.map(obj => ({
+                                    id: obj.id || '',
+                                    name: obj.name || '',
+                                    description: obj.description || '',
+                                    proposedType: obj.proposedType || '',
+                                    typeRef: obj.typeRef || '',
+                                    typeName: obj.typeName || '',
+                                    category: obj.category || ''
+                                })) || [],
+                                relships: currentModel.relships || [],
+                                metamodelRef: currentModel.metamodelRef,
+                                modelviews: currentModel.modelviews
+                            }} />
+                        )}
+                    </div>
+                )
+            },
+            {
+                key: 'mimris',
+                label: (
+                    <span className="inline-flex items-center gap-1">
+                        <Package className="w-4 h-4" />
+                        {model?.name || 'Mimris'}
+                    </span>
+                ),
+                content: (
+                    <div className="w-full h-screen m-0 p-0">
+                        <iframe
+                            style={{ height: "100%", width: "100%" }}
+                            ref={iframeRef}
+                            src="https://mimris.vercel.app/modelling"
+                            // src="http://localhost:3000/modelling"
+                            className="w-full h-full border-none rounded"
+                            title="Embedded Mimris Modeller"
+                            allow="clipboard-read; clipboard-write"
+                            sandbox="allow-same-origin allow-scripts"
+                        />
+                    </div>
+                )
+            },
+            // {
+            //     key: 'save-chats',
+            //     label: 'save chats',
+            //     content: (
+            //         <div className="p-2 h-full">
+            //             <ConversationsPanel
+            //                 conversations={conversations}
+            //                 onSelectConversation={handleSelectConversation}
+            //                 onDeleteConversation={handleDeleteConversation}
+            //                 onSaveConversation={handleSaveCurrentConversation}
+            //                 currentMessages={currentMessages} // Pass this prop to enable/disable save button
+            //             />
+            //         </div>
+            //     )
+            // }
+        ],
+        defaultTab: 'ai-irtv'
+    };
+
     const rightPanelContent = {
         tabs: [
             {
@@ -338,152 +461,91 @@ const IrtvBuilderPage = () => {
         defaultTab: 'preview'
     };
 
+    const modelSelector = (
+        <div className="flex justify-between bg-gray-800 text-xs">
+            <div className="px-1">
+                <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
+                <span className="text-gray-300">{metis?.name}</span>
+            </div>
+            <div className="px-1">
+                <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
+                <select id="model-select" className="ps-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
+                    {metis?.models.map((model: { name: string }) => (
+                        <option key={model.name} value={model.name}>{model.name}</option>
+                    ))}
+                </select>
+            </div>
+            <div className="px-1">
+                <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block">Model View:</label>
+                <select id="model-view-select" className="ps-2 py-0 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelviewChange} value={currentModelview?.name}>
+                    {currentModel?.modelviews?.map((modelView: { name: string }, index: number) => (
+                        <option key={modelView.name + index} value={modelView.name}>{modelView.name}</option>
+                    ))}
+                </select>
+            </div>
+            <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
+        </div>
+    )
+
     return (
-        <div className="flex flex-col h-screen bg-background text-gray-100">
-            <ThreePanelLayout
-                moduleOperations={<FileOperations />}
-                leftPanelContent={leftPanelContent}
-                rightPanelContent={rightPanelContent}
-                showLeftPanel={showLeftPanel}
-                setShowLeftPanel={setShowLeftPanel}
-                showRightPanel={showRightPanel}
-                setShowRightPanel={setShowRightPanel}
-                className="h-full min-w-0 bg-background text-gray-100"
-            >
-                <div className="flex flex-col flex-grow bg-background text-gray-100 h-full">
-                    <Tabs defaultValue="ai-irtv" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0 h-full">
-
-                        {/* Tab Structure with Left and Right buttons */}
-                        <div className="flex items-center justify-between">
-                            {/* Tabs */}
-                            <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-7 flex-1 mx-2 relative z-10">
-                                <TabsTrigger
-                                    value="ai-irtv"
-                                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                    title="AI Modelling Assistant"
-                                >
-                                    Modelling Assistant
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="universe"
-                                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-
-                                    title="Current Universe"
-                                >
-                                    Current Model Universe
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="model"
-                                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=active]:bg-gray-100/90 data-[state=active]:text-gray-600 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                    title="Model Universe"
-                                >
-                                    <Package className="w-4 h-4" />
-                                    Model
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="saved-chat"
-                                    className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                >
-                                    Saved Chats
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
-                        {/* AI Assistant */}
-                        <TabsContent value="ai-irtv" className="flex-1 px-1 mt-1 h-full">
-                            <div className="flex-1 overflow-auto bg-gray-800/20 h-full">
-                                <IrtvBuilderComponent
-                                    input={irtvInput}
-                                    setInput={setIrtvInput}
-                                    selectedModel={selectedIrtvModel}
-                                    setSelectedModel={setSelectedIrtvModel}
-                                    onResponseChange={handleIrtvResponseChange}
-                                    onViewInMarkdown={handleViewInMarkdown}
-                                    onViewInPreview={handleViewInIrtvPreview}
-                                    setShowLeftPanel={setShowLeftPanel}
-                                    onAddContent={handleAddContent}
-                                    irtvContent={irtvContent}
-                                    setIrtvContent={setIrtvContent}
-                                    irtvPreview={irtvPreview}
-                                    setIrtvPreview={setIrtvPreview}
-                                    setCurrentMessages={setCurrentMessages}
-                                    gettingStartedGuide={<GettingStartedGuide />}
-                                    guide={<Guide />}
-                                />
-                            </div>
-                        </TabsContent>
-                        {/* Current Domain */}
-
-                        <TabsContent value="universe" className="flex-1 px-1 mt-0">
-                            <div className="flex-1 overflow-auto bg-gray-800/20 p-0">
-                                <UniverseComponent />
-                            </div>
-                        </TabsContent>
-                        {/* Model */}
-                        <TabsContent value="model" className="flex-1 mt-1 overflow-hidden h-full">
-                            <iframe
-                                style={{ height: "100%", width: "100%" }}
-                                ref={iframeRef}
-                                src="https://mimris.vercel.app/modelling"
-                                // src="http://localhost:3000/modelling"
-                                className="w-full h-full border-none rounded"
-                                title="Embedded Mimris Modeller"
-                                allow="clipboard-read; clipboard-write"
-                                sandbox="allow-same-origin allow-scripts"
-                            />
-                        </TabsContent>
-                        <TabsContent value="saved-chat" className="flex-1 px-1 mt-1 h-full">
-                            <div className="p-2 h-full">
-                                <ConversationsPanel
-                                    conversations={conversations}
-                                    onSelectConversation={handleSelectConversation}
-                                    onDeleteConversation={handleDeleteConversation}
-                                    onSaveConversation={handleSaveCurrentConversation}
-                                    currentMessages={currentMessages} // Pass this prop to enable/disable save button
-                                />
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </div>
-            </ThreePanelLayout>
-
-            {/* Library Modal */}
-            {isLibraryOpen && (
-                <div
-                    className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
-                    onClick={() => setIsLibraryOpen(false)}
+        <div className="flex-1 flex-row h-screen">
+            <div className="w-full border-b-2 border-gray-600">
+                <FileOperations />
+            </div>
+            <div className="flex flex-col h-screen bg-background text-gray-100">
+                <ThreePanelLayout
+                    moduleOperations={modelSelector}
+                    leftPanelContent={leftPanelContent}
+                    middlePanelContent={middlePanelContent}
+                    rightPanelContent={rightPanelContent}
+                    showLeftPanel={showLeftPanel}
+                    setShowLeftPanel={setShowLeftPanel}
+                    showRightPanel={showRightPanel}
+                    setShowRightPanel={setShowRightPanel}
+                    className="h-full min-w-0 bg-background text-gray-100"
                 >
-                    <div
-                        className="bg-background rounded-lg p-4 w-[600px]"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-blue-400">IRTV Document Library</h3>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={handleExportLibrary}
-                                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                                    disabled={!documents || documents.length === 0}
-                                >
-                                    Export Library
-                                </button>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileSelection}
-                                    accept=".json"
-                                    style={{ display: 'none' }}
-                                />
-                            </div>
-                        </div>
-                        {/* Add library content here */}
-                    </div>
-                </div>
-            )}
+                    <></>
+                </ThreePanelLayout>
 
-            {/* Add the modal at the end of the component */}
-            <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
-                <GettingStartedGuide />
-            </Modal>
+                {/* Library Modal */}
+                {isLibraryOpen && (
+                    <div
+                        className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
+                        onClick={() => setIsLibraryOpen(false)}
+                    >
+                        <div
+                            className="bg-background rounded-lg p-4 w-[600px]"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-bold text-blue-400">IRTV Document Library</h3>
+                                <div className="flex space-x-2">
+                                    <button
+                                        onClick={handleExportLibrary}
+                                        className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
+                                        disabled={!documents || documents.length === 0}
+                                    >
+                                        Export Library
+                                    </button>
+                                    <input
+                                        type="file"
+                                        ref={fileInputRef}
+                                        onChange={handleFileSelection}
+                                        accept=".json"
+                                        style={{ display: 'none' }}
+                                    />
+                                </div>
+                            </div>
+                            {/* Add library content here */}
+                        </div>
+                    </div>
+                )}
+
+                {/* Add the modal at the end of the component */}
+                <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
+                    <GettingStartedGuide />
+                </Modal>
+            </div>
         </div>
     );
 }

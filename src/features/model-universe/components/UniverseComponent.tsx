@@ -151,7 +151,7 @@ const UniverseComponent: React.FC = () => {
                     </TabsContent>
 
                     <TabsContent value="models" className="h-full m-0 p-0 border-t border-gray-600">
-                        <div className="flex justify-between pt-2">
+                        {/* <div className="flex justify-between pt-2">
                             <div className=" px-1 bg-background">
                                 <label htmlFor="model-select" className="mx-1 font-bold text-gray-400 inline-block">Current Model:</label>
                                 <select id="model-select" className="px-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
@@ -169,7 +169,7 @@ const UniverseComponent: React.FC = () => {
                                 </select>
                             </div>
                             <h3 className="flex mx-1 pl-1 font-bold  bg-gray-700 text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
-                        </div>
+                        </div> */}
                         <div className="space-y-4">
                             <ModelComponent />
                         </div>

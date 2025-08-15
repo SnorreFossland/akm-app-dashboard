@@ -224,8 +224,9 @@ Verify that your responses are based on the provided context and requirements.
 
     useEffect(() => {
         if (!curmod || !curMetamodel) return;
-
-        const types = (curMetamodel.objecttypes || []).map((o: any) => o.name + ",");
+        const types = (curMetamodel.objecttypes || [])
+            .filter((o: any) => o.name !== "EntityType")
+            .map((o: any) => o.name);
         let nextAutoPrompt = "";
         switch (curMetamodel.name) {
             case "IRTV_META":
@@ -778,7 +779,7 @@ ${mm.relshiptypes
                     </div>
                 )}
 
-                <div className="flex flex-1 flex-col h-full bg-secondary/40 overflow-hidden relative">
+                <div className="flex flex-col h-full bg-secondary/40 overflow-hidden relative">
                     <div className="flex items-center gap-2">
                         {!showGuide && (
                             <button
@@ -790,12 +791,11 @@ ${mm.relshiptypes
                             </button>
                         )}
                     </div>
-
                     <div
-                        className="flex-1 min-h-0 max-h-[calc(100vh-17rem)] overflow-y-auto pb-[150px] w-full"
+                        className="flex-1 min-h-0 max-h-[calc(100vh-17rem)] overflow-y-auto pb-[150px]"
                         id="message-container"
                     >
-                        {messages.length < 1 && (!input || input.trim() === "") && (
+                        {messages.length < 1 && (
                             <div className="flex flex-col items-center justify-start w-full overflow-auto">
                                 {showDigitalRain ? (
                                     <DigitalRainIntro

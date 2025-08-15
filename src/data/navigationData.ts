@@ -183,30 +183,19 @@ export const navigationData: NavigationData = {
                     icon: Share2,
                     description: "Ontology Modelling",
                 },
+
                 {
-                    title: "POPS Model Builder.",
-                    url: "/POPS-builder",
-                    icon: SquareParking,
-                    description: "Product, Organisation, Process, System (POPS) Modelling",
-                },
-                {
-                    title: "IRTV Model Builder",
+                    title: "Model Builder",
                     url: "/Irtv-builder",
                     icon: SquareUser,
                     description: "Active Knowledge Modelling with IRTV",
                 },
-                {
-                    title: "META Model Builder.",
-                    url: "/model-builder",
-                    icon: SquareM,
-                    description: "Product, Organisation, Process, System (POPS) Modelling",
-                },
-                {
-                    title: "Model Universe",
-                    url: "/model-universe",
-                    icon: Turtle,
-                    description: "Model Universe Management",
-                }
+                // {
+                //     title: "Model Universe",
+                //     url: "/model-universe",
+                //     icon: Turtle,
+                //     description: "Model Universe Management",
+                // }
             ]
         }
     ],

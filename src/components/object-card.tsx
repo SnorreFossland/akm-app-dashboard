@@ -54,7 +54,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         try {
             let diagram = 'graph TD;\n';
             const validNodes = new Set();
-
             // Add objects as nodes with better sanitization
             model.objects.forEach((object, index) => {
                 if (object && object.name && object.name.trim()) {
@@ -62,7 +61,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         .replace(/[^a-zA-Z0-9]/g, '_')
                         .replace(/_+/g, '_')
                         .replace(/^_|_$/g, '') || `object_${index}`;
-
                     const nodeName = object.name.replace(/"/g, "'");
                     diagram += `    ${nodeId}["${nodeName}"];\n`;
                     validNodes.add(object.name);

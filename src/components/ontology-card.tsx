@@ -260,7 +260,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                 {JSON.stringify(ontologyData, null, 2)}
             </pre> */}
             <Tabs value={activeTab} defaultValue='domain-ontology' onValueChange={setActiveTab} className=" p-1">
-                <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-7 flex-1 mx-2 relative z-10">
+                <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-7 flex-1 mx-2 relative z-1">
                     {pathname === '/model-builder' && (
                         <TabsTrigger
                             value="domain-summary"

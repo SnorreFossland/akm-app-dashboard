@@ -1,6 +1,6 @@
 "use client"
 import type { LucideIcon } from "lucide-react"
-import { useState } from "react"
+import { useState, useRef, useEffect } from "react"
 import Image from "next/image";
 import Link from "next/link";
 import {
@@ -28,16 +28,50 @@ import { ModeToggle } from '@/components/mode-toggle'
 import { navigationData } from '@/data/navigationData'
 
 export function AppSidebar({ ...props }) {
-  // Use both sidebar state and mobile detection
-  const { state, isMobile } = useSidebar()
-  const isCollapsed = state === "collapsed"
 
-  // FIXED: On mobile, always show text since it's rendered as a sheet overlay
-  // On desktop, show text only when not collapsed
+  const sidebarRef = useRef<HTMLDivElement>(null)
+
+  const { state, isMobile, setOpen, setOpenMobile, open } = useSidebar()
+  const isCollapsed = state === "collapsed"
   const shouldShowText = isMobile ? true : !isCollapsed
 
+  // Outside click handler - simplified
+  useEffect(() => {
+    if (isMobile || !open) return
+
+    const handleClickOutside = (e: MouseEvent) => {
+      const actualSidebar = document.querySelector('[data-sidebar="sidebar"]')
+      const target = e.target as Node
+
+      if (actualSidebar && !actualSidebar.contains(target)) {
+        setOpen(false)
+      }
+    }
+
+    const timeoutId = setTimeout(() => {
+      document.addEventListener('mousedown', handleClickOutside)
+    }, 100)
+
+    return () => {
+      clearTimeout(timeoutId)
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [isMobile, setOpen, open])
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        if (isMobile) setOpenMobile(false)
+        else setOpen(false)
+      }
+    }
+    window.addEventListener("keydown", onKeyDown)
+    return () => window.removeEventListener("keydown", onKeyDown)
+  }, [isMobile, setOpen, setOpenMobile])
+
   return (
-    <div className="relative bg-gray-500">
+    <div ref={sidebarRef} className="relative bg-gray-500"
+    >
       {/* Mobile: High z-index trigger button */}
       {isMobile && (
         <div className="fixed top-0 left-1 z-[60] w-8 h-8 flex items-center justify-center bg-transparent rounded-md ">
@@ -87,14 +121,20 @@ export function AppSidebar({ ...props }) {
           <SidebarGroup className="sidebar-group">
             {shouldShowText && <SidebarGroupLabel className="text-gray-300">AI Chat</SidebarGroupLabel>}
             <div className="text-white">
-              <NavMain items={navigationData.navMain} searchResults={navigationData.searchResults} />
+              <NavMain
+                items={navigationData.navMain}
+                searchResults={navigationData.searchResults}
+              />
             </div>
           </SidebarGroup>
           <hr className="border-gray-600" />
           <SidebarGroup className="sidebar-group">
             {shouldShowText && <SidebarGroupLabel className="text-gray-300">Mimris Modelling</SidebarGroupLabel>}
             <div className="text-white">
-              <NavMain items={navigationData.navMimris} searchResults={navigationData.searchResults} />
+              <NavMain
+                items={navigationData.navMimris}
+                searchResults={navigationData.searchResults}
+              />
             </div>
           </SidebarGroup>
           <SidebarFooter className="sidebar-footer mt-auto">

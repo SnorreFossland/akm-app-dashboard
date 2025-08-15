@@ -5,7 +5,7 @@ const ParentPage: React.FC = () => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     // useEffect(() => {
-    //     const iframe = iframeRef.current;
+    // >    const iframe = iframeRef.current;
     //     if (iframe) {
     //         iframe.onload = () => {
     //             try {

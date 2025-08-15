@@ -28,6 +28,14 @@ interface ThreePanelLayoutProps {
         }>;
         defaultTab?: string;
     };
+    middlePanelContent?: {
+        tabs: Array<{
+            key: string;
+            label: string;
+            content: ReactNode;
+        }>;
+        defaultTab?: string;
+    };
     rightPanelContent?: {
         tabs: Array<{
             key: string;
@@ -41,10 +49,10 @@ interface ThreePanelLayoutProps {
     moduleOperations?: ReactNode;
     isMobile?: boolean;
 }
-
 export function ThreePanelLayout({
     children,
     leftPanelContent,
+    middlePanelContent,
     rightPanelContent,
     showAppHeader = true,
     className = "min-w-0",
@@ -77,6 +85,9 @@ export function ThreePanelLayout({
 
     const [activeLeftTab, setActiveLeftTab] = useState(
         leftPanelContent?.defaultTab || leftPanelContent?.tabs[0]?.key || 'document'
+    );
+    const [activeMiddleTab, setActiveMiddleTab] = useState(
+        middlePanelContent?.defaultTab || middlePanelContent?.tabs[0]?.key || 'guide'
     );
     const [activeRightTab, setActiveRightTab] = useState(
         rightPanelContent?.defaultTab || rightPanelContent?.tabs[0]?.key || 'document'
@@ -145,7 +156,13 @@ export function ThreePanelLayout({
         ],
         defaultTab: 'guide'
     };
-
+    const defaultMiddlePanelContent = {
+        tabs: [
+            { key: 'guide', label: 'Getting Started', content: <GettingStartedGuide /> },
+            { key: 'document', label: 'Document', content: <DocumentPanel mdContent={mdContent} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} panelType="middle" /> }
+        ],
+        defaultTab: 'guide'
+    };
     const defaultRightPanelContent = {
         tabs: [
             { key: 'help', label: 'Help', content: <div className="p-4"><div className="space-y-4"><div className="bg-gray-700/50 p-4 rounded-lg"><h3 className="text-lg font-semibold text-white mb-2"> Tips</h3></div></div></div> }
@@ -154,6 +171,7 @@ export function ThreePanelLayout({
     };
 
     const finalLeftPanelContent = leftPanelContent || defaultLeftPanelContent;
+    const finalMiddlePanelContent = middlePanelContent || defaultMiddlePanelContent;
     const finalRightPanelContent = rightPanelContent || defaultRightPanelContent;
 
     if (isMobile) {
@@ -190,12 +208,31 @@ export function ThreePanelLayout({
                             </AccordionContent>
                         </AccordionItem>
                     )}
-
+                    {/* 
                     <AccordionItem value="main-panel">
                         <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Main</AccordionTrigger>
                         <AccordionContent>
                             <div className="flex-1 overflow-hidden min-w-0 w-full h-[calc(100vh-14rem)] text-gray-100 pb-5">
                                 {children}
+                            </div>
+                        </AccordionContent>
+                    </AccordionItem> */}
+
+                    <AccordionItem value="middle-panel">
+                        <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Input</AccordionTrigger>
+                        <AccordionContent>
+                            <div className="bg-gray-800 border-b border-gray-600 flex flex-col overflow-hidden h-full">
+                                <Tabs value={activeMiddleTab} onValueChange={setActiveMiddleTab} className="flex flex-col flex-1">
+                                    {/* Reduce z-index to avoid conflicts with sidebar */}
+                                    <TabsList className="grid grid-cols-3 w-full pt-3 z-10">
+                                        {finalMiddlePanelContent.tabs.map((tab) => (
+                                            <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                    {finalMiddlePanelContent.tabs.map((tab) => (
+                                        <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                    ))}
+                                </Tabs>
                             </div>
                         </AccordionContent>
                     </AccordionItem>
@@ -228,8 +265,7 @@ export function ThreePanelLayout({
     return (
         <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
             <div className="flex flex-col h-full overflow-auto">
-
-                <div className="flex flex-row h-full overflow-hidden">
+                <div className="flex h-full overflow-hidden">
                     {/* Left Panel (Input) */}
                     {showLeftPanel && (
                         <div className="flex flex-col bg-gray-800 border-r border-gray-600 overflow-hidden flex-shrink-0"
@@ -264,7 +300,7 @@ export function ThreePanelLayout({
                         />
                     )}
 
-                    {/* Main content area */}
+                    {/* Main content area - RENDER MIDDLE PANEL CONTENT HERE */}
                     <div
                         className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden"
                         style={{ minWidth: `${MIN_MIDDLE_WIDTH}px` }}
@@ -278,10 +314,36 @@ export function ThreePanelLayout({
                                 moduleOperations={moduleOperations}
                             />
                         )}
-
-                        <div className="flex-1 overflow-hidden min-w-0 w-full">{children}</div>
+                        {/* Middle panel tabs/content */}
+                        {middlePanelContent ? (
+                            <div className="flex flex-col flex-1 overflow-hidden">
+                                <Tabs
+                                    value={activeMiddleTab}
+                                    onValueChange={setActiveMiddleTab}
+                                    className="flex flex-col flex-1 overflow-hidden"
+                                >
+                                    <TabsList className="grid grid-cols-4 w-full pt-3 z-10">
+                                        {finalMiddlePanelContent.tabs.map((tab) => (
+                                            <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
+                                                {tab.label}
+                                            </TabsTrigger>
+                                        ))}
+                                    </TabsList>
+                                    {finalMiddlePanelContent.tabs.map((tab) => (
+                                        <TabsContent
+                                            key={tab.key}
+                                            value={tab.key}
+                                            className="flex-1 overflow-auto m-0 p-0"
+                                        >
+                                            {tab.content}
+                                        </TabsContent>
+                                    ))}
+                                </Tabs>
+                            </div>
+                        ) : (
+                            <div className="flex-1 overflow-hidden min-w-0 w-full">{children}</div>
+                        )}
                     </div>
-
                     {/* Resizable divider between main content and right panel */}
                     {showRightPanel && (
                         <div
@@ -320,3 +382,9 @@ export function ThreePanelLayout({
         </div>
     );
 }
+
+type TabProps = {
+    key: string;
+    label: React.ReactNode;
+    content: React.ReactNode;
+};

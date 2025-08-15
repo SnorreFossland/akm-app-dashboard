@@ -5,7 +5,7 @@ import React, { useRef, useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Building2, Network, Package } from 'lucide-react';
+import { Building2, List, Network, Package } from 'lucide-react';
 import { Card, CardTitle } from '@/components/ui/card';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot } from '@fortawesome/free-solid-svg-icons';
@@ -128,8 +128,8 @@ function ModelComponent() {
         // <Card className="p-0 m-0 max-h-[calc(100vh-8px)] overflow-hidden">
         <Tabs defaultValue="model-summary" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0 h-full">
           {/* <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="m-1"> */}
-          <TabsList className="grid w-full grid-cols-3 max-w-lg my-0 h-7 mx-2 relative z-20">
 
+          <TabsList className="grid w-full grid-cols-3 max-w-lg my-0 h-7 mx-2 relative z-20">
             <TabsTrigger
               value="model-summary"
               className="flex items-center gap-2 group-data-[state=active]:bg-blue-600/20 group-data-[state=active]:text-blue-400"
@@ -140,13 +140,14 @@ function ModelComponent() {
               value="model-list"
               className="flex items-center gap-2 group-data-[state=active]:bg-purple-600/20 group-data-[state=active]:text-purple-400"
             >
-              <Package className="w-4 h-4" />
+              <List className="w-4 h-4" />
               Model list
             </TabsTrigger>
             <TabsTrigger
               value="model-objects"
               className="flex items-center gap-2 group-data-[state=active]:bg-blue-600/20 group-data-[state=active]:text-blue-400"
             >
+              <Package className="w-4 h-4" />
               Current Model
             </TabsTrigger>
           </TabsList>

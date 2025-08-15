@@ -48,80 +48,154 @@ export function NavMain({
   className,
   items,
   searchResults,
-  forceShowText = false, // Add this prop
+  forceShowText = false,
 }: {
   items: NavigationSection[]
   searchResults: React.ComponentProps<typeof SidebarSearch>["results"]
-  forceShowText?: boolean // Add this prop type
+  forceShowText?: boolean
 } & React.ComponentProps<"ul">) {
   const pathname = usePathname()
-  const { state, isMobile } = useSidebar()
+  const { state, isMobile, setOpen } = useSidebar() // Add setOpen
+
+  // Track which collapsibles are open
+  const [openCollapsibles, setOpenCollapsibles] = React.useState<Set<string>>(new Set())
 
   // Use forceShowText prop to override collapsed behavior
   const shouldShowText = forceShowText || isMobile || state !== "collapsed"
 
-  return (
-    <SidebarMenu className={cn("grid gap-0.1", className)}>
-      {items.map((item) => {
-        const isActive = pathname === item.url
+  // Close all collapsibles when sidebar collapses
+  React.useEffect(() => {
+    if (state === "collapsed") {
+      setOpenCollapsibles(new Set())
+    }
+  }, [state])
 
-        if (!item.items) {
-          return (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                className={cn("w-full justify-start flex items-center gap-2", isActive && "bg-accent text-accent-foreground")}
-              >
-                <Link href={item.url} className="flex items-center gap-2">
-                  {item.icon && React.createElement(item.icon, { className: "h-5 w-5 flex-shrink-0" })}
-                  {shouldShowText && (
-                    <span className="nav-item-text" style={forceShowText ? { color: 'white', display: 'block' } : {}}>{item.title}</span>
-                  )}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          )
+  const toggleCollapsible = (itemTitle: string) => {
+    setOpenCollapsibles(prev => {
+      const newSet = new Set(prev)
+      if (newSet.has(itemTitle)) {
+        newSet.delete(itemTitle)
+      } else {
+        newSet.add(itemTitle)
+        // Auto-expand sidebar when opening a collapsible
+        if (!isMobile && state === "collapsed") {
+          setOpen(true)
         }
+      }
+      return newSet
+    })
+  }
 
-        return (
-          <Collapsible key={item.title} asChild>
-            <SidebarMenuItem>
-              <CollapsibleTrigger asChild>
+  return (
+    <div className="sticky top-0 z-[99] w-full bg-gray-900 text-foreground isolate">
+      <SidebarMenu className={cn("grid gap-0.1", className)}>
+        {items.map((item) => {
+          const isActive = pathname === item.url
+          const isOpen = openCollapsibles.has(item.title)
+
+          if (!item.items) {
+            return (
+              <SidebarMenuItem key={item.title}>
                 <SidebarMenuButton
-                  className={cn("w-full justify-start", isActive && "bg-accent text-accent-foreground")}
-                >
-                  {item.icon && React.createElement(item.icon, { className: "h-4 w-4 shrink-0" })}
-                  {shouldShowText && (
-                    <div className="nav-item-text ml-2 line-clamp-1 pr-6" style={forceShowText ? { color: 'white', display: 'block' } : {}}>{item.title}</div>
+                  className={cn(
+                    "w-full justify-start flex items-center gap-2 px-2 py-1.5 text-sm font-medium",
+                    "group-data-[collapsible=icon]:justify-center group-data-[collapsible=icon]:px-1", // Center and reduce padding when collapsed
+                    isActive && "bg-accent text-accent-foreground"
                   )}
-                  <ChevronRight className={cn(
-                    "h-4 w-4 shrink-0 transition-transform duration-200 group-data-[state=open]/collapsible:rotate-90",
-                    shouldShowText ? "ml-auto" : "ml-1"
-                  )} />
-                </SidebarMenuButton>
-              </CollapsibleTrigger>
-              <CollapsibleContent>
-                <SidebarMenu className="ml-4 border-l px-2">
-                  {item.items?.map((subItem) => (
-                    <SidebarMenuItem key={subItem.title}>
-                      <SidebarMenuButton
-                        className={cn(pathname === subItem.url && "bg-accent text-accent-foreground")}
+                >
+                  <Link href={item.url} className={cn(
+                    "flex items-center gap-2 min-w-0",
+                    "group-data-[collapsible=icon]:justify-center" // Center the link content when collapsed
+                  )}>
+                    {item.icon && React.createElement(item.icon, {
+                      className: cn(
+                        "h-5 w-5 flex-shrink-0",
+                        "group-data-[collapsible=icon]:h-4 group-data-[collapsible=icon]:w-4" // Smaller icon when collapsed
+                      )
+                    })}
+                    {shouldShowText && (
+                      <span
+                        className="nav-item-text flex-1 min-w-0 truncate"
+                        style={forceShowText ? { color: 'white', display: 'block' } : {}}
                       >
-                        <Link href={subItem.url} style={forceShowText ? { color: 'white' } : {}}>
-                          {subItem.title}
-                        </Link>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
-                  ))}
-                </SidebarMenu>
-              </CollapsibleContent>
-            </SidebarMenuItem>
-          </Collapsible>
-        )
-      })}
-    </SidebarMenu>
+                        {item.title}
+                      </span>
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          }
+
+          return (
+            <Collapsible key={item.title} open={isOpen} onOpenChange={() => toggleCollapsible(item.title)}>
+              <SidebarMenuItem className="group bg-gray-800">
+                <CollapsibleTrigger asChild>
+                  <SidebarMenuButton
+                    className={cn(
+                      "w-full justify-center group-data-[collapsible=icon]:justify-center", // Center when collapsed
+                      "group-data-[collapsible=icon]:px-1", // Explicit padding when collapsed
+                      isActive && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    {/* For collapsed state, wrap in a container */}
+                    <div className={cn(
+                      "flex items-center"
+                    )}>
+                      {item.icon && React.createElement(item.icon, {
+                        className: cn(
+                          "h-4 w-4 shrink-0"
+                        )
+                      })}
+                      {shouldShowText && (
+                        <div
+                          className="nav-item-text ml-1 flex-1 min-w-0 truncate"
+                          style={forceShowText ? { color: 'white', display: 'block' } : {}}
+                        >
+                          {item.title}
+                        </div>
+                      )}
+                      {shouldShowText && (
+                        <ChevronRight
+                          className={cn(
+                            "h-3 w-3 bg-transparent shrink-0 transition-transform duration-200",
+                            isOpen ? "rotate-90" : "rotate-0"
+                          )}
+                        />
+                      )}
+                    </div>
+                  </SidebarMenuButton>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <SidebarMenu className="ml-4 border-l px-2">
+                    {item.items?.map((subItem) => (
+                      <SidebarMenuItem key={subItem.title}>
+                        <SidebarMenuButton
+                          className={cn(
+                            "justify-start overflow-hidden",
+                            pathname === subItem.url && "bg-accent text-accent-foreground"
+                          )}
+                        >
+                          <Link
+                            href={subItem.url}
+                            className="block w-full min-w-0 truncate"
+                            style={forceShowText ? { color: 'white' } : {}}
+                          >
+                            {subItem.title}
+                          </Link>
+                        </SidebarMenuButton>
+                      </SidebarMenuItem>
+                    ))}
+                  </SidebarMenu>
+                </CollapsibleContent>
+              </SidebarMenuItem>
+            </Collapsible>
+          )
+        })}
+      </SidebarMenu>
+    </div>
   )
 }
-
 function SidebarSearch({
   results,
 }: {
@@ -190,7 +264,7 @@ function SidebarSearch({
         side="right"
         align="start"
         sideOffset={0}
-        className="w-96 p-0 z-100"
+        className="w-96 p-0 z-[220]"
       >
         <form>
           <div className="border-b p-2.5">
