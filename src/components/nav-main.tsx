@@ -43,7 +43,6 @@ interface NavigationSection {
   icon: LucideIcon
   items?: NavigationItem[]
 }
-
 export function NavMain({
   className,
   items,
@@ -55,10 +54,13 @@ export function NavMain({
   forceShowText?: boolean
 } & React.ComponentProps<"ul">) {
   const pathname = usePathname()
-  const { state, isMobile, setOpen } = useSidebar() // Add setOpen
+  const { state, isMobile, setOpen } = useSidebar()
 
   // Track which collapsibles are open
   const [openCollapsibles, setOpenCollapsibles] = React.useState<Set<string>>(new Set())
+
+  // Track when we need to expand the sidebar
+  const [shouldExpandSidebar, setShouldExpandSidebar] = React.useState(false)
 
   // Use forceShowText prop to override collapsed behavior
   const shouldShowText = forceShowText || isMobile || state !== "collapsed"
@@ -70,6 +72,14 @@ export function NavMain({
     }
   }, [state])
 
+  // Handle sidebar expansion when needed
+  React.useEffect(() => {
+    if (shouldExpandSidebar && !isMobile && state === "collapsed") {
+      setOpen(true)
+      setShouldExpandSidebar(false)
+    }
+  }, [shouldExpandSidebar, isMobile, state, setOpen])
+
   const toggleCollapsible = (itemTitle: string) => {
     setOpenCollapsibles(prev => {
       const newSet = new Set(prev)
@@ -77,9 +87,9 @@ export function NavMain({
         newSet.delete(itemTitle)
       } else {
         newSet.add(itemTitle)
-        // Auto-expand sidebar when opening a collapsible
+        // Schedule sidebar expansion for next render cycle
         if (!isMobile && state === "collapsed") {
-          setOpen(true)
+          setShouldExpandSidebar(true)
         }
       }
       return newSet

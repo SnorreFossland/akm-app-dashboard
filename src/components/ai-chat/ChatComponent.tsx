@@ -686,70 +686,70 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     // Handle file selection for context
     // Handle file selection for context
-//     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-//         const files = event.target.files;
-//         if (!files || files.length === 0) return;
-//         const selectedFiles = Array.from(files);
-//         setContextFiles(selectedFiles);
-//         setIsProcessingFile(true);
-//         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
+    //     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    //         const files = event.target.files;
+    //         if (!files || files.length === 0) return;
+    //         const selectedFiles = Array.from(files);
+    //         setContextFiles(selectedFiles);
+    //         setIsProcessingFile(true);
+    //         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
 
-//         try {
-//             // Process files one by one with status updates
-//             const fileContents = [];
-//             const binaryFiles = [];
+    //         try {
+    //             // Process files one by one with status updates
+    //             const fileContents = [];
+    //             const binaryFiles = [];
 
-//             for (const file of selectedFiles) {
-//                 setStatusMsg(`Reading ${file.name}...`);
-//                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+    //             for (const file of selectedFiles) {
+    //                 setStatusMsg(`Reading ${file.name}...`);
+    //                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
 
-//                 // Track binary files to show warning later
-//                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-//                     binaryFiles.push(file.name);
-//                 }
+    //                 // Track binary files to show warning later
+    //                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
+    //                     binaryFiles.push(file.name);
+    //                 }
 
-//                 const text = await extractTextFromFile(file);
-//                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
+    //                 const text = await extractTextFromFile(file);
+    //                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
 
-//                 fileContents.push(`
-// ====================
-// DOCUMENT: ${file.name}
-// ====================
+    //                 fileContents.push(`
+    // ====================
+    // DOCUMENT: ${file.name}
+    // ====================
 
-// ${text}
+    // ${text}
 
-// ====================
-// END OF DOCUMENT: ${file.name}
-// ====================`);
-//             }
+    // ====================
+    // END OF DOCUMENT: ${file.name}
+    // ====================`);
+    //             }
 
-//             const combinedContent = fileContents.join('\n\n');
-//             setContextContent(combinedContent);
-//             setIsContextAttached(true);
-//             console.log(`Total context size: ${combinedContent.length} chars`);
+    //             const combinedContent = fileContents.join('\n\n');
+    //             setContextContent(combinedContent);
+    //             setIsContextAttached(true);
+    //             console.log(`Total context size: ${combinedContent.length} chars`);
 
-//             // Show user feedback about attached files
-//             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
+    //             // Show user feedback about attached files
+    //             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
 
-//             // Add warning about binary files if any were attached
-//             if (binaryFiles.length > 0) {
-//                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-//                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-//             }
+    //             // Add warning about binary files if any were attached
+    //             if (binaryFiles.length > 0) {
+    //                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
+    //                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
+    //             }
 
-//             setStatusMsg(message);
-//             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-//         } catch (error) {
-//             console.error('Error processing files:', error);
-//             setStatusMsg(
-//                 error instanceof Error
-//                     ? `Error processing files: ${error.message}`
-//                     : `Error processing files: ${String(error)}`
-//             );
-//         } finally {
-//             setIsProcessingFile(false);
-//         }
-//     };
+    //             setStatusMsg(message);
+    //             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
+    //         } catch (error) {
+    //             console.error('Error processing files:', error);
+    //             setStatusMsg(
+    //                 error instanceof Error
+    //                     ? `Error processing files: ${error.message}`
+    //                     : `Error processing files: ${String(error)}`
+    //             );
+    //         } finally {
+    //             setIsProcessingFile(false);
+    //         }
+    //     };
 
     // Open file picker
     // const handleAddContext = () => {
@@ -771,7 +771,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         setIsStreaming(false);
         setStreamedContent('');
         console.log('770 sendMessageToAPI called with messages:', newMessages);
-        
+
         try {
             // Create messagesToSend array as you did before
             const messagesToSend: Message[] = [];
@@ -899,6 +899,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                             accumulatedResponse += data.content;
                             // Use throttled update instead of direct setState
                             updateStreamedContent(accumulatedResponse);
+                            console.log('902 Received SSE message:', data.content);
                         }
                     } catch (error) {
                         console.error('Error parsing SSE message:', error);
@@ -1167,9 +1168,9 @@ Do not use its contents as contextual input for other questions--I want it impro
     };
 
     return (
-        <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-20rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
+        <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
             {/* Guide Sidebar and Main Chat Container - Side by Side */}
-            <div className="flex h-full bg-secondary/40">
+            <div className="flex-1 flex flex-col h-0 bg-secondary/40">
                 {/* Guide Sidebar */}
                 {showGuide && (
                     <div className="flex flex-col items-center justify-between mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
@@ -1186,7 +1187,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                             </button>
                         </div>
                         <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
-                           {guide}
+                            {guide}
                         </div>
                     </div>
                 )}
@@ -1418,7 +1419,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                             {/* This is the end of the messages */}
                             <div ref={messagesEndRef}></div>
                         </div>
-                            {messages.length > 0 && (
+                        {messages.length > 0 && (
                             <div className="flex justify-end w-full">
                                 <button
                                     onClick={() => dispatch(setMessages([]))}
@@ -1428,7 +1429,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                            )}
+                        )}
                     </div>
                 </div>
                 {/* Add  message display */}
@@ -1449,17 +1450,18 @@ Do not use its contents as contextual input for other questions--I want it impro
                     ) */}
                 {/* <div className="pb-[600px]"></div> */}
             </div>
-
-            {/* Input area always at the bottom */}
-            {/* <div className={`flex  ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-18rem)]'} min-w-0 rounded-lg overflow-hidden relative`}></div> */}
-            {/* <div className="fixed bottom-0 left-10 right-1  bg-popover border-t border-gray-600 z-10"> */}
-            <div className={`${isMobile ? 'fixed bottom-6 left-0 right-0 px-2' : 'fixed bottom-1 left-11 right-2'} bg-popover border-t border-gray-600 z-10`}>
-                {pathname === '/ai-chat' &&
-                    <div className="flex items-center justify-between p-2 min-w-0">
-                        {/* button row above the chat */}
-                        <div className="flex items-center gap-2">
-                            {/* System Prompt Button */}
-                            {/* <div
+            {/* Input Area */}
+            <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
+                {/* Input area always at the bottom */}
+                {/* <div className={`flex  ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-18rem)]'} min-w-0 rounded-lg overflow-hidden relative`}></div> */}
+                {/* <div className="fixed bottom-0 left-10 right-1  bg-popover border-t border-gray-600 z-10"> */}
+                <div className={`${isMobile ? 'fixed bottom-0 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
+                    {pathname === '/ai-chat' &&
+                        <div className="flex items-center justify-between p-2 min-w-0">
+                            {/* button row above the chat */}
+                            <div className="flex items-center gap-2">
+                                {/* System Prompt Button */}
+                                {/* <div
                                     className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
                                     onClick={handleSystemPromptClick}
                                     title="Click to view system prompt"
@@ -1468,203 +1470,167 @@ Do not use its contents as contextual input for other questions--I want it impro
                                         <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
                                     </span>
                                 </div> */}
-                            {/* Context file input */}
-                            <button
-                                type="button"
-                                onClick={handleAddMD}
-                                className={`p-2 flex items-center gap-2 hover:text-gray-300 ${mdContent ? 'text-green-500' : 'text-gray-500'}`}
-                                disabled={isLoading}
-                                title="Add a local file to be refined."
-                            >
-                                <FileText className="w-5 h-5" /> {statusMsg.includes('Loaded') ? (mdContent ? 'File Loaded' : 'Load a file') : 'Load a file'}
-                            </button>
-                            <input
-                                ref={mdFileInputRef}
-                                type="file"
-                                accept=".md, .txt, .markdown, .docx"
-                                style={{ display: 'none' }}
-                                className="hidden"
-                                onChange={handleMDFileSelect}
-                            />
-                            {currentDocument && (
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={docRefine && !currentDocument ? false : docRefine}
-                                        disabled={!currentDocument || isLoading}
-                                        onChange={() => {
-                                            if (!currentDocument) {
-                                                setDocRefine(true);
-                                                setInput('');
-                                            } else {
-                                                const newRefineState = !docRefine;
-                                                setDocRefine(newRefineState);
-                                                // setInput(newRefineState ? refinePrompt : '');
-                                            }
-                                        }}
-                                        className="sr-only" // Hide default checkbox but keep it accessible
-                                    />
-                                    <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                                        {docRefine && mdContent && (
-                                            <div className="h-2 w-2 bg-white rounded-full"></div>
-                                        )}
-                                    </div>
-                                    <span className="text-gray-500">{currentDocument ? "Refine document" : "No document in the left panel"}</span>
-                                </label>
-                            )}
-                        </div>
-
-                        <div className="flex items-center gap-2">
-                            {/* Template selection */}
-                            {currentDocument && docRefine &&
-                                <div className="flex items-center gap-2">
-                                    <select
-                                        title="Select a style for the document"
-                                        className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
-                                        onChange={(e) => {
-                                            const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
-                                            if (selectedTemplate) {
-                                                setInput(selectedTemplate);
-                                                // setDocRefine(true);
-                                            }
-                                        }}
-                                        disabled={isLoading || !currentDocument}
-                                    >
-                                        <option value="">Select style...</option>
-                                        {Object.keys(refineTemplates).map((key) => (
-                                            <option key={key} value={key}>{key}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                            }
-                            {/* Template dropdown for prompt templates */}
-                            <div className="flex items-center gap-2">
-                                {!docRefine &&
-                                    <div className="">
-                                        <button
-                                            className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
-                                            onClick={() => {
-                                                const dropdown = document.getElementById('template-dropdown');
-                                                if (dropdown) {
-                                                    // Check position relative to viewport
-                                                    const button = document.activeElement as HTMLElement;
-                                                    const buttonRect = button.getBoundingClientRect();
-                                                    const viewportHeight = window.innerHeight;
-                                                    const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                    const spaceAbove = buttonRect.top;
-
-                                                    // First toggle visibility
-                                                    dropdown.classList.toggle('hidden');
-
-                                                    // If there's not enough space below, position above
-                                                    if (spaceBelow < 300 && spaceAbove > 150) {
-                                                        // Position above with margin to prevent cutoff
-                                                        dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
-                                                        dropdown.style.top = 'auto';
-                                                        dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
-                                                    } else {
-                                                        // Otherwise position below with margin
-                                                        dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
-                                                        dropdown.style.bottom = 'auto';
-                                                        dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                    }
-
-                                                    // Ensure the dropdown is fully visible within viewport
-                                                    setTimeout(() => {
-                                                        const dropdownRect = dropdown.getBoundingClientRect();
-                                                        if (dropdownRect.top < 0) {
-                                                            // If still cut off at top, adjust position
-                                                            dropdown.style.top = '5px';
-                                                            dropdown.style.bottom = 'auto';
-                                                        }
-                                                    }, 0);
+                                {/* Context file input */}
+                                <button
+                                    type="button"
+                                    onClick={handleAddMD}
+                                    className={`p-2 flex items-center gap-2 hover:text-gray-300 ${mdContent ? 'text-green-500' : 'text-gray-500'}`}
+                                    disabled={isLoading}
+                                    title="Add a local file to be refined."
+                                >
+                                    <FileText className="w-5 h-5" /> {statusMsg.includes('Loaded') ? (mdContent ? 'File Loaded' : 'Load a file') : 'Load a file'}
+                                </button>
+                                <input
+                                    ref={mdFileInputRef}
+                                    type="file"
+                                    accept=".md, .txt, .markdown, .docx"
+                                    style={{ display: 'none' }}
+                                    className="hidden"
+                                    onChange={handleMDFileSelect}
+                                />
+                                {currentDocument && (
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={docRefine && !currentDocument ? false : docRefine}
+                                            disabled={!currentDocument || isLoading}
+                                            onChange={() => {
+                                                if (!currentDocument) {
+                                                    setDocRefine(true);
+                                                    setInput('');
+                                                } else {
+                                                    const newRefineState = !docRefine;
+                                                    setDocRefine(newRefineState);
+                                                    // setInput(newRefineState ? refinePrompt : '');
                                                 }
                                             }}
-                                            title="Select a template"
-                                        >
-                                            <span>Prompt Templates</span>
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
-                                        </button>
-                                        <div
-                                            id="template-dropdown"
-                                            className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
-                                        >
-                                            <div className="p-1 border-b border-gray-600">
-                                                <select
-                                                    className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
-                                                    value={selectedCategory}
-                                                    onChange={(e) => setSelectedCategory(e.target.value)}
-                                                >
-                                                    {CATEGORIES.map((category) => (
-                                                        <option key={category} value={category}>
-                                                            {category === "All" ? "All" : category}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-                                            <div className="overflow-y-auto max-h-[180px]">
-                                                {filteredTemplates.map((template, index) => (
-                                                    <button
-                                                        key={index}
-                                                        className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                        onClick={() => {
-                                                            setSelectedReportTemplate(template.title);
-                                                            setInput(template.content);
-                                                            document.getElementById('template-dropdown')?.classList.add('hidden');
-                                                        }}
-                                                    >
-                                                        {template.title}
-                                                    </button>
-                                                ))}
-                                            </div>
+                                            className="sr-only" // Hide default checkbox but keep it accessible
+                                        />
+                                        <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                            {docRefine && mdContent && (
+                                                <div className="h-2 w-2 bg-white rounded-full"></div>
+                                            )}
                                         </div>
+                                        <span className="text-gray-500">{currentDocument ? "Refine document" : "No document in the left panel"}</span>
+                                    </label>
+                                )}
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                {/* Template selection */}
+                                {currentDocument && docRefine &&
+                                    <div className="flex items-center gap-2">
+                                        <select
+                                            title="Select a style for the document"
+                                            className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
+                                            onChange={(e) => {
+                                                const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
+                                                if (selectedTemplate) {
+                                                    setInput(selectedTemplate);
+                                                    // setDocRefine(true);
+                                                }
+                                            }}
+                                            disabled={isLoading || !currentDocument}
+                                        >
+                                            <option value="">Select style...</option>
+                                            {Object.keys(refineTemplates).map((key) => (
+                                                <option key={key} value={key}>{key}</option>
+                                            ))}
+                                        </select>
                                     </div>
                                 }
+                                {/* Template dropdown for prompt templates */}
+                                <div className="flex items-center gap-2">
+                                    {!docRefine &&
+                                        <div className="">
+                                            <button
+                                                className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
+                                                onClick={() => {
+                                                    const dropdown = document.getElementById('template-dropdown');
+                                                    if (dropdown) {
+                                                        // Check position relative to viewport
+                                                        const button = document.activeElement as HTMLElement;
+                                                        const buttonRect = button.getBoundingClientRect();
+                                                        const viewportHeight = window.innerHeight;
+                                                        const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                        const spaceAbove = buttonRect.top;
+
+                                                        // First toggle visibility
+                                                        dropdown.classList.toggle('hidden');
+
+                                                        // If there's not enough space below, position above
+                                                        if (spaceBelow < 300 && spaceAbove > 150) {
+                                                            // Position above with margin to prevent cutoff
+                                                            dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
+                                                            dropdown.style.top = 'auto';
+                                                            dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
+                                                        } else {
+                                                            // Otherwise position below with margin
+                                                            dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
+                                                            dropdown.style.bottom = 'auto';
+                                                            dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
+                                                        }
+
+                                                        // Ensure the dropdown is fully visible within viewport
+                                                        setTimeout(() => {
+                                                            const dropdownRect = dropdown.getBoundingClientRect();
+                                                            if (dropdownRect.top < 0) {
+                                                                // If still cut off at top, adjust position
+                                                                dropdown.style.top = '5px';
+                                                                dropdown.style.bottom = 'auto';
+                                                            }
+                                                        }, 0);
+                                                    }
+                                                }}
+                                                title="Select a template"
+                                            >
+                                                <span>Prompt Templates</span>
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                                </svg>
+                                            </button>
+                                            <div
+                                                id="template-dropdown"
+                                                className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
+                                            >
+                                                <div className="p-1 border-b border-gray-600">
+                                                    <select
+                                                        className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
+                                                        value={selectedCategory}
+                                                        onChange={(e) => setSelectedCategory(e.target.value)}
+                                                    >
+                                                        {CATEGORIES.map((category) => (
+                                                            <option key={category} value={category}>
+                                                                {category === "All" ? "All" : category}
+                                                            </option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div className="overflow-y-auto max-h-[180px]">
+                                                    {filteredTemplates.map((template, index) => (
+                                                        <button
+                                                            key={index}
+                                                            className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                            onClick={() => {
+                                                                setSelectedReportTemplate(template.title);
+                                                                setInput(template.content);
+                                                                document.getElementById('template-dropdown')?.classList.add('hidden');
+                                                            }}
+                                                        >
+                                                            {template.title}
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
                             </div>
                         </div>
-                    </div>
-                }
-                {pathname === '/prompt-builder' &&
-                    <div className="flex items-center justify-between p-2">
-                        {/* button row above the chat */}
-                        {/* System Prompt Button */}
-                        <div
-                            className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
-                            onClick={handleSystemPromptClick}
-                            title="Click to view system prompt"
-                        >
-                            <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
-                            </span>
-                        </div>
-
-                        <div className="flex items-center  gap-2">
-                            <button
-                                type="button"
-                                className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
-                                onClick={() => {
-                                    setInput('Create a prompt with the following items: [Goal], [Context], [Role]')
-                                }}
-                            >
-                                Create a enhanced prompt
-                            </button>
-                            {/* <button
-                                onClick={() => dispatch(setMessages([]))}
-                                title="Clear chat history"
-                                className=" py-1 text-xs text-red-500 hover:text-red-700"
-                            >
-                                <X className="w-4 h-4" />
-                            </button> */}
-                        </div>
-                    </div>
-
-                }
-                {pathname === '/domain-builder' &&
-                    <div className="flex items-center justify-between p-2">
-                        {/* button row above the chat */}
-                        <div className="flex items-center gap-2">
+                    }
+                    {pathname === '/prompt-builder' &&
+                        <div className="flex items-center justify-between p-2">
+                            {/* button row above the chat */}
                             {/* System Prompt Button */}
                             <div
                                 className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
@@ -1675,172 +1641,166 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
                                 </span>
                             </div>
-                        </div>
-                        <button
-                            type="button"
-                            className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
-                            onClick={() => {
-                                setDocRefine(true);
-                                setInput((currentDocument !== "") 
-                                ? `You are a Domain  Expert. Please Expand on the domain definition in the content below:` 
-                                : `You are a Domain Expert. Please create a domain definition based on the following: Domain Name: [Domain Name]`)
-                            }}
-                        >
-                            Define & Scope Domain
-                        </button>
-                    </div>
-                }
 
-
-                <div className="flex items-center gap-2"></div>
-
-                {/* START FORM */}
-                <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0 w-full">
-                    {/* Add placeholder jump buttons */}
-                    {templatePlaceholders.length > 0 && (
-                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                            {templatePlaceholders.map((placeholder, idx) => (
+                            <div className="flex items-center  gap-2">
                                 <button
-                                    key={idx}
-                                    type="button" // Add this to prevent form submission
-                                    onClick={() => selectTemplatePlaceholder(idx)}
-                                    className={buttonAccent}
+                                    type="button"
+                                    className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
+                                    onClick={() => {
+                                        setInput('Create a prompt with the following items: [Goal], [Context], [Role]')
+                                    }}
                                 >
-                                    {placeholder.text.length > 50
-                                        ? `${placeholder.text.substring(0, 49)}...`
-                                        : placeholder.text}
+                                    Create a enhanced prompt
                                 </button>
-                            ))}
-                        </div>
-                    )}
-                    <TextareaAutosize
-                        ref={textareaRef}
-                        value={input || ''}
-                        onChange={(e) => setInput(e.target.value)}
-                        onKeyDown={(e) => {
-                            console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
-                            if (e.key === 'Enter' && !e.shiftKey) {
-                                console.log('Enter pressed without shift - should submit'); // Add this
-                                const now = Date.now();
-                                // Use a custom property on the event target to track the last Enter key time
-                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                    e.preventDefault();
-                                    // If two returns occur within 2 seconds, submit the form
-                                    handleSubmit(e);
-                                    textarea.lastEnterTime = 0;
-                                } else {
-                                    // Set the last enter time and allow the default new line insertion
-                                    textarea.lastEnterTime = now;
-                                }
-                            }
-
-                            // Add tab key navigation for placeholders
-                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                                e.preventDefault(); // Prevent default tab behavior
-
-                                // Get current cursor position
-                                const cursorPos = e.currentTarget.selectionStart;
-
-                                // Find the next placeholder after cursor position
-                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                                // If no next placeholder, loop back to the first one
-                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                    nextPlaceholder = templatePlaceholders[0];
-                                }
-
-                                if (nextPlaceholder) {
-                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                                }
-                            }
-                        }}
-                        placeholder="Ask anything …"
-                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        minRows={6}
-                        maxRows={12}
-                        disabled={isLoading}
-                    />
-                    <div className="flex justify-between">
-                        <div className="flex items-center gap-2"></div>
-                        <div className="flex items-center text-foreground gap-1">
-                            <ModelSelector
-                                selectedModel={selectedModel}
-                                onModelChange={(newModel) => {
-                                    setSelectedModel(newModel);
-                                    // Persist selected model to localStorage
-                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
-                                }}
-                            />
-                            <TemperatureSelector />
+                                {/* <button
+                                onClick={() => dispatch(setMessages([]))}
+                                title="Clear chat history"
+                                className=" py-1 text-xs text-red-500 hover:text-red-700"
+                            >
+                                <X className="w-4 h-4" />
+                            </button> */}
+                            </div>
                         </div>
 
-                        {/* now include the send‐button here */}
-                        <div className="flex justify-between px-2 ">
-                            <button
-                                type="submit"
-                                className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
-                                disabled={isLoading || !input?.trim()}
-                                title="Send your question"
-                            >Send
-                                <svg
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    strokeWidth={2}
-                                    className="w-8 h-8"
+                    }
+                    {pathname === '/domain-builder' &&
+                        <div className="flex items-center justify-between p-2">
+                            {/* button row above the chat */}
+                            <div className="flex items-center gap-2">
+                                {/* System Prompt Button */}
+                                <div
+                                    className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
+                                    onClick={handleSystemPromptClick}
+                                    title="Click to view system prompt"
                                 >
-                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                                </svg>
+                                    <span className="flex items-center gap-1 text-gray-400 text-xs">
+                                        <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
+                                onClick={() => {
+                                    setDocRefine(true);
+                                    setInput((currentDocument !== "")
+                                        ? `You are a Domain  Expert. Please Expand on the domain definition in the content below:`
+                                        : `You are a Domain Expert. Please create a domain definition based on the following: Domain Name: [Domain Name]`)
+                                }}
+                            >
+                                Define & Scope Domain
                             </button>
                         </div>
-                    </div>
+                    }
 
-                </form>
-            </div>
+                    <div className="flex items-center gap-2"></div>
 
-
-            {/* System Prompt Modal */}
-
-            <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
-                <div>
-                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
-                    <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
-                        <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
-                    </div>
-
-                    {contextContent && isContextAttached && (
-                        <>
-                            <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
-                            <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
-                                <p className="mb-2 text-sm text-gray-300">
-                                    {contextFiles.length} file(s) attached as context:
-                                </p>
-                                <ul className="list-disc pl-5 text-sm">
-                                    {contextFiles.map((file) => (
-                                        <li key={file.name} className="mb-1">
-                                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
-                                        </li>
-                                    ))}
-                                </ul>
+                    {/* START FORM */}
+                    <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0 w-full">
+                        {/* Add placeholder jump buttons */}
+                        {templatePlaceholders.length > 0 && (
+                            <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                                <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                                {templatePlaceholders.map((placeholder, idx) => (
+                                    <button
+                                        key={idx}
+                                        type="button" // Add this to prevent form submission
+                                        onClick={() => selectTemplatePlaceholder(idx)}
+                                        className={buttonAccent}
+                                    >
+                                        {placeholder.text.length > 50
+                                            ? `${placeholder.text.substring(0, 49)}...`
+                                            : placeholder.text}
+                                    </button>
+                                ))}
                             </div>
-                        </>
-                    )}
+                        )}
+                        <TextareaAutosize
+                            ref={textareaRef}
+                            value={input || ''}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    console.log('Enter pressed without shift - should submit'); // Add this
+                                    const now = Date.now();
+                                    // Use a custom property on the event target to track the last Enter key time
+                                    const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                    if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                        e.preventDefault();
+                                        // If two returns occur within 2 seconds, submit the form
+                                        handleSubmit(e);
+                                        textarea.lastEnterTime = 0;
+                                    } else {
+                                        // Set the last enter time and allow the default new line insertion
+                                        textarea.lastEnterTime = now;
+                                    }
+                                }
 
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={() => setIsSystemPromptOpen(false)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                            Close
-                        </button>
-                    </div>
+                                // Add tab key navigation for placeholders
+                                if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                    e.preventDefault(); // Prevent default tab behavior
+
+                                    // Get current cursor position
+                                    const cursorPos = e.currentTarget.selectionStart;
+
+                                    // Find the next placeholder after cursor position
+                                    let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                                    // If no next placeholder, loop back to the first one
+                                    if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                        nextPlaceholder = templatePlaceholders[0];
+                                    }
+
+                                    if (nextPlaceholder) {
+                                        selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                    }
+                                }
+                            }}
+                            placeholder="Ask anything …"
+                            className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            minRows={6}
+                            maxRows={12}
+                            disabled={isLoading}
+                        />
+                        <div className="flex justify-between">
+                            <div className="flex items-center gap-2"></div>
+                            <div className="flex items-center text-foreground gap-1">
+                                <ModelSelector
+                                    selectedModel={selectedModel}
+                                    onModelChange={(newModel) => {
+                                        setSelectedModel(newModel);
+                                        // Persist selected model to localStorage
+                                        localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                    }}
+                                />
+                                <TemperatureSelector />
+                            </div>
+
+                            {/* now include the send‐button here */}
+                            <div className="flex justify-between px-2 ">
+                                <button
+                                    type="submit"
+                                    className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
+                                    disabled={isLoading || !input?.trim()}
+                                    title="Send your question"
+                                >Send
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                        className="w-8 h-8"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
-            </Modal>
-            {/* Add padding at the bottom of the message container to prevent content being hidden behind the fixed input */}
-
+            </div>
         </div >
     )
 }

@@ -71,7 +71,7 @@ export async function POST(req: Request) {
 
     // Get the request body as text first to debug
     const bodyText = await req.text();
-    console.log('72 Request body text:', bodyText);
+    // console.log('72 Request body text:', bodyText);
 
     // Check if body is empty
     if (!bodyText || bodyText.trim() === '') {

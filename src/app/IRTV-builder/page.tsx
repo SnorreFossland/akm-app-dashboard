@@ -15,7 +15,7 @@ import { LoadingCircularProgress } from "@/components/loading";
 
 // Import components (note the correct file name)
 import UniverseComponent from "@/features/model-universe/components/UniverseComponent";
-import IrtvBuilderComponent from '@/components/irtv-builder/IrtvBuilderComponent';
+import IrtvBuilderComponent from '@/components/irtv-builder/IrtvBuildercomponent';
 
 import ModelComponent from '@/features/model-universe/components/ModelComponent';
 import { OntologyCard } from '@/components/ontology-card';
@@ -111,6 +111,7 @@ const IrtvBuilderPage = () => {
     useEffect(() => {
         setCurrentModel(data?.phData?.metis?.models.find(model => model.id === data.phFocus?.focusModel?.id) || null);
         currentModel && setModel(currentModel);
+        setCurMetamodel((data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]).find(metamodel => metamodel.id === currentModel?.metamodelRef) || null);
     });
 
     const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
@@ -421,21 +422,6 @@ const IrtvBuilderPage = () => {
                     </div>
                 )
             },
-            // {
-            //     key: 'save-chats',
-            //     label: 'save chats',
-            //     content: (
-            //         <div className="p-2 h-full">
-            //             <ConversationsPanel
-            //                 conversations={conversations}
-            //                 onSelectConversation={handleSelectConversation}
-            //                 onDeleteConversation={handleDeleteConversation}
-            //                 onSaveConversation={handleSaveCurrentConversation}
-            //                 currentMessages={currentMessages} // Pass this prop to enable/disable save button
-            //             />
-            //         </div>
-            //     )
-            // }
         ],
         defaultTab: 'ai-irtv'
     };
@@ -475,13 +461,9 @@ const IrtvBuilderPage = () => {
                     ))}
                 </select>
             </div>
-            <div className="px-1">
-                <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block">Model View:</label>
-                <select id="model-view-select" className="ps-2 py-0 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelviewChange} value={currentModelview?.name}>
-                    {currentModel?.modelviews?.map((modelView: { name: string }, index: number) => (
-                        <option key={modelView.name + index} value={modelView.name}>{modelView.name}</option>
-                    ))}
-                </select>
+            <div className="px-1 me-auto">
+                {/* <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block"></label> */}
+                <span className="text-gray-400">{curMetamodel?.name || "Default"}</span>
             </div>
             <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
         </div>

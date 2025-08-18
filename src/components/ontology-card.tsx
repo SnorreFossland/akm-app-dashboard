@@ -135,7 +135,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                 });
             }
 
-            console.log('Generated Mermaid diagram:', diagram);
+            // console.log('Generated Mermaid diagram:', diagram);
             setMermaidDiagram(diagram);
 
         } catch (error) {

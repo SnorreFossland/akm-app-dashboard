@@ -14,6 +14,11 @@ import { LoadingCircularProgress } from "@/components/loading";
 import { setDomainData } from "@/features/model-universe/modelSlice";
 import TemperatureSelector from "@/components/ai-chat/TemperatureSelector";
 import ModelSelector from "@/components/ai-chat/ModelSelector";
+import {
+    addMessage,
+    setMessages,
+    Message
+} from '@/features/chat/chatSlice';
 
 const debug = false; // Set to true for debugging
 

@@ -16,7 +16,6 @@ import ReactMarkdown from 'react-markdown';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
-
 import {
     SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt
 } from '@/app/ontology-builder/prompts';
@@ -144,10 +143,10 @@ const OntologyBuilder = (
             conceptString += `**Relationships**\n\n${existingRelationships?.map((r) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
 
-        const userPrompt = `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}`;
-        const userInput = `${UserInput} \n\n ${domainData?.presentation || ""} \n\n ${domainPresentation} \n\n ${topicDescr}`;
         const newSystemPrompt = SystemPrompt;
         const newSystemBehaviorGuidelines = SystemBehaviorGuidelines;
+        const userPrompt = `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}`;
+        const userInput = `${UserInput} \n\n ${domainData?.presentation || ""} \n\n ${domainPresentation} \n\n ${topicDescr}`;
         const newContextOntology = (impOntologyString) ? `${ExistingOntology} ${impOntologyString}` : "";
         const newContextItems = (conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "";
         const newContextMetamodel = `${MetamodelPrompt}`;
@@ -296,11 +295,11 @@ const OntologyBuilder = (
                     schemaName: 'OntologySchema',
                     systemPrompt: systemPrompt || "",
                     systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                    userPrompt: userPrompt || "",
-                    userInput: userInput || "",
-                    contextItems: contextItems || "",
-                    contextOntology: contextOntology || "",
-                    contextMetamodel: contextMetamodel || ""
+                    userPrompt: userPrompt || "", // Generic user prompt
+                    userInput: userInput || "", // Specific user input like new aspects or additional concepts
+                    contextItems: contextItems || "", // Existing concepts
+                    contextOntology: contextOntology || "", // Existing ontology
+                    contextMetamodel: contextMetamodel || "" // Existing metamodel
                 })
             });
 
@@ -465,26 +464,14 @@ const OntologyBuilder = (
                     <details className="absolute bottom-full w-full">
                         <summary className="bg-gray-800 text-white cursor-pointer p-1">Add Ontology Concepts...</summary>
                         <div className="w-full rounded-md border border-gray-600 bg-gray-800 p-2">
-                            <div className="flex flex-col flex-grow">
-                                {/* <label htmlFor="suggestedConcepts" className="text-white mt-2">Domain name </label>
-                                <Input
-                                    id="suggestedConcepts"
-                                    className="flex-grow p-1 rounded bg-background"
-                                    value={domainDesc}
-                                    disabled={isLoading}
-                                    onChange={(e) => setDomainDesc(e.target.value)}
-                                    placeholder="Enter your domain name i.e.: E-Scooter Rental Services"
-                                /> */}
-                                <label htmlFor="suggestedConcepts" className="text-white mt-2">Concepts</label>
-                                <Input
-                                    id="suggestedConcepts"
-                                    className="flex-grow p-1 rounded bg-background"
-                                    value={Array.isArray(suggestedOntologyData?.concepts) ? suggestedOntologyData.concepts.map(concept => concept.name).join(', ') : ""}
-                                    disabled={isLoading}
-                                    onChange={(e) => setSuggestedOntologyData({ ...suggestedOntologyData, concepts: e.target.value })}
-                                    placeholder="Enter your concepts i.e.: Scooter, User, booking"
-                                />
-                            </div>
+                            <Input
+                                id="suggestedConcepts"
+                                className="flex-grow p-1 rounded bg-background"
+                                value={Array.isArray(suggestedOntologyData?.concepts) ? suggestedOntologyData.concepts.map(concept => concept.name).join(', ') : ""}
+                                disabled={isLoading}
+                                onChange={(e) => setSuggestedOntologyData({ ...suggestedOntologyData, concepts: e.target.value })}
+                                placeholder="Enter your concepts i.e.: Scooter, User, booking"
+                            />
                             <div className="cursor-pointer">Import Ontology</div>
                             <div className="flex-grow bg-gray-700 text-gray-500">
                                 <Textarea

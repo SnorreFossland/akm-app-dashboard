@@ -53,13 +53,34 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
 
         // Clear only Redux persist data (more targeted approach)
         localStorage.removeItem('persist:root');
+        localStorage.removeItem('currentDocument');
 
-        // Clear sessionStorage items related to chat
-        Object.keys(sessionStorage).forEach(key => {
-            if (key.startsWith('chat_session_')) {
+        // Clear sessionStorage items related to chat with debugging
+        try {
+            const sessionKeys = Object.keys(sessionStorage);
+            console.log('All sessionStorage keys:', sessionKeys);
+
+            const chatKeys = sessionKeys.filter(key => key.startsWith('chat_session_'));
+            console.log('Chat session keys found:', chatKeys);
+
+            chatKeys.forEach(key => {
+                console.log(`Removing sessionStorage key: ${key}`);
                 sessionStorage.removeItem(key);
+            });
+
+            // Alternative approach - clear all sessionStorage if needed
+            // sessionStorage.clear();
+
+            console.log('Remaining sessionStorage keys after cleanup:', Object.keys(sessionStorage));
+        } catch (error) {
+            console.error('Error clearing sessionStorage:', error);
+            // Fallback: try to clear all sessionStorage
+            try {
+                sessionStorage.clear();
+            } catch (fallbackError) {
+                console.error('Fallback sessionStorage.clear() also failed:', fallbackError);
             }
-        });
+        }
 
         persistor.purge().then(() => {
             window.location.reload();

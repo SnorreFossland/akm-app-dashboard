@@ -44,7 +44,8 @@ export const handleGetLocalFile = (event: React.ChangeEvent<HTMLInputElement>, d
         };
 
         console.log('27 Updated data:', updatedData);
-        dispatch(setFileData(updatedData));
+        dispatch(setFileData(fileData));
+        // dispatch(setFileData(updatedData));
 
       } catch (error) {
         console.error('Error parsing JSON:', error);

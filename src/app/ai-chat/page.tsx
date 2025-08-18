@@ -45,10 +45,17 @@ export interface ChatComponentProps {
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
+    const data = useSelector((state: RootState) => state.modelUniverse);
+    const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
+    const documents = useSelector((state: RootState) => data.phData.documents);
+
+    const [currentModel, setCurrentModel] = useState<Model | null>(null);
+    const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
+
+    const [currentModelview, setCurrentModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
+    const [focusModelLocal, setFocusModelLocal] = useState<{ id: string; name: string } | null>(null);
+    const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
     const [isMobile, setIsMobile] = useState(false);
-    const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
-
-
     // Get chat data from Redux
     const messages = useSelector((state: RootState) => state.chat.currentMessages);
     const conversations = useSelector((state: RootState) => state.chat.conversations);
@@ -99,6 +106,12 @@ const AIChatPage = () => {
         // Save using Redux action (title will be auto-generated)
         dispatch(saveConversation({}));
     };
+
+    useEffect(() => {
+        setCurrentModel(data?.phData?.metis?.models.find(model => model.id === data.phFocus?.focusModel?.id) || null);
+        currentModel && setModel(currentModel);
+        setCurMetamodel((data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]).find(metamodel => metamodel.id === currentModel?.metamodelRef) || null);
+    });
 
     const handleStartNewConversation = () => {
         dispatch(startNewConversation());
@@ -338,6 +351,23 @@ const AIChatPage = () => {
         );
     };
 
+
+    const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+        const selectedModel = data.phData.metis.models.find(model => model.name === event.target.value);
+        setCurrentModel(selectedModel || null);
+        setFocusModelLocal(selectedModel || null);
+        setFocusModelview(selectedModel?.modelviews[0] || null);
+        if (selectedModel) {
+            dispatch(setFocusModel({ id: selectedModel.id, name: selectedModel.name }));
+        }
+        // if (selectedModel) {
+        //   setCurrentModelview(selectedModel.modelviews[0]);
+        // }
+    };
+
+    const handleModelviewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    };
+
     // Define left panel content
     const leftPanelContent = {
         tabs: [
@@ -377,6 +407,111 @@ const AIChatPage = () => {
         defaultTab: 'context'
     };
 
+    // Define middle panel content
+    const middlePanelContent = {
+        tabs: [
+            {
+                key: 'chat',
+                label: 'Chat',
+                content: (
+                    <div className="h-full min-w-0 overflow-y-auto bg-gray-800/20 rounded">
+                        <ChatComponent
+                            input={input}
+                            setInput={setInput}
+                            selectedModel={selectedModel}
+                            setSelectedModel={setSelectedModel}
+                            currentDocument={currentDocument}
+                            setCurrentDocument={setCurrentDocument}
+                            onResponseChange={handleResponseChange}
+                            onViewInMarkdown={handleViewInMarkdown}
+                            showLeftPanel={showLeftPanel}
+                            setShowLeftPanel={setShowLeftPanel}
+                            setShowRightPanel={setShowRightPanel}
+                            chatInput={chatInput}
+                            onAddMD={handleAddMD}
+                            mdContent={mdContent}
+                            setMdContent={setMdContent}
+                            mdPreview={mdPreview}
+                            setMdPreview={setMdPreview}
+                            setCurrentMessages={setCurrentMessages}
+                            gettingStartedGuide={<GettingStartedGuide />}
+                            guide={<Guide />}
+                            isMobile={isMobile}
+                            setIsMobile={setIsMobile}
+                        />
+                    </div>
+                )
+            },
+            {
+                key: 'current-doc',
+                label: 'CurrentDoc',
+                content: (
+                    <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+                        <div className="space-y-4">
+                            {/* Current Document Panel */}
+                            <DocumentPanel
+                                mdContent={currentDocument}
+                                setMdContent={setCurrentDocument}
+                                setIsLibraryOpen={setIsLibraryOpen}
+                                isLibraryOpen={isLibraryOpen}
+                                panelType='middle'
+                                currentDocumentContent={currentDocument}
+                                markdownPreviewContent={mdPreview}
+                            />
+                        </div>
+                    </div>
+                )
+            },
+            {
+                key: 'saved-chats',
+                label: 'Saved Chats',
+                content: (
+                    <div className="p-2 h-full overflow-auto">
+                        <ConversationsPanel
+                            conversations={conversations}
+                            onSelectConversation={handleSelectConversation}
+                            onDeleteConversation={handleDeleteConversation}
+                            onSaveConversation={handleSaveCurrentConversation}
+                            onViewInMarkdown={handleViewInMarkdown}
+                            mdPreview={mdPreview}
+                            currentMessages={messages}
+                        />
+                    </div>
+                )
+            }
+        ],
+        defaultTab: 'chat'
+    };
+
+    const modelSelector = (false) ? (
+        <div className="flex justify-between bg-gray-800 text-xs">
+            <div className="px-1">
+                <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
+                <span className="text-gray-300">{metis?.name}</span>
+            </div>
+            <div className="px-1">
+                <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
+                <select id="model-select" className="ps-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
+                    {metis?.models.map((model: { name: string }) => (
+                        <option key={model.name} value={model.name}>{model.name}</option>
+                    ))}
+                </select>
+            </div>
+            <div className="px-1 me-auto">
+                {/* <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block"></label> */}
+                <span className="text-gray-400">{curMetamodel?.name || "Default"}</span>
+            </div>
+            <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
+        </div>
+    ) : (
+            <div className="flex justify-between bg-gray-800 text-xs">
+                <div className="px-1">
+                    <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
+                    <span className="text-gray-300">{documents[0]?.name}</span>
+                </div>
+            </div>
+    )
+
     // Define right panel content with the new props
     const rightPanelContent = {
         tabs: [
@@ -400,10 +535,14 @@ const AIChatPage = () => {
     };
 
     return (
-        <div className="flex flex-col h-screen bg-background text-gray-100">
+        <div className="flex-1 flex-row h-screen">
+            <div className="w-full border-b-2 border-gray-600">
+                <FileOperations />
+            </div>
             <ThreePanelLayout
-                moduleOperations={<FileOperations />}
+                moduleOperations={modelSelector}
                 leftPanelContent={leftPanelContent}
+                middlePanelContent={middlePanelContent}
                 rightPanelContent={rightPanelContent}
                 showLeftPanel={showLeftPanel}
                 setShowLeftPanel={setShowLeftPanel}
@@ -411,117 +550,7 @@ const AIChatPage = () => {
                 setShowRightPanel={setShowRightPanel}
                 className="h-full min-w-0 bg-background text-gray-100"
             >
-                <div className="flex flex-col h-full min-w-0 bg-background text-gray-100">
-                    <Tabs defaultValue="chat" className="flex flex-col h-full">
-                        <div className="flex items-center justify-between bg-primary-foreground px-2 min-w-0">
-                            {/* Tabs */}
-                            <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10 min-w-0">
-                                <TabsTrigger
-                                    value="chat"
-                                    className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                >
-                                    AI Chat
-                                    {/* <span
-                                        onClick={() => setShowGuideModal(true)}
-                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 border-b-0 rounded-full pl-1"
-                                        title="Open guide"
-                                    >
-                                        <HelpCircle className="h-3 w-3 ms-5" />
-                                    </span> */}
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="current-document"
-                                    className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                >
-                                    Current Doc
-                                    {/* <span
-                                        onClick={() => setShowGuideModal(true)}
-                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
-                                        title="Open guide"
-                                    >
-                                        <HelpCircle className="h-3 w-3 mx-2" />
-                                    </span> */}
-                                </TabsTrigger>
-                                <TabsTrigger
-                                    value="saved-chat"
-                                    className="text-xs text-gray-400 sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
-                                >
-                                    Saved Chats
-                                    {/* <span
-                                        onClick={() => setShowGuideModal(true)}
-                                        className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full"
-                                        title="Open guide"
-                                    >
-                                        <HelpCircle className="h-3 w-3 mx-2" />
-                                    </span> */}
-                                </TabsTrigger>
-                            </TabsList>
-                        </div>
-
-                        {/* Chat Component */}
-                        <TabsContent value="chat" className="flex-1 px-1 mt-1 overflow-hidden">
-                            <div className="h-full min-w-0 overflow-y-auto bg-gray-800/20 rounded">
-                                <ChatComponent
-                                    input={input}
-                                    setInput={setInput}
-                                    selectedModel={selectedModel}
-                                    setSelectedModel={setSelectedModel}
-                                    currentDocument={currentDocument}
-                                    setCurrentDocument={setCurrentDocument}
-                                    onResponseChange={handleResponseChange}
-                                    onViewInMarkdown={handleViewInMarkdown}
-                                    showLeftPanel={showLeftPanel}
-                                    setShowLeftPanel={setShowLeftPanel}
-                                    setShowRightPanel={setShowRightPanel}
-                                    chatInput={chatInput}
-                                    onAddMD={handleAddMD}
-                                    mdContent={mdContent}
-                                    setMdContent={setMdContent}
-                                    mdPreview={mdPreview}
-                                    setMdPreview={setMdPreview}
-                                    setCurrentMessages={setCurrentMessages}
-                                    gettingStartedGuide={<GettingStartedGuide />}
-                                    guide={<Guide />}
-                                    isMobile={isMobile}
-                                    setIsMobile={setIsMobile}
-                                />
-                            </div>
-                        </TabsContent>
-
-                        {/* Current Document */}
-                        <TabsContent value="current-document" className="flex-1 px-1 mt-1 overflow-hidden">
-                            <div className="bg-background rounded-lg p-4 h-full overflow-auto">
-                                <div className="space-y-4">
-                                    {/* Current Document Panel */}
-                                    <DocumentPanel
-                                        mdContent={currentDocument}
-                                        setMdContent={setCurrentDocument}
-                                        setIsLibraryOpen={setIsLibraryOpen}
-                                        isLibraryOpen={isLibraryOpen}
-                                        panelType='middle'
-                                        currentDocumentContent={currentDocument}
-                                        markdownPreviewContent={mdPreview}
-                                    />
-                                </div>
-                            </div>
-                        </TabsContent>
-
-                        {/* Saved Conversations*/}
-                        <TabsContent value="saved-chat" className="flex-1 px-1 mt-1 overflow-hidden">
-                            <div className="p-2 h-full overflow-auto">
-                                <ConversationsPanel
-                                    conversations={conversations}
-                                    onSelectConversation={handleSelectConversation}
-                                    onDeleteConversation={handleDeleteConversation}
-                                    onSaveConversation={handleSaveCurrentConversation}
-                                    onViewInMarkdown={handleViewInMarkdown}
-                                    mdPreview={mdPreview}
-                                    currentMessages={messages}
-                                />
-                            </div>
-                        </TabsContent>
-                    </Tabs>
-                </div>
+                <></>
             </ThreePanelLayout>
 
             {/* Library Modal */}

@@ -12,6 +12,11 @@ import TextareaAutosize from "react-textarea-autosize";
 import { useDispatch, useSelector } from "react-redux";
 import { X, HelpCircle, Info } from "lucide-react";
 // (Make sure these imports exist; adjust paths to your project)
+import {
+    addMessage,
+    setMessages as chatSetMessages,
+    Message
+} from '@/features/chat/chatSlice';
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
 import { RootState, AppDispatch } from "@/store";
 import { ObjectSchema } from "@/objectSchema";
@@ -23,10 +28,10 @@ import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 
 const debug = false;
 
-interface Message {
-    role: "user" | "assistant" | "system";
-    content: string;
-}
+// interface Message {
+//     role: "user" | "assistant" | "system";
+//     content: string;
+// }
 
 
 interface IrtvBuilderComponentProps {
@@ -221,33 +226,34 @@ Verify that your responses are based on the provided context and requirements.
         data?.phData?.metis?.metamodels
     ]);
 
-
     useEffect(() => {
         if (!curmod || !curMetamodel) return;
         const types = (curMetamodel.objecttypes || [])
             .filter((o: any) => o.name !== "EntityType")
-            .map((o: any) => o.name);
-        let nextAutoPrompt = "";
-        switch (curMetamodel.name) {
-            case "IRTV_META":
-                nextAutoPrompt = "Create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects.";
-                break;
-            case "CORE_META":
-                nextAutoPrompt =
-                    "Create a Metamodel using the following object types: " +
-                    (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
-                break;
-            case "POPS_META":
-                nextAutoPrompt =
-                    "Create a POPS model using the following object types: " +
-                    (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
-                break;
-            case "BPMN_META":
-                nextAutoPrompt =
-                    "Create a BPMN model using the following object types: " +
-                    (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
-                break;
-        }
+            .map((o: any) => o.name + ', ');
+        // let nextAutoPrompt = "";
+        const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
+        // switch (curMetamodel.name) {
+        //     case "IRTV_META":
+        //         nextAutoPrompt = "Create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects." +
+        //             (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
+        //         break;
+        //     case "CORE_META":
+        //         nextAutoPrompt =
+        //             "Create a Metamodel using the following object types: " +
+        //             (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
+        //         break;
+        //     case "POPS_META":
+        //         nextAutoPrompt =
+        //             "Create a POPS model using the following object types: " +
+        //             (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
+        //         break;
+        //     case "BPMN_META":
+        //         nextAutoPrompt =
+        //             "Create a BPMN model using the following object types: " +
+        //             (types.length ? types.join(" ") + " based on the ontology objects below: " : "");
+        //         break;
+        // }
 
         if (!nextAutoPrompt) return;
 
@@ -273,50 +279,54 @@ Verify that your responses are based on the provided context and requirements.
 
         let metatypesString = "";
         if (curMetamodel.name === "IRTV_META") {
-            const allowed = ["Role", "Task", "View", "Information"];
-            const filteredObjTypes = curMetamodel.objecttypes.filter((o: any) =>
-                allowed.includes(o.name)
-            );
-            const idToName = curMetamodel.objecttypes.reduce((m: any, o: any) => {
-                m[o.id] = o.name;
-                return m;
-            }, {});
-            const filteredRelTypes = curMetamodel.relshiptypes.filter((r: any) => {
-                const fromName = idToName[r.fromobjtypeRef];
-                const toName = idToName[r.toobjtypeRef];
-                return allowed.includes(fromName) && allowed.includes(toName);
-            });
-            metatypesString = `**${curMetamodel.name}**
-${filteredObjTypes
-                    .map(
-                        (objtype: any) =>
-                            `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`
-                    )
-                    .join("\n")}
+//             const allowed = ["Role", "Task", "View", "Information"];
+//             const filteredObjTypes = curMetamodel.objecttypes.filter((o: any) =>
+//                 allowed.includes(o.name)
+//             );
+//             const idToName = curMetamodel.objecttypes.reduce((m: any, o: any) => {
+//                 m[o.id] = o.name;
+//                 return m;
+//             }, {});
+//             const filteredRelTypes = curMetamodel.relshiptypes.filter((r: any) => {
+//                 const fromName = idToName[r.fromobjtypeRef];
+//                 const toName = idToName[r.toobjtypeRef];
+//                 return allowed.includes(fromName) && allowed.includes(toName);
+//             });
+//             metatypesString = `**${curMetamodel.name}**
+// ${filteredObjTypes
+//                     .map(
+//                         (objtype: any) =>
+//                             `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`
+//                     )
+//                     .join("\n")}
 
-${filteredRelTypes
-                    .map(
-                        (reltype: any) =>
-                            `id: ${reltype.id}, name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`
-                    )
-                    .join("\n")}
-`;
-            setSystemBehaviorGuidelines(IRTVSystemPrompt);
-        } else if (curMetamodel.name === "CORE_META") {
+// ${filteredRelTypes
+//                     .map(
+//                         (reltype: any) =>
+//                             `id: ${reltype.id}, name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`
+//                     )
+//                     .join("\n")}
+// `;
+//             setSystemBehaviorGuidelines(IRTVSystemPrompt);
+            setSystemBehaviorGuidelines(
+                `You are an expert in IRTV analysis. Your task is to create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects. Ensure logical consistency and Active Knowledge Modeling principles.`
+            );
             metatypesString = serializeTypes(curMetamodel);
+        } else if (curMetamodel.name === "CORE_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating Metamodels. Your task is to create a Metamodel based on the provided object types and relationships. Ensure logical consistency and Active Knowledge Modeling principles.`
             );
-        } else if (curMetamodel.name === "POPS_META") {
             metatypesString = serializeTypes(curMetamodel);
+        } else if (curMetamodel.name === "POPS_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating POPS models. Create a POPS model based on the provided ontology concept types and relationships. Ensure consistency with Active Knowledge Modeling principles.`
             );
-        } else if (curMetamodel.name === "BPMN_META") {
             metatypesString = serializeTypes(curMetamodel);
+        } else if (curMetamodel.name === "BPMN_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating BPMN models. Use BPMN notation, pools, lanes, and ensure logical consistency with Active Knowledge Modeling principles.`
             );
+            metatypesString = serializeTypes(curMetamodel);
         }
 
         const contextmetatypesString = `## **Metamodel**\n\n${metatypesString}`;
@@ -337,19 +347,24 @@ ${filteredRelTypes
     }, [curMetamodel, data?.phData?.metis, dispatch, curmod]);
 
     function serializeTypes(mm: any) {
-        return `**${mm.name}**
-${mm.objecttypes
-                .map(
-                    (o: any) =>
-                        `id: ${o.id}, name: ${o.name}, typeviewRef: ${o.typeviewRef}`
-                )
+        const objectTypes = Array.isArray(mm.objecttypes) ? mm.objecttypes : [];
+        const relationshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
+
+        const filteredObjectTypes = objectTypes.filter((o: any) =>
+            o && typeof o.name === 'string' && o.name !== "EntityType"
+        );
+
+        const filteredRelTypes = relationshipTypes.filter((r: any) =>
+            r && typeof r.name === 'string' && r.name !== "Is"
+        );
+
+        return `**${mm.name || 'Unknown'}**
+${filteredObjectTypes
+                .map((o: any) => `id: ${o.id || 'N/A'}, name: ${o.name}, typeviewRef: ${o.typeviewRef || 'N/A'}`)
                 .join("\n")}
 
-${mm.relshiptypes
-                .map(
-                    (r: any) =>
-                        `id: ${r.id}, name: ${r.name}, from: ${r.fromobjtypeRef}, to: ${r.toobjtypeRef}`
-                )
+${filteredRelTypes
+                .map((r: any) => `id: ${r.id || 'N/A'}, name: ${r.name}, from: ${r.fromobjtypeRef || 'N/A'}, to: ${r.toobjtypeRef || 'N/A'}`)
                 .join("\n")}
 `;
     }
@@ -381,7 +396,8 @@ ${mm.relshiptypes
             })) || [];
 
         const existingRelationships =
-            infoRels.map((rel: any) => ({
+            // infoRels.map((rel: any) => ({
+            curmod.relships?.map((rel: any) => ({
                 id: rel.id,
                 name: rel.name,
                 nameFrom: rel.nameFrom,
@@ -389,7 +405,7 @@ ${mm.relshiptypes
             })) || [];
 
         const newExistingInfoObjects = {
-            objects: existingObjects.filter((o: any) => o.typeName === "Information"),
+            objects: existingInfoObjects,
             relships: existingRelationships
         };
 
@@ -430,7 +446,7 @@ ${mm.relshiptypes
 
         const newOntologyString =
             filteredConcepts.length > 0
-                ? `**Objects**\n\n${filteredConcepts
+                ? `#Ontology\n\n##Objects\n\n${filteredConcepts
                     .map((c: any) => `${c.name} - ${c.description || ""}`)
                     .join("\n")}\n\n**Relationships**\n\n${filteredRels
                         .map(
@@ -449,7 +465,7 @@ ${mm.relshiptypes
                 .join("\n")}\n\n`;
 
         setContextItems(`${conceptString}\n\n`);
-        setContextOntology(`${ontologyString}\n\n${newOntologyString}`);
+        setContextOntology(`${newOntologyString}`);
     }, [curmod?.id, data?.phData?.ontology?.concepts]);
 
     // ---------- 6. Temperature preference ----------
@@ -553,6 +569,17 @@ ${mm.relshiptypes
         setStep(1);
         setActiveTab("model");
 
+        if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',
+            'systemPrompt\n', systemPrompt, '\n\n',
+            'systemBehaviorGuidelines\n', systemBehaviorGuidelines, '\n\n',
+            'userPrompt\n', userPrompt, '\n\n',
+            'userInput\n', input, '\n\n',
+            'contextItems\n', contextItems, '\n\n',
+            'contextOntology\n', contextOntology, '\n\n',
+            'contextMetamodel\n', contextMetamodel);
+
+
+
         try {
             const res = await fetch("/api/genmodel", {
                 method: "POST",
@@ -562,11 +589,11 @@ ${mm.relshiptypes
                     schemaName: "ObjectSchema",
                     systemPrompt: systemPrompt || "",
                     systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                    userPrompt: userPrompt || "",
-                    userInput: input?.trim() || "",
-                    contextItems: contextItems || "",
-                    contextOntology: contextOntology || "",
-                    contextMetamodel: contextMetamodel || ""
+                    userPrompt: userPrompt || "", // Generic user prompt
+                    userInput: input?.trim() || "", // Specific user input like new aspects or additional objects
+                    contextItems: contextItems || "", // Existing objects
+                    contextOntology: contextOntology || "", // Existing ontology
+                    contextMetamodel: contextMetamodel || "" // Existing metamodel
                 })
             });
 
@@ -808,7 +835,7 @@ ${mm.relshiptypes
                                 )}
                             </div>
                         )}
-
+                        {/* Render messages */}
                         <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
                             {messages.map((message, index) => {
                                 const isUser = message.role === "user";
@@ -862,6 +889,17 @@ ${mm.relshiptypes
                             <div ref={messagesEndRef} />
                         </div>
                     </div>
+                    {messages.length > 0 && (
+                        <div className="flex justify-end w-full">
+                            <button
+                                onClick={() => dispatch(chatSetMessages([]))}
+                                title="Clear chat history"
+                                className="py-1 text-xs text-red-500 hover:text-red-700"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
 
                     {statusMsg && (
                         <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
@@ -889,7 +927,10 @@ ${mm.relshiptypes
                     <TextareaAutosize
                         ref={textareaRef}
                         value={input}
-                        onChange={(e) => setInput(e.target.value)}
+                        onChange={(e) => {
+                            setInput(e.target.value);
+                            setUserEditedInput(true); // Mark as user-edited
+                        }}
                         placeholder="Type your requirements or instructions here..."
                         className="w-full px-2 py-2 bg-popover border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         minRows={6}
