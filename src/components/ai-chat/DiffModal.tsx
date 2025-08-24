@@ -25,7 +25,7 @@ export default function DiffModal({
     const diff = diffLines(oldContent || '', newContent || '');
 
     const renderDiffLine = (change: Change, index: number) => {
-        let className = 'font-mono text-sm px-3 py-1 whitespace-pre-wrap break-words';
+        let className = 'font-mono text-sm px-3 py-1';
         let prefix = ' ';
 
         if (change.added) {
@@ -39,9 +39,32 @@ export default function DiffModal({
         }
 
         return (
-            <div key={index} className={className}>
-                <span className="text-gray-500 mr-2 select-none">{prefix}</span>
-                {change.value}
+            <div key={index} className={`${className} block w-full`} style={{ display: 'table', tableLayout: 'fixed', width: '100%' }}>
+                <div style={{ display: 'table-cell', width: '20px', verticalAlign: 'top' }}>
+                    <span className="text-gray-500 select-none">{prefix}</span>
+                </div>
+                <div style={{
+                    display: 'table-cell',
+                    width: 'calc(100% - 20px)',
+                    verticalAlign: 'top',
+                    wordBreak: 'break-all',
+                    overflowWrap: 'anywhere',
+                    whiteSpace: 'pre-wrap'
+                }}>
+                    <span
+                        className="font-mono text-sm leading-relaxed"
+                        style={{
+                            wordBreak: 'break-all',
+                            overflowWrap: 'anywhere',
+                            whiteSpace: 'pre-wrap',
+                            display: 'block',
+                            width: '100%',
+                            maxWidth: '100%'
+                        }}
+                    >
+                        {change.value}
+                    </span>
+                </div>
             </div>
         );
     };
@@ -50,11 +73,12 @@ export default function DiffModal({
     const removedLines = diff.filter(change => change.removed).reduce((acc, change) => acc + (change.count || 0), 0);
 
     return (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-            <div className="relative bg-gray-900 rounded-lg w-full max-w-6xl max-h-[90vh] overflow-hidden border border-gray-700">
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2">
+            <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700 w-full max-w-[95vw] h-full max-h-[95vh] flex flex-col">
                 {/* Header */}
                 <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800">
-                    <div>
+                    <div className="flex flex-col"
+                    >
                         <h3 className="text-xl font-bold text-white">Save Changes to Library</h3>
                         <p className="text-sm text-gray-400 mt-1">
                             Document: <span className="text-blue-400">{title}</span>
@@ -83,15 +107,23 @@ export default function DiffModal({
                 </div>
 
                 {/* Diff Content */}
-                <div className="overflow-auto max-h-[calc(90vh-120px)] bg-gray-950">
-                    <div className="p-4">
-                        <div className="bg-gray-900 rounded border border-gray-700">
+                <div className="flex-1 bg-gray-950 overflow-hidden" style={{ minWidth: 0, maxWidth: '100%' }}>
+                    <div className="h-full overflow-auto p-4" style={{ minWidth: 0, maxWidth: '100%' }}>
+                        <div
+                            className="bg-gray-900 rounded border border-gray-700 overflow-hidden"
+                            style={{
+                                minWidth: 0,
+                                maxWidth: '100%',
+                                width: '100%',
+                                tableLayout: 'fixed'
+                            }}
+                        >
                             {diff.length === 0 ? (
                                 <div className="p-4 text-center text-gray-400">
                                     No changes detected
                                 </div>
                             ) : (
-                                <div className="divide-y divide-gray-800">
+                                <div style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
                                     {diff.map((change, index) => renderDiffLine(change, index))}
                                 </div>
                             )}

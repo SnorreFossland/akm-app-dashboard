@@ -2,13 +2,14 @@
 
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useSelector, useDispatch } from "react-redux";
+import type { RootState } from "@/store";
 import ReactMarkdown from "react-markdown";
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faCheckCircle, faPaperPlane, faEdit, faTrash, faLink, faBrain, faSave } from "@fortawesome/free-solid-svg-icons";
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 
 import { usePathname } from 'next/navigation';
-import { setDomainData, setOntologyData } from '@/features/model-universe/modelSlice';
+import { setDomainData, setOntologyData, Model } from '@/features/model-universe/modelSlice';
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
@@ -79,10 +80,18 @@ interface Ontology {
 }
 
 export default function OntologyBuilderPage() {
-  const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
-  const [ontology, setOntology] = useState<Ontology | null>(data.phData.ontology);
   const dispatch = useDispatch();
   const pathname = usePathname();
+
+  const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
+  const metis = data?.phData?.metis
+  const documents = data.phData.documents;
+  const domainData = data.phData.domain;
+
+  const [ontology, setOntology] = useState<Ontology | null>(data.phData.ontology);
+
+  const [currentModel, setCurrentModel] = useState<Model | null>(null);
+  const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
 
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
@@ -176,29 +185,29 @@ export default function OntologyBuilderPage() {
     //   }
     //   dispatch(setDomainData({ ...domain }));
     // } else if (pathname === '/ontology-builder') {
-      if (!suggestedOntologyData) {
-        alert('No Concept data to dispatch');
-        return;
-      }
-      const updatedOntologyData = {
-        status: 'succeeded' as const,
-        phData: {
-          ...data.phData,
-          ontology: suggestedOntologyData,
-        },
-        phFocus: data.phFocus,
-        phUser: data.phUser,
-        phSource: data.phSource,
-      };
+    if (!suggestedOntologyData) {
+      alert('No Concept data to dispatch');
+      return;
+    }
+    const updatedOntologyData = {
+      status: 'succeeded' as const,
+      phData: {
+        ...data.phData,
+        ontology: suggestedOntologyData,
+      },
+      phFocus: data.phFocus,
+      phUser: data.phUser,
+      phSource: data.phSource,
+    };
 
-      const uniqueConcepts = Array.from(new Map(updatedOntologyData.phData.ontology.concepts.map((item: Concept) => [item.name, item])).values());
-      const uniqueRelationships = Array.from(new Map(updatedOntologyData.phData.ontology.relationships.map((item: Relationship) => [item.name, item])).values());
+    const uniqueConcepts = Array.from(new Map(updatedOntologyData.phData.ontology.concepts.map((item: Concept) => [item.name, item])).values());
+    const uniqueRelationships = Array.from(new Map(updatedOntologyData.phData.ontology.relationships.map((item: Relationship) => [item.name, item])).values());
 
-      updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
-      updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
+    updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
+    updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
 
-      dispatch(setOntologyData(updatedOntologyData));
-      // setSuggestedOntologyData(null);
+    dispatch(setOntologyData(updatedOntologyData));
+    // setSuggestedOntologyData(null);
     // }
   };
 
@@ -231,21 +240,37 @@ export default function OntologyBuilderPage() {
         key: 'current-context',
         label: 'Current Ontology',
         content: (
-          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            {data.phData.ontology ? (
-              <div className="p-2 bg-gray-800 rounded">
-                {/* <div className="text-xl text-gray-400">{data.phData.domain.name}</div> */}
-                {/* <div className="text-sm text-gray-400">{data.phData.domain.description}</div> */}
-                {/* <div className="text-sm text-gray-400 mt-1">Definition:</div> */}
-                <MarkdownPreview
-                  mdPreview={data.phData.ontology.description || 'No ontology available'}
-                />
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+            <Card className="p-1 h-full">
+              <CardTitle className="text-sm font-bold">Current Ontology</CardTitle>
+              <div className="flex justify-end pb-1 pt-0 mx-2">
+                <button
+                  title="Save to Library"
+                  onClick={handleSaveToLibrary}
+                  className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                >
+                  <BookmarkPlus className="h-4 w-4" />
+                  Save to Library
+                </button>
+                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                  <DialogContent className="max-w-5xl">
+                    <DialogHeader>
+                      <DialogDescription>
+                        {printPromptsDiv}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                        Close
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
               </div>
-            ) : (
-              <div className="p-2 bg-gray-800 rounded">
-                <div className="text-sm text-gray-400">No ontology found</div>
+              <div className="mx-1 bg-gray-700">
+                <OntologyCard ontologyData={ontology} />
               </div>
-            )}
+            </Card>
           </div>
         )
       },
@@ -264,6 +289,95 @@ export default function OntologyBuilderPage() {
       },
     ],
     defaultTab: 'context'
+  };
+
+  const middlePanelContent = {
+    tabs: [
+      {
+        key: 'ontology-builder',
+        label: 'AI Ontology Builder',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+            <div className="flex overflow-hidden">
+              <OntologyBuilder
+                suggestedOntologyData={suggestedOntologyData}
+                setSuggestedOntologyData={setSuggestedOntologyData}
+                gettingStartedGuide={<GettingStartedGuide />}
+                guide={<Guide />}
+              />
+            </div>
+          </div>
+        )
+      },
+      {
+        key: 'ontology',
+        label: 'Current Ontology',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+            <Card className="p-1 h-full">
+              <CardTitle className="text-sm font-bold">Current Ontology</CardTitle>
+              <div className="flex justify-end pb-1 pt-0 mx-2">
+                <button
+                  title="Save to Library"
+                  onClick={handleSaveToLibrary}
+                  className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                >
+                  <BookmarkPlus className="h-4 w-4" />
+                  Save to Library
+                </button>
+                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                  <DialogContent className="max-w-5xl">
+                    <DialogHeader>
+                      <DialogDescription>
+                        {printPromptsDiv}
+                      </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                      <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
+                        Close
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              <div className="mx-1 bg-gray-700">
+                <OntologyCard ontologyData={ontology} />
+              </div>
+            </Card>
+          </div>
+        )
+      },
+      {
+        key: 'chat',
+        label: 'AI Ontology chat',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
+            <ChatComponent
+              input={input}
+              setInput={setInput}
+              selectedModel={selectedModel}
+              setSelectedModel={setSelectedModel}
+              onResponseChange={handleResponseChange}
+              onViewInMarkdown={handleViewInMarkdown}
+              setShowLeftPanel={setShowLeftPanel}
+              showLeftPanel={showLeftPanel}
+              chatInput={chatInput}
+              onAddMD={handleAddMD}
+              mdContent={mdContent}
+              setMdContent={setMdContent}
+              // currentDocument={currentDocument}
+              // setCurrentDocument={setCurrentDocument}
+              mdPreview={mdPreview}
+              setMdPreview={setMdPreview}
+              setCurrentMessages={setCurrentMessages}
+              gettingStartedGuide={<GettingStartedGuide />}
+              guide={<Guide />}
+            />
+          </div>
+        )
+      }
+    ],
+    defaultTab: 'ontology-builder'
   };
 
   // Define right panel content
@@ -332,11 +446,44 @@ export default function OntologyBuilderPage() {
     );
   };
 
+  const modelSelector = (false) ? (
+    <div className="flex justify-between bg-gray-800 text-xs">
+      <div className="px-1">
+        <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
+        <span className="text-gray-300">{metis?.name}</span>
+      </div>
+      <div className="px-1">
+        <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
+        <select id="model-select" className="ps-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
+          {metis?.models.map((model: { name: string }) => (
+            <option key={model.name} value={model.name}>{model.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="px-1 me-auto">
+        {/* <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block"></label> */}
+        <span className="text-gray-400">{curMetamodel?.name || "Default"}</span>
+      </div>
+      <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
+    </div>
+  ) : (
+    <div className="flex justify-between bg-gray-800 text-xs">
+      <div className="px-1">
+        <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
+        <span className="text-gray-300">{documents?.[0]?.name ?? 'No document'}</span>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="flex flex-col h-screen bg-background text-gray-100">
+    <div className="flex-1 flex-row h-screen">
+      <div className="w-full border-b-2 border-gray-600">
+        <FileOperations />
+      </div>
       <ThreePanelLayout
-        moduleOperations={<FileOperations />}
+        moduleOperations={modelSelector}
         leftPanelContent={leftPanelContent}
+        middlePanelContent={middlePanelContent}
         rightPanelContent={rightPanelContent}
         showLeftPanel={showLeftPanel}
         setShowLeftPanel={setShowLeftPanel}
@@ -344,98 +491,7 @@ export default function OntologyBuilderPage() {
         setShowRightPanel={setShowRightPanel}
         className="h-full min-w-0 bg-background text-gray-100"
       >
-        <div className="flex flex-col flex-grow bg-background text-gray-100 h-full">
-          <Tabs defaultValue="ontology-builder" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0 h-full">
-            {/* Tab Navigation */}
-            <div className="flex items-center justify-between px-2">
-              {/* Tabs */}
-              <TabsList className="grid grid-cols-3 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
-                <TabsTrigger value="ontology-builder" className="text-xs sm:text-sm mt-0">
-                  AI Ontology Builder
-                </TabsTrigger>
-                <TabsTrigger value="ontology" className="text-xs sm:text-sm mt-0">
-                  Current Ontology
-                </TabsTrigger>
-                <TabsTrigger value="chat" className="text-xs sm:text-sm mt-0">
-                  AI Ontology chat
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* Tab Content */}
-            <TabsContent value="ontology-builder" className="flex-1 px-1 mt-1">
-              <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
-                <div className="flex overflow-hidden">
-                  <OntologyBuilder
-                    suggestedOntologyData={suggestedOntologyData}
-                    setSuggestedOntologyData={setSuggestedOntologyData}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-
-            <TabsContent value="ontology" className="flex-1 p-1 m-1">
-              <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
-                <Card className="p-1 h-full">
-                  <CardTitle className="text-sm font-bold">Current Ontology</CardTitle>
-                  <div className="flex justify-end pb-1 pt-0 mx-2">
-                    <button
-                      title="Save to Library"
-                      onClick={handleSaveToLibrary}
-                      className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                    >
-                      <BookmarkPlus className="h-4 w-4" />
-                      Save to Library
-                    </button>
-                    <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                      <DialogContent className="max-w-5xl">
-                        <DialogHeader>
-                          <DialogDescription>
-                            {printPromptsDiv}
-                          </DialogDescription>
-                        </DialogHeader>
-                        <DialogFooter>
-                          <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                            Close
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                  </div>
-                  <div className="mx-1 bg-gray-700">
-                    <OntologyCard  ontologyData={ontology} />
-                  </div>
-                </Card>
-              </div>
-            </TabsContent>
-            {/* Chat Component */}
-            <TabsContent value="chat" className="flex-1 px-1 mt-1 h-full">
-              <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
-                <ChatComponent
-                  input={input}
-                  setInput={setInput}
-                  selectedModel={selectedModel}
-                  setSelectedModel={setSelectedModel}
-                  onResponseChange={handleResponseChange}
-                  onViewInMarkdown={handleViewInMarkdown}
-                  setShowLeftPanel={setShowLeftPanel}
-                  showLeftPanel={showLeftPanel}
-                  chatInput={chatInput}
-                  onAddMD={handleAddMD}
-                  mdContent={mdContent}
-                  setMdContent={setMdContent}
-                  // currentDocument={currentDocument}
-                  // setCurrentDocument={setCurrentDocument}
-                  mdPreview={mdPreview}
-                  setMdPreview={setMdPreview}
-                  setCurrentMessages={setCurrentMessages}
-                  gettingStartedGuide={<GettingStartedGuide />}
-                  guide={<Guide />}
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+        <></>
       </ThreePanelLayout>
 
       {/* Add the modal at the end of the component */}

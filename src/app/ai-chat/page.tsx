@@ -482,6 +482,27 @@ const AIChatPage = () => {
         ],
         defaultTab: 'chat'
     };
+    // Define right panel content with the new props
+    const rightPanelContent = {
+        tabs: [
+            {
+                key: 'preview',
+                label: 'Preview',
+                content: (
+                    <DocumentPanel
+                        mdContent={mdPreview}
+                        setMdContent={setMdPreview}
+                        setIsLibraryOpen={setIsLibraryOpen}
+                        isLibraryOpen={isLibraryOpen}
+                        panelType='right'
+                        currentDocumentContent={currentDocument} // Pass Current Document content
+                        markdownPreviewContent={mdPreview} // Pass Markdown Preview content
+                    />
+                )
+            }
+        ],
+        defaultTab: 'preview'
+    };
 
     const modelSelector = (false) ? (
         <div className="flex justify-between bg-gray-800 text-xs">
@@ -504,35 +525,13 @@ const AIChatPage = () => {
             <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
         </div>
     ) : (
-            <div className="flex justify-between bg-gray-800 text-xs">
-                <div className="px-1">
-                    <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
-                    <span className="text-gray-300">{documents[0]?.name}</span>
-                </div>
+        <div className="flex justify-between bg-gray-800 text-xs">
+            <div className="px-1">
+                <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
+                <span className="text-gray-300">{documents[0]?.name}</span>
             </div>
+        </div>
     )
-
-    // Define right panel content with the new props
-    const rightPanelContent = {
-        tabs: [
-            {
-                key: 'preview',
-                label: 'Preview',
-                content: (
-                    <DocumentPanel
-                        mdContent={mdPreview}
-                        setMdContent={setMdPreview}
-                        setIsLibraryOpen={setIsLibraryOpen}
-                        isLibraryOpen={isLibraryOpen}
-                        panelType='right'
-                        currentDocumentContent={currentDocument} // Pass Current Document content
-                        markdownPreviewContent={mdPreview} // Pass Markdown Preview content
-                    />
-                )
-            }
-        ],
-        defaultTab: 'preview'
-    };
 
     return (
         <div className="flex-1 flex-row h-screen">

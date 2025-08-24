@@ -4,9 +4,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { usePathname } from 'next/navigation';
 import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import extractDomainNameAndDescription from './docExtraction';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight } from 'lucide-react';
 import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
-import { current } from '@reduxjs/toolkit';
 import DiffModal from './DiffModal';
 
 interface DocumentPanelProps {
@@ -60,7 +60,7 @@ export default function DocumentPanel({
     // Update editContent when mdContent changes from parent
     useEffect(() => {
         setEditContent(mdContent || '');
-        console.log('60 DocumentPanel useEffect - mdContent updated:', mdContent?.substring(0, 100) || 'empty');
+        // console.log('60 DocumentPanel useEffect - mdContent updated:', mdContent?.substring(0, 100) || 'empty');
     }, [mdContent]);
 
     // Function to detect placeholders in the format [placeholder]
@@ -136,7 +136,7 @@ export default function DocumentPanel({
 
     const handleSaveToLibrary = () => {
         const contentToSave = isEditing ? editContent : mdContent;
-        console.log('135 DocumentPanel handleSaveToLibrary - content to save:', contentToSave?.substring(0, 100), 'mdContent', mdContent);
+        console.log('135 DocumentPanel handleSaveToLibrary - content to save:', contentToSave?.substring(0, 100), 'mdContent', mdContent?.substring(0, 100));
 
         // Determine what to compare based on panel type
         let oldContent = '';
@@ -146,40 +146,47 @@ export default function DocumentPanel({
             // For right panel (Markdown Preview), compare Current Document with Markdown Preview
             oldContent = currentDocumentContent;
             newContent = markdownPreviewContent;
+            console.log('143 Right panel - comparing currentDoc vs markdownPreview');
+            console.log('144 oldContent (currentDoc):', oldContent?.substring(0, 100) || 'empty');
+            console.log('145 newContent (markdownPreview):', newContent?.substring(0, 100) || 'empty');
         } else if (panelType === 'middle') {
             // For middle panel (Current Document), compare with itself
             oldContent = mdContent;
             newContent = contentToSave;
+            console.log('150 Middle panel - comparing mdContent vs contentToSave');
+            console.log('151 oldContent (mdContent):', oldContent?.substring(0, 100) || 'empty');
+            console.log('152 newContent (contentToSave):', newContent?.substring(0, 100) || 'empty');
         } else {
             // For left panel, use existing logic
             oldContent = mdContent;
             newContent = contentToSave;
+            console.log('157 Left panel - comparing mdContent vs contentToSave');
+            console.log('158 oldContent (mdContent):', oldContent?.substring(0, 100) || 'empty');
+            console.log('159 newContent (contentToSave):', newContent?.substring(0, 100) || 'empty');
         }
+
+        console.log('162 Diff check conditions:');
+        console.log('163 - oldContent exists:', !!oldContent);
+        console.log('164 - contents are different:', oldContent !== newContent);
+        console.log('165 - oldContent not empty after trim:', oldContent && oldContent.trim() !== '');
+        console.log('166 - Should show diff modal:', oldContent && oldContent !== newContent && oldContent.trim() !== '');
 
         // Show diff if there's content to compare and they're different
-        if (oldContent && oldContent !== newContent && oldContent.trim() !== '') {
-            setPendingSaveContent(newContent);
-            setShowDiffModal(true);
-            return; // Don't save yet, wait for user confirmation
-        }
+        // if (oldContent && oldContent !== newContent && oldContent.trim() !== '') {
+        setPendingSaveContent(newContent);
+        setShowDiffModal(true);
+        console.log('171 Opening diff modal');
+        return; // Don't save yet, wait for user confirmation
+        // }
 
+        console.log('175 Saving directly without diff modal');
         // If no existing content or no changes, save directly
         performSaveToLibrary(contentToSave);
     };
     // Create a separate function to perform the actual save
     const performSaveToLibrary = (contentToSave: string) => {
-        // Extract the title (first line) and subtitle (second line)
-        const lines = contentToSave.split('\n');
-        let firstLine = lines[0] || '';
-        let secondLine = lines[1] || '';
-
-        // Remove markdown headers from first line if present
-        firstLine = firstLine.replace(/^#+\s*/, '').trim();
-        secondLine = secondLine.replace(/^#+\s*/, '').trim();
-
-        // Fallback to first line of content if extraction failed
-        const finalFirstLine = firstLine || contentToSave.split('\n')[0] || 'Document';
-        const finalSecondLine = secondLine || 'AIChat: Document';
+        // Extract name and description using helper (kept as ES import)
+        const { name: finalFirstLine, description: finalSecondLine } = extractDomainNameAndDescription(contentToSave);
 
         console.log('133 DocumentPanel handleSaveToLibrary - first:', finalFirstLine, 'second:', finalSecondLine, 'pathname:', pathname);
 
@@ -195,9 +202,9 @@ export default function DocumentPanel({
             dispatch(setDomainData({ ...domain }));
         } else if (pathname === '/ai-chat') {
             // Check if a document with the same name already exists
-            const currentDocument = mdContent;
-            console.log('148 Existing document check:', currentDocument);
-            if (panelType === 'right' && !currentDocument) {
+            const existingDocument = documents?.find(doc => doc.name === finalFirstLine);
+            console.log('148 Existing document check:', existingDocument);
+            if (existingDocument) {
                 // Document exists - ask user what to do
                 const userChoice = window.confirm(
                     `A document named "${finalFirstLine}" already exists.\n\n` +
@@ -205,28 +212,27 @@ export default function DocumentPanel({
                     `Click "Cancel" to save as a new document with a timestamp.`
                 );
 
-                if (!userChoice) {
-                    // User chose to replace - use the existing document's ID and update timestamps to indicate modification
+                if (userChoice) {
+                    // User chose to replace - use the existing document's ID
                     dispatch(saveMarkdownDocument({
-                        id: current.id,
+                        id: existingDocument.id,
                         name: finalFirstLine,
                         type: 'markdown',
                         content: contentToSave,
-                        createdAt: new Date().toISOString(), // Update timestamp to indicate modification
+                        createdAt: existingDocument.createdAt, // Keep original creation date
                         updatedAt: new Date().toISOString()
                     }));
                 } else {
-                    const newDocumentId = Date.now().toString();
-                    const newDocument = {
-                        id: newDocumentId,
-                        name: finalFirstLine + ' ' + newDocumentId,
+                    // User chose to save as new - add timestamp to name
+                    const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                    dispatch(saveMarkdownDocument({
+                        id: Date.now().toString(),
+                        name: `${finalFirstLine} (${timestamp})`,
                         type: 'markdown',
                         content: contentToSave,
                         createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString(),
-                    };
-                    dispatch(saveMarkdownDocument(newDocument));
-                    localStorage.setItem('currentDocument', JSON.stringify(newDocument));
+                        updatedAt: new Date().toISOString()
+                    }));
                 }
             } else {
                 // No existing document - save normally
@@ -319,7 +325,7 @@ export default function DocumentPanel({
         if (panelType === 'left') {
             return (
                 <span>
-                    No current context text. Click
+                    No text. Click
                     <Edit className="inline-block h-4 w-4 mx-1" />
                     to start writing or paste text.
                     Click

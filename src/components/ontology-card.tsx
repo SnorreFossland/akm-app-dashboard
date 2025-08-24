@@ -53,7 +53,7 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
 
-    if (!debug) console.log('35 ontology-card', ontologyData);
+    if (debug) console.log('35 ontology-card', ontologyData);
 
     // Initialize Mermaid once
     useEffect(() => {

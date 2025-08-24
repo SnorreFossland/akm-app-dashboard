@@ -1,19 +1,19 @@
-// src/features/model-universe/components/HandleGetLocalFile.ts
-import { setFileData } from '../modelSlice';
-// import { AppDispatch } from '@/store/store';
+// src/features/model-universe/components/HandleGetDefaultFile.ts
+import { setFileData, setSource } from '../modelSlice';
+import { AppDispatch } from '@/store/store';
 
+// Existing default loader
 export const handleGetDefaultFile = (event: React.ChangeEvent<HTMLInputElement>, dispatch: AppDispatch) => {
   const fileUrl = '/AKM-Core-Template_PR.json';
-  console.log('7 file:', fileUrl);
   fetch(fileUrl)
-    .then(response => response.blob())
+    .then(r => r.blob())
     .then(blob => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const data: any = JSON.parse(e.target?.result as string); // Parse the JSON string
-          console.log('13 data:', data);
-          dispatch(setFileData(data)); // Dispatch the action with the data
+          const data: any = JSON.parse(e.target?.result as string);
+          dispatch(setFileData(data));
+          // dispatch(setSource('AKM-Core-Template_PR'));
         } catch (error) {
           console.error('Error parsing JSON:', error);
         }
@@ -23,4 +23,21 @@ export const handleGetDefaultFile = (event: React.ChangeEvent<HTMLInputElement>,
     .catch(error => {
       console.error('Error fetching file:', error);
     });
+};
+
+// Generic public file loader used by AppBootstrap
+export const handleGetPublicFile = async (
+  dispatch: AppDispatch,
+  fileUrl: string,
+  sourceName?: string
+) => {
+  try {
+    const res = await fetch(fileUrl);
+    if (!res.ok) throw new Error(`Fetch failed: ${res.status} ${res.statusText}`);
+    const data = await res.json();
+    dispatch(setFileData(data));
+    if (sourceName) dispatch(setSource(sourceName));
+  } catch (error) {
+    console.error(`Error fetching ${fileUrl}:`, error);
+  }
 };

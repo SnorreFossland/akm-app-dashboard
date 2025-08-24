@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
-import DomainBuilder from "@/components/domain-builder/DomainBuilder";
+// import DomainBuilder from "@/components/domain-builder/DomainBuilder";
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import { LoadingCircularProgress } from "@/components/loading";
@@ -23,6 +23,7 @@ import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import { FileOperations } from '@/components/FileOperations';
 import UniverseComponent from '@/features/model-universe/components/UniverseComponent';
+import { labelRect } from 'mermaid/dist/rendering-util/rendering-elements/shapes/labelRect.js';
 
 export interface ChatComponentProps {
   onResponseChange: (response: string) => void;
@@ -41,9 +42,14 @@ export interface ChatComponentProps {
 }
 
 export default function DomainBuilderPage() {
-  const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
-  const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
   const dispatch = useDispatch();
+  const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
+  const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
+  const documents = useSelector((state: RootState) => data.phData.documents);
+  const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
+
+  const [currentModel, setCurrentModel] = useState<Model | null>(null);
+  const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
 
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
@@ -63,7 +69,7 @@ export default function DomainBuilderPage() {
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [docName, setDocName] = useState<string>('New Document');
-  const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
+
   const [currentDocument, setCurrentDocument] = useState<string>(domainData?.presentation || '');
 
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
@@ -319,7 +325,95 @@ export default function DomainBuilderPage() {
     ],
     defaultTab: 'context'
   };
-
+  // Middle Panel Content
+  const middlePanelContent = {
+    tabs: [
+      {
+        key: 'domain-builder',
+        label: 'AI Domain Builder',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
+            <ChatComponent
+              input={input}
+              setInput={setInput}
+              selectedModel={selectedModel}
+              setSelectedModel={setSelectedModel}
+              onResponseChange={handleResponseChange}
+              onViewInMarkdown={handleViewInMarkdown}
+              setShowLeftPanel={setShowLeftPanel}
+              showLeftPanel={showLeftPanel}
+              chatInput={chatInput}
+              onAddMD={handleAddMD}
+              mdContent={mdContent}
+              setMdContent={setMdContent}
+              mdPreview={mdPreview}
+              setMdPreview={setMdPreview}
+              currentDocument={currentDocument}
+              setCurrentMessages={setCurrentMessages}
+              gettingStartedGuide={<GettingStartedGuide />}
+              guide={<Guide />}
+            />
+          </div>
+        )
+      },
+      {
+        key: 'document',
+        label: 'Current Domain',
+        content: (
+          <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+            <div className="flex flex-col space-y-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Name</label>
+                <input
+                  type="text"
+                  value={domainName}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  placeholder="Enter domain name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Description</label>
+                <textarea
+                  value={domainDescription}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  placeholder="Enter domain description"
+                  rows={3}
+                />
+              </div>
+            </div>
+            <div className="space-y-4">
+              {/* Current Document Panel */}
+              {currentDocument ? (
+              <DocumentPanel
+                mdContent={currentDocument}
+                setMdContent={setCurrentDocument}
+                setIsLibraryOpen={setIsLibraryOpen}
+                isLibraryOpen={isLibraryOpen}
+                panelType='middle'
+                currentDocumentContent={currentDocument}
+                markdownPreviewContent={mdPreview}
+              />
+              ) : ( 
+                <></>
+              )}
+            </div>
+          </div>
+        )
+      },
+      {
+        key: 'suite',
+        label: 'Current Model Suite',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
+            <UniverseComponent />
+          </div>
+        )
+      }
+    ],
+    defaultTab: 'domain-builder'
+  };
   // Define right panel content with the new props
   const rightPanelContent = {
     tabs: [
@@ -342,11 +436,46 @@ export default function DomainBuilderPage() {
     defaultTab: 'preview'
   };
 
+  const modelSelector = (false) ? (
+    <div className="flex justify-between bg-gray-800 text-xs">
+      <div className="px-1">
+        <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
+        <span className="text-gray-300">{metis?.name}</span>
+      </div>
+      <div className="px-1">
+        <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
+        <select id="model-select" className="ps-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
+          {metis?.models.map((model: { name: string }) => (
+            <option key={model.name} value={model.name}>{model.name}</option>
+          ))}
+        </select>
+      </div>
+      <div className="px-1 me-auto">
+        {/* <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block"></label> */}
+        <span className="text-gray-400">{curMetamodel?.name || "Default"}</span>
+      </div>
+      <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
+    </div>
+  ) : (
+    <div className="flex justify-between bg-gray-800 text-xs">
+      <div className="px-1">
+        <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
+        <span className="text-gray-300">
+          {Array.isArray(documents) && documents.length > 0 ? documents[0].name : "No document"}
+        </span>
+      </div>
+    </div>
+  )
+
   return (
-    <div className="flex flex-col h-screen bg-background text-gray-100">
+    <div className="flex-1 flex-row h-screen">
+      <div className="w-full border-b-2 border-gray-600">
+        <FileOperations />
+      </div>
       <ThreePanelLayout
-        moduleOperations={<FileOperations />}
+        moduleOperations={modelSelector}
         leftPanelContent={leftPanelContent}
+        middlePanelContent={middlePanelContent}
         rightPanelContent={rightPanelContent}
         showLeftPanel={showLeftPanel}
         setShowLeftPanel={setShowLeftPanel}
@@ -354,125 +483,7 @@ export default function DomainBuilderPage() {
         setShowRightPanel={setShowRightPanel}
         className="h-full min-w-0 bg-background text-gray-100"
       >
-        <div className="flex flex-col flex-grow bg-background text-gray-100 h-full">
-          <Tabs defaultValue="chat" value={activeTab} onValueChange={setActiveTab} className="flex flex-col my-0 h-full">
-            {/* Tab Navigation */}
-            <div className="flex items-center justify-between px-2">
-              {/* Tabs */}
-              <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-6 flex-1 mx-2 relative z-10">
-                <TabsTrigger value="chat" className="text-xs sm:text-sm mt-0">
-                  AI Domain Builder
-                  <span
-                    onClick={() => setShowGuideModal(true)}
-                    className="bg-blue-900/50 hover:bg-blue-800 text-blue-300 rounded-full pl-1"
-                    title="Open Domain Builder guide"
-                  >
-                  </span>
-                </TabsTrigger>
-                <TabsTrigger value="current-document" className="text-xs sm:text-sm mt-0">
-                  Current Domain
-                </TabsTrigger>
-                <TabsTrigger value="model" className="text-xs sm:text-sm mt-0">
-                  Current Model Suite
-                </TabsTrigger>
-                <TabsTrigger value="domain2" className="text-xs sm:text-sm mt-0">
-                  Domain Builder2
-                </TabsTrigger>
-              </TabsList>
-            </div>
-
-            {/* Tab Content */}
-            {/* Chat Component */}
-            <TabsContent value="chat" className="flex-1 px-1 mt-1 h-full">
-              <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
-                <ChatComponent
-                  input={input}
-                  setInput={setInput}
-                  selectedModel={selectedModel}
-                  setSelectedModel={setSelectedModel}
-                  onResponseChange={handleResponseChange}
-                  onViewInMarkdown={handleViewInMarkdown}
-                  setShowLeftPanel={setShowLeftPanel}
-                  showLeftPanel={showLeftPanel}
-                  chatInput={chatInput}
-                  onAddMD={handleAddMD}
-                  mdContent={mdContent}
-                  setMdContent={setMdContent}
-                  mdPreview={mdPreview}
-                  setMdPreview={setMdPreview}
-                  currentDocument={currentDocument}
-                  setCurrentMessages={setCurrentMessages}
-                  gettingStartedGuide={<GettingStartedGuide />}
-                  guide={<Guide />}
-                />
-              </div>
-            </TabsContent>
-
-            {/* Current Document */}
-            <TabsContent value="current-document" className="flex-1 px-1 mt-1 overflow-hidden">
-              <div className="bg-background rounded-lg p-4 h-full overflow-auto">
-                <div className="flex flex-col space-y-4 mb-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300">Name</label>
-                    <input
-                      type="text"
-                      value={domainName}
-                      onChange={(e) => handleFieldChange('name', e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter domain name"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-300">Description</label>
-                    <textarea
-                      value={domainDescription}
-                      onChange={(e) => handleFieldChange('description', e.target.value)}
-                      className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                      placeholder="Enter domain description"
-                      rows={3}
-                    />
-                  </div>
-                </div>
-                <div className="space-y-4">
-                  {/* Current Document Panel */}
-                  <DocumentPanel
-                    mdContent={currentDocument}
-                    setMdContent={setCurrentDocument}
-                    setIsLibraryOpen={setIsLibraryOpen}
-                    isLibraryOpen={isLibraryOpen}
-                    panelType='middle'
-                    currentDocumentContent={currentDocument}
-                    markdownPreviewContent={mdPreview}
-                  />
-                </div>
-              </div>
-            </TabsContent>
-            {/* Model */}
-            <TabsContent value="model" className="flex-1 px-1 mt-1 h-full">
-              <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
-                <UniverseComponent />
-              </div>
-            </TabsContent>
-            {/* Domain Builder */}
-            <TabsContent value="domain2" className="flex-1 px-1 mt-1 h-full">
-              <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
-                <div className="flex overflow-hidden h-full">
-                  {/* <DomainBuilder
-                    input={chatInput}
-                    setInput={setChatInput}
-                    mdContent={mdContent}
-                    setMdContent={setMdContent}
-                    setIsLibraryOpen={setIsLibraryOpen}
-                    isLibraryOpen={isLibraryOpen}
-                    mdPreview={mdPreview}
-                    setMdPreview={setMdPreview}
-                    onViewInMarkdown={(content) => setMdPreview(content)}
-                  /> */}
-                </div>
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
+        <></>
       </ThreePanelLayout>
 
       {/* Modals */}

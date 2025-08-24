@@ -4,7 +4,6 @@ import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faCheckCircle, faPaperPlane, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
-import { HelpCircle, X } from 'lucide-react';
 import { setOntologyData } from '@/features/model-universe/modelSlice';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,7 +19,6 @@ import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/m
 import {
     SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt
 } from '@/app/ontology-builder/prompts';
-
 
 const debug = false;
 
@@ -47,14 +45,10 @@ interface Ontology {
 const OntologyBuilder = (
     {
         suggestedOntologyData,
-        setSuggestedOntologyData,
-        gettingStartedGuide,
-        guide
+        setSuggestedOntologyData
     }: {
         suggestedOntologyData: Ontology | null;
         setSuggestedOntologyData: (data: Ontology | null) => void;
-        gettingStartedGuide: React.ReactNode;
-        guide: React.ReactNode;
     }
 ) => {
     const data = useSelector((state: RootState) => state.modelUniverse);
@@ -87,8 +81,6 @@ const OntologyBuilder = (
     // const [suggestedConceptData, setSuggestedConceptData] = useState("");
     const [step, setStep] = useState(0);
     const [activeTab, setActiveTab] = useState('suggested-concepts');
-
-    const [showGuide, setShowGuide] = useState(false);
 
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
@@ -153,8 +145,8 @@ const OntologyBuilder = (
 
         const newSystemPrompt = SystemPrompt;
         const newSystemBehaviorGuidelines = SystemBehaviorGuidelines;
-        const userPrompt = (data.phData.domain.name !== "") ? `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}` : UserPrompt;
-        const userInput = (domainData.presentation !== "") ? `${UserInput} \n\n ${domainData?.presentation || ""} \n\n ${domainPresentation} \n\n ${topicDescr}` : "";
+        const userPrompt = `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}`;
+        const userInput = `${UserInput} \n\n ${domainData?.presentation || ""} \n\n ${domainPresentation} \n\n ${topicDescr}`;
         const newContextOntology = (impOntologyString) ? `${ExistingOntology} ${impOntologyString}` : "";
         const newContextItems = (conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "";
         const newContextMetamodel = `${MetamodelPrompt}`;
@@ -270,7 +262,7 @@ const OntologyBuilder = (
 
         // Add validation for required fields
         if (!systemPrompt || !userPrompt || !userInput) {
-            console.error("273 Missing required prompt data:", {
+            console.error("Missing required prompt data:", {
                 systemPrompt: !!systemPrompt,
                 userPrompt: !!userPrompt,
                 userInput: !!userInput
@@ -437,82 +429,76 @@ const OntologyBuilder = (
     }, [systemPrompt, userPrompt, userInput]);
 
     return (
-        <div className="flex flex-col min-h-0 h-full w-full rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
-            <div className="flex-1 flex flex-row h-full bg-secondary/40 overflow-hidden relative">
-                {showGuide && (
-                    <div className="flex flex-col items-center mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
-                        <div className="flex items-center justify-between w-full px-1">
-                            <div className="text-lg font-semibold text-orange-500/60">
-                                Guide
+        <div className="flex flex-col h-[calc(100vh-4rem)] w-full bg-transparent">
+            <div className="flex flex-col h-full w-full overflow-hidden">
+                <div className="border-solid flex flex-col">
+                    <div className="flex flex-wrap items-start m-1">
+                        <div className="flex flex-col flex-grow">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300">Name</label>
+                                <input
+                                    type="text"
+                                    value={domainName}
+                                    onChange={(e) => handleFieldChange('name', e.target.value)}
+                                    className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    placeholder="Enter domain name"
+                                />
                             </div>
-                            <button
-                                onClick={() => setShowGuide(false)}
-                                className="text-gray-400 hover:text-white"
-                                title="Close Guide"
-                            >
-                                <X className="h-4 w-4" />
-                            </button>
-                        </div>
-                        <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
-                            {guide}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-300">Description</label>
+                                <textarea
+                                    value={domainDescription}
+                                    onChange={(e) => handleFieldChange('description', e.target.value)}
+                                    className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    placeholder="Enter domain description"
+                                    rows={3}
+                                />
+                            </div>
                         </div>
                     </div>
-                )}
-
-                <div className="flex flex-col h-full bg-secondary/40 overflow-hidden relative">
-                    <div className="flex items-center gap-2">
-                        {!showGuide && (
-                            <button
-                                onClick={() => setShowGuide(true)}
-                                className="text-gray-400 hover:text-blue-400 hover:bg-gray-800 pt-1 rounded-md"
-                                title="Show Guide"
-                            >
-                                <HelpCircle className="bg-yellow-700 text-white rounded h-4 w-4" />
-                            </button>
-                        )}
+                    <label htmlFor="chatOutput" className="text-white mt-2">Current Domain Definition:</label>
+                    <div className="flex-grow p-4 rounded bg-gray-700 text-white overflow-y-auto max-h-[calc(100vh-24rem)]">
+                        {definition}
                     </div>
                 </div>
-                <div className="flex flex-col items-center justify-center max-h-[calc(100vh-22rem)] w-full overflow-auto p-4 gap-4 text-gray-400 text-sm flex-1">
-                    {gettingStartedGuide}
-                </div>
-            </div>
-            <div className="flex-1 flex flex-col min-h-0 bg-secondary/40 overflow-visible relative">
-                <details className="sticky top-0 bottom-5 w-full z-30 pointer-events-auto">
-                    <summary className="bg-gray-800 text-white cursor-pointer p-1">Add External Ontology Concepts...</summary>
-                    <div className="w-full rounded-md border border-gray-600 bg-gray-800 p-2">
-                        {/* <Input
-                            id="suggestedConcepts"
-                            className="flex-grow p-1 rounded bg-background"
-                            value={Array.isArray(suggestedOntologyData?.concepts) ? suggestedOntologyData.concepts.map(concept => concept.name).join(', ') : ""}
-                            disabled={isLoading}
-                            onChange={(e) => setSuggestedOntologyData({ ...suggestedOntologyData, concepts: e.target.value })}
-                            placeholder="Enter your concepts i.e.: Scooter, User, booking"
-                        /> */}
-                        <div className="cursor-pointer">Import Ontology</div>
-                        <div className="flex-grow bg-gray-700 text-gray-500">
-                            <Textarea
-                                id="ontologyUrl"
-                                className="ontology-input flex-grow bg-gray-600 text-white"
-                                value={ontologyUrl}
-                                onChange={(e) => setOntologyUrl(e.target.value)}
-                                placeholder="Paste ontology URL here"
+                <div className="relative w-full h-10">
+                    <details className="absolute bottom-full w-full">
+                        <summary className="bg-gray-800 text-white cursor-pointer p-1">Add Ontology Concepts...</summary>
+                        <div className="w-full rounded-md border border-gray-600 bg-gray-800 p-2">
+                            <Input
+                                id="suggestedConcepts"
+                                className="flex-grow p-1 rounded bg-background"
+                                value={Array.isArray(suggestedOntologyData?.concepts) ? suggestedOntologyData.concepts.map(concept => concept.name).join(', ') : ""}
+                                disabled={isLoading}
+                                onChange={(e) => setSuggestedOntologyData({ ...suggestedOntologyData, concepts: e.target.value })}
+                                placeholder="Enter your concepts i.e.: Scooter, User, booking"
                             />
-                            <div className="flex justify-between">
-                                <Button
-                                    onClick={() => {
-                                        handleFetchOntology();
-                                        setActiveTab('imported-ontology');
-                                    }}
-                                    className="bg-green-800 text-white text-sm rounded w-full"
-                                >
-                                    Load Ontology
-                                </Button>
+                            <div className="cursor-pointer">Import Ontology</div>
+                            <div className="flex-grow bg-gray-700 text-gray-500">
+                                <Textarea
+                                    id="ontologyUrl"
+                                    className="ontology-input flex-grow bg-gray-600 text-white"
+                                    value={ontologyUrl}
+                                    onChange={(e) => setOntologyUrl(e.target.value)}
+                                    placeholder="Paste ontology URL here"
+                                />
+                                <div className="flex justify-between">
+                                    <Button
+                                        onClick={() => {
+                                            handleFetchOntology();
+                                            setActiveTab('imported-ontology');
+                                        }}
+                                        className="bg-green-800 text-white text-sm rounded w-full"
+                                    >
+                                        Load Ontology
+                                    </Button>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                </details>
+                    </details>
+                </div>
             </div>
-            <div className="relative bottom-2 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
+            <div className="mt-auto mb-3">
                 <CardTitle className={`flex justify-between items-center flex-grow ps-1 mt-auto bg-gray-600 border border-gray-700 ${(suggestedOntologyData) ? 'text-green-600' : 'text-green-200'}`}>
                     Ask AI to suggest Concepts
                     <div className="flex items-center ml-auto">
@@ -539,6 +525,7 @@ const OntologyBuilder = (
                 </CardTitle>
             </div>
         </div>
+
     );
 }
 

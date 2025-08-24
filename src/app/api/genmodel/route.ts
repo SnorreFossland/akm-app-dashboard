@@ -105,11 +105,9 @@ export async function POST(req: Request) {
       contextMetamodel
     } = parsedBody;
 
-    console.log('106 Parsed request data:', {
+    if (debug) console.log('106 Parsed request data:', {
       aiModelName,
       schemaName,
-      systemPrompt: systemPrompt?.substring(0, 100) + '...',
-      userPrompt: userPrompt?.substring(0, 100) + '...',
       parsedBody // For debugging, log the first 100 characters of systemPrompt and userPrompt
     });
 
@@ -181,7 +179,7 @@ export async function POST(req: Request) {
       contextMetamodel ? { role: 'assistant' as const, content: contextMetamodel } : null,
     ].filter((message): message is { role: 'system' | 'user' | 'assistant'; content: string } => message !== null);
 
-    // console.log('45 route messages', messages, aiModelName);
+    if (!debug) console.log('182 route messages', aiModelName, messages);
 
     // Handle different providers differently for structured output
     let response;
@@ -235,6 +233,14 @@ export async function POST(req: Request) {
         schemaExample = JSON.stringify({
           name: "Example Ontology",
           description: "Example ontology description",
+          concepts: [
+            {
+              id: "concept_1",
+              name: "ExampleConcept",
+              description: "Description of example concept",
+              properties: []
+            }
+          ],
           // Add other required fields for OntologySchema
         }, null, 2);
       } else if (schemaName === 'ModelviewSchema') {

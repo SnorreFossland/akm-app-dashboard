@@ -228,32 +228,37 @@ Verify that your responses are based on the provided context and requirements.
 
     useEffect(() => {
         if (!curmod || !curMetamodel) return;
-        const types = (curMetamodel.objecttypes || [])
+        let types = (curMetamodel.objecttypes || [])
             .filter((o: any) => o.name !== "EntityType")
+            .filter((o: any) => o.name !== "Gateway") 
             .map((o: any) => o.name + ', ');
-        // let nextAutoPrompt = "";
-        const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
-        // switch (curMetamodel.name) {
-        //     case "IRTV_META":
-        //         nextAutoPrompt = "Create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects." +
-        //             (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
-        //         break;
-        //     case "CORE_META":
-        //         nextAutoPrompt =
-        //             "Create a Metamodel using the following object types: " +
-        //             (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
-        //         break;
-        //     case "POPS_META":
-        //         nextAutoPrompt =
-        //             "Create a POPS model using the following object types: " +
-        //             (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
-        //         break;
-        //     case "BPMN_META":
-        //         nextAutoPrompt =
-        //             "Create a BPMN model using the following object types: " +
-        //             (types.length ? types.join(" ") + " based on the ontology objects below: " : "");
-        //         break;
-        // }
+        let nextAutoPrompt = "";
+        // const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
+        switch (curMetamodel.name) {
+            case "IRTV_META":
+                nextAutoPrompt = "Create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects." +
+                    (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
+                break;
+            case "CORE_META":
+                nextAutoPrompt =
+                    "Create a Metamodel using the following object types: " +
+                    (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
+                break;
+            case "POPS_META":
+                nextAutoPrompt =
+                    "Create a POPS model using the following object types: " +
+                    (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
+                break;
+            case "BPMN_META":
+                types = (curMetamodel.objecttypes || [])
+                    .filter((o: any) => o.name !== "EntityType")
+                    .filter((o: any) => o.name !== "Gateway")
+                    .map((o: any) => o.name + ', ');
+                nextAutoPrompt =
+                    "Create a BPMN model using the following object types: " +
+                    (types.length ? types.join(" ") + " based on the ontology objects below: " : "");
+                break;
+        }
 
         if (!nextAutoPrompt) return;
 
@@ -279,35 +284,35 @@ Verify that your responses are based on the provided context and requirements.
 
         let metatypesString = "";
         if (curMetamodel.name === "IRTV_META") {
-//             const allowed = ["Role", "Task", "View", "Information"];
-//             const filteredObjTypes = curMetamodel.objecttypes.filter((o: any) =>
-//                 allowed.includes(o.name)
-//             );
-//             const idToName = curMetamodel.objecttypes.reduce((m: any, o: any) => {
-//                 m[o.id] = o.name;
-//                 return m;
-//             }, {});
-//             const filteredRelTypes = curMetamodel.relshiptypes.filter((r: any) => {
-//                 const fromName = idToName[r.fromobjtypeRef];
-//                 const toName = idToName[r.toobjtypeRef];
-//                 return allowed.includes(fromName) && allowed.includes(toName);
-//             });
-//             metatypesString = `**${curMetamodel.name}**
-// ${filteredObjTypes
-//                     .map(
-//                         (objtype: any) =>
-//                             `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`
-//                     )
-//                     .join("\n")}
+            //             const allowed = ["Role", "Task", "View", "Information"];
+            //             const filteredObjTypes = curMetamodel.objecttypes.filter((o: any) =>
+            //                 allowed.includes(o.name)
+            //             );
+            //             const idToName = curMetamodel.objecttypes.reduce((m: any, o: any) => {
+            //                 m[o.id] = o.name;
+            //                 return m;
+            //             }, {});
+            //             const filteredRelTypes = curMetamodel.relshiptypes.filter((r: any) => {
+            //                 const fromName = idToName[r.fromobjtypeRef];
+            //                 const toName = idToName[r.toobjtypeRef];
+            //                 return allowed.includes(fromName) && allowed.includes(toName);
+            //             });
+            //             metatypesString = `**${curMetamodel.name}**
+            // ${filteredObjTypes
+            //                     .map(
+            //                         (objtype: any) =>
+            //                             `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`
+            //                     )
+            //                     .join("\n")}
 
-// ${filteredRelTypes
-//                     .map(
-//                         (reltype: any) =>
-//                             `id: ${reltype.id}, name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`
-//                     )
-//                     .join("\n")}
-// `;
-//             setSystemBehaviorGuidelines(IRTVSystemPrompt);
+            // ${filteredRelTypes
+            //                     .map(
+            //                         (reltype: any) =>
+            //                             `id: ${reltype.id}, name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`
+            //                     )
+            //                     .join("\n")}
+            // `;
+            //             setSystemBehaviorGuidelines(IRTVSystemPrompt);
             setSystemBehaviorGuidelines(
                 `You are an expert in IRTV analysis. Your task is to create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects. Ensure logical consistency and Active Knowledge Modeling principles.`
             );
@@ -387,31 +392,37 @@ ${filteredRelTypes
                 );
             }) || [];
 
+        // Ensure we only map arrays
         const existingObjects =
-            curmod.objects?.map((o: any) => ({
-                id: o.id,
-                name: o.name,
-                description: o.description,
-                typeName: o.typeName
-            })) || [];
+            Array.isArray(curmod.objects)
+                ? curmod.objects.map((o: any) => ({
+                    id: o.id,
+                    name: o.name,
+                    description: o.description,
+                    typeName: o.typeName
+                }))
+                : [];
 
         const existingRelationships =
-            // infoRels.map((rel: any) => ({
-            curmod.relships?.map((rel: any) => ({
-                id: rel.id,
-                name: rel.name,
-                nameFrom: rel.nameFrom,
-                nameTo: rel.nameTo
-            })) || [];
+            Array.isArray(curmod.relships)
+                ? curmod.relships.map((rel: any) => ({
+                    id: rel.id,
+                    name: rel.name,
+                    nameFrom: rel.nameFrom,
+                    nameTo: rel.nameTo
+                }))
+                : [];
 
+        // BUGFIX: use existingObjects (array), not existingInfoObjects (state object)
         const newExistingInfoObjects = {
-            objects: existingInfoObjects,
+            objects: existingObjects,
             relships: existingRelationships
         };
 
-        setExistingInfoObjects(newExistingInfoObjects);
+        setExistingInfoObjects(newExistingInfoObjects.objects.length > 0 ? newExistingInfoObjects : { objects: [], relships: [] });
 
-        const existingNames = newExistingInfoObjects.objects.map((o) => o.name);
+        // Guard against non-array
+        const existingNames = (newExistingInfoObjects.objects || []).map((o: any) => o.name);
 
         let conceptString = `**Existing Context**
 
@@ -464,7 +475,7 @@ ${filteredRelTypes
                 )
                 .join("\n")}\n\n`;
 
-        setContextItems(`${conceptString}\n\n`);
+        (newExistingInfoObjects.objects.length > 0) && setContextItems(`${conceptString}\n\n`);
         setContextOntology(`${newOntologyString}`);
     }, [curmod?.id, data?.phData?.ontology?.concepts]);
 
@@ -534,6 +545,14 @@ ${filteredRelTypes
             .catch((err) => console.error("Copy failed:", err));
     };
 
+    const handleClearChat = useCallback(() => {
+        setMessages([]);                // clear local UI
+        dispatch(chatSetMessages([]));  // clear Redux slice (keeps global in sync)
+        setStatusMsg("");
+        setStreamedContent("");
+        setPreviewMessageIndex(null);
+    }, [dispatch]);
+
     const formatJSONAsMarkdown = (data: any): string => {
         let markdown = `# ${data.name || "Generated Model"}\n\n`;
         if (data.description) {
@@ -577,8 +596,6 @@ ${filteredRelTypes
             'contextItems\n', contextItems, '\n\n',
             'contextOntology\n', contextOntology, '\n\n',
             'contextMetamodel\n', contextMetamodel);
-
-
 
         try {
             const res = await fetch("/api/genmodel", {
@@ -892,7 +909,7 @@ ${filteredRelTypes
                     {messages.length > 0 && (
                         <div className="flex justify-end w-full">
                             <button
-                                onClick={() => dispatch(chatSetMessages([]))}
+                                onClick={handleClearChat} // <-- use the new handler
                                 title="Clear chat history"
                                 className="py-1 text-xs text-red-500 hover:text-red-700"
                             >
@@ -900,7 +917,7 @@ ${filteredRelTypes
                             </button>
                         </div>
                     )}
-
+                    {/* 
                     {statusMsg && (
                         <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
                             <Info className="w-4 h-4 mr-2" />
@@ -917,7 +934,7 @@ ${filteredRelTypes
                                     </button>
                                 )}
                         </div>
-                    )}
+                    )} */}
                 </div>
             </div>
 
@@ -939,26 +956,37 @@ ${filteredRelTypes
                     />
                     <div className="flex flex-row justify-between rounded gap-1">
                         <div className="flex items-center gap-2" />
-                        <div className="flex flex-row items-center text-foreground gap-1">
-                            <div className="texts bg-gray-800 border border-gray-600 rounded text-sm px-2">
-                                <ModelSelector
-                                    selectedModel={selectedModel}
-                                    onModelChange={(m) => {
-                                        setSelectedModel(m);
-                                    }}
-                                />
-                            </div>
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                    // Persist selected model to localStorage
+                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                }}
+                            />
                             <TemperatureSelector />
                         </div>
 
-                        <div className="flex justify-between px-2">
+                        {/* now include the send‐button here */}
+                        <div className="flex justify-between px-2 ">
                             <button
                                 type="submit"
-                                className="flex items-center bg-gray-800 rounded-full px-3 py-1 mb-1 text-blue-300 hover:text-blue-100 hover:bg-gray-700 disabled:opacity-50"
+                                className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
                                 disabled={isLoading || !input?.trim()}
                                 title="Send your question"
-                            >
-                                Send
+                            >Send
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-8 h-8"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+
+                                </svg>
                             </button>
                         </div>
                         {!isLoading && lastAutoPrompt && userEditedInput && (
@@ -976,36 +1004,36 @@ ${filteredRelTypes
                         )}
                     </div>
                 </form>
-
-                <Modal
-                    isOpen={isSystemPromptOpen}
-                    onClose={() => setIsSystemPromptOpen(false)}
-                >
-                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
-                    <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
-                        <pre className="whitespace-pre-wrap text-sm">
-                            {systemPrompt || "(empty system prompt)"}
-                        </pre>
-                    </div>
-                    {contextContent && isContextAttached && (
-                        <div className="mt-4">
-                            <h3 className="text-lg font-semibold mb-2">Attached Context</h3>
-                            <div className="bg-gray-900 p-3 rounded border border-gray-700 text-xs whitespace-pre-wrap">
-                                {contextContent.slice(0, 800)}
-                                {contextContent.length > 800 && "..."}
-                            </div>
-                        </div>
-                    )}
-                    <div className="mt-6 flex justify-end">
-                        <button
-                            onClick={() => setIsSystemPromptOpen(false)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                        >
-                            Close
-                        </button>
-                    </div>
-                </Modal>
             </div>
         </div>
     );
 }
+
+{/* <Modal
+    isOpen={isSystemPromptOpen}
+    onClose={() => setIsSystemPromptOpen(false)}
+>
+    <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
+    <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
+        <pre className="whitespace-pre-wrap text-sm">
+            {systemPrompt || "(empty system prompt)"}
+        </pre>
+    </div>
+    {contextContent && isContextAttached && (
+        <div className="mt-4">
+            <h3 className="text-lg font-semibold mb-2">Attached Context</h3>
+            <div className="bg-gray-900 p-3 rounded border border-gray-700 text-xs whitespace-pre-wrap">
+                {contextContent.slice(0, 800)}
+                {contextContent.length > 800 && "..."}
+            </div>
+        </div>
+    )}
+    <div className="mt-6 flex justify-end">
+        <button
+            onClick={() => setIsSystemPromptOpen(false)}
+            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+        >
+            Close
+        </button>
+    </div>
+</Modal> */}

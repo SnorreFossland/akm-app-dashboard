@@ -19,6 +19,7 @@ import {
     setMessages,
     Message
 } from '@/features/chat/chatSlice';
+import { ExistingOntology } from "@/app/ontology-builder/prompts";
 
 const debug = false; // Set to true for debugging
 
@@ -168,11 +169,6 @@ export default function DomainBuilder({
 
     // Generate domain presentation using AI
     const generateDomainPresentation = async () => {
-        // if (!domainName.trim() || !domainDescription.trim()) {
-        //     alert("Domain name and description are required to generate a presentation.");
-        //     return;
-        // }
-
         setIsLoading(true);
 
         try {
@@ -185,9 +181,9 @@ export default function DomainBuilder({
             Domain Name: ${domainName}
             
             Domain Description: ${domainDescription}
-            
-            Domain Prompt: ${existingPrompt}
-            
+
+            ${(existingPrompt !== "") ? `Existing Prompt: ${existingPrompt}` : ""}
+
             Please provide a well-structured markdown presentation that includes:
             1. An introduction to the domain
             2. Key concepts and terminology
@@ -205,36 +201,12 @@ export default function DomainBuilder({
                 response = {
                     ok: true,
                     json: async () => ({
-                        response: `# ${domainName} Overview
-
-## Introduction
-This is a dummy presentation for ${domainName}. In a real scenario, this would be a comprehensive introduction to the domain.
-
-## Key Concepts
-- First key concept
-- Second key concept
-- Third key concept
-
-## Main Challenges
-1. Challenge one
-2. Challenge two
-3. Challenge three
-
-## Best Practices
-* Best practice one
-* Best practice two
-* Best practice three
-
-## Applications
-Wide-ranging applications include...
-
-## Future Trends
-Looking ahead, we can expect...`
+                        response: `# ${domainName} ## Dummytxt bla bla bla`
                     })
                 };
             } else {
                 // Use real API
-                response = await fetch("/api/genprompt", {
+                response = await fetch("/api/gendomain", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     body: JSON.stringify({
@@ -293,9 +265,7 @@ Looking ahead, we can expect...`
     return (
         <div className="flex flex-col h-[calc(100vh-8rem)] border-solid rounded border-4 border-green-800 w-full bg-transparent">
 
-
             <div className="flex w-full h-[calc(100vh-8rem)] overflow-hidden" ref={containerRef}>
-                {/* Left panel */}
                 <div className="p-1 flex flex-col h-full">
                     <div className="flex flex-col h-full w-full overflow-y-auto">
                         <div className="flex justify-between items-center mb-1">
@@ -373,21 +343,17 @@ Looking ahead, we can expect...`
                     </div>
                 </div>
             </div>
-            {/* <CardTitle className="flex justify-start items-center text-gray-400 text-xl"> */}
-            {/* <span className="text-active-item me-auto px-2">Domain Definition Builder</span> */}
-            {/* <span className="mx-auto text-center">AI Powered Domain Knowledge Canvas</span> */}
-                        <div className="flex items-center text-foreground gap-1">
-                            <ModelSelector
-                                selectedModel={selectedModel}
-                                onModelChange={(newModel) => {
-                                    setSelectedModel(newModel);
-                                    // Persist selected model to localStorage
-                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
-                                }}
-                            />
-                            <TemperatureSelector />
-                        </div>
-            {/* </CardTitle> */}
+            <div className="flex items-center text-foreground gap-1">
+                <ModelSelector
+                    selectedModel={selectedModel}
+                    onModelChange={(newModel) => {
+                        setSelectedModel(newModel);
+                        // Persist selected model to localStorage
+                        localStorage.setItem('aiDashboard_selectedModel', newModel);
+                    }}
+                />
+                <TemperatureSelector />
+            </div>
         </div>
     );
 }

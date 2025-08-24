@@ -3,73 +3,106 @@ import { Edit, Check, FileText, Paperclip, Library, BookmarkPlus } from 'lucide-
 
 const GettingStartedGuide: React.FC = () => {
     return (
-        <div className="flex-1 p-2 text-primary bg-secondary overflow-auto min-h-0 max-h-[calc(100vh-14rem)]">
-            <div className="flex flex-col items-center justify-start w-full pb-6">
-                <div className="mx-auto max-w-4xl">
-                    <div className="space-y-6">
-                        <div className="text-center">
-                            <h2 className="text-2xl font-bold mb-4">Domain Concept Exploration</h2>
-                            <p className="text-lg text-muted-foreground">
-                                Explore the Concepts or Terms for a Domain assisted by AI
-                            </p>
+        <>
+            <div className="h-full p-4 rounded bg-gray-900 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800 h-full">
+                <h2 className="text-xl font-bold text-green-500 mb-4">Welcome to the Ontology Builder</h2>
+
+                <p className="text-white mb-3">
+                    The Ontology Builder helps you explore, define, and refine a structured set of concepts and relationships
+                    for your domain. Use AI assistance to generate an initial ontology, then iteratively review, edit,
+                    and accept the parts that fit your needs.
+                </p>
+                <p className="text-white mb-3">
+                    The resulting ontology becomes shared context across the suite, improving precision and relevance
+                    for downstream tasks that rely on domain concepts and their relationships.
+                </p>
+
+                <h3 className="text-lg font-bold text-green-400 mt-4 mb-2">How it works:</h3>
+
+                <ol className="text-white list-decimal ml-5 space-y-2">
+                    <li>
+                        <span className="font-bold">Click the template button (or write your own prompt):</span>{' '}
+                        A predefined ontology prompt will be inserted; you can edit it to match your domain.
+                    </li>
+                    <li>
+                        <span className="font-bold">Describe your domain/topic or paste existing concepts:</span>{' '}
+                        Provide a brief description and any example concepts/terms or relationships you already have.
+                    </li>
+                    <li>
+                        <span className="font-bold">Click “Send” to generate a suggestion:</span>{' '}
+                        The AI will propose concepts and relationships based on your input.
+                    </li>
+                    <li>
+                        <span className="font-bold">Preview the generated ontology in the right panel:</span>{' '}
+                        Review the proposed concepts, definitions, and relationships.
+                    </li>
+                    <li>
+                        <span className="font-bold">Edit and refine:</span>{' '}
+                        Adjust wording, add missing items, and remove irrelevant ones.
+                    </li>
+                    <li>
+                        <span className="font-bold">Accept and Save:</span>{' '}
+                        Accept items you want to keep, then save to your Library for reuse.
+                    </li>
+                </ol>
+
+                <h3 className="text-lg font-bold text-green-400 mt-5 mb-2">Quick actions</h3>
+
+                <ul className="text-white space-y-2">
+                    <li className="flex items-start gap-2">
+                        <Edit className="h-4 w-4 text-green-400 mt-1" />
+                        <div>
+                            <span className="font-bold">Edit before sending:</span>{' '}
+                            Tweak the prompt or current draft for better results.
                         </div>
-
-                        <div className="bg-card p-6 rounded-lg border">
-                            <p className="mb-4">
-                                This process involves several key steps, each contributing to the development of a structured and comprehensive model for a given domain. The goal is to build a Model that leverages AI to facilitate the creation and integration of concepts within the domain.
-                            </p>
-
-                            <div className="space-y-4">
-                                <h3 className="text-xl font-semibold">
-                                    Establish the Concept Ontology (Conceptual Framework) for the Domain
-                                </h3>
-
-                                <div className="pl-4 border-l-4 border-primary/20">
-                                    <p className="mb-4">
-                                        The Concept Ontology refers to the foundational structure that defines the essential concepts, theories, models, and frameworks within a specific domain or field. It serves as a shared vocabulary that enables clear communication and collaboration among practitioners.
-                                    </p>
-
-                                    <p className="mb-4">
-                                        It encompasses the concepts, principles, and relationships that are essential for practitioners within the field to communicate effectively and advance knowledge.
-                                    </p>
-                                </div>
-
-                                <div className="bg-muted/50 p-4 rounded-lg">
-                                    <h4 className="font-semibold mb-3">Key Components:</h4>
-                                    <ul className="space-y-2">
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-primary font-semibold">•</span>
-                                            <div>
-                                                <strong>Core Concepts:</strong> Fundamental ideas and categories that are central to the domain.
-                                            </div>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-primary font-semibold">•</span>
-                                            <div>
-                                                <strong>Principles and Theories:</strong> The underlying rules and logical structures that guide the domain's knowledge and practices.
-                                            </div>
-                                        </li>
-                                        <li className="flex items-start gap-2">
-                                            <span className="text-primary font-semibold">•</span>
-                                            <div>
-                                                <strong>Relationships:</strong> The connections and interactions between concepts that help explain how they relate to one another.
-                                            </div>
-                                        </li>
-                                    </ul>
-                                </div>
-
-                                <div className="bg-primary/10 p-4 rounded-lg">
-                                    <p className="font-medium">
-                                        By establishing this ontology, you create a well-organized framework that supports knowledge sharing, problem-solving, and further advancement within the field.
-                                    </p>
-                                </div>
-                            </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <Check className="h-4 w-4 text-green-400 mt-1" />
+                        <div>
+                            <span className="font-bold">Accept response:</span>{' '}
+                            Commit selected concepts and relationships to your current ontology.
                         </div>
-                    </div>
-                </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <FileText className="h-4 w-4 text-green-400 mt-1" />
+                        <div>
+                            <span className="font-bold">View in Markdown:</span>{' '}
+                            Open the response in Markdown to edit the text more comfortably.
+                        </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <Paperclip className="h-4 w-4 text-green-400 mt-1" />
+                        <div>
+                            <span className="font-bold">Attach context documents:</span>{' '}
+                            Provide source material to ground the ontology suggestions.
+                        </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <Library className="h-4 w-4 text-green-400 mt-1" />
+                        <div>
+                            <span className="font-bold">Open Library:</span>{' '}
+                            Browse or reuse previous ontologies and documents.
+                        </div>
+                    </li>
+                    <li className="flex items-start gap-2">
+                        <BookmarkPlus className="h-4 w-4 text-green-400 mt-1" />
+                        <div>
+                            <span className="font-bold">Save to Library:</span>{' '}
+                            Persist your refined ontology for future sessions and sharing.
+                        </div>
+                    </li>
+                </ul>
+
+                <h3 className="text-lg font-bold text-green-400 mt-5 mb-2">Tips & best practices</h3>
+                <ul className="list-disc ml-5 text-white space-y-1">
+                    <li>Start simple: capture a small core of concepts first, then iterate.</li>
+                    <li>Be explicit about scope and intended use to guide better suggestions.</li>
+                    <li>Use consistent naming, singular nouns for concepts, and clear relationship labels.</li>
+                    <li>Ground the AI with examples and short definitions for better precision.</li>
+                </ul>
             </div>
-        </div>
-    )
-}
+        </>
+    );
+};
 
 export default GettingStartedGuide;

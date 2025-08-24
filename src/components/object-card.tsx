@@ -20,7 +20,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
 
-    console.log('24 model:', model);
+    // console.log('24 model:', model);
 
     // Initialize Mermaid once
     useEffect(() => {
@@ -102,7 +102,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                 });
             }
 
-            console.log('Generated Mermaid diagram:', diagram);
+            // console.log('Generated Mermaid diagram:', diagram);
             setMermaidDiagram(diagram);
 
         } catch (error) {

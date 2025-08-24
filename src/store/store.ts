@@ -6,6 +6,7 @@ import rootReducer from './rootReducer'; // Import rootReducer
 const persistConfig = {
     key: 'root',
     storage,
+    blacklist: ['ui'], // ensure dialog open/close doesn’t persist
     migrate: (state: any) => {
         // Handle migration from old state structure
         if (state && state.documents) {
@@ -47,7 +48,7 @@ const persistConfig = {
 
         return Promise.resolve(state);
     },
-    version: 1 // Increment version to trigger migration
+    version: 1,
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
