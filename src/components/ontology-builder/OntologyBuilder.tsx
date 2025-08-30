@@ -1,4 +1,5 @@
 'use client';
+
 import React, { useState, useEffect, useMemo } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '@/store/store';
@@ -18,7 +19,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, D
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
 import {
-    SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt
+    ontologySystemPrompt, ontologySystemBehaviorGuidelines, ontologyExistingOntology, ontologyUserPrompt, ontologyExistingContext, ontologyMetamodelPrompt
 } from '@/app/ontology-builder/prompts';
 
 
@@ -57,6 +58,8 @@ const OntologyBuilder = (
         guide: React.ReactNode;
     }
 ) => {
+    if (false) { 
+    
     const data = useSelector((state: RootState) => state.modelUniverse);
     const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
     const dispatch = useDispatch<AppDispatch>();
@@ -151,13 +154,13 @@ const OntologyBuilder = (
             conceptString += `**Relationships**\n\n${existingRelationships?.map((r) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
         }
 
-        const newSystemPrompt = SystemPrompt;
-        const newSystemBehaviorGuidelines = SystemBehaviorGuidelines;
-        const userPrompt = (data.phData.domain.name !== "") ? `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}` : UserPrompt;
-        const userInput = (domainData.presentation !== "") ? `${UserInput} \n\n ${domainData?.presentation || ""} \n\n ${domainPresentation} \n\n ${topicDescr}` : "";
-        const newContextOntology = (impOntologyString) ? `${ExistingOntology} ${impOntologyString}` : "";
-        const newContextItems = (conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "";
-        const newContextMetamodel = `${MetamodelPrompt}`;
+    const newSystemPrompt = ontologySystemPrompt;
+    const newSystemBehaviorGuidelines = ontologySystemBehaviorGuidelines;
+    const userPrompt = (data.phData.domain.name !== "") ? `${ontologyUserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}` : ontologyUserPrompt;
+    const userInput = (domainData.presentation !== "") ? `${ontologyUserInput} \n\n ${domainData?.presentation || ""} \n\n ${domainPresentation} \n\n ${topicDescr}` : "";
+    const newContextOntology = (impOntologyString) ? `${ontologyExistingOntology} ${impOntologyString}` : "";
+    const newContextItems = (conceptString !== '') ? `${ontologyExistingContext} \n\n ${conceptString}` : "";
+    const newContextMetamodel = `${ontologyMetamodelPrompt}`;
 
         return {
             userPrompt,
@@ -454,7 +457,7 @@ const OntologyBuilder = (
                             </button>
                         </div>
                         <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
-                            {guide}
+                            {React.isValidElement(guide) ? guide : null}
                         </div>
                     </div>
                 )}
@@ -540,6 +543,7 @@ const OntologyBuilder = (
             </div>
         </div>
     );
+}
 }
 
 export default OntologyBuilder;

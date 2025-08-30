@@ -20,10 +20,10 @@ import {
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
 import { RootState, AppDispatch } from "@/store";
 import { ObjectSchema } from "@/objectSchema";
-import ModelSelector from '@/components/ai-chat/ModelSelector';
+import ModelSelector, { ModelId } from '@/components/ai-chat/ModelSelector';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
-import { SystemPrompt, IrtvSystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext } from '@/app/model-builder/prompts';
+import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext } from '@/app/model-builder/prompts';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 
 const debug = false;
@@ -205,15 +205,15 @@ Verify that your responses are based on the provided context and requirements.
             return;
         }
 
-        const nextModel = metis.models.find((m: any) => m.id === focusId) || null;
-        const nextMetamodel =
+        const nextModel: any = metis.models.find((m: any) => m.id === focusId) || null;
+        const nextMetamodel: any =
             nextModel
                 ? metis.metamodels?.find((mm: any) => mm.id === nextModel.metamodelRef) || null
                 : null;
 
         // Only update if changed (avoid extra renders)
-        setCurmod(prev => (prev?.id === nextModel?.id ? prev : nextModel));
-        setCurMetamodel(prev => (prev?.id === nextMetamodel?.id ? prev : nextMetamodel));
+        setCurmod((prev: Model | null) => (prev?.id === nextModel?.id ? prev : nextModel));
+        setCurMetamodel((prev: any) => (prev?.id === nextMetamodel?.id ? prev : nextMetamodel));
 
         if (debug) {
             console.log("[focus-sync] focusId:", focusId,
@@ -230,7 +230,7 @@ Verify that your responses are based on the provided context and requirements.
         if (!curmod || !curMetamodel) return;
         let types = (curMetamodel.objecttypes || [])
             .filter((o: any) => o.name !== "EntityType")
-            .filter((o: any) => o.name !== "Gateway") 
+            .filter((o: any) => o.name !== "Gateway")
             .map((o: any) => o.name + ', ');
         let nextAutoPrompt = "";
         // const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
@@ -284,35 +284,6 @@ Verify that your responses are based on the provided context and requirements.
 
         let metatypesString = "";
         if (curMetamodel.name === "IRTV_META") {
-            //             const allowed = ["Role", "Task", "View", "Information"];
-            //             const filteredObjTypes = curMetamodel.objecttypes.filter((o: any) =>
-            //                 allowed.includes(o.name)
-            //             );
-            //             const idToName = curMetamodel.objecttypes.reduce((m: any, o: any) => {
-            //                 m[o.id] = o.name;
-            //                 return m;
-            //             }, {});
-            //             const filteredRelTypes = curMetamodel.relshiptypes.filter((r: any) => {
-            //                 const fromName = idToName[r.fromobjtypeRef];
-            //                 const toName = idToName[r.toobjtypeRef];
-            //                 return allowed.includes(fromName) && allowed.includes(toName);
-            //             });
-            //             metatypesString = `**${curMetamodel.name}**
-            // ${filteredObjTypes
-            //                     .map(
-            //                         (objtype: any) =>
-            //                             `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`
-            //                     )
-            //                     .join("\n")}
-
-            // ${filteredRelTypes
-            //                     .map(
-            //                         (reltype: any) =>
-            //                             `id: ${reltype.id}, name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`
-            //                     )
-            //                     .join("\n")}
-            // `;
-            //             setSystemBehaviorGuidelines(IRTVSystemPrompt);
             setSystemBehaviorGuidelines(
                 `You are an expert in IRTV analysis. Your task is to create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects. Ensure logical consistency and Active Knowledge Modeling principles.`
             );
@@ -818,7 +789,7 @@ ${filteredRelTypes
                             </button>
                         </div>
                         <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
-                            {guide}
+                            {React.isValidElement(guide) ? guide : null}
                         </div>
                     </div>
                 )}
@@ -958,7 +929,7 @@ ${filteredRelTypes
                         <div className="flex items-center gap-2" />
                         <div className="flex items-center text-foreground gap-1">
                             <ModelSelector
-                                selectedModel={selectedModel}
+                                selectedModel={selectedModel as unknown as ModelId}
                                 onModelChange={(newModel) => {
                                     setSelectedModel(newModel);
                                     // Persist selected model to localStorage

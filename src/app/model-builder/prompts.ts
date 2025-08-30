@@ -6,9 +6,10 @@ Your task is to construct a consistent model from user-provided input, strictly 
 - Map input terms to objects of the metamodel.
 - Create relationships using verb-phrase names.
 - Avoid redundancy by validating against existing objects and relationships.
+- create id's using UUIDv4
 - Ensure all outputs conform to the metamodel structure.
 `;
-export const IrtvSystemPrompt = `
+export const SystemBehaviorGuidelines = `
 🎯 Core Objectives
 1.	Information Object Generation:
 	•	Convert terms into Information objects, skipping duplicates based on the existing context.
@@ -164,7 +165,7 @@ Make sure that you use uuid for the for all objects in the model.
 Make sure not to create or include objects that already exist in the 'Existing Context'.
     `;
 
-export const SystemBehaviorGuidelines = `
+export const SystemBehaviorGuidelines2 = `
 # System Behavior Guidelines
 - Always align new objects to one of the metamodel object types.
 - Use verb-phrase only for relationship names (e.g., "manages", "supports", "has").

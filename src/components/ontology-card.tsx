@@ -20,7 +20,7 @@ interface OntologyCardProps {
         presentation: string;
     } | null;
     domainData?: {
-        name: string;   
+        name: string;
         description: string;
         presentation: string;
         prompt: string;
@@ -43,6 +43,11 @@ interface Relationship {
 const debug = false;
 
 export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
+    // Check if ontologyData is null before using it
+    if (!ontologyData) {
+        return <div>No ontology data available</div>;
+    }
+
     const diagramRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const [mermaidDiagram, setMermaidDiagram] = useState('');

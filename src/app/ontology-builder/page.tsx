@@ -18,8 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } 
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 
 import OntologyBuilder from '@/components/ontology-builder/OntologyBuilder';
-import ChatComponent from '@/components/ai-chat/ChatComponent';
-import ModelComponent from "@/features/model-universe/components/ModelComponent";
+import ChatComponent from '@/components/ontology-builder/ChatComponent';
+// import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import { OntologyCard } from '@/components/ontology-card';
 import { LoadingCircularProgress } from "@/components/loading";
 import Guide from '@/components/ontology-builder/Guide';
@@ -114,6 +114,7 @@ export default function OntologyBuilderPage() {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const [mdContent, setMdContent] = useState<string>('')
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
+  const [currentDocument, setCurrentDocument] = useState<string>('');
   const [existingConcepts, setExistingConcepts] = useState<any[]>([]);
   const [existingRelationships, setExistingRelationships] = useState<any[]>([]);
   const [suggestedConceptData, setSuggestedConceptData] = useState<any>(null);
@@ -292,20 +293,33 @@ export default function OntologyBuilderPage() {
   };
 
   const middlePanelContent = {
-    tabs: [
+    tabs: [ 
       {
-        key: 'ontology-builder',
-        label: 'AI Ontology Builder',
+        key: 'chat',
+        label: 'AI Ontology chat',
         content: (
-          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
-            <div className="flex overflow-hidden">
-              <OntologyBuilder
-                suggestedOntologyData={suggestedOntologyData}
-                setSuggestedOntologyData={setSuggestedOntologyData}
-                gettingStartedGuide={<GettingStartedGuide />}
-                guide={<Guide />}
-              />
-            </div>
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
+            <ChatComponent
+              input={input}
+              setInput={setInput}
+              selectedModel={selectedModel}
+              setSelectedModel={setSelectedModel}
+              onResponseChange={handleResponseChange}
+              onViewInMarkdown={handleViewInMarkdown}
+              setShowLeftPanel={setShowLeftPanel}
+              showLeftPanel={showLeftPanel}
+              chatInput={chatInput}
+              onAddMD={handleAddMD}
+              mdContent={mdContent}
+              setMdContent={setMdContent}
+              currentDocument={currentDocument}
+              setCurrentDocument={setCurrentDocument}
+              mdPreview={mdPreview}
+              setMdPreview={setMdPreview}
+              setCurrentMessages={setCurrentMessages}
+              gettingStartedGuide={<GettingStartedGuide />}
+              guide={<Guide />}
+            />
           </div>
         )
       },
@@ -347,35 +361,22 @@ export default function OntologyBuilderPage() {
           </div>
         )
       },
-      {
-        key: 'chat',
-        label: 'AI Ontology chat',
-        content: (
-          <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
-            <ChatComponent
-              input={input}
-              setInput={setInput}
-              selectedModel={selectedModel}
-              setSelectedModel={setSelectedModel}
-              onResponseChange={handleResponseChange}
-              onViewInMarkdown={handleViewInMarkdown}
-              setShowLeftPanel={setShowLeftPanel}
-              showLeftPanel={showLeftPanel}
-              chatInput={chatInput}
-              onAddMD={handleAddMD}
-              mdContent={mdContent}
-              setMdContent={setMdContent}
-              // currentDocument={currentDocument}
-              // setCurrentDocument={setCurrentDocument}
-              mdPreview={mdPreview}
-              setMdPreview={setMdPreview}
-              setCurrentMessages={setCurrentMessages}
-              gettingStartedGuide={<GettingStartedGuide />}
-              guide={<Guide />}
-            />
-          </div>
-        )
-      }
+      // {
+      //   key: 'ontology-builder',
+      //   label: 'AI Ontology Builder',
+      //   content: (
+      //     <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+      //       <div className="flex overflow-hidden">
+      //         <OntologyBuilder
+      //           suggestedOntologyData={suggestedOntologyData}
+      //           setSuggestedOntologyData={setSuggestedOntologyData}
+      //           gettingStartedGuide={<GettingStartedGuide />}
+      //           guide={<Guide />}
+      //         />
+      //       </div>
+      //     </div>
+      //   )
+      // }
     ],
     defaultTab: 'ontology-builder'
   };
@@ -389,7 +390,6 @@ export default function OntologyBuilderPage() {
         content: (
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
             <Card className="p-1 h-full">
-              {/* <CardTitle className="text-sm font-bold">Suggested Ontology</CardTitle> */}
               <div className="flex justify-end pb-1 pt-0 mx-2">
                 <button
                   title="Save to Library"
@@ -422,7 +422,7 @@ export default function OntologyBuilderPage() {
         )
       }
     ],
-    defaultTab: 'preview'
+    defaultTab: 'ontology'
   };
 
   // Simple Modal component
@@ -444,6 +444,15 @@ export default function OntologyBuilderPage() {
         </div>
       </div>
     );
+  };
+
+  // Handle model selection changes
+  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = metis?.models.find((m: any) => m.name === event.target.value) || null;
+    setCurrentModel(selected);
+    // try to set a sensible curMetamodel when changing models
+    const mm = (metis?.metamodels || []).find((mm: any) => mm.id === selected?.metamodelRef) || null;
+    setCurMetamodel(mm);
   };
 
   const modelSelector = (false) ? (

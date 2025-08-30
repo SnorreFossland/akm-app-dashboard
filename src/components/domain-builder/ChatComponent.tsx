@@ -4,7 +4,7 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux'; // Add this import
 import { usePathname } from 'next/navigation';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed, ChevronLeft, ChevronRight } from 'lucide-react';
-import MarkdownPreview from './MarkdownPreview';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
@@ -15,8 +15,8 @@ import {
     setMessages,
     Message
 } from '@/features/chat/chatSlice';
-import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
-import { systemPrompt as promptBuilderPrompt } from '@/app/prompt-builder/prompts';
+
+import { systemPrompt,  } from '@/app/prompt-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
@@ -24,14 +24,14 @@ import AnimatedAICircle from '../ui/AnimatedAICircle';
 import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
-import ModelSelector from './ModelSelector';
-import TemperatureSelector from './TemperatureSelector';
-// import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import ModelSelector from '@/components/ai-chat/ModelSelector';
+import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
+import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
-import DigitalRainIntro from './DigitalRainIntro';
+import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 // import GettingStartedGuide from './GettingStartedGuide';
 // import { refineTemplates } from '@/features/documents/refine-templates';
-import { REFINE_TEMPLATES } from './refineTemplates';
+// import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';
 // import { error } from 'console';
 // import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 // import { API_BASE_URL } from '@/config/apiConfig';
@@ -51,8 +51,7 @@ export interface ChatComponentProps {
     showRightPanel?: boolean; // Add this line to the destructuring
     setShowRightPanel?: (show: boolean) => void; // Add this line to the destructuring
     error?: string;
-    // chatInput?: string;
-
+    chatInput?: string;
     input: string;
     setInput: (input: string) => void;
     setMdContent: (message: string) => void;
@@ -98,7 +97,7 @@ export default function ChatComponent({
     setShowLeftPanel,
     showRightPanel,
     setShowRightPanel,
-    // chatInput,
+    chatInput,
     onAddMD,
     mdContent,
     setMdContent,
@@ -120,7 +119,7 @@ export default function ChatComponent({
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
-    // const [inputState, setInputState] = useState<string | undefined>(chatInput);
+    const [inputState, setInputState] = useState<string | undefined>(chatInput);
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
     const [temperature, setTemperature] = useState<number>(0.5); // Default value 0.5
@@ -175,7 +174,6 @@ export default function ChatComponent({
 
     // Cleanup timeout on unmount
     useEffect(() => {
-        console.log('178 messages, isStreaming, streamedContent', messages, isStreaming, streamedContent);  
         return () => {
             if (streamUpdateTimeoutRef.current) {
                 clearTimeout(streamUpdateTimeoutRef.current);
@@ -206,16 +204,16 @@ Do not use its contents as contextual input for other questions--I want it impro
     //     ? PROMPT_TEMPLATES
     //     : PROMPT_TEMPLATES.filter(template => template.category === selectedCategory);
 
-    // Generate categories list dynamically from templates
-    const CATEGORIES = [...Array.from(
-        new Set(PROMPT_TEMPLATES.map(template => template.usage))
-    ).sort(), "All"];
+    // // Generate categories list dynamically from templates
+    // const CATEGORIES = [...Array.from(
+    //     new Set(PROMPT_TEMPLATES.map(template => template.usage))
+    // ).sort(), "All"];
 
-    const filteredTemplates = selectedCategory === 'All'
-        ? PROMPT_TEMPLATES
-        : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
-    // Define templates for document refinement
-    const refineTemplates = REFINE_TEMPLATES;
+    // const filteredTemplates = selectedCategory === 'All'
+    //     ? PROMPT_TEMPLATES
+    //     : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
+    // // Define templates for document refinement
+    // const refineTemplates = REFINE_TEMPLATES;
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
@@ -350,11 +348,11 @@ Do not use its contents as contextual input for other questions--I want it impro
         setCurrentMessages(messages);
     }, [messages, onResponseChange]);
 
-    // useEffect(() => {
-    //     if (chatInput !== undefined) {
-    //         setInput(chatInput);
-    //     }
-    // }, [chatInput]);
+    useEffect(() => {
+        if (chatInput !== undefined) {
+            setInput(chatInput);
+        }
+    }, [chatInput]);
 
     // Setup inactivity timer
     useEffect(() => {
@@ -688,70 +686,70 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     // Handle file selection for context
     // Handle file selection for context
-    //     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-    //         const files = event.target.files;
-    //         if (!files || files.length === 0) return;
-    //         const selectedFiles = Array.from(files);
-    //         setContextFiles(selectedFiles);
-    //         setIsProcessingFile(true);
-    //         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
+//     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
+//         const files = event.target.files;
+//         if (!files || files.length === 0) return;
+//         const selectedFiles = Array.from(files);
+//         setContextFiles(selectedFiles);
+//         setIsProcessingFile(true);
+//         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
 
-    //         try {
-    //             // Process files one by one with status updates
-    //             const fileContents = [];
-    //             const binaryFiles = [];
+//         try {
+//             // Process files one by one with status updates
+//             const fileContents = [];
+//             const binaryFiles = [];
 
-    //             for (const file of selectedFiles) {
-    //                 setStatusMsg(`Reading ${file.name}...`);
-    //                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
+//             for (const file of selectedFiles) {
+//                 setStatusMsg(`Reading ${file.name}...`);
+//                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
 
-    //                 // Track binary files to show warning later
-    //                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-    //                     binaryFiles.push(file.name);
-    //                 }
+//                 // Track binary files to show warning later
+//                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
+//                     binaryFiles.push(file.name);
+//                 }
 
-    //                 const text = await extractTextFromFile(file);
-    //                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
+//                 const text = await extractTextFromFile(file);
+//                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
 
-    //                 fileContents.push(`
-    // ====================
-    // DOCUMENT: ${file.name}
-    // ====================
+//                 fileContents.push(`
+// ====================
+// DOCUMENT: ${file.name}
+// ====================
 
-    // ${text}
+// ${text}
 
-    // ====================
-    // END OF DOCUMENT: ${file.name}
-    // ====================`);
-    //             }
+// ====================
+// END OF DOCUMENT: ${file.name}
+// ====================`);
+//             }
 
-    //             const combinedContent = fileContents.join('\n\n');
-    //             setContextContent(combinedContent);
-    //             setIsContextAttached(true);
-    //             console.log(`Total context size: ${combinedContent.length} chars`);
+//             const combinedContent = fileContents.join('\n\n');
+//             setContextContent(combinedContent);
+//             setIsContextAttached(true);
+//             console.log(`Total context size: ${combinedContent.length} chars`);
 
-    //             // Show user feedback about attached files
-    //             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
+//             // Show user feedback about attached files
+//             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
 
-    //             // Add warning about binary files if any were attached
-    //             if (binaryFiles.length > 0) {
-    //                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-    //                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-    //             }
+//             // Add warning about binary files if any were attached
+//             if (binaryFiles.length > 0) {
+//                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
+//                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
+//             }
 
-    //             setStatusMsg(message);
-    //             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-    //         } catch (error) {
-    //             console.error('Error processing files:', error);
-    //             setStatusMsg(
-    //                 error instanceof Error
-    //                     ? `Error processing files: ${error.message}`
-    //                     : `Error processing files: ${String(error)}`
-    //             );
-    //         } finally {
-    //             setIsProcessingFile(false);
-    //         }
-    //     };
+//             setStatusMsg(message);
+//             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
+//         } catch (error) {
+//             console.error('Error processing files:', error);
+//             setStatusMsg(
+//                 error instanceof Error
+//                     ? `Error processing files: ${error.message}`
+//                     : `Error processing files: ${String(error)}`
+//             );
+//         } finally {
+//             setIsProcessingFile(false);
+//         }
+//     };
 
     // Open file picker
     // const handleAddContext = () => {
@@ -773,7 +771,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         setIsStreaming(false);
         setStreamedContent('');
         console.log('770 sendMessageToAPI called with messages:', newMessages);
-
+        
         try {
             // Create messagesToSend array as you did before
             const messagesToSend: Message[] = [];
@@ -1188,7 +1186,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                             </button>
                         </div>
                         <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
-                            {guide}
+                           {guide}
                         </div>
                     </div>
                 )}
@@ -1236,6 +1234,12 @@ Do not use its contents as contextual input for other questions--I want it impro
                         {/* Render messages */}
                         <div className="max-h-[calc(100vh-23rem)] p-4 rounded-lg w-full bg-transparent overflow-y-auto overflow-x-hidden">
                             {messages.map((message, index) => (
+                                // <div key={index}
+                                //     className={`mb-4 p-3 rounded-lg flex flex-col gap-2 min-w-0 w-fit break-words ${message.role === 'user'
+                                //         ? 'bg-card ml-auto text-card-foreground flex-col border border-blue-900'
+                                //         : 'bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary'
+                                //         } `}
+                                // >
                                 <div key={index}
                                     className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
                                         ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
@@ -1285,6 +1289,23 @@ Do not use its contents as contextual input for other questions--I want it impro
                                             <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
                                                 {message.role === 'assistant' && (
                                                     <>
+                                                        {/* Add Save to Library button */}
+                                                        {/* <button
+                                                        title="Save to Library"
+                                                        onClick={() => handleSaveToLibrary(message.content)}
+                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                                                    >
+
+                                                        <BookmarkPlus className="h-4 w-4" />
+                                                    </button>
+
+                                                    <button
+                                                        title="Save to File"
+                                                        onClick={() => handleSaveToFile(message.content)}
+                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
+                                                    >
+                                                        <Save className="h-4 w-4" />
+                                                    </button> */}
                                                         <button
                                                             onClick={() => handleCopyMessage(message.content, index)}
                                                             className="ms-2 text-xs text-gray-400 hover:text-gray-200"
@@ -1397,7 +1418,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                             {/* This is the end of the messages */}
                             <div ref={messagesEndRef}></div>
                         </div>
-                        {messages.length > 0 && (
+                            {messages.length > 0 && (
                             <div className="flex justify-end w-full">
                                 <button
                                     onClick={() => dispatch(setMessages([]))}
@@ -1407,7 +1428,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     <X className="w-4 h-4" />
                                 </button>
                             </div>
-                        )}
+                            )}
                     </div>
                 </div>
                 {/* Add  message display */}
@@ -1640,6 +1661,35 @@ Do not use its contents as contextual input for other questions--I want it impro
                     </div>
 
                 }
+                {pathname === '/domain-builder' &&
+                    <div className="flex items-center justify-between p-2">
+                        {/* button row above the chat */}
+                        <div className="flex items-center gap-2">
+                            {/* System Prompt Button */}
+                            <div
+                                className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
+                                onClick={handleSystemPromptClick}
+                                title="Click to view system prompt"
+                            >
+                                <span className="flex items-center gap-1 text-gray-400 text-xs">
+                                    <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
+                                </span>
+                            </div>
+                        </div>
+                        <button
+                            type="button"
+                            className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
+                            onClick={() => {
+                                setDocRefine(true);
+                                setInput((currentDocument !== "") 
+                                ? `You are a Domain  Expert. Please Expand on the domain definition in the content below:` 
+                                : `You are a Domain Expert. Please create a domain definition based on the following: Domain Name: [Domain Name]`)
+                            }}
+                        >
+                            Define & Scope Domain
+                        </button>
+                    </div>
+                }
 
 
                 <div className="flex items-center gap-2"></div>
@@ -1752,6 +1802,44 @@ Do not use its contents as contextual input for other questions--I want it impro
             </div>
 
 
+            {/* System Prompt Modal */}
+
+            <Modal isOpen={isSystemPromptOpen} onClose={() => setIsSystemPromptOpen(false)}>
+                <div>
+                    <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
+                    <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
+                        <pre className="whitespace-pre-wrap text-sm">{systemPrompt}</pre>
+                    </div>
+
+                    {contextContent && isContextAttached && (
+                        <>
+                            <h3 className="text-lg font-semibold mt-6 mb-2 text-blue-400">Context Files</h3>
+                            <div className="bg-gray-800 p-4 rounded-md border border-gray-600 max-h-[300px] overflow-auto">
+                                <p className="mb-2 text-sm text-gray-300">
+                                    {contextFiles.length} file(s) attached as context:
+                                </p>
+                                <ul className="list-disc pl-5 text-sm">
+                                    {contextFiles.map((file) => (
+                                        <li key={file.name} className="mb-1">
+                                            {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                        </li>
+                                    ))}
+                                </ul>
+                            </div>
+                        </>
+                    )}
+
+                    <div className="mt-6 flex justify-end">
+                        <button
+                            onClick={() => setIsSystemPromptOpen(false)}
+                            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+                        >
+                            Close
+                        </button>
+                    </div>
+                </div>
+            </Modal>
+            {/* Add padding at the bottom of the message container to prevent content being hidden behind the fixed input */}
 
         </div >
     )

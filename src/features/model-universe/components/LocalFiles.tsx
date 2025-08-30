@@ -1,6 +1,6 @@
 import React, { useRef } from 'react';
 import { useDispatch } from 'react-redux';
-import { setOntologyData, clearStore, clearModel } from "@/features/model-universe/modelSlice";
+import { clearStore, clearModel } from "@/features/model-universe/modelSlice";
 import { handleSaveToLocalFile } from '@/features/model-universe/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/model-universe/components/HandleGetLocalFile';
 import { handleGetLocalFileClick } from '@/features/model-universe/components/HandleGetLocalFileClick';
@@ -20,7 +20,7 @@ const LocalFiles: React.FC<LocalFilesProps> = ({ model, data }) => {
         type="file"
         ref={fileInputRef}
         style={{ display: 'none' }}
-        onChange={(e) => handleGetLocalFile(e, dispatch)}
+        onChange={(e) => handleGetLocalFile(e, dispatch, data)}
       />
       <div className="flex ">
         <button

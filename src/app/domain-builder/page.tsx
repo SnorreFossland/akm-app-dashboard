@@ -13,7 +13,7 @@ import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 // import DomainBuilder from "@/components/domain-builder/DomainBuilder";
-import ChatComponent from '@/components/ai-chat/ChatComponent';
+import ChatComponent from '@/components/domain-builder/ChatComponent';
 import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import { LoadingCircularProgress } from "@/components/loading";
 import GettingStartedGuide from '@/components/domain-builder/GettingStartedGuide';
@@ -22,6 +22,7 @@ import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import { FileOperations } from '@/components/FileOperations';
+import { Model, setFocusModel } from '@/features/model-universe/modelSlice';
 import UniverseComponent from '@/features/model-universe/components/UniverseComponent';
 import { labelRect } from 'mermaid/dist/rendering-util/rendering-elements/shapes/labelRect.js';
 
@@ -49,6 +50,8 @@ export default function DomainBuilderPage() {
   const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
 
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
+  const [focusModelLocal, setFocusModelLocal] = useState<{ id: string; name: string } | null>(null);
+  const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
 
   const [input, setInput] = useState<string>("");
@@ -226,7 +229,8 @@ export default function DomainBuilderPage() {
               name: doc.name,
               type: 'markdown',
               content: doc.content,
-              createdAt: doc.createdAt || new Date().toISOString()
+              createdAt: doc.createdAt || new Date().toISOString(),
+              updatedAt: doc.updatedAt || doc.createdAt || new Date().toISOString()
             }));
           });
 
@@ -255,6 +259,16 @@ export default function DomainBuilderPage() {
   };
 
   const handleResponseChange = (response: string) => { setLastResponse(response) };
+
+  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selected = data.phData.metis.models.find((m: Model) => m.name === event.target.value);
+    setCurrentModel(selected || null);
+    setFocusModelLocal(selected || null);
+    setFocusModelview(selected?.modelviews?.[0] || null);
+    if (selected) {
+      dispatch(setFocusModel({ id: selected.id, name: selected.name }));
+    }
+  };
 
   const handleViewInMarkdown = (response: string) => {
     const cleanResponse = (response: string) => {
@@ -340,16 +354,18 @@ export default function DomainBuilderPage() {
               setSelectedModel={setSelectedModel}
               onResponseChange={handleResponseChange}
               onViewInMarkdown={handleViewInMarkdown}
-              setShowLeftPanel={setShowLeftPanel}
               showLeftPanel={showLeftPanel}
+              setShowLeftPanel={setShowLeftPanel}
+              showRightPanel={showRightPanel}
+              setShowRightPanel={setShowRightPanel}
               chatInput={chatInput}
               onAddMD={handleAddMD}
               mdContent={mdContent}
               setMdContent={setMdContent}
-              mdPreview={mdPreview}
-              setMdPreview={setMdPreview}
               currentDocument={currentDocument}
               setCurrentMessages={setCurrentMessages}
+              mdPreview={mdPreview}
+              setMdPreview={setMdPreview}
               gettingStartedGuide={<GettingStartedGuide />}
               guide={<Guide />}
             />
@@ -386,16 +402,16 @@ export default function DomainBuilderPage() {
             <div className="space-y-4">
               {/* Current Document Panel */}
               {currentDocument ? (
-              <DocumentPanel
-                mdContent={currentDocument}
-                setMdContent={setCurrentDocument}
-                setIsLibraryOpen={setIsLibraryOpen}
-                isLibraryOpen={isLibraryOpen}
-                panelType='middle'
-                currentDocumentContent={currentDocument}
-                markdownPreviewContent={mdPreview}
-              />
-              ) : ( 
+                <DocumentPanel
+                  mdContent={currentDocument}
+                  setMdContent={setCurrentDocument}
+                  setIsLibraryOpen={setIsLibraryOpen}
+                  isLibraryOpen={isLibraryOpen}
+                  panelType='middle'
+                  currentDocumentContent={currentDocument}
+                  markdownPreviewContent={mdPreview}
+                />
+              ) : (
                 <></>
               )}
             </div>

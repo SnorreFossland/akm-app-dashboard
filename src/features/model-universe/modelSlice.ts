@@ -153,7 +153,6 @@ export interface ModelView {
   name: string;
 };
 
-
 export const initialState: DataType = {
   phData: {
     metis: { name: '', description: '', models: [], metamodels: [] },

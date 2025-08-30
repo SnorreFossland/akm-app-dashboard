@@ -46,7 +46,7 @@ export default function VercelAiPage() {
   const [chatInput, setChatInput] = useState('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
 
-  const promptData = useSelector((state: RootState) => state.prompt.documents);
+  const promptData = useSelector((state: RootState) => ((state as any).prompt?.documents || []));
   const [currentPrompt, setCurrentPrompt] = useState<string>(promptData.length > 0 ? promptData[0].content : '');
   const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(false);
@@ -507,7 +507,7 @@ export default function VercelAiPage() {
                   className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                   title="Current Prompt"
                 >
-                  Prompt: {currentPrompt?.name || 'Prompt name'}
+                  Prompt: {documents[0]?.name || 'Prompt name'}
                   <span className="mx-1"></span>
                   {/* <span
                       onClick={() => setShowGuideModal(true)}

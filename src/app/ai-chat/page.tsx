@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import mermaid from 'mermaid';
 import { RootState } from '@/store';
+import { Model, setFocusModel } from '@/features/model-universe/modelSlice';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
@@ -28,7 +29,7 @@ export interface ChatComponentProps {
     setShowLeftPanel: (show: boolean) => void;
     setShowRightPanel?: (show: boolean) => void; // Add this new prop
     error?: string;
-    chatInput?: string;
+    // chatInput?: string;
     input: string;
     setInput: (input: string) => void;
     setMdContent: (message: string) => void;
@@ -46,8 +47,8 @@ export interface ChatComponentProps {
 const AIChatPage = () => {
     const dispatch = useDispatch();
     const data = useSelector((state: RootState) => state.modelUniverse);
-    const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
-    const documents = useSelector((state: RootState) => data.phData.documents);
+    const metis = useSelector((state: RootState) => state.modelUniverse.phData.metis);
+    const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
 
     const [currentModel, setCurrentModel] = useState<Model | null>(null);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
@@ -62,7 +63,7 @@ const AIChatPage = () => {
     const activeConversationId = useSelector((state: RootState) => state.chat.activeConversationId);
 
     const [input, setInput] = useState<string>("");
-    const [chatInput, setChatInput] = useState('');
+    // const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     const [mdContent, setMdContent] = useState<string>('')
     const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
@@ -108,10 +109,36 @@ const AIChatPage = () => {
     };
 
     useEffect(() => {
-        setCurrentModel(data?.phData?.metis?.models.find(model => model.id === data.phFocus?.focusModel?.id) || null);
-        currentModel && setModel(currentModel);
-        setCurMetamodel((data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]).find(metamodel => metamodel.id === currentModel?.metamodelRef) || null);
-    });
+        const found = data?.phData?.metis?.models?.find(
+            (m: { id: string }) => m.id === data?.phFocus?.focusModel?.id
+        ) ?? null;
+
+        // Only update if changed
+        setCurrentModel((prev) => (prev?.id === found?.id ? prev : found));
+
+        if (found) {
+            setFocusModelLocal((prev) =>
+                prev?.id === found.id && prev?.name === found.name
+                    ? prev
+                    : { id: found.id, name: found.name }
+            );
+        } else {
+            // Ensure we don't keep stale local focus when no model is found
+            setFocusModelLocal((prev) => (prev === null ? prev : null));
+        }
+
+        const mm =
+            (data?.phData?.metis?.metamodels as
+                | { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]
+                | undefined
+            )?.find((m) => m.id === found?.metamodelRef) ?? null;
+
+        setCurMetamodel((prev) => (prev?.id === mm?.id ? prev : mm));
+    }, [
+        data?.phData?.metis?.models,
+        data?.phData?.metis?.metamodels,
+        data?.phFocus?.focusModel?.id,
+    ]);
 
     const handleStartNewConversation = () => {
         dispatch(startNewConversation());
@@ -327,7 +354,8 @@ const AIChatPage = () => {
             return cleaned;
         };
         const cleanedResponse = cleanResponse(response);
-        setMdPreview(cleanedResponse);
+        setMdPreview(response);
+        // setMdPreview(cleanedResponse);
     };
 
     // Simple Modal component
@@ -427,11 +455,11 @@ const AIChatPage = () => {
                             showLeftPanel={showLeftPanel}
                             setShowLeftPanel={setShowLeftPanel}
                             setShowRightPanel={setShowRightPanel}
-                            chatInput={chatInput}
+                            // chatInput={chatInput}
                             onAddMD={handleAddMD}
                             mdContent={mdContent}
                             setMdContent={setMdContent}
-                            mdPreview={mdPreview}
+                            mdPreview={mdPreview}   
                             setMdPreview={setMdPreview}
                             setCurrentMessages={setCurrentMessages}
                             gettingStartedGuide={<GettingStartedGuide />}
@@ -480,7 +508,7 @@ const AIChatPage = () => {
                 )
             }
         ],
-        defaultTab: 'chat'
+        defaultTab: 'current-doc'
     };
     // Define right panel content with the new props
     const rightPanelContent = {
@@ -504,7 +532,7 @@ const AIChatPage = () => {
         defaultTab: 'preview'
     };
 
-    const modelSelector = (false) ? (
+    const modelSelector =
         <div className="flex justify-between bg-gray-800 text-xs">
             <div className="px-1">
                 <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
@@ -524,14 +552,14 @@ const AIChatPage = () => {
             </div>
             <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
         </div>
-    ) : (
-        <div className="flex justify-between bg-gray-800 text-xs">
-            <div className="px-1">
-                <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
-                <span className="text-gray-300">{documents[0]?.name}</span>
-            </div>
-        </div>
-    )
+    // ) : (
+    //     <div className="flex justify-between bg-gray-800 text-xs">
+    //         <div className="px-1">
+    //             <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
+    //             <span className="text-gray-300">{documents[0]?.name}</span>
+    //         </div>
+    //     </div>
+    // )
 
     return (
         <div className="flex-1 flex-row h-screen">

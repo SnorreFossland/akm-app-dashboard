@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect, ReactNode } from 'react';
+import React, { useState, useEffect, ReactNode, isValidElement } from 'react';
 import {
     Accordion,
     AccordionContent,
@@ -23,7 +23,7 @@ interface ThreePanelLayoutProps {
     leftPanelContent?: {
         tabs: Array<{
             key: string;
-            label: string;
+            label: ReactNode;
             content: ReactNode;
         }>;
         defaultTab?: string;
@@ -31,7 +31,7 @@ interface ThreePanelLayoutProps {
     middlePanelContent?: {
         tabs: Array<{
             key: string;
-            label: string;
+            label: ReactNode;
             content: ReactNode;
         }>;
         defaultTab?: string;
@@ -39,7 +39,7 @@ interface ThreePanelLayoutProps {
     rightPanelContent?: {
         tabs: Array<{
             key: string;
-            label: string;
+            label: ReactNode;
             content: ReactNode;
         }>;
         defaultTab?: string;
@@ -154,7 +154,7 @@ export function ThreePanelLayout({
             { key: 'document', label: 'Document', content: <DocumentPanel mdContent={mdContent} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} panelType="left" /> },
             { key: 'library', label: 'Library', content: <div className="p-4"><MarkdownLibrary onSelect={handleSelectFromLibrary} hideExportLibraryButton={true} /></div> }
         ],
-        defaultTab: 'guide'
+        defaultTab: 'document'
     };
     const defaultMiddlePanelContent = {
         tabs: [
@@ -197,26 +197,21 @@ export function ThreePanelLayout({
                                         {/* Reduce z-index to avoid conflicts with sidebar */}
                                         <TabsList className="grid grid-cols-3 w-full pt-3 z-10">
                                             {finalLeftPanelContent.tabs.map((tab) => (
-                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
+                                                    {safeNode(tab.label, `left.label:${tab.key}`)}
+                                                </TabsTrigger>
                                             ))}
                                         </TabsList>
                                         {finalLeftPanelContent.tabs.map((tab) => (
-                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
+                                                {safeNode(tab.content, `left.content:${tab.key}`)}
+                                            </TabsContent>
                                         ))}
                                     </Tabs>
                                 </div>
                             </AccordionContent>
                         </AccordionItem>
                     )}
-                    {/* 
-                    <AccordionItem value="main-panel">
-                        <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Main</AccordionTrigger>
-                        <AccordionContent>
-                            <div className="flex-1 overflow-hidden min-w-0 w-full h-[calc(100vh-14rem)] text-gray-100 pb-5">
-                                {children}
-                            </div>
-                        </AccordionContent>
-                    </AccordionItem> */}
 
                     <AccordionItem value="middle-panel">
                         <AccordionTrigger className="px-4 py-0 font-semibold bg-card">Input</AccordionTrigger>
@@ -226,11 +221,15 @@ export function ThreePanelLayout({
                                     {/* Reduce z-index to avoid conflicts with sidebar */}
                                     <TabsList className="grid grid-cols-3 w-full pt-3 z-10">
                                         {finalMiddlePanelContent.tabs.map((tab) => (
-                                            <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                            <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
+                                                {safeNode(tab.label, `middle.label:${tab.key}`)}
+                                            </TabsTrigger>
                                         ))}
                                     </TabsList>
                                     {finalMiddlePanelContent.tabs.map((tab) => (
-                                        <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                        <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
+                                            {safeNode(tab.content, `middle.content:${tab.key}`)}
+                                        </TabsContent>
                                     ))}
                                 </Tabs>
                             </div>
@@ -246,11 +245,15 @@ export function ThreePanelLayout({
                                         {/* Reduce z-index to avoid conflicts with sidebar */}
                                         <TabsList className="grid grid-cols-3 w-full pt-3 z-10">
                                             {finalRightPanelContent.tabs.map((tab) => (
-                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
+                                                    {safeNode(tab.label, `right.label:${tab.key}`)}
+                                                </TabsTrigger>
                                             ))}
                                         </TabsList>
                                         {finalRightPanelContent.tabs.map((tab) => (
-                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
+                                                {safeNode(tab.content, `right.content:${tab.key}`)}
+                                            </TabsContent>
                                         ))}
                                     </Tabs>
                                 </div>
@@ -279,12 +282,14 @@ export function ThreePanelLayout({
                             <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1 overflow-hidden">
                                 <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
                                     {finalLeftPanelContent.tabs.map((tab) => (
-                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
+                                            {safeNode(tab.label, `left.label:${tab.key}`)}
+                                        </TabsTrigger>
                                     ))}
                                 </TabsList>
                                 {finalLeftPanelContent.tabs.map((tab) => (
                                     <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 max-h-full">
-                                        {tab.content}
+                                        {safeNode(tab.content, `left.content:${tab.key}`)}
                                     </TabsContent>
                                 ))}
                             </Tabs>
@@ -325,7 +330,7 @@ export function ThreePanelLayout({
                                     <TabsList className="grid grid-cols-4 w-full pt-3 z-10">
                                         {finalMiddlePanelContent.tabs.map((tab) => (
                                             <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
-                                                {tab.label}
+                                                {safeNode(tab.label, `middle.label:${tab.key}`)}
                                             </TabsTrigger>
                                         ))}
                                     </TabsList>
@@ -335,7 +340,7 @@ export function ThreePanelLayout({
                                             value={tab.key}
                                             className="flex-1 overflow-auto m-0 p-0"
                                         >
-                                            {tab.content}
+                                            {safeNode(tab.content, `middle.content:${tab.key}`)}
                                         </TabsContent>
                                     ))}
                                 </Tabs>
@@ -366,12 +371,14 @@ export function ThreePanelLayout({
                             <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
                                 <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
                                     {finalRightPanelContent.tabs.map((tab) => (
-                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
+                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
+                                            {safeNode(tab.label, `right.label:${tab.key}`)}
+                                        </TabsTrigger>
                                     ))}
                                 </TabsList>
                                 {finalRightPanelContent.tabs.map((tab) => (
                                     <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
-                                        {tab.content}
+                                        {safeNode(tab.content, `right.content:${tab.key}`)}
                                     </TabsContent>
                                 ))}
                             </Tabs>
@@ -381,6 +388,24 @@ export function ThreePanelLayout({
             </div>
         </div>
     );
+}
+
+function safeNode(node: React.ReactNode, where: string): React.ReactNode {
+    if (node === null || node === undefined || typeof node === 'boolean') return null;
+    if (typeof node === 'string' || typeof node === 'number') return node;
+    if (React.isValidElement(node)) return node;
+    if (Array.isArray(node)) return node.map((n, i) => safeNode(n, `${where}[${i}]`));
+
+    // At this point, node is likely a plain object or something not renderable
+    try {
+        // This log will help pinpoint which tab/slot fed a bad value
+        // eslint-disable-next-line no-console
+        console.warn(`Invalid React child rendered at ${where}:`, node);
+        const json = JSON.stringify(node, null, 2);
+        return <pre className="text-xs whitespace-pre-wrap break-all">{json}</pre>;
+    } catch {
+        return <pre className="text-xs">[Unrenderable object]</pre>;
+    }
 }
 
 type TabProps = {

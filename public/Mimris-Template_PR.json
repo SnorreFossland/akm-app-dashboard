@@ -18593,7 +18593,12 @@
       "name": "BPMN-Template",
       "description": "Modelling based on BPMN_META Metamodel"
     },
-    "domain": "[Describe the domain here]",
+    "domain": {
+      "name": "",
+      "description": "",
+      "presentation": "",
+      "prompt": ""
+    },
     "ontology": {
       "name": "",
       "description": "",

@@ -215,7 +215,8 @@ export default function home() {
               name: doc.name,
               type: 'markdown',
               content: doc.content,
-              createdAt: doc.createdAt || new Date().toISOString()
+              createdAt: doc.createdAt || new Date().toISOString(),
+              updatedAt: doc.updatedAt || doc.createdAt || new Date().toISOString()
             }));
           });
 
@@ -244,7 +245,8 @@ export default function home() {
   };
 
   const handleSaveDocument = (content: string, name: string) => {
-    dispatch(saveMarkdownDocument({ id: Date.now().toString(), name, type: 'markdown', content, createdAt: new Date().toISOString() }));
+    const now = new Date().toISOString();
+    dispatch(saveMarkdownDocument({ id: Date.now().toString(), name, type: 'markdown', content, createdAt: now, updatedAt: now }));
   };
 
   const handleShowInLeftPanel = (content: string, name: string) => {
