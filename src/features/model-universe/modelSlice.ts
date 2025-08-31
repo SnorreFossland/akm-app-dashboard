@@ -19,14 +19,26 @@ export interface OntologyData {
   relationships: { name: string, description: string, nameFrom: string, nameTo: string }[];
 }
 
+export interface ProjectInfo {
+  id: string;
+  projectNumber?: string;
+  name: string;
+  org?: string;
+  repo?: string;
+  path?: string;
+  file?: string;
+  branch?: string;
+  username?: string;
+  description: string;
+}
 // Export the document interface (moved from markdownSlice)
 export interface MarkdownDocument {
   id: string;
   name: string;
-  type: string; // e.g., 'markdown';
+  type?: string;               // made optional
   content: string;
-  createdAt: string;
-  updatedAt: string;
+  createdAt: string | Date;
+  updatedAt?: string | Date;  // made optional
 }
 
 export interface DataType {

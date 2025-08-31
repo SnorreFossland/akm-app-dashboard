@@ -20,7 +20,7 @@ const LocalFiles: React.FC<LocalFilesProps> = ({ model, data }) => {
         type="file"
         ref={fileInputRef}
         style={{ display: 'none' }}
-        onChange={(e) => handleGetLocalFile(e, dispatch)}
+        onChange={(e) => handleGetLocalFile(e, dispatch, data)}
       />
       <div className="flex ">
         <button

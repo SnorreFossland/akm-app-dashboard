@@ -19,7 +19,7 @@ import { ThreePanelLayout } from "@/components/ThreePanelLayout";
 import { ObjectCard } from '@/components/object-card';
 import { Model, saveMarkdownDocument, deleteMarkdownDocument } from '@/features/model-universe/modelSlice';
 
-export default function home() {
+export default function Home() {
   const data = useSelector((state: RootState) => state.modelUniverse);
   const documents = useSelector((state: RootState) => data.phData.documents);
   const dispatch = useDispatch();

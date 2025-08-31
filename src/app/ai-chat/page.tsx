@@ -49,7 +49,7 @@ const AIChatPage = () => {
     const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
     const documents = useSelector((state: RootState) => data.phData.documents);
 
-    const [currentModel, setCurrentModel] = useState<Model | null>(null);
+    const [currentModel, setCurrentModel] = useState<any | null>(null);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
 
     const [currentModelview, setCurrentModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
@@ -358,7 +358,7 @@ const AIChatPage = () => {
         setFocusModelLocal(selectedModel || null);
         setFocusModelview(selectedModel?.modelviews[0] || null);
         if (selectedModel) {
-            dispatch(setFocusModel({ id: selectedModel.id, name: selectedModel.name }));
+            // Removed dispatch call for setFocusModel as it is not defined; local state is already updated.
         }
         // if (selectedModel) {
         //   setCurrentModelview(selectedModel.modelviews[0]);

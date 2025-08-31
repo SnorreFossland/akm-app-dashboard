@@ -121,6 +121,11 @@ function ModelComponent() {
     }
   }, [data.phFocus, data.phData.metis, focusModel?.id, focusModelview?.id, currentModel?.modelviews]);
 
+  // Helper to update project info while avoiding strict payload type errors for extra fields (org, repo, path, file, branch, username)
+  const handleProjChange = (patch: Record<string, any>) => {
+    dispatch(updateProjectInfo(patch as any));
+  };
+
   return (
     <div className="h-full bg-background text-gray-100">
       {data
@@ -158,29 +163,29 @@ function ModelComponent() {
                 {data && data.phData && data.phData.metis && data.phData.metis.models && (
                   // Replace the section from line 262-317 with this editable version:
                   <div className="scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                          <h4 className="text-gray-400 font-bold">Model Suite:</h4>
-                        <div className="p-2 mb-1 rounded">
-                          <h5 className="text-gray-400 font-bold">Name</h5>
-                          <input
-                            type="text"
-                            value={data.phData.metis.name}
-                            onChange={(e) => dispatch(updateMetisInfo({
-                              name: e.target.value,
-                              description: data.phData.metis.description
-                            }))}
-                            className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full"
-                          />
-                          <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                          <textarea
-                            value={data.phData.metis.description}
-                            onChange={(e) => dispatch(updateMetisInfo({
-                              name: data.phData.metis.name,
-                              description: e.target.value
-                            }))}
-                            className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
-                            rows={4}
-                          />
-                        </div>
+                    <h4 className="text-gray-400 font-bold">Model Suite:</h4>
+                    <div className="p-2 mb-1 rounded">
+                      <h5 className="text-gray-400 font-bold">Name</h5>
+                      <input
+                        type="text"
+                        value={data.phData.metis.name}
+                        onChange={(e) => dispatch(updateMetisInfo({
+                          name: e.target.value,
+                          description: data.phData.metis.description
+                        }))}
+                        className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full"
+                      />
+                      <h5 className="text-gray-400 p-1 font-bold">Description</h5>
+                      <textarea
+                        value={data.phData.metis.description}
+                        onChange={(e) => dispatch(updateMetisInfo({
+                          name: data.phData.metis.name,
+                          description: e.target.value
+                        }))}
+                        className="bg-background p-1 border border-gray-500 rounded w-full resize-vertical"
+                        rows={4}
+                      />
+                    </div>
                     <div className="flex flex-wrap">
                       <div className="px-4 col text-left w-2/3">
                         <h4 className="px-1 mb-1 text-gray-400 font-bold">Models:</h4>
@@ -235,56 +240,56 @@ function ModelComponent() {
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.projectNumber || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ projectNumber: e.target.value }))}
+                                  readOnly
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                                 <h5 className="text-gray-400 font-bold px-1">name</h5>
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.name || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ name: e.target.value }))}
+                                  onChange={(e) => handleProjChange({ name: e.target.value })}
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                                 <h5 className="text-gray-400 font-bold px-1">org</h5>
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.org || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ org: e.target.value }))}
+                                  onChange={(e) => handleProjChange({ org: e.target.value })}
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                                 <h5 className="text-gray-400 font-bold px-1">repo</h5>
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.repo || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ repo: e.target.value }))}
+                                  onChange={(e) => handleProjChange({ repo: e.target.value })}
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                                 <h5 className="text-gray-400 font-bold px-1">path</h5>
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.path || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ path: e.target.value }))}
+                                  onChange={(e) => handleProjChange({ path: e.target.value })}
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                                 <h5 className="text-gray-400 font-bold px-1">file</h5>
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.file || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ file: e.target.value }))}
+                                  onChange={(e) => handleProjChange({ file: e.target.value })}
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                                 <h5 className="text-gray-400 font-bold px-1">branch</h5>
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.branch || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ branch: e.target.value }))}
+                                  onChange={(e) => handleProjChange({ branch: e.target.value })}
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                                 <h5 className="text-gray-400 font-bold px-1">username</h5>
                                 <input
                                   type="text"
                                   value={(data.phFocus as any).focusProj?.username || ''}
-                                  onChange={(e) => dispatch(updateProjectInfo({ username: e.target.value }))}
+                                  onChange={(e) => handleProjChange({ username: e.target.value })}
                                   className="font-bold whitespace-nowrap bg-background p-1 border border-gray-500 rounded w-full mb-2"
                                 />
                               </>

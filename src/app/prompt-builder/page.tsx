@@ -46,7 +46,7 @@ export default function VercelAiPage() {
   const [chatInput, setChatInput] = useState('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
 
-  const promptData = useSelector((state: RootState) => state.prompt.documents);
+  const promptData = useSelector((state: RootState) => state.modelUniverse.phData.documents);
   const [currentPrompt, setCurrentPrompt] = useState<string>(promptData.length > 0 ? promptData[0].content : '');
   const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(false);
@@ -344,38 +344,38 @@ export default function VercelAiPage() {
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 1: Define Your Goal</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
                 Start by clearly defining what you want the AI to accomplish. A clear goal is the foundation of a great prompt.
-                Type the goal in the <span className="text-blue-400 font-semibold">'AI Assistant'</span> tab input field.
+                Type the goal in the <span className="text-blue-400 font-semibold">AI Assistant</span> tab input field.
               </p>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 2: Provide Context</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
-                Switch to the <span className="text-blue-400 font-semibold">'Add. Context'</span> tab to provide relevant information, documents, or examples. The more context the AI has, the better the result will be.
+                Switch to the <span className="text-blue-400 font-semibold">Add. Context</span> tab to provide relevant information, documents, or examples. The more context the AI has, the better the result will be.
               </p>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 3: Build Your Prompt</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
-                Use the tab <span className="text-blue-400 font-semibold">'AI Assistant'</span> to help you build your prompt.
+                Use the tab <span className="text-blue-400 font-semibold">AI Assistant</span> to help you build your prompt.
               </p>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 4: Preview</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
-                As you build your prompt, the <span className="text-blue-400 font-semibold">'Preview'</span> in the right panel will show you the potential output.
+                As you build your prompt, the <span className="text-blue-400 font-semibold">Preview</span> in the right panel will show you the potential output.
               </p>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 5: Save Your Prompt</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
-                Once you are satisfied with your prompt, navigate to the <span className="text-blue-400 font-semibold">'Current Prompt'</span> tab to save it for future use.
+                Once you are satisfied with your prompt, navigate to the <span className="text-blue-400 font-semibold">Current Prompt</span> tab to save it for future use.
               </p>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/40">
               <h3 className="text-lg font-medium text-secondary-foreground/70">Step 6: Iterate and Refine</h3>
               <p className="text-sm text-secondary-foreground/60 mt-1">
-                You can refine this Current Prompt by going back to the <span className="text-blue-400 font-semibold">'AI Assistant'</span> tab and making adjustments based on the AI's feedback.
-                The Current Prompt will be used as a base for your next iteration. You can add more context by using the <span className="text-blue-400 font-semibold">'Add. Context'</span> tab.
+                You can refine this Current Prompt by going back to the <span className="text-blue-400 font-semibold">AI Assistant</span> tab and making adjustments based on the AI&rsquo;s feedback.
+                The Current Prompt will be used as a base for your next iteration. You can add more context by using the <span className="text-blue-400 font-semibold">Add. Context</span> tab.
               </p>
             </div>
           </div>
@@ -507,7 +507,7 @@ export default function VercelAiPage() {
                   className="text-xs sm:text-sm mt-0 border-t border-l border-r border-b-0 border-gray-600/50 data-[state=active]:border-gray-400 data-[state=inactive]:border-gray-600/30 relative z-20"
                   title="Current Prompt"
                 >
-                  Prompt: {currentPrompt?.name || 'Prompt name'}
+                  Prompt: {currentPrompt || 'Prompt name'}
                   <span className="mx-1"></span>
                   {/* <span
                       onClick={() => setShowGuideModal(true)}

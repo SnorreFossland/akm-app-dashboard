@@ -15,20 +15,20 @@ const Guide: React.FC = () => {
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/90">
                 <h3 className="text-lg font-medium text-secondary-foreground/70">Step 2: Interact with the AI</h3>
                 <div className="text-sm text-secondary-foreground/60 mt-1">
-                    Use the <span className="text-blue-400 font-semibold">'AI IRTV Modelling Assistant'</span> in the main panel to describe the model or view you want to create.
+                    Use the <span className="text-blue-400 font-semibold">AI IRTV Modelling Assistant</span> in the main panel to describe the model or view you want to create.
                 </div>
             </div>
 
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/85">
                 <h3 className="text-lg font-medium text-secondary-foreground/70">Step 3: Preview the Output</h3>
                 <div className="text-sm text-secondary-foreground/60 mt-1">
-                    The <span className="text-blue-400 font-semibold">'IRTV Preview'</span> panel on the right will show the generated model or view as you work.
+                    The <span className="text-blue-400 font-semibold">IRTV Preview</span> panel on the right will show the generated model or view as you work.
                 </div>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/85">
                 <h3 className="text-lg font-medium text-secondary-foreground/70">Step 4: View in Modeller</h3>
                 <div className="text-sm text-secondary-foreground/60 mt-1">
-                    Switch to the <span className="text-blue-400 font-semibold">'Model'</span> tab in the main panel to see a graphical representation of your work in the modeller.
+                    Switch to the <span className="text-blue-400 font-semibold">Model</span> tab in the main panel to see a graphical representation of your work in the modeller.
                 </div>
             </div>
             <div className="p-4 border border-gray-700 rounded-lg bg-secondary/85">

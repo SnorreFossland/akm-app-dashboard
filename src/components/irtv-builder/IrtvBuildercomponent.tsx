@@ -37,18 +37,18 @@ const debug = false;
 interface IrtvBuilderComponentProps {
     input: string;
     setInput: React.Dispatch<React.SetStateAction<string>>;
-    selectedModel: string;
-    setSelectedModel: (model: string) => void;
-    onViewInPreview: (response: string) => void;
+    selectedModel: "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini";
+    setSelectedModel: React.Dispatch<React.SetStateAction<"dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini">>;
     onResponseChange: (response: string) => void;
-    onViewInMarkdown?: (response: string) => void;
-    setShowLeftPanel: (show: boolean) => void;
+    onViewInMarkdown: (response: string) => void;
+    onViewInPreview: (response: string) => void;
+    setShowLeftPanel: React.Dispatch<React.SetStateAction<boolean>>;
     onAddContent: (content: string) => void;
-    irtvContent: Model | null;
-    setIrtvContent: (content: Model | null) => void;
+    irtvContent: string;
+    setIrtvContent: React.Dispatch<React.SetStateAction<string | Model | null>>;
     irtvPreview: string;
-    setIrtvPreview: (preview: string) => void;
-    setCurrentMessages: (messages: any[]) => void;
+    setIrtvPreview: React.Dispatch<React.SetStateAction<string>>;
+    setCurrentMessages: React.Dispatch<React.SetStateAction<any[]>>;
     gettingStartedGuide: React.ReactNode;
     guide: React.ReactNode;
 }
@@ -213,12 +213,12 @@ Verify that your responses are based on the provided context and requirements.
 
         // Only update if changed (avoid extra renders)
         setCurmod(prev => (prev?.id === nextModel?.id ? prev : nextModel));
-        setCurMetamodel(prev => (prev?.id === nextMetamodel?.id ? prev : nextMetamodel));
+        setCurMetamodel((prev: any) => (prev?.id === (nextMetamodel as any)?.id ? prev : nextMetamodel));
 
         if (debug) {
             console.log("[focus-sync] focusId:", focusId,
                 "model:", nextModel?.name,
-                "metamodel:", nextMetamodel?.name);
+                "metamodel:", (nextMetamodel as any)?.name);
         }
     }, [
         data?.phFocus?.focusModel?.id,

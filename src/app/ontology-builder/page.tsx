@@ -19,6 +19,7 @@ import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 
 import OntologyBuilder from '@/components/ontology-builder/OntologyBuilder';
 import ChatComponent from '@/components/ontology-builder/ChatComponent';
+import AiGwOntologyBuilder from '@/components/ontology-builder/AiGwOntologyBuilder';
 // import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import { OntologyCard } from '@/components/ontology-card';
 import { LoadingCircularProgress } from "@/components/loading";
@@ -37,6 +38,7 @@ export interface ChatComponentProps {
   onResponseChange: (response: string) => void;
   onViewInMarkdown: (content: string) => void;
   setShowLeftPanel: (show: boolean) => void;
+  showLeftPanel?: boolean; // ADDED: include current panel visibility prop
   chatInput?: string;
   onAddMD: () => void;
   mdContent: string;
@@ -93,10 +95,18 @@ export default function OntologyBuilderPage() {
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
 
+  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedModelName = event.target.value;
+    if (metis && metis.models) {
+      const selectedModell = metis.models.find((model: { name: string }) => model.name === selectedModelName) || null;
+      setCurrentModel(selectedModell);
+    }
+  };
+
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!');
-  const [selectedModel, setSelectedModel] = useState('deepseek-chat');
+  const [selectedModel, setSelectedModel] = useState<string>('deepseek-chat');
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
@@ -294,6 +304,17 @@ export default function OntologyBuilderPage() {
   const middlePanelContent = {
     tabs: [
       {
+        key: 'aiGwChat',
+        label: 'AI Ontology Chat',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+            <div className="flex overflow-hidden">
+              <AiGwOntologyBuilder />
+            </div>
+          </div>
+        )
+      },
+      {
         key: 'ontology-builder',
         label: 'AI Ontology Builder',
         content: (
@@ -355,7 +376,7 @@ export default function OntologyBuilderPage() {
             <ChatComponent
               input={input}
               setInput={setInput}
-              selectedModel={selectedModel}
+              selectedModel={selectedModel as any}
               setSelectedModel={setSelectedModel}
               onResponseChange={handleResponseChange}
               onViewInMarkdown={handleViewInMarkdown}
@@ -375,7 +396,7 @@ export default function OntologyBuilderPage() {
         )
       }
     ],
-    defaultTab: 'ontology-builder'
+    defaultTab: 'aiGwChat'
   };
 
   // Define right panel content

@@ -8,6 +8,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardTitle } from '@/components/ui/card';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faRobot, faCheckCircle } from '@fortawesome/free-solid-svg-icons';
+import { SizeProp } from '@fortawesome/fontawesome-svg-core';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { LoadingCircularProgress } from "@/components/loading";
@@ -62,9 +63,9 @@ interface IconButtonProps {
 function PromptComponent() {
   const dispatch = useDispatch<AppDispatch>();
   const data = useSelector((state: RootState) => state.modelUniverse);
-  const documents = useSelector((state: RootState) => state.markdown);
-  const prompts = useSelector((state: RootState) => state.prompt);
-  const [currentPrompt, setCurrentPrompt] = useState<any>(prompts.documents[0] || null);
+  // Removed the selection of 'markdown' as it is not part of the store
+  const prompts = useSelector((state: RootState) => state.modelUniverse.phData.domain.prompt);
+  const [currentPrompt, setCurrentPrompt] = useState<any>(prompts || null);
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [currentModelview, setCurrentModelview] = useState<ModelView | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
@@ -102,7 +103,7 @@ function PromptComponent() {
   const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
 
   // const [detailsOpen, setDetailsOpen] = useState(false);
-  console.log('97 ModelComponent:', data, documents);
+  console.log('97 ModelComponent:', data);
 
 
   const handleOpenModal = () => setIsModalOpen(true);

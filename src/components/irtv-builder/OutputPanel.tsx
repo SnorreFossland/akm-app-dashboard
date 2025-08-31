@@ -17,18 +17,18 @@ import { ObjectSchema } from '@/objectSchema';
 
 interface DocumentPanelProps {
     irtvPreview: string; // The preview content to display
-    setIrtvPreview: (preview: string) => void; // Function to update
-    irtvContent: Model | null; // The content to display and edit, can be a Model or undefined
-    setIrtvContent: (content: Model | null) => void;
+    setIrtvPreview: React.Dispatch<React.SetStateAction<string>>;
+    irtvContent: string | Model | null; // The main content, can be string or Model
+    setIrtvContent: React.Dispatch<React.SetStateAction<string | Model | null>>;
     onEdit?: () => void;
     onPaste?: () => void;
     onLibrary?: () => void;
     onSave?: (content: string) => void;
     onSaveToLibrary?: (content: string) => void;
-    setIsLibraryOpen?: (isOpen: boolean) => void;
+    setIsLibraryOpen?: React.Dispatch<React.SetStateAction<boolean>>;
     isLibraryOpen?: boolean;
     documentId?: string; // Optional document ID for updates
-    panelType?: 'left' | 'right'; // Optional panel type for layout
+    panelType?: string; // 'left' or 'right'
 }
 
 export default function DocumentPanel({
@@ -77,7 +77,7 @@ export default function DocumentPanel({
     }, []);
     // Update editContent when irtvContent changes from parent
     useEffect(() => {
-        setEditContent(irtvContent || '');
+        setEditContent(typeof irtvContent === 'string' ? irtvContent : (irtvContent && 'description' in irtvContent ? irtvContent.description : ''));
     }, [irtvContent]);
 
     // Function to detect placeholders in the format [placeholder]
@@ -134,7 +134,7 @@ export default function DocumentPanel({
 
     const handleCancel = () => {
         // Don't clear irtvContent when canceling, just reset editContent to original
-        setEditContent(irtvContent || '');
+        setEditContent(typeof irtvContent === 'string' ? irtvContent : (irtvContent?.description || ''));
         setIsEditing(false);
     };
 
@@ -144,8 +144,8 @@ export default function DocumentPanel({
     };
 
     const handleSaveToLibrary = () => {
-        // Save to library in Redux store if irtvContent is not null
-        if (irtvContent) {
+        // Save to library in Redux store if irtvContent is not null and is not a string
+        if (irtvContent && typeof irtvContent !== 'string') {
             dispatch(setObjects(irtvContent.objects));
             dispatch(setRelationships(irtvContent.relships));
         }
@@ -276,27 +276,35 @@ export default function DocumentPanel({
             return;
         }
 
+        // Narrow irtvContent to a Model before accessing its properties
+        const isIrtvModel = irtvContent !== null && typeof irtvContent === 'object';
+
         // Merge: model (generated) into focusModel
-        const mergedModel = {
+        const mergedModel: Model = {
             ...focusModel,
-            name: irtvContent?.name || 'Generated Model',
-            description: irtvContent?.description || '',
+            // Use narrowed access with fallback values
+            name: isIrtvModel ? (irtvContent as Model).name : 'Generated Model',
+            description: isIrtvModel ? (irtvContent as Model).description || '' : '',
             objects: [
+                // existing focus model objects
                 ...focusModel.objects,
-                ...irtvContent?.objects || [],
+                // append generated objects if irtvContent is a Model, else nothing
+                ...(isIrtvModel && (irtvContent as Model).objects ? (irtvContent as Model).objects : []),
             ],
             relships: [
+                // existing focus model relationships
                 ...focusModel.relships,
-                ...irtvContent?.relships || [],
+                // append generated relationships if irtvContent is a Model, else nothing
+                ...(isIrtvModel && (irtvContent as Model).relships ? (irtvContent as Model).relships : []),
             ]
         }
 
         const phFocus = {
-                focusModel: focusModel,
-                focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
-                focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
-                focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
-                focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
+            focusModel: focusModel,
+            focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
+            focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
+            focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
+            focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
         };
 
         console.log('82 Merged Model:', focusModel, mergedModel);
@@ -358,10 +366,10 @@ export default function DocumentPanel({
                                     </button>
                                     <div className="text-xs w-full">
                                         <ObjectCard model={{
-                                            id: irtvContent?.id || crypto.randomUUID(),
-                                            name: irtvContent?.name || 'Generated Model',
-                                            description: irtvContent?.description || '',
-                                            objects: irtvContent?.objects?.map(obj => ({
+                                            id: typeof irtvContent === 'object' && irtvContent ? irtvContent.id : crypto.randomUUID(),
+                                            name: typeof irtvContent === 'object' && irtvContent ? irtvContent.name : 'Generated Model',
+                                            description: typeof irtvContent === 'object' && irtvContent ? irtvContent.description : '',
+                                            objects: typeof irtvContent === 'object' && irtvContent && irtvContent.objects ? irtvContent.objects.map(obj => ({
                                                 id: obj.id || crypto.randomUUID(),
                                                 name: obj.name,
                                                 description: obj.description,
@@ -369,8 +377,8 @@ export default function DocumentPanel({
                                                 typeRef: obj.typeRef,
                                                 typeName: obj.typeName,
                                                 category: obj.category,
-                                            })) || [],
-                                            relships: irtvContent?.relships?.map(rel => ({
+                                            })) : [],
+                                            relships: (irtvContent && typeof irtvContent === 'object' && 'relships' in irtvContent ? irtvContent.relships.map(rel => ({
                                                 id: rel.id || crypto.randomUUID(),
                                                 name: rel.name || '',
                                                 typeRef: rel.typeRef || '',
@@ -378,9 +386,9 @@ export default function DocumentPanel({
                                                 nameFrom: rel.nameFrom || '',
                                                 toobjectRef: rel.toobjectRef || '',
                                                 nameTo: rel.nameTo || '',
-                                            })) || [],
-                                            metamodelRef: irtvContent?.metamodelRef || '',
-                                            modelviews: irtvContent?.modelviews || []
+                                            })) : []),
+                                            metamodelRef: irtvContent && typeof irtvContent === 'object' ? irtvContent.metamodelRef || '' : '',
+                                            modelviews: irtvContent && typeof irtvContent === 'object' ? irtvContent.modelviews || [] : []
                                         }}
                                         />
                                     </div>

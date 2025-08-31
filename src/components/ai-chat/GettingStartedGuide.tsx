@@ -31,8 +31,8 @@ const GettingStartedGuide: React.FC = () => {
                                     <h3 className="text-lg font-medium text-secondary-foreground/70">Try this example.</h3>
                                     <ul className="list-disc pl-6 mt-1 text-secondary-foreground/70">
                                         <li>Click on the Prompt Templates dropdown menu below.</li>
-                                        <li>Select "<span className="text-blue-200">Plan a walk</span>"</li>
-                                        <li>Click on the Insert "<span className="text-blue-200">Insert location</span>" button, and type i.e. a City name</li>
+                                        <li>Select <span className="text-blue-200">Plan a walk</span></li>
+                                        <li>Click on the Insert <span className="text-blue-200">Insert location</span> button, and type i.e. a City name</li>
                                         <li>Click on the next <span className="text-blue-200">blue</span> button, and type the content</li>
                                         <li>Finish all the buttons and then click on the <span className="text-blue-200">Send</span> button to send the request to the AI.</li>
                                         <li>Then Click on the <span className="text-blue-200">Show Markdown Preview</span> button to see the response in Markdown format.</li>

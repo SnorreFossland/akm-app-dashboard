@@ -20,7 +20,7 @@ import ReactMarkdown from 'react-markdown';
 
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
 
-import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt } from '@/app/model-builder/prompts';
+import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext } from '@/app/model-builder/prompts';
 
 const debug = false;
 

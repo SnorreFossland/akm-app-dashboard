@@ -14,41 +14,32 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
-interface ThreePanelLayoutProps {
-    children: ReactNode;
-    showLeftPanel?: boolean;
-    setShowLeftPanel: (show: boolean) => void;
-    showRightPanel?: boolean;
-    setShowRightPanel: (show: boolean) => void;
-    leftPanelContent?: {
-        tabs: Array<{
-            key: string;
-            label: string;
-            content: ReactNode;
-        }>;
-        defaultTab?: string;
-    };
-    middlePanelContent?: {
-        tabs: Array<{
-            key: string;
-            label: string;
-            content: ReactNode;
-        }>;
-        defaultTab?: string;
-    };
-    rightPanelContent?: {
-        tabs: Array<{
-            key: string;
-            label: string;
-            content: ReactNode;
-        }>;
-        defaultTab?: string;
-    };
-    showAppHeader?: boolean;
-    className?: string;
-    moduleOperations?: ReactNode;
-    isMobile?: boolean;
+export interface PanelTab {
+    key: string;
+    label: React.ReactNode;
+    content: React.ReactNode;
 }
+
+export interface PanelGroup {
+    tabs: PanelTab[];
+    defaultTab?: string;
+}
+
+export interface ThreePanelLayoutProps {
+    showAppHeader?: boolean;
+    moduleOperations?: React.ReactNode;
+    leftPanelContent: PanelGroup;
+    // Make middlePanelContent optional
+    middlePanelContent?: PanelGroup;
+    rightPanelContent: PanelGroup;
+    showLeftPanel: boolean;
+    setShowLeftPanel: (v: boolean) => void;
+    showRightPanel: boolean;
+    setShowRightPanel: (v: boolean) => void;
+    className?: string;
+    children?: React.ReactNode;
+}
+
 export function ThreePanelLayout({
     children,
     leftPanelContent,

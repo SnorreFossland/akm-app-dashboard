@@ -1,6 +1,6 @@
 {
   "name": "akm-app-dashboard",
-  "version": "0.1.0",
+  "version": "link",
   "private": true,
   "scripts": {
     "dev": "PORT=3001 next dev",

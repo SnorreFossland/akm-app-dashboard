@@ -83,9 +83,9 @@ const IrtvBuilderPage = () => {
 
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     // IRTV Builder specific state
-    const [irtvContent, setIrtvContent] = useState<Model | null>(null);
+    const [irtvContent, setIrtvContent] = useState<string | Model | null>('');
     const [irtvPreview, setIrtvPreview] = useState('');
-    const [selectedIrtvModel, setSelectedIrtvModel] = useState('gpt-4o');
+    const [selectedIrtvModel, setSelectedIrtvModel] = useState<"gpt-4o-mini" | "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini">("gpt-4o-mini");
     const [irtvInput, setIrtvInput] = useState('');
     const [currentMessages, setCurrentMessages] = useState<any[]>([]);
     const [conversations, setConversations] = useState<IrtvConversation[]>([]);
@@ -158,7 +158,7 @@ const IrtvBuilderPage = () => {
 
     const handleViewInIrtvPreview = (response: string) => {
         const cleanResponse = (response: string) => {
-            let cleaned = response.trim();
+            const cleaned = response.trim();
             // Add IRTV-specific cleaning logic here
             return cleaned;
         };
@@ -327,7 +327,7 @@ const IrtvBuilderPage = () => {
                 label: 'Add Context',
                 content: (
                     <DocumentPanel
-                        mdContent={irtvContent}
+                        mdContent={typeof irtvContent === 'string' ? irtvContent : ''}
                         setMdContent={setIrtvInput}
                         setIsLibraryOpen={setIsLibraryOpen}
                         isLibraryOpen={isLibraryOpen}
@@ -356,7 +356,7 @@ const IrtvBuilderPage = () => {
                             onViewInPreview={handleViewInIrtvPreview}
                             setShowLeftPanel={setShowLeftPanel}
                             onAddContent={handleAddContent}
-                            irtvContent={irtvContent}
+                            irtvContent={typeof irtvContent === 'string' ? irtvContent : ''}
                             setIrtvContent={setIrtvContent}
                             irtvPreview={irtvPreview}
                             setIrtvPreview={setIrtvPreview}
@@ -369,12 +369,7 @@ const IrtvBuilderPage = () => {
             },
             {
                 key: 'suite',
-                label: (
-                    <span className="inline-flex items-center gap-1">
-                        <List className="w-4 h-4" />
-                        {model?.name || 'Model'}
-                    </span>
-                ),
+                label: model?.name || 'Model',
                 content: (
                     <div className="space-y-4">
                         {currentModel && (

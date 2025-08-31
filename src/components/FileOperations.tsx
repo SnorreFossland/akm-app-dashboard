@@ -47,7 +47,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     };
 
     const onGetDefaultFile = () => {
-        handleGetDefaultFile(dispatch, updateModelInfo, updateProjectInfo, updateMetisInfo);
+        handleGetDefaultFile({} as React.ChangeEvent<HTMLInputElement>, dispatch);
     };
 
     const onSaveFile = () => {

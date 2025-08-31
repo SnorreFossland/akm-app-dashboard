@@ -1518,7 +1518,7 @@ Don't include explanations, next steps or examples at this stage.
                             <div className="flex items-center gap-2"></div>
                             <div className="flex items-center text-foreground gap-1">
                                 <ModelSelector
-                                    selectedModel={selectedModel}
+                                    selectedModel={selectedModel as "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini" | "dummy"}
                                     onModelChange={(newModel) => {
                                         setSelectedModel(newModel);
                                         // Persist selected model to localStorage

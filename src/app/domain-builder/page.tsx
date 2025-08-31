@@ -25,6 +25,8 @@ import { FileOperations } from '@/components/FileOperations';
 import UniverseComponent from '@/features/model-universe/components/UniverseComponent';
 import { labelRect } from 'mermaid/dist/rendering-util/rendering-elements/shapes/labelRect.js';
 
+type Model = any;
+
 export interface ChatComponentProps {
   onResponseChange: (response: string) => void;
   onViewInMarkdown: (response: string) => void;
@@ -56,7 +58,13 @@ export default function DomainBuilderPage() {
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
   const [mdContent, setMdContent] = useState<string>('')
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
+  const [selectedModel, setSelectedModel] = useState<"dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini">('deepseek-chat'); // Default model
+  
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedModelName = e.target.value;
+    const model = metis?.models ? metis.models.find((m: { name: string }) => m.name === selectedModelName) : null;
+    setCurrentModel(model);
+  };
 
   const [activeLeftTab, setActiveLeftTab] = useState<'document' | 'library'>('document');
 
@@ -80,6 +88,7 @@ export default function DomainBuilderPage() {
   const [domainName, setDomainName] = useState(domainData?.name || '');
   const [domainDescription, setDomainDescription] = useState(domainData?.description || '');
   const [domainPresentation, setDomainPresentation] = useState(domainData?.presentation || '');
+
 
   // Update local state when Redux state changes
   useEffect(() => {
@@ -221,12 +230,7 @@ export default function DomainBuilderPage() {
 
           // Import each document to Redux
           importedDocuments.forEach(doc => {
-            dispatch(saveMarkdownDocument({
-              id: doc.id || Date.now().toString(),
-              name: doc.name,
-              type: 'markdown',
-              content: doc.content,
-              createdAt: doc.createdAt || new Date().toISOString()
+            dispatch(saveMarkdownDocument({id: doc.id, name: doc.name, content: doc.content, type: doc.type || 'markdown', createdAt: doc.createdAt || new Date().toISOString(), updatedAt: doc.updatedAt || new Date().toISOString()
             }));
           });
 

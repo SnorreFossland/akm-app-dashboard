@@ -20,7 +20,7 @@ const GettingStartedGuide: React.FC = () => {
                 <ol className="text-white list-decimal ml-5 space-y-2">
                     <li><span className="font-bold">Click on the button below:</span>A predefined template prompt will be inserted.(You can type your own or edit it)</li>
                     <li><span className="font-bold">Describe your domain/topic:</span> Provide a name and description for your domain.</li>
-                    <li><span className="font-bold">Click "Send" to generate the definition:</span> The response is shown above.</li>
+                    <li><span className="font-bold">Click Send to generate the definition:</span> The response is shown above.</li>
                     <li><span className="font-bold">Preview the generated content in the right panel:</span></li>
                     <li><span className="font-bold">Edit and refine:</span> Customize the generated content to your needs.</li>
                     <li><span className="font-bold">Click </span>

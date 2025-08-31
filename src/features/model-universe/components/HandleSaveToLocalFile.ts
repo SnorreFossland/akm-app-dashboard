@@ -19,7 +19,7 @@ export const handleSaveToLocalFile = (data: any, dispatch?: any) => {
       ? data.phSource.split("-")[0].trim()
       : data.phSource;
   } else if (data.phData.domain?.name) {
-    dispatch(setSource(e.target.value))
+    dispatch(setSource(data.phData.domain.name))
   } else {
     alert('No domain name available to save. Type in a name in the Universe field at the top-left of the page, and try again.');
     return;

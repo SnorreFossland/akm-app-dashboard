@@ -33,6 +33,7 @@ import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
+export type ModelId = "deepseek-chat" | "dummy" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini";
 // import GettingStartedGuide from './GettingStartedGuide';
 // import { refineTemplates } from '@/features/documents/refine-templates';
 // import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';
@@ -47,30 +48,27 @@ import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 //     content: string;
 // }
 
+
+
 export interface ChatComponentProps {
-    onResponseChange: (response: string) => void;
-    onViewInMarkdown: (response: string) => void;
-    showLeftPanel: boolean;
-    setShowLeftPanel: (show: boolean) => void;
-    showRightPanel?: boolean; // Add this line to the destructuring
-    setShowRightPanel?: (show: boolean) => void; // Add this line to the destructuring
-    error?: string;
-    chatInput?: string;
     input: string;
     setInput: (input: string) => void;
-    setMdContent: (message: string) => void;
+    selectedModel: string;                // changed to string
+    setSelectedModel: (model: string) => void; // changed to accept string
+    onResponseChange: (response: string) => void;
+    onViewInMarkdown: (content: string) => void;
+    setShowLeftPanel: (show: boolean) => void;
+    setShowRightPanel?: (show: boolean) => void;
+    showLeftPanel?: boolean;
+    chatInput?: string;
+    onAddMD: () => void;
     mdContent: string;
-    onAddMD?: () => void;
-    currentDocument?: string;
-    setCurrentDocument?: (doc: string) => void; // Add this line to the destructuring
+    setMdContent: (content: string) => void;
     mdPreview: string;
-    setMdPreview: (preview: string) => void;
+    setMdPreview: (content: string) => void;
     setCurrentMessages: (messages: any[]) => void;
-    selectedModel: string;
-    setSelectedModel: (model: string) => void;
-    isMobile?: boolean; // Add this line to the destructuring
-    setIsMobile?: (isMobile: boolean) => void; // Add this line to the destructuring
-    gettingStartedGuide: React.ReactNode;
+    previewMessageIndex?: number | null;
+    gettingStartedGuide?: React.ReactNode;
     guide?: React.ReactNode;
 }
 
@@ -89,7 +87,6 @@ interface DraggableDividerProps {
     onTouchStart: () => void;
     className?: string;
 }
-
 export default function ChatComponent({
     input,
     setInput,
@@ -99,21 +96,20 @@ export default function ChatComponent({
     onViewInMarkdown,
     showLeftPanel,
     setShowLeftPanel,
-    showRightPanel,
     setShowRightPanel,
+
     chatInput,
     onAddMD,
     mdContent,
     setMdContent,
-    currentDocument,
-    setCurrentDocument,
+
     mdPreview,
     setMdPreview,
     setCurrentMessages,
     gettingStartedGuide,
     guide,
-    isMobile = false, // Default to false if not provided
-    setIsMobile
+
+
 }: ChatComponentProps) {
     const dispatch = useDispatch();
 
@@ -130,6 +126,7 @@ export default function ChatComponent({
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
     const [temperature, setTemperature] = useState<number>(0.5); // Default value 0.5
+    const [currentDocument, setCurrentDocument] = useState<string>(''); // Added missing state for currentDocument
     const [ontologyUrl, setOntologyUrl] = useState('https://raw.githubusercontent.com/your-repo/your-ontology/main/ontology.json');
     const [impOntologyString, setImpOntologyString] = useState(''); // imported ontology string
 
@@ -156,6 +153,7 @@ export default function ChatComponent({
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
     // Add right after your state definitions
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
     const [selectedCategory, setSelectedCategory] = useState<string>('Personal');
@@ -1640,7 +1638,7 @@ Don't include explanations, next steps or examples at this stage.
                             <div className="flex items-center gap-2"></div>
                             <div className="flex items-center text-foreground gap-1">
                                 <ModelSelector
-                                    selectedModel={selectedModel}
+                                    selectedModel={selectedModel as ModelId}
                                     onModelChange={(newModel) => {
                                         setSelectedModel(newModel);
                                         // Persist selected model to localStorage
