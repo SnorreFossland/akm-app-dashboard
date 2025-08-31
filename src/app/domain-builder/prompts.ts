@@ -1,4 +1,4 @@
-export const SystemPrompt = ``
+export SystemPrompt = ``
 
 export const SystemPrompt2 = `
 ### 1. ** Scoping the Domain **

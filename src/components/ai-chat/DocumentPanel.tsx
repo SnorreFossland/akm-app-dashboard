@@ -6,7 +6,7 @@ import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import extractDomainNameAndDescription from './docExtraction';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight } from 'lucide-react';
-import { setDomainData, saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import DiffModal from './DiffModal';
 
 interface DocumentPanelProps {

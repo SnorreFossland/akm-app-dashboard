@@ -11,11 +11,6 @@ const nextConfig = {
     },
     // Remove conflicting experimental options
     transpilePackages: ['class-variance-authority'],
-    // Allow builds to succeed even if ESLint rules currently fail across the repo.
-    // This is intentional to unblock builds; lint errors should be fixed in a follow-up PR.
-    eslint: {
-        ignoreDuringBuilds: true,
-    },
 }
 
 module.exports = nextConfig;

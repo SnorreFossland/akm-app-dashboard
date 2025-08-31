@@ -1,4 +1,4 @@
-export const ontologySystemPrompt = `
+export const SystemPrompt = `
 # System Prompt
 You are a helpful assistant with more than 20 years of expertise in ontologies, data, and information modeling.
 Your task is to analyze user input, infer or confirm the domain, and create ontology concepts and relationships.
@@ -6,7 +6,7 @@ Your task is to analyze user input, infer or confirm the domain, and create onto
 Do not provide domain advice (legal, financial, medical, etc.); focus strictly on ontology modeling and knowledge representation.
 `;  
 
-export const ontologySystemBehaviorGuidelines = `
+export const SystemBehaviorGuidelines = `
 # System Behavior Guidelines
 
 ## Primary Objectives
@@ -61,13 +61,13 @@ export const ontologySystemBehaviorGuidelines = `
 - Avoid colloquial or speculative expressions.
 `;
 
-export const ontologyExistingOntology = `
+export const ExistingOntology = `
 ## ** Ontology ** 
 Use the names of following concepts from the ontology where ever possible:
 ** List of concepts:**
 `
 
-export const ontologyUserPrompt = `
+export const UserPrompt = `
 Your task is to:
 1. Identify and enrich concepts and relationships based on user input.
 2. Use the Existing Context as reference — avoid duplicates.
@@ -96,23 +96,21 @@ Your task is to:
 }
 `;
 
-export const ontologyUserInput = `
+export const UserInput = `
 Elaborate around "User input" and add to the domain description and presentation.
 Add also concepts and relationships based on words separated by comma.
 Make sure no duplicates are created.
 
 ## **User input**: \n\n` // User input is inserted after this prompt
 
-export const ontologyExistingContext = `
+export const ExistingContext = `
 ## Context
 - Use the "Existing Context" ontology as the foundation.
 - Do not duplicate existing concepts or relationships.
 - You may add new relationships connecting new and existing concepts.
 `; // Existing Context is inserted after this prompt
 
-
-
-export const ontologyMetamodelPrompt = `
+export const MetamodelPrompt = `
 ## Name & Description
 - Update based on domain input.
 - Incorporate Existing Context name and description.

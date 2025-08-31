@@ -13,7 +13,7 @@ import ReactMarkdown from "react-markdown";
 import { LoadingCircularProgress } from "@/components/loading";
 import { setDomainData } from "@/features/model-universe/modelSlice";
 import TemperatureSelector from "@/components/ai-chat/TemperatureSelector";
-import ModelSelector, { ModelId } from "@/components/ai-chat/ModelSelector";
+import ModelSelector from "@/components/ai-chat/ModelSelector";
 import {
     addMessage,
     setMessages,
@@ -201,7 +201,7 @@ export default function DomainBuilder({
                 response = {
                     ok: true,
                     json: async () => ({
-                        response: `# ${domainName} ## Dummytxt bla bla bla`
+                        response: `# ${domainName} ## Dummy txt bla bla bla`
                     })
                 };
             } else {
@@ -345,7 +345,7 @@ export default function DomainBuilder({
             </div>
             <div className="flex items-center text-foreground gap-1">
                 <ModelSelector
-                    selectedModel={selectedModel as unknown as ModelId}
+                    selectedModel={selectedModel}
                     onModelChange={(newModel) => {
                         setSelectedModel(newModel);
                         // Persist selected model to localStorage

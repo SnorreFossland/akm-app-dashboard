@@ -35,10 +35,9 @@ const AI_MODELS = [
     { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', enabled: true },
 
     { id: 'dummy', name: 'Dummy (Test)', provider: 'dummy', enabled: true },
-
 ] as const;
 
-export type ModelId = typeof AI_MODELS[number]['id'];
+type ModelId = typeof AI_MODELS[number]['id'];
 
 interface ModelSelectorProps {
     selectedModel: ModelId;

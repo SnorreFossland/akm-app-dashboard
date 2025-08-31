@@ -155,13 +155,11 @@ export default function DocumentPanel({
     };
 
     const handleSave = () => {
-        const now = new Date().toISOString();
         dispatch(saveMarkdownDocument({
             id: documentId || Date.now().toString(),
             name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
             content: editContent,
-            createdAt: now,
-            updatedAt: now
+            createdAt: new Date().toISOString()
         }));
 
         onSave(editContent);
@@ -294,11 +292,11 @@ export default function DocumentPanel({
         }
 
         const phFocus = {
-            focusModel: focusModel,
-            focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
-            focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
-            focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
-            focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
+                focusModel: focusModel,
+                focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
+                focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
+                focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
+                focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
         };
 
         console.log('82 Merged Model:', focusModel, mergedModel);

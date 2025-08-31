@@ -172,27 +172,8 @@ const IrtvBuilderPage = () => {
         setDomainContent(template.domain || '');
     };
 
-    const handleAddContent = (content: string | Model | null) => {
-        if (content === null) {
-            setIrtvContent(null);
-            return;
-        }
-
-        if (typeof content === 'string') {
-            try {
-                const parsed = JSON.parse(content) as Model;
-                setIrtvContent(parsed);
-                return;
-            } catch (e) {
-                // If parsing fails, store as null and log
-                console.warn('Failed to parse IRTV content string to Model', e);
-                setIrtvContent(null);
-                return;
-            }
-        }
-
-        // If it's already a Model
-        setIrtvContent(content as Model);
+    const handleAddContent = (content: string) => {
+        setIrtvContent(content);
     };
 
     // Conversation handlers
@@ -346,8 +327,8 @@ const IrtvBuilderPage = () => {
                 label: 'Add Context',
                 content: (
                     <DocumentPanel
-                        mdContent={irtvPreview || ''}
-                        setMdContent={setIrtvPreview}
+                        mdContent={irtvContent}
+                        setMdContent={setIrtvInput}
                         setIsLibraryOpen={setIsLibraryOpen}
                         isLibraryOpen={isLibraryOpen}
                         panelType='left'

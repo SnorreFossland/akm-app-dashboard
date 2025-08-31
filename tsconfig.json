@@ -33,7 +33,7 @@
       "**/*.ts",
       "**/*.tsx",
       ".next/types/**/*.ts"
-, "scripts/generateDeck.js", "src/components/ontology-builder/OntologyBuilder.tsx"    ],
+, "scripts/generateDeck.js"    ],
     "exclude": [
       "node_modules"
     ]

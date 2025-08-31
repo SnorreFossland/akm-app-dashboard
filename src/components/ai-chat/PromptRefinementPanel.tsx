@@ -234,14 +234,11 @@ export default function TemplatesPanel({
             content: domainContent
         });
 
-        const now = new Date().toISOString();
         dispatch(saveMarkdownDocument({
             id: Date.now().toString(),
             name: fullDocName,
-            type: 'markdown',
             content: domainContent,
-            createdAt: now,
-            updatedAt: now
+            createdAt: new Date().toISOString()
         }));
 
         alert('Domain saved to library');

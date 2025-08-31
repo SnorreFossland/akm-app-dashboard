@@ -89,14 +89,12 @@ const MarkdownLibrary = ({
         const fileName = file.name.replace(/\.[^/.]+$/, "");
         const uniqueId = `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
 
-        const now = new Date().toISOString();
         dispatch(saveMarkdownDocument({
           id: uniqueId,
           name: fileName,
           type: 'markdown',
           content: content,
-          createdAt: now,
-          updatedAt: now
+          createdAt: new Date().toISOString()
         }));
 
         setIsLibraryOpen(true);
@@ -161,7 +159,7 @@ const MarkdownLibrary = ({
       </div>
 
       {!filteredDocuments && <div className="text-gray-400 text-center p-4">No documents found.</div>}
-
+      
       {filteredDocuments?.length === 0 ? (
         <div className="text-gray-400 text-center p-4">
           Select a document to view or edit
