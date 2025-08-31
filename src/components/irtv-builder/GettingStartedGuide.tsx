@@ -24,14 +24,14 @@ const GettingStartedGuide: React.FC = () => {
                                         </ul>
 
                                         <li className="text-lg font-medium text-secondary-foreground/50">Load a Domain definition</li>
-                                        <div className='ms-2'>In the left Panel, click on the Domain Tab to view the available Domain definition.</div>
+                                        <div className='ms-2'>In the left Panel, click on the Domain Tab to view the available Domain definitions.</div>
                                         <ul className="list-disc pl-6 mt-1 text-secondary-foreground/50">
                                             <li className='ms-2'>This definition might contain a list of Concepts and Relationships that will be used as input to generate the IRTV.</li>
                                             <li className='ms-2'>If a list of Concepts and Relationships is missing AI will suggest relevant Concepts and Relationships that will be used as input to generate the IRTV.</li>
                                         </ul>
                                         <li className="text-lg font-medium text-secondary-foreground/50">Load an Ontology list of Concepts and relationships</li>
                                         <ul className="list-disc pl-6 mt-1 text-secondary-foreground/50">
-                                            <li className='ms-2'>In the left Panel, click on the Ontology Tab to view the available Concepts and relationships.</li>
+                                            <li className='ms-2'>In the left Panel, click on the Ontology  Tab to view the available Concepts and relationships.</li>
                                             <li className='ms-2'>This list of Concepts and Relationships will be used as input to generate the IRTV.</li>
                                         </ul>
                                     </ol>
