@@ -705,44 +705,102 @@ export default function ChatComponent({
                 body: JSON.stringify(payload),
             });
 
+            // If the response isn't JSON, we'll still try to recover by reading text
+            const contentType = res.headers.get('content-type') || '';
+
+            let rawText: string | null = null;
+            let json: any = null;
+
+            try {
+                // Try to parse as JSON first (normal case)
+                json = await res.clone().json().catch(() => null);
+            } catch (e) {
+                json = null;
+            }
+
+            try {
+                // Always capture raw text too for logging/fallback
+                rawText = await res.clone().text().catch(() => null);
+            } catch (e) {
+                rawText = null;
+            }
 
             if (!res.ok) {
-                // Try to read JSON body, fall back to text
-                let bodyText = '';
-                try {
-                    const parsed = await res.json();
-                    bodyText = JSON.stringify(parsed);
-                } catch (e) {
-                    bodyText = await res.text().catch(() => '(no response body)');
-                }
-                console.error('gendomain fetch failed:', res.status, bodyText);
+                // show any error object we can read
+                console.error('gendomain fetch failed:', res.status, {
+                    json,
+                    rawText
+                });
                 setStatusMsg(`Failed to generate domain (status ${res.status})`);
                 return null;
             }
 
-            const json = await res.json().catch(() => null);
-            if (!json) {
-                setStatusMsg('No structured output returned from gendomain');
-                return null;
+            // Helpful debug log: show what the endpoint returned
+            console.log('gendomain returned content-type:', contentType);
+            console.log('gendomain rawText (first 2000 chars):', rawText ? rawText.slice(0, 2000) : rawText);
+            console.log('gendomain json:', json);
+
+            // Derive a canonical object to inspect
+            const candidate = json ?? (rawText ? (() => {
+                // If rawText looks like JSON, try to parse it
+                try {
+                    return JSON.parse(rawText);
+                } catch (e) {
+                    // Not JSON, return as text body under a common key
+                    return { text: rawText };
+                }
+            })() : null);
+
+            // Try common places where structured output might appear
+            const structured =
+                (candidate && (candidate.response ?? candidate.presentation ?? candidate.text ?? candidate.result ?? candidate.message ?? candidate.data ?? null)) ||
+                // If the candidate itself is an array with first item carrying content
+                (Array.isArray(candidate) && (candidate[0]?.response ?? candidate[0]?.text ?? candidate[0])) ||
+                null;
+
+            // If we still don't have a "structured" value, but the entire rawText contains something useful, use it as fallback
+            let finalStructured = structured;
+            if (!finalStructured && rawText) {
+                // If rawText is just a single JSON string without top-level keys, attempt to extract JSON block inside text
+                const trimmed = rawText.trim();
+                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        finalStructured = parsed;
+                    } catch (e) {
+                        // not parseable — fall back to using raw text string
+                        finalStructured = rawText;
+                    }
+                } else {
+                    finalStructured = rawText;
+                }
             }
 
-            const structured = json.response ?? json.presentation ?? json.text ?? json.result ?? null;
-            console.log('730 gendomain response:', json, structured);
+            // Final safety: if the candidate itself is a string and we haven't set structured, use it
+            if (!finalStructured && typeof candidate === 'string') {
+                finalStructured = candidate;
+            }
 
-            if (structured && setCurrentDocument) {
+            if (finalStructured && setCurrentDocument) {
                 try {
-                    setCurrentDocument(structured);
+                    setCurrentDocument(finalStructured);
                     setStatusMsg('Structured domain output generated');
                 } catch (err) {
                     console.warn('setCurrentDocument failed', err);
                     setStatusMsg('Generated structured output (could not set in UI)');
                 }
             } else {
-                console.warn('No structured output found in genontology response', json);
+                // More detailed warning so it's clear what shape came back
+                console.warn('No structured output found in genontology response', {
+                    candidate,
+                    finalStructured,
+                    rawText,
+                    json
+                });
                 setStatusMsg('Structured domain generator returned unexpected shape');
             }
 
-            return json;
+            return candidate;
         } catch (err) {
             console.error('Error calling /api/genontology:', err);
             setStatusMsg(`Error generating ontology: ${err instanceof Error ? err.message : String(err)}`);
@@ -1138,6 +1196,19 @@ export default function ChatComponent({
         }
     }, [messages, streamedContent, generatedOntologyFromResponse, setStatusMsg]);
 
+    // Add this effect to handle window messages
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            console.log('Window message received:', {
+                origin: e.origin,
+                data: e.data,
+                source: e.source,
+            });
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
+
     return (
         <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
             {/* Guide Sidebar and Main Chat Container - Side by Side */}
@@ -1205,7 +1276,6 @@ export default function ChatComponent({
                                 //         ? 'bg-card ml-auto text-card-foreground flex-col border border-blue-900'
                                 //         : 'bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary'
                                 //         } `}
-                                // >
                                 <div key={index}
                                     className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
                                         ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
