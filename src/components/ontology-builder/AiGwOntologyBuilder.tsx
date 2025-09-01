@@ -1,24 +1,76 @@
 'use client';
 
-import React, { useState } from 'react';
-import { NextResponse } from 'next/server';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import TextareaAutosize from 'react-textarea-autosize';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import ModelSelector from '@/components/ai-chat/ModelSelector';
+import { HelpCircle, X } from 'lucide-react';
 
-const VERCEL_AI_ENDPOINT = process.env.VERCEL_AI_ENDPOINT || 'https://api.vercel.ai/v1/generate';
-const VERCEL_AI_API_KEY = process.env.VERCEL_AI_API_KEY;
-const DEBUG = process.env.VERCEL_AI_DEBUG === '1';
+type GenerateResponse = { [key: string]: any };
 
-type GenerateResponse = {
-    // shape returned from the API route — we return the raw JSON from the gateway
-    [key: string]: any;
-};
+interface AiGwOntologyBuilderProps {
+    startupGuide?: React.ReactNode;
+    guide?: React.ReactNode;
+}
 
-export default function AiGwOntologyBuilder() {
-    const [prompt, setPrompt] = useState<string>('Create an ontology for a simple e-commerce domain with products, categories, users, and orders.');
-    const [model, setModel] = useState<string>('gpt-4o');
+export default function AiGwOntologyBuilder({ startupGuide, guide }: AiGwOntologyBuilderProps) {
+    const [prompt, setPrompt] = useState<string>('Create an ontology for [your domain here]');
+    const [model, setModel] = useState<string>('gpt-4o-mini');
     const [maxTokens, setMaxTokens] = useState<number>(800);
     const [loading, setLoading] = useState<boolean>(false);
     const [result, setResult] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
+
+    const containerRef = useRef<HTMLDivElement>(null);
+    const responsePanelRef = useRef<HTMLDivElement>(null);
+    const buttonAccent = useMemo(() => 'px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap', []);
+    const [showGuide, setShowGuide] = useState(false);
+    const [responseMaxHeight, setResponseMaxHeight] = useState<number | undefined>(undefined);
+    const formRef = useRef<HTMLFormElement>(null);
+    const [inputBarHeight, setInputBarHeight] = useState(0);
+    const INPUT_BAR_OFFSET = -2; // pull the bar 2px further down
+
+    // Dynamically reserve exactly the input bar height at the bottom of the scroll area
+    useEffect(() => {
+        if (!formRef.current) return;
+        const el = formRef.current;
+        const update = () => setInputBarHeight(el.offsetHeight || 0);
+        update();
+
+        // Observe size changes of the input bar
+        const ro = new ResizeObserver(update);
+        ro.observe(el);
+
+        // Recalculate on window resize too
+        window.addEventListener('resize', update);
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', update);
+        };
+    }, []);
+
+    // Keep the output area scrollable within the viewport height
+    useEffect(() => {
+        const recalc = () => {
+            if (!responsePanelRef.current) return;
+            const rect = responsePanelRef.current.getBoundingClientRect();
+            const avail = window.innerHeight - rect.top - inputBarHeight - Math.max(0, -INPUT_BAR_OFFSET);
+            setResponseMaxHeight(Math.max(120, avail));
+        };
+        recalc();
+
+        const ro = new ResizeObserver(recalc);
+        if (containerRef.current) ro.observe(containerRef.current);
+        if (responsePanelRef.current) ro.observe(responsePanelRef.current);
+
+        window.addEventListener('resize', recalc);
+        window.addEventListener('scroll', recalc, true);
+        return () => {
+            ro.disconnect();
+            window.removeEventListener('resize', recalc);
+            window.removeEventListener('scroll', recalc, true);
+        };
+    }, [inputBarHeight, showGuide]);
 
     async function handleGenerate(e?: React.FormEvent) {
         e?.preventDefault();
@@ -40,18 +92,14 @@ export default function AiGwOntologyBuilder() {
 
             const json: GenerateResponse = await resp.json();
 
-            // Try to find a meaningful text field from the gateway response:
-            // Some gateways return { output: [{ content: "..." }, ...] } or { choices: [...] }.
             let outputText = '';
             if (json.output && Array.isArray(json.output)) {
-                // Vercel AI often returns `output: [{ id, type, content: "..." }]`
                 outputText = json.output.map((o: any) => (o.content ?? o.text ?? JSON.stringify(o))).join('\n\n');
             } else if (json.choices && Array.isArray(json.choices)) {
                 outputText = json.choices.map((c: any) => c.text ?? c.message?.content ?? JSON.stringify(c)).join('\n\n');
             } else if (typeof json.text === 'string') {
                 outputText = json.text;
             } else {
-                // fallback: pretty-print JSON
                 outputText = JSON.stringify(json, null, 2);
             }
 
@@ -70,132 +118,123 @@ export default function AiGwOntologyBuilder() {
     }
 
     return (
-        <div className="p-4 bg-transparent rounded-md shadow-sm">
-            <h2 className="text-lg font-semibold mb-2">Ontology Builder (Vercel AI Gateway)</h2>
-            <form onSubmit={handleGenerate} className="space-y-3">
-                <div>
-                    <label className="block text-sm font-medium">Model</label>
-                    <select value={model} onChange={(e) => setModel(e.target.value)} className="mt-1 block w-full border rounded px-2 py-1">
-                        <option value="gpt-4o">gpt-4o</option>
-                        <option value="gpt-4o-mini">gpt-4o-mini</option>
-                        <option value="gpt-4">gpt-4</option>
-                        <option value="gpt-3.5">gpt-3.5</option>
-                    </select>
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium">Max tokens</label>
-                    <input
-                        type="number"
-                        value={maxTokens}
-                        onChange={(e) => setMaxTokens(Number(e.target.value))}
-                        className="mt-1 block w-40 border rounded px-2 py-1"
-                        min={1}
-                        max={4000}
-                    />
-                </div>
-
-                <div>
-                    <label className="block text-sm font-medium">Prompt</label>
-                    <textarea
-                        value={prompt}
-                        onChange={(e) => setPrompt(e.target.value)}
-                        rows={6}
-                        className="mt-1 block w-full border rounded px-2 py-1 font-mono text-sm"
-                    />
-                </div>
-
-                <div className="flex items-center gap-2">
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="px-3 py-1 bg-blue-600 text-white rounded disabled:opacity-60"
-                    >
-                        {loading ? 'Generating…' : 'Generate Ontology'}
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={() => { setPrompt(''); setResult(''); setError(null); }}
-                        className="px-3 py-1 border rounded"
-                    >
-                        Reset
-                    </button>
-
-                    <button
-                        type="button"
-                        onClick={handleCopy}
-                        disabled={!result}
-                        className="px-3 py-1 border rounded disabled:opacity-60"
-                    >
-                        Copy Result
-                    </button>
-                </div>
-
-                {error && <div className="text-red-600 text-sm">Error: {error}</div>}
-
-                {result && (
-                    <div className="mt-3">
-                        <label className="block text-sm font-medium">Result</label>
-                        <pre className="whitespace-pre-wrap bg-gray-50 p-3 rounded text-sm font-mono">{result}</pre>
+        <div ref={containerRef} className="relative flex w-full h-full min-h-0">
+            {/* Optional Guide Sidebar */}
+            {showGuide && (
+                <div className="flex flex-col items-center justify-between mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
+                    <div className="flex items-center justify-between w-full px-1">
+                        <div className="text-lg font-semibold text-orange-500/60">Guide</div>
+                        <button
+                            onClick={() => setShowGuide(false)}
+                            className="text-gray-400 hover:text-white"
+                            title="Close Guide"
+                        >
+                            <X className="h-4 w-4" />
+                        </button>
                     </div>
-                )}
+                    <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60 w-full">
+                        {guide}
+                    </div>
+                </div>
+            )}
+
+            {/* Main Column */}
+            <div className="flex flex-col w-full h-full min-h-0 gap-2" style={{ paddingBottom: Math.max(0, inputBarHeight + INPUT_BAR_OFFSET) }}>
+                <div className="flex items-center gap-2">
+                    {!showGuide && (
+                        <button
+                            onClick={() => setShowGuide(true)}
+                            className="text-gray-400 hover:text-blue-400 hover:bg-gray-800 pt-1 rounded-md"
+                            title="Show Guide"
+                            type="button"
+                        >
+                            <HelpCircle className="bg-yellow-700 text-white rounded h-4 w-4" />
+                        </button>
+                    )}
+                </div>
+
+                {/* Top/output area */}
+                <div ref={responsePanelRef} className="flex-1 min-h-0 rounded-lg bg-gray-800/20 p-2">
+                    <div className="overflow-y-auto" style={{ maxHeight: responseMaxHeight }}>
+                        {result ? (
+                            <MarkdownPreview mdPreview={result} />
+                        ) : startupGuide ? (
+                            <div className="flex flex-col items-center justify-center w-full p-4 gap-4 text-gray-400 text-sm flex-1">
+                                {startupGuide}
+                            </div>
+                        ) : (
+                            <div className="text-sm text-muted-foreground p-4">
+                                Describe the domain and press Generate to create an ontology.
+                            </div>
+                        )}
+                    </div>
+                </div>
+
+            </div>
+            {/* Absolute bottom bar spanning the full width, independent of guide */}
+            <form
+                ref={formRef}
+                onSubmit={handleGenerate}
+                className="absolute inset-x-0 z-10 pt-1 px-2 bg-popover/95 backdrop-blur border-t border-secondary rounded-t-lg"
+                style={{ bottom: INPUT_BAR_OFFSET }}
+            >
+                {/* Controls row */}
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                    <ModelSelector
+                        selectedModel={model as any}
+                        onModelChange={(m) => setModel(m)}
+                    />
+                    <div className="flex items-center gap-2">
+                        <label className="text-xs text-muted-foreground">Max tokens</label>
+                        <input
+                            type="number"
+                            value={maxTokens}
+                            onChange={(e) => setMaxTokens(Number(e.target.value))}
+                            className="py-1 px-2 text-sm text-muted-foreground bg-secondary/50 border border-secondary rounded-md w-24"
+                            min={1}
+                            max={4000}
+                        />
+                    </div>
+
+                    {error && (
+                        <div className="text-xs text-red-400">{error}</div>
+                    )}
+                </div>
+
+                {/* Prompt input */}
+                <TextareaAutosize
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    minRows={3}
+                    maxRows={10}
+                    className="w-full resize-none bg-transparent text-sm text-primary placeholder:text-muted-foreground focus:outline-none"
+                    placeholder="Describe the ontology you want to generate..."
+                />
+
+                {/* Action buttons */}
+                <div className="flex items-center justify-between py-2">
+                    <div className="flex items-center gap-2">
+                        <button type="submit" disabled={loading} className={buttonAccent}>
+                            {loading ? 'Generating…' : 'Generate Ontology'}
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => { setPrompt(''); setResult(''); setError(null); }}
+                            className={buttonAccent}
+                        >
+                            Reset
+                        </button>
+                        <button
+                            type="button"
+                            onClick={handleCopy}
+                            disabled={!result}
+                            className={buttonAccent + (result ? '' : ' opacity-60')}
+                        >
+                            Copy Result
+                        </button>
+                    </div>
+                </div>
             </form>
         </div>
     );
-}
-
-export async function POST(req: Request) {
-    if (!VERCEL_AI_API_KEY) {
-        return NextResponse.json({ error: 'Missing VERCEL_AI_API_KEY on server. Set process.env.VERCEL_AI_API_KEY' }, { status: 500 });
-    }
-
-    let body: any;
-    try {
-        body = await req.json();
-    } catch (err) {
-        return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
-    }
-
-    // Log request payload for debugging (server logs only)
-    if (DEBUG) {
-        console.log('[vercel-ai] Forwarding request to', VERCEL_AI_ENDPOINT);
-        console.log('[vercel-ai] Request payload:', JSON.stringify(body, null, 2));
-    }
-
-    try {
-        const resp = await fetch(VERCEL_AI_ENDPOINT, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${VERCEL_AI_API_KEY}`,
-            },
-            body: JSON.stringify(body),
-        });
-
-        const text = await resp.text();
-
-        // Log gateway response body+status for debug
-        if (DEBUG) {
-            console.log('[vercel-ai] Gateway status:', resp.status);
-            console.log('[vercel-ai] Gateway response text:', text);
-            // If possible, log headers too (caution: don't log sensitive headers)
-            try {
-                const hdrs: Record<string, string> = {};
-                resp.headers.forEach((v, k) => (hdrs[k] = v));
-                console.log('[vercel-ai] Gateway response headers:', hdrs);
-            } catch (e) { /* ignore */ }
-        }
-
-        // Forward JSON or text response
-        try {
-            const json = JSON.parse(text);
-            return NextResponse.json(json, { status: resp.status });
-        } catch {
-            return new NextResponse(text, { status: resp.status, headers: { 'Content-Type': 'text/plain' } });
-        }
-    } catch (err: any) {
-        console.error('[vercel-ai] Error forwarding request:', err);
-        return NextResponse.json({ error: String(err) }, { status: 500 });
-    }
 }

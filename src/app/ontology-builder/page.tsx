@@ -309,7 +309,10 @@ export default function OntologyBuilderPage() {
         content: (
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
             <div className="flex overflow-hidden">
-              <AiGwOntologyBuilder />
+              <AiGwOntologyBuilder 
+                startupGuide={<GettingStartedGuide />}
+                guide={<Guide />}
+              />
             </div>
           </div>
         )
