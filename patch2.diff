@@ -1,0 +1,8 @@
+*** Begin Patch
+*** Update File: src/components/irtv-builder/GettingStartedGuide.tsx
+@@
+-                                <h3 className="font-medium text-secondary-foreground/50">1. Preview the Response</h3>
+-                                <p className="text-secondary-foreground/70">Click the Preview button to see a Markdown preview of the text.</p>
++                                <h3 className="font-medium text-secondary-foreground/50">1. Preview the Response</h3>
++                                <p className="text-secondary-foreground/70">Click the &quot;Preview&quot; button to see a Markdown preview of the text.</p>
+*** End Patch
