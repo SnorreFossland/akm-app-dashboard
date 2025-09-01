@@ -3,6 +3,7 @@
   "version": "link",
   "private": true,
   "scripts": {
+    "prebuild": "node -e \"console.log('user agent:', process.env.npm_config_user_agent || 'none'); console.log('node version:', process.version);\"",
     "dev": "PORT=3001 next dev",
     "devturbo": "PORT=3001 next dev --turbopack",
     "build": "next build",
