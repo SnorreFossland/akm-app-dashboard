@@ -26,6 +26,7 @@
 //     onAddMD?: () => void;
 // }
 
+const AIChatPage = () => {return <></>}
 // const AIChatPage = () => {
 //     const dispatch = useDispatch();
 //     const [activeLeftTab, setActiveLeftTab] = useState<'templates' | 'document' | 'conversations'>('document');
@@ -733,5 +734,5 @@
 // };
 // // #endregion
 
-// export default AIChatPage;
-export default {}
+export default AIChatPage;
+

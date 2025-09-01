@@ -455,7 +455,6 @@ export default function DocumentPanel({
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-2 px-1">
-<<<<<<< HEAD
                     <div className="flex items-center gap-2">
                         {!showDocumentList && (
                             <button
@@ -521,8 +520,6 @@ export default function DocumentPanel({
                                     onClick={() => {
                                         setMdContent(''); // Clear content
                                         setEditContent(''); // Clear edit content
-                                        // setIsEditing(false); // Exit editing mode
-                                        // onEdit(); // Call parent edit handler
                                     }}
                                     className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md"
                                     title="Clear content"
@@ -543,34 +540,9 @@ export default function DocumentPanel({
                                     onClick={handleSaveToLibrary}
                                     className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
                                     title="Save to library"
-=======
-                    <div className="text-sm text-gray-400">{ (panelType === 'left' ? 'Current text' : 'Markdown Preview')}</div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={() => setIsLibraryOpen(true)}
-                            className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
-                            title="Open library modal"
-                        >
-                            <Library className="h-4 w-4" />
-                        </button>
-                        <button
-                            onClick={handleSaveToLibrary}
-                            className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
-                            title="Save to library"
-                        >
-                            <BookmarkPlus className="h-4 w-4" />
-                        </button>
-                        {isEditing ? (
-                            <>
-                                <button
-                                    onClick={() => { setMdContent(editContent); setIsEditing(false); }}
-                                    className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
-                                    title="Apply changes"
->>>>>>> parent of c938ef3 (layout fixes)
                                 >
                                     <BookmarkPlus className="h-4 w-4" />
                                 </button>
-<<<<<<< HEAD
                                 {isEditing ? (
                                     <button
                                         onClick={() => {
@@ -581,7 +553,6 @@ export default function DocumentPanel({
                                             setIsEditing(false);
                                             // Also call onSave to notify parent components
                                             onSave(editContent);
-
                                             console.log('After setMdContent - editContent applied:', editContent.substring(0, 100) || 'empty');
                                         }}
                                         className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
@@ -613,19 +584,8 @@ export default function DocumentPanel({
                                 >
                                     <X className="h-4 w-4" />
                                 </button>
-=======
->>>>>>> parent of c938ef3 (layout fixes)
                             </>
-                        ) : (
-                            <button
-                                onClick={() => setIsEditing(true)}
-                                className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
-                                title="Edit document"
-                            >
-                                <Edit className="h-4 w-4" />
-                            </button>
                         )}
-<<<<<<< HEAD
                     </div>
                 </div>
 
@@ -680,8 +640,6 @@ export default function DocumentPanel({
                             }}
                             className="w-full h-[80vh] bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
                         />
-=======
->>>>>>> parent of c938ef3 (layout fixes)
                         <button
                             onClick={handleCancel}
                             className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md"
@@ -690,7 +648,6 @@ export default function DocumentPanel({
                             <X className="h-4 w-4" />
                         </button>
                     </div>
-<<<<<<< HEAD
                 ) : (
                     <div className="prose prose-invert custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words flex-1">
                         {mdContent ? (
@@ -717,82 +674,6 @@ export default function DocumentPanel({
                     return firstLine.replace(/^#+\s*/, '').trim() || 'Document';
                 })()}
             />
-=======
-                </div>
-            </>
-            {isEditing ? (
-                <div className="relative">
-                    {/* Add placeholder jump buttons */}
-                    {templatePlaceholders.length > 0 && (
-                        <div className="flex gap-2 mb-2 flex-wrap">
-                            <span className="text-sm text-gray-400">Edit placeholders: </span>
-                            {templatePlaceholders.map((placeholder, idx) => (
-                                <button
-                                    key={idx}
-                                    type="button"
-                                    onClick={() => selectTemplatePlaceholder(idx)}
-                                    className={buttonAccent}
-                                >
-                                    {placeholder.text.length > 50
-                                        ? `${placeholder.text.substring(0, 49)}...`
-                                        : placeholder.text}
-                                </button>
-                            ))}
-                        </div>
-                    )}
-                    <textarea
-                        ref={textareaRef}
-                        autoFocus
-                        placeholder={getPlaceholder()}
-                        value={editContent}
-                        onChange={(e) => setEditContent(e.target.value)}
-                        onKeyDown={(e) => {
-                            // Add tab key navigation for placeholders
-                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                                e.preventDefault(); // Prevent default tab behavior
-
-                                // Get current cursor position
-                                const cursorPos = e.currentTarget.selectionStart;
-
-                                // Find the next placeholder after cursor position
-                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                                // If no next placeholder, loop back to the first one
-                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                    nextPlaceholder = templatePlaceholders[0];
-                                }
-
-                                // Select the placeholder if found
-                                if (nextPlaceholder) {
-                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                                }
-                            }
-                        }}
-                        className="w-full h-[80vh] bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
-                    />
-                    <button
-                        className="absolute bottom-3 right-3 bg-gray-700 hover:bg-gray-600 text-gray-300 p-1.5 rounded-md text-xs flex items-center gap-1 opacity-70 hover:opacity-100"
-                        onClick={() => {
-                            navigator.clipboard.readText().then(
-                                text => setEditContent(prev => prev + text),
-                                err => console.error('Failed to read clipboard:', err)
-                            );
-                        }}
-                    >
-                        <Clipboard className="h-3.5 w-3.5" />
-                        <span>Paste</span>
-                    </button>
-                </div>
-            ) : (
-                <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words">
-                    {/* <MarkdownPreview mdPreview={mdPreview} /> */}
-                    <MarkdownPreview mdPreview={mdContent} />
-                </div>
-            )}
-            <div className="flex flex-col items-center justify-center h-full text-gray-400">
-                {(!mdContent && !editContent) && <div className="text-sm">{getEmptyMessage()}</div>}
-            </div>
->>>>>>> parent of c938ef3 (layout fixes)
         </div>
     );
 }
