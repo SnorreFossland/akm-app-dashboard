@@ -24,10 +24,9 @@ import OutputPanel from '@/components/irtv-builder/OutputPanel';
 import ConversationsPanel from '@/components/irtv-builder/ConversationsPanel';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
 import Guide from '@/components/irtv-builder/Guide';
-// import IRTVTemplatesPanel from '@/components/irtv-builder/IRTVTemplatesPanel';
-// Uncomment and fix these imports at the top of your file
+
 import { ObjectCard } from '@/components/object-card';
-import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
+
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import { FileOperations } from '@/components/FileOperations';
