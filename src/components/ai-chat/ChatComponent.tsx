@@ -1408,6 +1408,94 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 <X className="w-4 h-4" />
                             </button> */}
                             </div>
+<<<<<<< HEAD
+=======
+                        }
+                        <div className="flex items-center gap-2">
+                            {!docRefine &&
+                                <div className="relative">
+                                    <button
+                                        className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
+                                        onClick={() => {
+                                            const dropdown = document.getElementById('template-dropdown');
+                                            if (dropdown) {
+                                                // Check position relative to viewport
+                                                const button = document.activeElement as HTMLElement;
+                                                const buttonRect = button.getBoundingClientRect();
+                                                const viewportHeight = window.innerHeight;
+                                                const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                const spaceAbove = buttonRect.top;
+
+                                                // First toggle visibility
+                                                dropdown.classList.toggle('hidden');
+
+                                                // If there's not enough space below, position above
+                                                if (spaceBelow < 300 && spaceAbove > 150) {
+                                                    // Position above with margin to prevent cutoff
+                                                    dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
+                                                    dropdown.style.top = 'auto';
+                                                    dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
+                                                } else {
+                                                    // Otherwise position below with margin
+                                                    dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
+                                                    dropdown.style.bottom = 'auto';
+                                                    dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
+                                                }
+
+                                                // Ensure the dropdown is fully visible within viewport
+                                                setTimeout(() => {
+                                                    const dropdownRect = dropdown.getBoundingClientRect();
+                                                    if (dropdownRect.top < 0) {
+                                                        // If still cut off at top, adjust position
+                                                        dropdown.style.top = '5px';
+                                                        dropdown.style.bottom = 'auto';
+                                                    }
+                                                }, 0);
+                                            }
+                                        }}
+                                        title="Select a template"
+                                    >
+                                        <span>Prompt Templates</span>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div
+                                        id="template-dropdown"
+                                        className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
+                                    >
+                                        <div className="p-1 border-b border-gray-600">
+                                            <select
+                                                className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
+                                                value={selectedCategory}
+                                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                            >
+                                                {CATEGORIES.map((category) => (
+                                                    <option key={category} value={category}>
+                                                        {category === "All" ? "All" : category}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="overflow-y-auto max-h-[180px]">
+                                            {filteredTemplates.map((template) => (
+                                                <button
+                                                    key={template.title}
+                                                    className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                    onClick={() => {
+                                                        setSelectedReportTemplate(template.title);
+                                                        setInput(template.content);
+                                                        document.getElementById('template-dropdown')?.classList.add('hidden');
+                                                    }}
+                                                >
+                                                    {template.title}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                </div>
+                            }
+>>>>>>> parent of c938ef3 (layout fixes)
                         </div>
 
                     }
