@@ -17,7 +17,7 @@ const GettingStartedGuide: React.FC = () => {
                                         <div className='ms-2'>Select a prompt template from the dropdown menu above and right of the input area.</div>
                                         <ul className="list-disc pl-6 mt-1 text-secondary-foreground/50">
                                             <li>
-                                                Type or paste a list of Concepts/Terms, tasks, views or roles in the provided input area.
+                                                Type or paste a list of Concepts, Terms, tasks, views or roles in the provided input area.
                                             </li>
                                             <li>
                                                 You can click <FileText className="inline w-4 h-4 mr-1" /> to add a local text-file to use as context for your prompt.
@@ -55,7 +55,7 @@ const GettingStartedGuide: React.FC = () => {
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div className="p-3 border border-gray-700 rounded-lg">
                                 <h3 className="font-medium text-secondary-foreground/50">1. Preview the Response</h3>
-                                <p className="text-secondary-foreground/70">Click the &quot;Preview&quot; button to see a Markdown preview of the text.</p>
+                                <p className="text-secondary-foreground/70">Click the Preview button to see a Markdown preview of the text.</p>
                             </div>
                             <div className="p-3 border border-gray-700 rounded-lg">
                                 <h3 className="font-medium text-secondary-foreground/50">2. Save the Document</h3>
