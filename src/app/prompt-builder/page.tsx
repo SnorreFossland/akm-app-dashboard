@@ -207,17 +207,21 @@ export default function VercelAiPage() {
     setMdContent(data.phData?.domain?.prompt || '');
   }, []);
 
+  const cleanResponse = (response: string) => {
+    const cleaned = response
+      .replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '')
+      .replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
+    return cleaned;
+  };
+
+  // Handler to view a response in markdown preview (fixed bug: response variable was undefined previously)
   const handleViewInMarkdown = (response: string) => {
-    const cleanResponse = (response: string) => {
-      let cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
-      cleaned = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
-      return cleaned;
-    };
     const cleanedResponse = cleanResponse(response);
     setMdPreview(cleanedResponse);
     setShowRightPanel(true); // Show the right panel with markdown preview
-    // setShowLeftPanel(false); // Hide the left panel when viewing markdown
+    setShowLeftPanel(false); // Hide the left panel when viewing markdown (optional)
   };
+
   // New handler functions for conversations
   const handleSelectConversation = (conversation: any) => {
     // Logic to load a saved conversation into the chat

@@ -1,3 +1,4 @@
+/* eslint-disable react/no-unescaped-entities */
 import React from 'react';
 import { Edit, Check, FileText, Paperclip, Library, BookmarkPlus } from 'lucide-react';
 
@@ -36,6 +37,7 @@ const GettingStartedGuide: React.FC = () => {
                                         </ul>
                                     </ol>
                                 </div>
+
                             </div>
                             <div className="md:col-span-2 space-y-4">
                                 <div className="p-4 border border-gray-700 rounded-lg bg-secondary/50">
