@@ -312,6 +312,8 @@ export default function OntologyBuilderPage() {
               <AiGwOntologyBuilder 
                 startupGuide={<GettingStartedGuide />}
                 guide={<Guide />}
+                setSuggestedOntologyData={setSuggestedOntologyData}
+                onImplementSuggestedOntology={handleSaveToLibrary}
               />
             </div>
           </div>

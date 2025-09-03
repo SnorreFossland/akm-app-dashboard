@@ -102,7 +102,10 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     return (
         <div className={`flex md:flex-row items-center justify-between w-full ${className}`}>
             <div className="flex items-center gap-2 w-full justify-between">
-                <span className="text-sm text-white whitespace-nowrap flex-shrink-0 ps-2">Universe:</span>
+                <div className="bg-gray-800 rounded border border-green-900 ms-1 px-1  text-xs text-orange-400 flex-shrink-0">
+                    <span className="text-orange-300">{pathname}</span>
+                </div>
+                <span className="text-gray-500  whitespace-nowrap flex-shrink-0">Universe:</span>
                 <input
                     type="text"
                     value={(modelUniverse?.includes('-Template') ? (domain?.name ?? '') : (modelUniverse ?? ''))}
@@ -134,7 +137,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                             dispatch(setSource(newValue.trimStart()));
                         }
                     }}
-                    className={`bg-gray-800 px-2 py-1 rounded text-gray-400 min-w-0 flex-1 ${modelUniverse?.includes('-Template') ? 'animate-pulse placeholder:text-orange-400' : ''}`}
+                    className={`bg-gray-800 px-2 rounded text-white min-w-0 flex-1 ${modelUniverse?.includes('-Template') ? 'animate-pulse placeholder:text-orange-400' : ''}`}
                     placeholder="Type your Universe/file name here"
                 />
                 <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {modelUniverse}.json</div>
