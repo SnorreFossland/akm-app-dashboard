@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import TextareaAutosize from 'react-textarea-autosize';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
+import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import { HelpCircle, X } from 'lucide-react';
 import { SystemPrompt, SystemBehaviorGuidelines, UserPrompt } from '@/app/ontology-builder/prompts';
 
@@ -24,6 +25,7 @@ export default function AiGwOntologyBuilder({ startupGuide, guide, setSuggestedO
     const [prompt, setPrompt] = useState<string>('Create an ontology for [your domain here]');
     const [model, setModel] = useState<string>('gpt-4o-mini');
     const [maxTokens, setMaxTokens] = useState<number>(800);
+    const [temperature, setTemperature] = useState<number>(0.5);
     const [loading, setLoading] = useState<boolean>(false);
     const [result, setResult] = useState<string>('');
     const [error, setError] = useState<string | null>(null);
@@ -83,6 +85,14 @@ export default function AiGwOntologyBuilder({ startupGuide, guide, setSuggestedO
         };
     }, [inputBarHeight, showGuide]);
 
+    // Load saved temperature preference from localStorage
+    useEffect(() => {
+        try {
+            const savedTemp = localStorage.getItem('aiDashboard_temperature');
+            if (savedTemp) setTemperature(parseFloat(savedTemp));
+        } catch {}
+    }, []);
+
     async function handleGenerate(e?: React.FormEvent) {
         e?.preventDefault();
         setLoading(true);
@@ -94,6 +104,7 @@ export default function AiGwOntologyBuilder({ startupGuide, guide, setSuggestedO
             console.groupCollapsed('[AiGwOntologyBuilder] Generating ontology');
             console.log('Model:', model);
             console.log('Max tokens:', maxTokens);
+            console.log('Temperature:', temperature);
             console.log('Prompt:', prompt);
             console.groupEnd();
             // Add the user's prompt to the dialog
@@ -102,7 +113,8 @@ export default function AiGwOntologyBuilder({ startupGuide, guide, setSuggestedO
             const resp = await fetch('/api/vercel-ai/generate', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ prompt, model, max_tokens: maxTokens }),
+                // Prefer max_completion_tokens for gateways and newer OpenAI models
+                body: JSON.stringify({ prompt, model, max_completion_tokens: maxTokens, temperature }),
             });
 
             if (!resp.ok) {
@@ -136,11 +148,14 @@ export default function AiGwOntologyBuilder({ startupGuide, guide, setSuggestedO
 
     // Map chat model to genmodel's supported aiModelName
     function mapModelForGenmodel(m: string): string {
-        const lower = m.toLowerCase();
-        if (lower.startsWith('deepseek')) return lower as any; // deepseek-chat, deepseek-r1
-        if (lower.includes('mistral')) return 'mistral-small-latest';
+        const lower = (m || '').toLowerCase();
+        // Pass through known genmodel 400: {"error":"Unsupported model","details":"Model gpt-4o is not supported"} to server
+        if (lower.startsWith('deepseek')) return lower; // deepseek-chat, deepseek-coder, deepseek-r1
+        if (lower.includes('mistral')) return 'mistral';
+        if (lower.startsWith('gpt-')) return lower; // gpt-4o, gpt-4o-mini, gpt-5, gpt-5-mini
         if (lower === 'dummy') return 'dummy';
-        return 'gpt-4o'; // safe default supported by genmodel route
+        // Fallback to a safe OpenAI mini model
+        return 'gpt-4o-mini';
     }
 
     async function handleOntologyBuilderFromResult(text: string) {
@@ -345,6 +360,13 @@ export default function AiGwOntologyBuilder({ startupGuide, guide, setSuggestedO
                     <ModelSelector
                         selectedModel={model as any}
                         onModelChange={(m) => setModel(m)}
+                    />
+                    <TemperatureSelector
+                        temperature={temperature}
+                        onChange={(t) => {
+                            setTemperature(t);
+                            try { localStorage.setItem('aiDashboard_temperature', t.toString()); } catch {}
+                        }}
                     />
                     <div className="flex items-center gap-2">
                         <label className="text-xs text-muted-foreground">Max tokens</label>

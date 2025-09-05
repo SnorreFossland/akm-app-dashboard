@@ -24,13 +24,7 @@ const AI_MODELS = [
     { id: 'deepseek-chat', name: 'Deepseek Chat', provider: 'deepseek', enabled: true },
     { id: 'deepseek-coder', name: 'Deepseek Coder', provider: 'deepseek', enabled: true },
     { id: 'deepseek-r1', name: 'Deepseek R1', provider: 'deepseek', enabled: true },
-
-    { id: 'mistral-small-latest', name: 'Mistral Small Latest', provider: 'mistral', enabled: true },
     { id: 'mistral', name: 'Mistral (Legacy)', provider: 'mistral', enabled: true },
-    { id: 'mistral-mistral-small-24b-instruct-2501', name: 'Mistral 24B Instruct 2501', provider: 'mistral', enabled: true },
-
-    { id: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', enabled: true },
-    { id: 'gpt-4o-2024-08-06', name: 'GPT-4o (2024-08-06)', provider: 'openai', enabled: true },
     { id: 'gpt-5', name: 'GPT-5', provider: 'openai', enabled: true },
     { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', enabled: true },
 

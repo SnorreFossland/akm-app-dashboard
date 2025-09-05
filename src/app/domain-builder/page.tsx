@@ -58,7 +58,15 @@ export default function DomainBuilderPage() {
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
   const [mdContent, setMdContent] = useState<string>('')
   const [isEditing, setIsEditing] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<"dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini">('deepseek-chat'); // Default model
+  const [selectedModel, setSelectedModel] = useState<
+    | 'dummy'
+    | 'deepseek-chat'
+    | 'deepseek-coder'
+    | 'deepseek-r1'
+    | 'mistral'
+    | 'gpt-5'
+    | 'gpt-5-mini'
+  >('gpt-5-mini'); // Default model
   
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedModelName = e.target.value;

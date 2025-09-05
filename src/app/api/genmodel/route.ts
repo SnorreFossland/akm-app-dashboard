@@ -10,15 +10,21 @@ const debug = false;
 
 // Model provider mapping
 const MODEL_PROVIDERS = {
+  // OpenAI family
+  'gpt-5-mini': 'openai',
+  'gpt-5': 'openai',
   'gpt-4o': 'openai',
-  // 'gpt-4o-mini': 'openai',
-  // 'gpt-4-turbo': 'openai',
-  'gpt-4': 'openai',
-  // 'gpt-3.5-turbo': 'openai',
+  'gpt-4o-mini': 'openai',
+
+  // DeepSeek family
   'deepseek-chat': 'deepseek',
-  'deepseek-r1': 'deepseek-r1',
-  'mistral-mistral-small-24b-instruct-2501': 'mistral-24b',
-  'mistral-small-latest': 'mistral',
+  'deepseek-coder': 'deepseek',
+  'deepseek-r1': 'deepseek',
+
+  // Mistral
+  'mistral': 'mistral',
+
+  // Utility
   'dummy': 'dummy'
 };
 
@@ -186,12 +192,12 @@ export async function POST(req: Request) {
 
     if (provider === 'openai') {
       // OpenAI supports structured output with zodResponseFormat
+      // Some OpenAI models only support default temperature (1). Omit temperature to use provider default.
       response = await client.chat.completions.create({
         model: aiModelName,
         messages: messages,
         response_format: zodResponseFormat(schema, `${schema.constructor.name.toLowerCase()}Schema`),
         stream: true,
-        temperature: 0.3,
       });
     } else {
       // For Deepseek and Mistral, add detailed JSON schema instructions and collect full response
@@ -230,18 +236,27 @@ export async function POST(req: Request) {
           // Add other required fields for DomainSchema
         }, null, 2);
       } else if (schemaName === 'OntologySchema') {
+        // Align with OntologySchema which expects a top-level { ontologyData: { ... } }
         schemaExample = JSON.stringify({
-          name: "Example Ontology",
-          description: "Example ontology description",
-          concepts: [
-            {
-              id: "concept_1",
-              name: "ExampleConcept",
-              description: "Description of example concept",
-              properties: []
-            }
-          ],
-          // Add other required fields for OntologySchema
+          ontologyData: {
+            name: "Example Ontology",
+            description: "Example ontology description",
+            presentation: "Optional presentation text",
+            concepts: [
+              {
+                name: "ExampleConcept",
+                description: "Description of example concept"
+              }
+            ],
+            relationships: [
+              {
+                name: "relatesTo",
+                nameFrom: "ExampleConcept",
+                nameTo: "ExampleConcept",
+                description: "Relationship description"
+              }
+            ]
+          }
         }, null, 2);
       } else if (schemaName === 'ModelviewSchema') {
         schemaExample = JSON.stringify({
@@ -373,68 +388,108 @@ export async function POST(req: Request) {
       }
 
       // Validate and attempt to fix the JSON
-      let parsedJson;
+      let parsedJson: any;
       try {
         parsedJson = JSON.parse(jsonContent);
-        console.log('Successfully parsed JSON:', Object.keys(parsedJson));
+        console.log('Successfully parsed JSON keys:', Object.keys(parsedJson));
       } catch (parseError) {
         console.error('JSON parse error:', parseError);
         console.error('Attempted to parse:', jsonContent);
 
-        // Last resort: create a minimal valid response
-        const fallbackResponse = {
-          name: "Error Recovery Model",
-          description: "Model created due to JSON parsing error. Original response: " + content.substring(0, 200),
-          objects: [],
-          relships: []
-        };
-
-        parsedJson = fallbackResponse;
-        jsonContent = JSON.stringify(fallbackResponse);
+        if (schemaName === 'OntologySchema') {
+          const fallbackResponse = {
+            ontologyData: {
+              name: "Error Recovery Ontology",
+              description: "Ontology created due to JSON parsing error. Original response: " + content.substring(0, 200),
+              presentation: "",
+              concepts: [],
+              relationships: []
+            }
+          };
+          parsedJson = fallbackResponse;
+          jsonContent = JSON.stringify(fallbackResponse);
+        } else {
+          // Last resort for other schemas: minimal object/relship structure
+          const fallbackResponse = {
+            name: "Error Recovery Model",
+            description: "Model created due to JSON parsing error. Original response: " + content.substring(0, 200),
+            objects: [],
+            relships: []
+          };
+          parsedJson = fallbackResponse;
+          jsonContent = JSON.stringify(fallbackResponse);
+        }
         console.log('Using fallback response due to parse error');
       }
 
-      // Ensure all required fields are present
-      if (!parsedJson.name) parsedJson.name = "Generated Model";
-      if (!parsedJson.description) parsedJson.description = "AI-generated model description";
-      if (!parsedJson.objects) parsedJson.objects = [];
-      if (!parsedJson.relships) parsedJson.relships = [];
+      if (schemaName === 'OntologySchema') {
+        // Normalize to { ontologyData: { ... } }
+        let od = parsedJson.ontologyData ?? parsedJson;
+        if (typeof od !== 'object' || Array.isArray(od)) od = {};
+        if (!od.name) od.name = 'Generated Ontology';
+        if (!od.description) od.description = 'AI-generated ontology description';
+        if (!od.presentation) od.presentation = '';
+        if (!Array.isArray(od.concepts)) od.concepts = [];
+        if (!Array.isArray(od.relationships)) od.relationships = [];
 
-      // Fix missing fields in objects
-      if (parsedJson.objects) {
-        parsedJson.objects.forEach((obj: any, index: number) => {
-          if (!obj.id) obj.id = `obj_${index + 1}`;
-          if (!obj.name) obj.name = `Object${index + 1}`;
-          if (!obj.description) obj.description = `Description for object ${index + 1}`;
-          if (!obj.typeRef) obj.typeRef = "entity";
-          if (!obj.typeName) obj.typeName = `${obj.name}Type`;
-          if (!obj.proposedType) obj.proposedType = `${obj.name}ProposedType`;
-          if (!obj.properties) obj.properties = [];
+        // Fix concepts
+        od.concepts = od.concepts.map((c: any, i: number) => ({
+          name: c?.name ?? `Concept${i + 1}`,
+          description: c?.description ?? `Description for Concept ${i + 1}`,
+        }));
 
-          // Fix properties
-          obj.properties.forEach((prop: any, propIndex: number) => {
-            if (!prop.id) prop.id = `prop_${index}_${propIndex + 1}`;
-            if (!prop.name) prop.name = `property${propIndex + 1}`;
-            if (!prop.description) prop.description = `Description for property ${propIndex + 1}`;
-            if (!prop.type) prop.type = "string";
+        // Fix relationships
+        od.relationships = od.relationships.map((r: any, i: number) => ({
+          name: r?.name ?? `relatesTo${i + 1}`,
+          nameFrom: r?.nameFrom ?? od.concepts[0]?.name ?? 'Concept1',
+          nameTo: r?.nameTo ?? od.concepts[0]?.name ?? 'Concept1',
+          description: r?.description ?? `Relationship ${i + 1}`,
+        }));
+
+        parsedJson = { ontologyData: od };
+        jsonContent = JSON.stringify(parsedJson);
+      } else {
+        // Generic normalization for models with objects/relships
+        if (!parsedJson.name) parsedJson.name = "Generated Model";
+        if (!parsedJson.description) parsedJson.description = "AI-generated model description";
+        if (!parsedJson.objects) parsedJson.objects = [];
+        if (!parsedJson.relships) parsedJson.relships = [];
+
+        // Fix missing fields in objects
+        if (parsedJson.objects) {
+          parsedJson.objects.forEach((obj: any, index: number) => {
+            if (!obj.id) obj.id = `obj_${index + 1}`;
+            if (!obj.name) obj.name = `Object${index + 1}`;
+            if (!obj.description) obj.description = `Description for object ${index + 1}`;
+            if (!obj.typeRef) obj.typeRef = "entity";
+            if (!obj.typeName) obj.typeName = `${obj.name}Type`;
+            if (!obj.proposedType) obj.proposedType = `${obj.name}ProposedType`;
+            if (!obj.properties) obj.properties = [];
+
+            obj.properties.forEach((prop: any, propIndex: number) => {
+              if (!prop.id) prop.id = `prop_${index}_${propIndex + 1}`;
+              if (!prop.name) prop.name = `property${propIndex + 1}`;
+              if (!prop.description) prop.description = `Description for property ${propIndex + 1}`;
+              if (!prop.type) prop.type = "string";
+            });
           });
-        });
-      }
+        }
 
-      // Fix missing fields in relationships
-      if (parsedJson.relships) {
-        parsedJson.relships.forEach((rel: any, index: number) => {
-          if (!rel.id) rel.id = `rel_${index + 1}`;
-          if (!rel.name) rel.name = `Relationship${index + 1}`;
-          if (!rel.description) rel.description = `Description for relationship ${index + 1}`;
-          if (!rel.from) rel.from = parsedJson.objects[0]?.id || "obj_1";
-          if (!rel.to) rel.to = parsedJson.objects[0]?.id || "obj_1";
-          if (!rel.type) rel.type = "association";
-        });
-      }
+        // Fix missing fields in relationships
+        if (parsedJson.relships) {
+          parsedJson.relships.forEach((rel: any, index: number) => {
+            if (!rel.id) rel.id = `rel_${index + 1}`;
+            if (!rel.name) rel.name = `Relationship${index + 1}`;
+            if (!rel.description) rel.description = `Description for relationship ${index + 1}`;
+            if (!rel.from) rel.from = parsedJson.objects[0]?.id || "obj_1";
+            if (!rel.to) rel.to = parsedJson.objects[0]?.id || "obj_1";
+            if (!rel.type) rel.type = "association";
+          });
+        }
 
-      // Re-encode the fixed JSON
-      jsonContent = JSON.stringify(parsedJson);
+        // Re-encode the fixed JSON
+        jsonContent = JSON.stringify(parsedJson);
+      }
       console.log('Final JSON to return:', jsonContent.substring(0, 300));
 
       // Create a stream with the complete JSON response

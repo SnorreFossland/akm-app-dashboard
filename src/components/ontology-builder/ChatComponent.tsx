@@ -33,7 +33,7 @@ import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
-export type ModelId = "deepseek-chat" | "dummy" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini";
+export type ModelId = "deepseek-chat" | "dummy" | "deepseek-coder" | "deepseek-r1" | "mistral" | "gpt-5" | "gpt-5-mini";
 // import GettingStartedGuide from './GettingStartedGuide';
 // import { refineTemplates } from '@/features/documents/refine-templates';
 // import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';

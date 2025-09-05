@@ -7,7 +7,7 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url);
     const sessionId = searchParams.get('sessionId');
-    const model = searchParams.get('model') || 'mistral-small-latest';
+    const model = searchParams.get('model') || 'gpt-5-mini';
     const temperature = parseFloat(searchParams.get('temperature') || '0.5');
 
     console.log('Stream request params:', {

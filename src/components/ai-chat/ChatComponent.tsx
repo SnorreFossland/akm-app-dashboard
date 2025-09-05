@@ -582,231 +582,167 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
-        setIsStreaming(false);
+        setIsStreaming(false); // non-streaming for Vercel AI proxy
         setStreamedContent('');
-        console.log('773 sendMessageToAPI called with messages:', newMessages);
+        console.log('sendMessageToAPI (gateway) called with messages:', newMessages);
 
         if (selectedModel === 'dummy') {
             const dummyResponse =
                 "This is a loooooooooooooooooooooooooooooooooo ooooooooooooooooooooooooooooooong loooooooooooooooooooooooooooooooo ooooooooooooooooooooooooooooooooong dummy response.";
 
-            // Option A: add directly as a final assistant message (simplest)
             dispatch(addMessage({ role: 'assistant', content: dummyResponse }));
-            setIsStreaming(false);
             setIsLoading(false);
             return;
         }
 
         try {
-            // Create messagesToSend array as you did before
+            // 1) Build a single prompt from system + conversation
             const messagesToSend: Message[] = [];
+            messagesToSend.push({ role: 'system', content: systemPrompt });
 
-            messagesToSend.push({
-                role: 'system',
-                content: systemPrompt
-            });
-
-            console.log(`598 Sending context to the model (${contextContent.length} chars).`, messagesToSend);
-            // Add conversation messages
             if (newMessages && newMessages.length > 0) {
                 messagesToSend.push(...newMessages);
             } else {
-                console.error('No messages in newMessages array');
                 setStatusMsg('Error: No prompt detected. Please enter a question or message.');
-                return;
-            }
-
-            // Final safety check
-            if (messagesToSend.length === 0) {
-                console.error('messagesToSend is empty after all processing');
-                setStatusMsg('Error: Unable to create a valid message for the AI. Please try again.');
-                return;
-            }
-
-            // Build the API request body
-            const requestBody: any = {
-                messages: messagesToSend,
-                model: selectedModel,
-                temperature: temperature
-            };
-
-            // Log what we're sending (for debugging)
-            console.log('Sending to API:', {
-                model: selectedModel,
-                messagesCount: messagesToSend.length,
-                hasContext: Boolean(contextContent && isContextAttached),
-                messagePreview: JSON.stringify(messagesToSend.slice(0, 2))
-            });
-
-            // Set up event source for streaming
-            setIsStreaming(true);
-            // First, create a session ID for this request
-            const sessionId = Date.now().toString();
-
-            // Store the messages in session storage temporarily
-            sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
-
-            // Validate messages
-            if (!messagesToSend || messagesToSend.length === 0) {
-                console.error('No messages to send');
-                setStatusMsg('Error: No messages to send. Please enter a prompt.');
                 setIsLoading(false);
-                setIsStreaming(false);
                 return;
             }
-            console.log('832 Messages to send:', messagesToSend);
-            // Send the messages via POST
-            fetch('/api/chat/create-stream', {
-                method: 'POST',
-                headers:
-                {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify({
-                    sessionId,
-                    messages: messagesToSend,
-                    model: selectedModel,
-                    temperature: temperature
-                })
-            }).then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! Status: ${response.status}`);
-                }
-                return response.json();
-            }).then(data => {
-                // Only create EventSource after successful POST
-                console.log('Create-stream successful, now starting EventSource');
 
-                const streamUrl = `/api/chat/stream?sessionId=${sessionId}&model=${selectedModel}&temperature=${temperature}`;
-                console.log('Creating EventSource with URL:', streamUrl);
+            // If the model is not an OpenAI gpt-* model, use the existing streaming API
+            if (!selectedModel.startsWith('gpt-')) {
+                try {
+                    setIsStreaming(true);
+                    const sessionId = Date.now().toString();
+                    sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
 
-                const eventSource = new EventSource(streamUrl);
+                    if (!messagesToSend || messagesToSend.length === 0) {
+                        setStatusMsg('Error: No messages to send. Please enter a prompt.');
+                        setIsLoading(false);
+                        setIsStreaming(false);
+                        return;
+                    }
 
-                // Add connection state logging
-                eventSource.onopen = (event) => {
-                    console.log('EventSource connection opened successfully:', {
-                        readyState: eventSource.readyState,
-                        url: eventSource.url,
-                        timestamp: new Date().toISOString()
-                    });
-                };
+                    await fetch('/api/chat/create-stream', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sessionId, messages: messagesToSend, model: selectedModel, temperature })
+                    }).then(response => {
+                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
+                        return response.json();
+                    }).then(() => {
+                        const streamUrl = `/api/chat/stream?sessionId=${sessionId}&model=${selectedModel}&temperature=${temperature}`;
+                        const eventSource = new EventSource(streamUrl);
 
-                let accumulatedResponse = '';
+                        eventSource.onopen = () => {
+                            console.log('EventSource opened:', { url: eventSource.url, readyState: eventSource.readyState });
+                        };
 
-                eventSource.onmessage = (event) => {
-                    try {
-                        // Check for end of stream
-                        if (event.data === "[DONE]") {
-                            console.log('672 Stream complete, adding full response to messages', accumulatedResponse);
-                            // Clear any pending updates and set final content
-                            if (streamUpdateTimeoutRef.current) {
-                                clearTimeout(streamUpdateTimeoutRef.current);
-                                streamUpdateTimeoutRef.current = null;
+                        let accumulatedResponse = '';
+                        eventSource.onmessage = (event) => {
+                            try {
+                                if (event.data === '[DONE]') {
+                                    if (streamUpdateTimeoutRef.current) {
+                                        clearTimeout(streamUpdateTimeoutRef.current);
+                                        streamUpdateTimeoutRef.current = null;
+                                    }
+                                    setStreamedContent(accumulatedResponse);
+                                    dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
+                                    setIsLoading(false);
+                                    setIsStreaming(false);
+                                    eventSource.close();
+                                    return;
+                                }
+                                const data = JSON.parse(event.data);
+                                if (data.content) {
+                                    if (typeof data.content === 'string' && data.content.includes('rate limit')) {
+                                        setStatusMsg('Rate limit exceeded. Please wait a moment before sending another message.');
+                                        setTimeout(() => setStatusMsg(''), 10000);
+                                        return;
+                                    }
+                                    accumulatedResponse += data.content;
+                                    updateStreamedContent(accumulatedResponse);
+                                }
+                            } catch (err) {
+                                console.error('Error parsing SSE message:', err);
                             }
-                            setStreamedContent(accumulatedResponse);
+                        };
 
-                            dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
+                        eventSource.onerror = () => {
+                            const errorMessage = `Error connecting to AI. (ReadyState: ${eventSource.readyState}, Session: ${sessionId})`;
+                            setStatusMsg(errorMessage);
                             setIsLoading(false);
                             setIsStreaming(false);
-                            console.log('EventSource closed after completion');
                             eventSource.close();
-                            return;
-                        }
-
-                        const data = JSON.parse(event.data);
-                        if (data.content) {
-                            // Check if this is a rate limit message
-                            if (data.content.includes('rate limit')) {
-                                setStatusMsg('Rate limit exceeded. Please wait a moment before sending another message.');
-                                setTimeout(() => setStatusMsg(''), 10000);
-                                return;
+                            if (accumulatedResponse) {
+                                dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
                             }
-
-                            accumulatedResponse += data.content;
-                            // Use throttled update instead of direct setState
-                            updateStreamedContent(accumulatedResponse);
-                            // console.log('902 Received SSE message:', data.content);
-                        }
-                    } catch (error) {
-                        console.error('Error parsing SSE message:', error);
-                    }
-                };
-
-                // Enhanced error handler
-                eventSource.onerror = (error) => {
-                    // Enhanced error logging with context
-                    const errorDetails = {
-                        readyState: eventSource.readyState, // 0=connecting, 1=open, 2=closed
-                        url: eventSource.url,
-                        timestamp: new Date().toISOString(),
-                        model: selectedModel,
-                        messageCount: messagesToSend.length,
-                        sessionId: sessionId,
-                        error: error,
-                        errorType: typeof error,
-                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
-                        errorStack: error instanceof Error ? error.stack : 'No stack trace'
-                    };
-
-                    console.error('EventSource error details:', errorDetails);
-                    console.error('Full error object:', error);
-
-                    // Also log the EventSource URL for debugging
-                    console.log('EventSource URL that failed:', eventSource.url);
-
-                    // User-friendly error handling based on readyState
-                    let errorMessage = 'Error connecting to AI. ';
-
-                    if (eventSource.readyState === 2) { // CLOSED
-                        errorMessage += 'The connection was closed unexpectedly.';
-                    } else if (eventSource.readyState === 0) { // CONNECTING
-                        errorMessage += 'Unable to establish connection. The server may be unavailable.';
-                    } else if (eventSource.readyState === 1) { // OPEN
-                        errorMessage += 'Connection was open but encountered an error.';
-                    }
-
-                    // Add specific debugging info to the error message
-                    errorMessage += ` (ReadyState: ${eventSource.readyState}, Session: ${sessionId})`;
-
-                    setStatusMsg(errorMessage);
+                        };
+                    }).catch(error => {
+                        console.error('Failed to initiate streaming:', error);
+                        setStatusMsg(`Failed to start AI response: ${error instanceof Error ? error.message : String(error)}`);
+                        setIsLoading(false);
+                        setIsStreaming(false);
+                    });
+                } catch (err) {
+                    console.error('Streaming branch error:', err);
+                    const msg = err instanceof Error ? err.message : String(err);
+                    setStatusMsg(`Failed to communicate with AI ${selectedModel}: ${msg}`);
                     setIsLoading(false);
-                    setIsStreaming(false);
-                    eventSource.close();
+                } finally {
+                    retryInProgress.current = false;
+                }
+                return; // prevent falling through to gateway branch
+            }
 
-                    // If we have accumulated some content, still show it
-                    if (accumulatedResponse) {
-                        dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
-                    }
-                };
-            }).catch(error => {
-                console.error('Failed to initiate streaming:', error);
-                setStatusMsg(`Failed to start AI response: ${error.message}`);
+            const promptText = messagesToSend
+                .map(m => `[${m.role.toUpperCase()}]\n${m.content}`)
+                .join('\n\n');
+
+            console.log('Calling /api/vercel-ai/generate with model:', selectedModel);
+
+                const resp = await fetch('/api/vercel-ai/generate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: promptText, model: selectedModel, temperature }),
+                });
+
+            const text = await resp.text();
+            let data: any;
+            try { data = JSON.parse(text); } catch { data = { content: text }; }
+
+            if (!resp.ok) {
+                console.error('Gateway error:', data);
+                setStatusMsg(`AI error (${resp.status}): ${data?.error ?? text}`);
                 setIsLoading(false);
-                setIsStreaming(false);
-            });
-        } catch (error) {
-            console.error('Error sending message:', error);
-            const errorMessage = error instanceof Error
-                ? error.message
-                : String(error);
+                return;
+            }
 
-            // Check if it's a timeout error
-            const isTimeout =
-                errorMessage.includes('timeout') ||
-                errorMessage.includes('timed out') ||
-                errorMessage.includes('AbortError');
+            // 2) Normalize common response shapes
+            const extractContent = (payload: any): string => {
+                if (!payload) return '';
+                if (Array.isArray(payload.output)) {
+                    return payload.output.map((o: any) => o?.content ?? '').filter(Boolean).join('\n\n');
+                }
+                if (payload.choices?.length) {
+                    return payload.choices.map((c: any) => c?.message?.content ?? c?.text ?? '').filter(Boolean).join('\n');
+                }
+                if (typeof payload.content === 'string') return payload.content;
+                if (typeof payload === 'string') return payload;
+                return JSON.stringify(payload);
+            };
 
-            setStatusMsg(
-                isTimeout
-                    ? `Request timed out. AI is taking too long to respond. ${selectedModel} might be busy. Try again or switch models.`
-                    : `Failed to communicate with AI ${selectedModel}: ${errorMessage}`
-            );
-        } finally {
-            console.log('AI request completed');
+            const assistantText = extractContent(data) || '[No content returned]';
+            dispatch(addMessage({ role: 'assistant', content: assistantText }));
             setIsLoading(false);
+        } catch (error) {
+            console.error('Error sending message via gateway:', error);
+            const errorMessage = error instanceof Error ? error.message : String(error);
+            setStatusMsg(`Failed to communicate with AI ${selectedModel}: ${errorMessage}`);
+            setIsLoading(false);
+        } finally {
             retryInProgress.current = false;
         }
-    }, [selectedModel, contextContent, isContextAttached, contextFiles, dispatch, systemPrompt, temperature, updateStreamedContent]);
+    }, [selectedModel, dispatch, systemPrompt]);
 
 
 
@@ -1518,7 +1454,7 @@ Don't include explanations, next steps or examples at this stage.
                             <div className="flex items-center gap-2"></div>
                             <div className="flex items-center text-foreground gap-1">
                                 <ModelSelector
-                                    selectedModel={selectedModel as "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini" | "dummy"}
+                                    selectedModel={selectedModel as "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral" |  "gpt-5" | "gpt-5-mini" | "dummy"}
                                     onModelChange={(newModel) => {
                                         setSelectedModel(newModel);
                                         // Persist selected model to localStorage

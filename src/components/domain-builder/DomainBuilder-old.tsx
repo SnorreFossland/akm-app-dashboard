@@ -78,7 +78,7 @@ export default function DomainBuilder({
     const containerRef = useRef<HTMLDivElement>(null);
 
     // Model selection state
-    const [selectedModel, setSelectedModel] = useState<"gpt-5" | "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral-small-latest" | "mistral" | "mistral-mistral-small-24b-instruct-2501" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5-mini">("gpt-4o-2024-08-06");
+    const [selectedModel, setSelectedModel] = useState<"gpt-5" | "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral" | "gpt-5-mini">("gpt-5-mini");
 
     // Handle dragging functionality
     const startDragging = (e: React.MouseEvent) => {

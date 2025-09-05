@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { usePathname } from 'next/navigation';
-import mermaid from 'mermaid';
+// Load mermaid dynamically on the client to avoid SSR and stale chunk issues
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { columns } from "@/components/ontology-builder/concept-columns";
@@ -55,26 +55,40 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
 
     if (debug) console.log('35 ontology-card', ontologyData);
 
-    // Initialize Mermaid once
+    const mermaidRef = useRef<any>(null);
+
+    // Initialize Mermaid once (client-only)
     useEffect(() => {
-        mermaid.initialize({
-            startOnLoad: false,
-            theme: 'dark',
-            themeVariables: {
-                primaryColor: '#808080',
-                edgeLabelBackground: '#21313c15',
-                secondaryColor: '#8888ff',
-                tertiaryColor: '#ddddff',
-                primaryTextColor: '#ffeeee',
-                secondaryTextColor: '#ccffcc',
-                tertiaryTextColor: '#0000ff',
-                lineColor: '#f0f0f0',
-                background: '#ffffff',
-                nodeBorderRadius: '25px',
-                rough: true,
-            },
-            securityLevel: 'loose',
-        });
+        let cancelled = false;
+        (async () => {
+            try {
+                const m = await import('mermaid');
+                const mm = (m as any).default ?? m;
+                if (cancelled) return;
+                mermaidRef.current = mm;
+                mm.initialize({
+                    startOnLoad: false,
+                    theme: 'dark',
+                    themeVariables: {
+                        primaryColor: '#808080',
+                        edgeLabelBackground: '#21313c15',
+                        secondaryColor: '#8888ff',
+                        tertiaryColor: '#ddddff',
+                        primaryTextColor: '#ffeeee',
+                        secondaryTextColor: '#ccffcc',
+                        tertiaryTextColor: '#0000ff',
+                        lineColor: '#f0f0f0',
+                        background: '#ffffff',
+                        nodeBorderRadius: '25px',
+                        rough: true,
+                    },
+                    securityLevel: 'loose',
+                });
+            } catch (err) {
+                console.error('Failed to load mermaid dynamically:', err);
+            }
+        })();
+        return () => { cancelled = true; };
     }, []);
 
     // Memoize the diagram generation to prevent infinite loops
@@ -206,7 +220,12 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                     const diagramId = `mermaid-diagram-${Date.now()}`;
 
                     // Render the diagram
-                    const { svg } = await mermaid.render(diagramId, mermaidDiagram);
+                    const mm = mermaidRef.current;
+                    if (!mm) {
+                        console.warn('Mermaid not yet loaded; delaying render');
+                        return;
+                    }
+                    const { svg } = await mm.render(diagramId, mermaidDiagram);
 
                     // Store the rendered SVG
                     setRenderedSvg(svg);
