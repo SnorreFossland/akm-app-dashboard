@@ -137,6 +137,17 @@ export function AppSidebar({ ...props }) {
               />
             </div>
           </SidebarGroup>
+          <hr className="border-gray-600" />
+          <SidebarGroup className="sidebar-group">
+            {shouldShowText && <SidebarGroupLabel className="text-gray-300">Resources</SidebarGroupLabel>}
+            <div className="text-white">
+              <NavMain
+                items={navigationData.navSecondary}
+                searchResults={navigationData.searchResults}
+              />
+            </div>
+          </SidebarGroup>
+          <SidebarContent className="sidebar-content" />
           <SidebarFooter className="sidebar-footer mt-auto">
             <div className="flex items-center justify-left p-2">
               <ModeToggle />

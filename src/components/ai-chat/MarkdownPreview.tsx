@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useLayoutEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';

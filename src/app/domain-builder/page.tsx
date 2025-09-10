@@ -61,8 +61,6 @@ export default function DomainBuilderPage() {
   const [selectedModel, setSelectedModel] = useState<
     | 'dummy'
     | 'deepseek-chat'
-    | 'deepseek-coder'
-    | 'deepseek-r1'
     | 'mistral'
     | 'gpt-5'
     | 'gpt-5-mini'
@@ -303,8 +301,8 @@ export default function DomainBuilderPage() {
   const leftPanelContent = {
     tabs: [
       {
-        key: 'current-content',
-        label: 'Current Content',
+        key: 'current-domain',
+        label: 'Current Domain',
         content: (
           <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
             {currentDocument ? (
@@ -323,7 +321,7 @@ export default function DomainBuilderPage() {
       },
       {
         key: 'context',
-        label: 'Add. Context',
+        label: 'Additional Context',
         content: (
           <DocumentPanel
             mdContent={mdContent}
@@ -335,7 +333,7 @@ export default function DomainBuilderPage() {
         )
       },
     ],
-    defaultTab: 'context'
+    defaultTab: 'current-domain'
   };
   // Middle Panel Content
   const middlePanelContent = {

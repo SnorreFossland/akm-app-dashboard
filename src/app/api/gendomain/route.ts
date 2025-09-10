@@ -7,7 +7,7 @@ import { mistral } from "@ai-sdk/mistral";
 import { generateText } from "ai";
 
 // Default model if none is specified
-const defaultModel = "deepseek-chat"; // Change this to your preferred default model
+const defaultModel = "gpt-5-mini"; // Change this to your preferred default model
 // const defaultModel = "gpt-4-turbo";
 
 export async function POST(req: Request) {

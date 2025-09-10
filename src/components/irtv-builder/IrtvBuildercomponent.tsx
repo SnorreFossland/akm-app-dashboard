@@ -37,8 +37,8 @@ const debug = false;
 interface IrtvBuilderComponentProps {
     input: string;
     setInput: React.Dispatch<React.SetStateAction<string>>;
-    selectedModel: "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" |  "mistral" | "gpt-5" | "gpt-5-mini";
-    setSelectedModel: React.Dispatch<React.SetStateAction<"dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral" | "gpt-5" | "gpt-5-mini">>;
+    selectedModel: "dummy" | "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini";
+    setSelectedModel: React.Dispatch<React.SetStateAction<"dummy" | "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini">>;
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (response: string) => void;
     onViewInPreview: (response: string) => void;
@@ -241,7 +241,7 @@ Verify that your responses are based on the provided context and requirements.
                 break;
             case "CORE_META":
                 nextAutoPrompt =
-                    "Create a Metamodel using the following object types: " +
+                    "Create a Metamodel using the following object types: EntityType, " +
                     (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
                 break;
             case "POPS_META":
@@ -278,41 +278,14 @@ Verify that your responses are based on the provided context and requirements.
             if (debug) console.log("[auto-prompt] NOT applied (user edited)");
         }
     }, [curmod?.id, curMetamodel?.id]); // keep deps focused
+    
     // ---------- 4. Build system behavior + context when curMetamodel changes ----------
     useEffect(() => {
         if (!curMetamodel || !data?.phData?.metis) return;
 
         let metatypesString = "";
         if (curMetamodel.name === "IRTV_META") {
-            //             const allowed = ["Role", "Task", "View", "Information"];
-            //             const filteredObjTypes = curMetamodel.objecttypes.filter((o: any) =>
-            //                 allowed.includes(o.name)
-            //             );
-            //             const idToName = curMetamodel.objecttypes.reduce((m: any, o: any) => {
-            //                 m[o.id] = o.name;
-            //                 return m;
-            //             }, {});
-            //             const filteredRelTypes = curMetamodel.relshiptypes.filter((r: any) => {
-            //                 const fromName = idToName[r.fromobjtypeRef];
-            //                 const toName = idToName[r.toobjtypeRef];
-            //                 return allowed.includes(fromName) && allowed.includes(toName);
-            //             });
-            //             metatypesString = `**${curMetamodel.name}**
-            // ${filteredObjTypes
-            //                     .map(
-            //                         (objtype: any) =>
-            //                             `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`
-            //                     )
-            //                     .join("\n")}
 
-            // ${filteredRelTypes
-            //                     .map(
-            //                         (reltype: any) =>
-            //                             `id: ${reltype.id}, name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`
-            //                     )
-            //                     .join("\n")}
-            // `;
-            //             setSystemBehaviorGuidelines(IRTVSystemPrompt);
             setSystemBehaviorGuidelines(
                 `You are an expert in IRTV analysis. Your task is to create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects. Ensure logical consistency and Active Knowledge Modeling principles.`
             );
@@ -334,7 +307,35 @@ Verify that your responses are based on the provided context and requirements.
             metatypesString = serializeTypes(curMetamodel);
         }
 
-        const contextmetatypesString = `## **Metamodel**\n\n${metatypesString}`;
+        const contextmetatypesString = `## **Metamodel**\n\n${metatypesString}
+        
+- When creating objects, always assign a valid typeRef and typeName from the Metamodel.
+- When creating relationships, ensure from/to object types align with Metamodel definitions.
+        
+### ** Examples **
+
+{
+    "objects": [
+        {
+            "id": "UUIDv4",
+            "name": "Bike",
+            "description": "A two-wheeled vehicle that is powered by pedaling.",
+            "typeRef": "EntityType uuid",
+            "typeName": "EntityType"
+        }
+    ],
+    "relationships": [
+        {
+            "id": "UUIDv4",
+            "name": "approves",
+            "typeRef": "Relationship Type uuid",
+            "fromobjectRef": "EntityType uuid",
+            "nameFrom": "EntityType",
+            "toobjectRef": "View uuid",
+            "nameTo": "View"
+        }
+    ]
+        `;
 
         // Set base system prompt (assuming SystemPrompt is available globally/import)
         setSystemPrompt(SystemPrompt);
@@ -355,9 +356,9 @@ Verify that your responses are based on the provided context and requirements.
         const objectTypes = Array.isArray(mm.objecttypes) ? mm.objecttypes : [];
         const relationshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
 
-        const filteredObjectTypes = objectTypes.filter((o: any) =>
+        const filteredObjectTypes = (curMetamodel.name !== "CORE_META") ? objectTypes.filter((o: any) =>
             o && typeof o.name === 'string' && o.name !== "EntityType"
-        );
+        ) : objectTypes;
 
         const filteredRelTypes = relationshipTypes.filter((r: any) =>
             r && typeof r.name === 'string' && r.name !== "Is"
@@ -1009,31 +1010,3 @@ ${filteredRelTypes
     );
 }
 
-{/* <Modal
-    isOpen={isSystemPromptOpen}
-    onClose={() => setIsSystemPromptOpen(false)}
->
-    <h2 className="text-xl font-bold mb-4 text-blue-400">System Prompt</h2>
-    <div className="bg-gray-800 p-4 rounded-md border border-gray-600">
-        <pre className="whitespace-pre-wrap text-sm">
-            {systemPrompt || "(empty system prompt)"}
-        </pre>
-    </div>
-    {contextContent && isContextAttached && (
-        <div className="mt-4">
-            <h3 className="text-lg font-semibold mb-2">Attached Context</h3>
-            <div className="bg-gray-900 p-3 rounded border border-gray-700 text-xs whitespace-pre-wrap">
-                {contextContent.slice(0, 800)}
-                {contextContent.length > 800 && "..."}
-            </div>
-        </div>
-    )}
-    <div className="mt-6 flex justify-end">
-        <button
-            onClick={() => setIsSystemPromptOpen(false)}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-            Close
-        </button>
-    </div>
-</Modal> */}

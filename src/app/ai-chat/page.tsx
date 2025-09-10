@@ -65,7 +65,7 @@ const AIChatPage = () => {
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
     const [mdContent, setMdContent] = useState<string>('')
-    const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
+    const [selectedModel, setSelectedModel] = useState('gpt-5-mini'); // Default model
     const [showGuideModal, setShowGuideModal] = useState(false);
 
     const [showLeftPanel, setShowLeftPanel] = useState(false);

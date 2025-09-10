@@ -67,7 +67,7 @@ export default function VercelAiPage() {
 
 
   const [domainContent, setDomainContent] = useState('');
-  const [selectedModel, setSelectedModel] = useState('deepseek-chat'); // Default model
+  const [selectedModel, setSelectedModel] = useState('gpt-5-mini'); // Default model
   const [currentDocument, setCurrentDocument] = useState<string>('');
 
   const [showGuideModal, setShowGuideModal] = useState(false);

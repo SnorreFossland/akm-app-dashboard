@@ -18,8 +18,6 @@ const MODEL_PROVIDERS = {
 
   // DeepSeek family
   'deepseek-chat': 'deepseek',
-  'deepseek-coder': 'deepseek',
-  'deepseek-r1': 'deepseek',
 
   // Mistral
   'mistral': 'mistral',

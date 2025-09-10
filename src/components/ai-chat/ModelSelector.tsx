@@ -21,13 +21,10 @@ interface AiModel {
 }
 
 const AI_MODELS = [
-    { id: 'deepseek-chat', name: 'Deepseek Chat', provider: 'deepseek', enabled: true },
-    { id: 'deepseek-coder', name: 'Deepseek Coder', provider: 'deepseek', enabled: true },
-    { id: 'deepseek-r1', name: 'Deepseek R1', provider: 'deepseek', enabled: true },
+    { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', enabled: true },
     { id: 'mistral', name: 'Mistral (Legacy)', provider: 'mistral', enabled: true },
     { id: 'gpt-5', name: 'GPT-5', provider: 'openai', enabled: true },
-    { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', enabled: true },
-
+    { id: 'deepseek-chat', name: 'Deepseek Chat', provider: 'deepseek', enabled: true },
     { id: 'dummy', name: 'Dummy (Test)', provider: 'dummy', enabled: true },
 ] as const;
 
@@ -41,7 +38,7 @@ interface ModelSelectorProps {
 export default function ModelSelector({ selectedModel, onModelChange }: ModelSelectorProps) {
     const enabledModels = AI_MODELS.filter(m => m.enabled);
     const validIds = enabledModels.map(m => m.id);
-    const model: ModelId = (validIds.includes(selectedModel) ? selectedModel : 'deepseek-chat') as ModelId;
+    const model: ModelId = (validIds.includes(selectedModel) ? selectedModel : 'gpt-5-mini') as ModelId;
 
     // Group by provider
     const groups = enabledModels.reduce<Record<Provider, AiModel[]>>((acc, m) => {

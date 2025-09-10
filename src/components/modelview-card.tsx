@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import mermaid from 'mermaid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
@@ -57,25 +56,48 @@ export const ModelviewCard = ({ modelviews }: { modelviews: Modelviews }) => {
         // diagramRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
 
+    const mermaidRef = useRef<any>(null);
+
     useEffect(() => {
-        if (mermaidDiagram && diagramRef.current) {
-            mermaid.initialize({
-                startOnLoad: true,
-                theme: 'base',
-                themeVariables: {
-                    primaryColor: '#667777', // box fill color
-                    edgeLabelBackground: '#33557700',
-                    secondaryColor: '#8888ff',
-                    tertiaryColor: '#ddddff',
-                    primaryTextColor: '#ffdddd',
-                    secondaryTextColor: '#00ff00',
-                    tertiaryTextColor: '#0000ff',
-                    lineColor: '#dddddd',
-                    background: '#ffffff', // light background
-                    nodeBorderRadius: '15px', // rounded objects
-                },
-            });
-            mermaid.contentLoaded();
+        let cancelled = false;
+        (async () => {
+            try {
+                const m = await import('mermaid');
+                const mm = (m as any).default ?? m;
+                if (cancelled) return;
+                mermaidRef.current = mm;
+                mm.initialize({
+                    startOnLoad: true,
+                    theme: 'base',
+                    themeVariables: {
+                        primaryColor: '#667777',
+                        edgeLabelBackground: '#33557700',
+                        secondaryColor: '#8888ff',
+                        tertiaryColor: '#ddddff',
+                        primaryTextColor: '#ffdddd',
+                        secondaryTextColor: '#00ff00',
+                        tertiaryTextColor: '#0000ff',
+                        lineColor: '#dddddd',
+                        background: '#ffffff',
+                        nodeBorderRadius: '15px',
+                    },
+                });
+                if (diagramRef.current && mermaidDiagram) {
+                    mm.contentLoaded();
+                }
+            } catch (e) {
+                console.error('Failed to load mermaid:', e);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
+
+    useEffect(() => {
+        const mm = mermaidRef.current;
+        if (mm && mermaidDiagram && diagramRef.current) {
+            try {
+                mm.contentLoaded();
+            } catch {}
         }
     }, [mermaidDiagram]);
 

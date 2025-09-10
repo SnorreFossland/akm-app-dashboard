@@ -497,8 +497,8 @@ The assistant will provide structured responses with:
                                             onChange={(e) => setSelectedModel(e.target.value)}
                                             className="bg-background text-white text-xs rounded p-1 border border-gray-700"
                                         >
-                                            <option value="deepseek-coder">Deepseek Coder</option>
-                                            <option value="gpt-4-turbo">GPT-4 Turbo</option>
+                                            <option value="deepseek-chat">Deepseek Chat</option>
+                                            <option value="gpt-5-mini">GPT-4 Turbo</option>
                                             <option value="mistral-large">Mistral Large</option>
                                             <option value="dummy">Dummy (Testing)</option>
                                         </select>

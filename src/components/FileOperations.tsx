@@ -20,6 +20,7 @@ interface FileOperationsProps {
 }
 
 export function FileOperations({ className = "" }: FileOperationsProps) {
+    const phSource = useAppSelector((state) => state.modelUniverse.phSource);
     const data = useAppSelector((state) => state.modelUniverse);
     const domain = data.phData.domain
     const dispatch = useAppDispatch();
@@ -29,10 +30,6 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     const currentMenuItemDescription = getCurrentMenuItemDescription(pathname);
     const [isMobile, setIsMobile] = useState(false);
 
-    console.log('FileOperations component mounted with data:', data);
-
-
-
     useEffect(() => {
         const checkScreenSize = () => {
             setIsMobile(window.innerWidth < 768);
@@ -41,6 +38,14 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
         window.addEventListener('resize', checkScreenSize);
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
+
+    useEffect(() => {
+        console.debug('FileOperations mounted');
+    }, []);
+
+    useEffect(() => {
+        console.debug('FileOperations observed phSource change:', phSource);
+    }, [phSource]);
 
     const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
         handleGetLocalFile(event, dispatch, data);

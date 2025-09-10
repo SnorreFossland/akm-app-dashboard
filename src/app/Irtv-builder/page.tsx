@@ -84,7 +84,7 @@ const IrtvBuilderPage = () => {
     // IRTV Builder specific state
     const [irtvContent, setIrtvContent] = useState<string | Model | null>('');
     const [irtvPreview, setIrtvPreview] = useState('');
-    const [selectedIrtvModel, setSelectedIrtvModel] = useState<"gpt-4o-mini" | "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" |  "mistral"  | "gpt-5" | "gpt-5-mini">("gpt-5-mini");
+    const [selectedModel, setSelectedModel] = useState<"gpt-4o-mini" | "dummy" | "deepseek-chat" | "mistral"  | "gpt-5" | "gpt-5-mini">("gpt-5-mini");
     const [irtvInput, setIrtvInput] = useState('');
     const [currentMessages, setCurrentMessages] = useState<any[]>([]);
     const [conversations, setConversations] = useState<IrtvConversation[]>([]);
@@ -298,27 +298,6 @@ const IrtvBuilderPage = () => {
                             </div>
                         )}
                     </div>
-                    // <div className="mt-2 text-xs h-[calc(100vh-5rem)] overflow-auto">
-                    //     {currentModel && (
-                    //         <ObjectCard model={{
-                    //             id: currentModel.id,
-                    //             name: currentModel.name,
-                    //             description: currentModel.description,
-                    //             objects: currentModel.objects?.map(obj => ({
-                    //                 id: obj.id || '',
-                    //                 name: obj.name || '',
-                    //                 description: obj.description || '',
-                    //                 proposedType: obj.proposedType || '',
-                    //                 typeRef: obj.typeRef || '',
-                    //                 typeName: obj.typeName || '',
-                    //                 category: obj.category || ''
-                    //             })) || [],
-                    //             relships: currentModel.relships || [],
-                    //             metamodelRef: currentModel.metamodelRef || '',
-                    //             modelviews: currentModel.modelviews || []
-                    //         }} />
-                    //     )}
-                    // </div>
                 )
             },
             {
@@ -348,8 +327,8 @@ const IrtvBuilderPage = () => {
                         <IrtvBuilderComponent
                             input={irtvInput}
                             setInput={setIrtvInput}
-                            selectedModel={selectedIrtvModel}
-                            setSelectedModel={setSelectedIrtvModel}
+                            selectedModel={selectedModel}
+                            setSelectedModel={setSelectedModel}
                             onResponseChange={handleIrtvResponseChange}
                             onViewInMarkdown={handleViewInMarkdown}
                             onViewInPreview={handleViewInIrtvPreview}

@@ -154,6 +154,25 @@ export const navigationData: NavigationData = {
     ],
     navSecondary: [
         {
+            title: "Docs",
+            url: "#",
+            icon: BookOpen,
+            items: [
+                {
+                    title: "Agents Guide",
+                    url: "/agents",
+                    icon: Book,
+                    description: "Architecture and conventions for agents",
+                },
+                {
+                    title: "Roadmap",
+                    url: "/roadmap",
+                    icon: BookCheck,
+                    description: "Planned work and priorities",
+                }
+            ]
+        },
+        {
             title: "Support",
             url: "#",
             icon: LifeBuoy,
@@ -188,14 +207,14 @@ export const navigationData: NavigationData = {
                     title: "Model Builder",
                     url: "/Irtv-builder",
                     icon: SquareUser,
-                    description: "Active Knowledge Modelling with IRTV",
+                    description: "Model building according to Metamodel",
                 },
-                // {
-                //     title: "Model Universe",
-                //     url: "/model-universe",
-                //     icon: Turtle,
-                //     description: "Model Universe Management",
-                // }
+                {
+                    title: "Modelview Builder",
+                    url: "/modelview-builder",
+                    icon: Turtle,
+                    description: "Modelview Modelling",
+                }
             ]
         }
     ],

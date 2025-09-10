@@ -18,8 +18,8 @@ import { Dialog, DialogContent, DialogHeader, DialogDescription, DialogFooter } 
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 
 import OntologyBuilder from '@/components/ontology-builder/OntologyBuilder';
+// import ChatComponent from '@/components/ontology-builder/ChatComponent_old';
 import ChatComponent from '@/components/ontology-builder/ChatComponent';
-import AiGwOntologyBuilder from '@/components/ontology-builder/AiGwOntologyBuilder';
 // import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import { OntologyCard } from '@/components/ontology-card';
 import { LoadingCircularProgress } from "@/components/loading";
@@ -95,18 +95,12 @@ export default function OntologyBuilderPage() {
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
 
-  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedModelName = event.target.value;
-    if (metis && metis.models) {
-      const selectedModell = metis.models.find((model: { name: string }) => model.name === selectedModelName) || null;
-      setCurrentModel(selectedModell);
-    }
-  };
+
 
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!');
-  const [selectedModel, setSelectedModel] = useState<string>('deepseek-chat');
+  const [selectedModel, setSelectedModel] = useState<string>('gpt-5-mini');
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
@@ -122,7 +116,7 @@ export default function OntologyBuilderPage() {
   const [isLoading, setIsLoading] = useState(false);
 
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [mdContent, setMdContent] = useState<string>('')
+  const [mdContent, setMdContent] = useState<string>(domainData?.presentation || '');
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
   const [existingConcepts, setExistingConcepts] = useState<any[]>([]);
   const [existingRelationships, setExistingRelationships] = useState<any[]>([]);
@@ -139,6 +133,14 @@ export default function OntologyBuilderPage() {
   // Modal handlers
   const handleOpenModal = () => setIsModalOpen(true);
   const handleCloseModal = () => setIsModalOpen(false);
+
+  const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedModelName = event.target.value;
+    if (metis && metis.models) {
+      const selectedModell = metis.models.find((model: { name: string }) => model.name === selectedModelName) || null;
+      setCurrentModel(selectedModell);
+    }
+  };
 
   const handleAddMD = () => {
     mdFileInputRef.current?.click()
@@ -180,21 +182,6 @@ export default function OntologyBuilderPage() {
     const firstLine = contentToSave.includes('Ontology Name')
       ? contentToSave.split('Ontology Name:**')[1].split('\n')[0]?.trim() || ''
       : (contentToSave.split('\n')[0] || 'Document');
-
-    // if (pathname === '/domain-builder') {
-    //   const secondLine = contentToSave.includes('Domain Description')
-    //     ? contentToSave.split('Domain Description:**')[1].split('\n')[1]?.trim() || ''
-    //     : 'AIChat: Document';
-
-    //   const domain = {
-    //     name: firstLine,
-    //     description: secondLine,
-    //     presentation: contentToSave,
-    //     prompt: '',
-    //     additionalContext: '',
-    //   }
-    //   dispatch(setDomainData({ ...domain }));
-    // } else if (pathname === '/ontology-builder') {
     if (!suggestedOntologyData) {
       alert('No Concept data to dispatch');
       return;
@@ -309,32 +296,20 @@ export default function OntologyBuilderPage() {
         content: (
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
             <div className="flex overflow-hidden">
-              <AiGwOntologyBuilder 
-                startupGuide={<GettingStartedGuide />}
-                guide={<Guide />}
+              <ChatComponent
+                mdContent={mdContent}
+                // mdContent={typeof mdContent === 'string' ? mdContent : ''}
+                setMdContent={setMdContent}
                 setSuggestedOntologyData={setSuggestedOntologyData}
                 onImplementSuggestedOntology={handleSaveToLibrary}
-              />
-            </div>
-          </div>
-        )
-      },
-      {
-        key: 'ontology-builder',
-        label: 'AI Ontology Builder',
-        content: (
-          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
-            <div className="flex overflow-hidden">
-              <OntologyBuilder
-                suggestedOntologyData={suggestedOntologyData}
-                setSuggestedOntologyData={setSuggestedOntologyData}
-                gettingStartedGuide={<GettingStartedGuide />}
+                startupGuide={<GettingStartedGuide />}
                 guide={<Guide />}
               />
             </div>
           </div>
         )
       },
+
       {
         key: 'ontology',
         label: 'Current Ontology',
@@ -351,7 +326,7 @@ export default function OntologyBuilderPage() {
                   <BookmarkPlus className="h-4 w-4" />
                   Save to Library
                 </button>
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+                {/* <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
                   <DialogContent className="max-w-5xl">
                     <DialogHeader>
                       <DialogDescription>
@@ -364,7 +339,7 @@ export default function OntologyBuilderPage() {
                       </Button>
                     </DialogFooter>
                   </DialogContent>
-                </Dialog>
+                </Dialog> */}
               </div>
               <div className="mx-1 bg-gray-700">
                 <OntologyCard ontologyData={ontology} />
@@ -374,8 +349,26 @@ export default function OntologyBuilderPage() {
         )
       },
       {
+        key: 'ontology-builder',
+        label: 'AIOB_old',
+        // label: 'AI Ontology Builder old',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+            <div className="flex overflow-hidden">
+              <OntologyBuilder
+                suggestedOntologyData={suggestedOntologyData}
+                setSuggestedOntologyData={setSuggestedOntologyData}
+                gettingStartedGuide={<GettingStartedGuide />}
+                guide={<Guide />}
+              />
+            </div>
+          </div>
+        )
+      },
+      {
         key: 'chat',
-        label: 'AI Ontology chat',
+        label: 'AIOC tmp',
+        // label: 'AI Ontology chat tm',
         content: (
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
             <ChatComponent
@@ -517,11 +510,7 @@ export default function OntologyBuilderPage() {
       >
         <></>
       </ThreePanelLayout>
-
-      {/* Add the modal at the end of the component */}
-      <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
-        <GettingStartedGuide />
-      </Modal>
     </div>
   );
 }
+

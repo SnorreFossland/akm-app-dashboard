@@ -90,6 +90,24 @@ export function ThreePanelLayout({
     const handleToggleLeftPanel = () => setShowLeftPanel(!showLeftPanel);
     const handleToggleRightPanel = () => setShowRightPanel(!showRightPanel);
 
+    // Allow other components to switch the right panel tab and open the panel via CustomEvents
+    useEffect(() => {
+        const handleSetRightTab = (e: Event) => {
+            const ce = e as CustomEvent<{ key?: string }>;
+            const key = ce?.detail?.key;
+            if (key) setActiveRightTab(key);
+        };
+        const handleOpenRight = () => {
+            setShowRightPanel(true);
+        };
+        window.addEventListener('threepanel:setRightTab', handleSetRightTab as EventListener);
+        window.addEventListener('threepanel:openRight', handleOpenRight as EventListener);
+        return () => {
+            window.removeEventListener('threepanel:setRightTab', handleSetRightTab as EventListener);
+            window.removeEventListener('threepanel:openRight', handleOpenRight as EventListener);
+        };
+    }, [setShowRightPanel]);
+
     const handleMouseDown = (e: React.MouseEvent | React.TouchEvent, panel: 'left' | 'right') => {
         if ('button' in e && e.button !== 0) return;
         e.preventDefault();
@@ -145,7 +163,7 @@ export function ThreePanelLayout({
             { key: 'document', label: 'Document', content: <DocumentPanel mdContent={mdContent} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} panelType="left" /> },
             { key: 'library', label: 'Library', content: <div className="p-4"><MarkdownLibrary onSelect={handleSelectFromLibrary} hideExportLibraryButton={true} /></div> }
         ],
-        defaultTab: 'guide'
+        defaultTab: 'document'
     };
     const defaultMiddlePanelContent = {
         tabs: [

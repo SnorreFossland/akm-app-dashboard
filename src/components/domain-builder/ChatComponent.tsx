@@ -62,8 +62,8 @@ export interface ChatComponentProps {
     mdPreview: string;
     setMdPreview: (preview: string) => void;
     setCurrentMessages: (messages: any[]) => void;
-    selectedModel: "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" |  "mistral" | "gpt-4o-mini" | "gpt-4o-2024-08-06" | "gpt-5" | "gpt-5-mini";
-    setSelectedModel: (model: "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" |  "mistral" | "gpt-5" | "gpt-5-mini") => void;
+    selectedModel: "dummy" | "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini";
+    setSelectedModel: (model: "dummy" | "deepseek-chat" |  "mistral" | "gpt-5" | "gpt-5-mini") => void;
     isMobile?: boolean; // Add this line to the destructuring
     setIsMobile?: (isMobile: boolean) => void; // Add this line to the destructuring
     gettingStartedGuide: React.ReactNode;
@@ -429,7 +429,7 @@ Do not use its contents as contextual input for other questions--I want it impro
     useEffect(() => {
         const savedModel = localStorage.getItem('aiDashboard_selectedModel');
         if (savedModel && savedModel !== selectedModel) {
-            setSelectedModel(savedModel as "gpt-5" | "dummy" | "deepseek-chat" | "deepseek-coder" | "deepseek-r1" | "mistral" | "gpt-5-mini");
+            setSelectedModel(savedModel as "gpt-5" | "dummy" | "deepseek-chat" | "mistral" | "gpt-5-mini");
         }
     }, []);
 

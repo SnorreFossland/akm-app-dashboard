@@ -4,36 +4,41 @@ import { useState, useRef, useEffect, useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux'; // Add this import
 import { usePathname } from 'next/navigation';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed, ChevronLeft, ChevronRight } from 'lucide-react';
-import MarkdownPreview from './MarkdownPreview';
+// import MarkdownPreview from './MarkdownPreview';
 // import DraggableDivider from '@/components/DraggableDivider';
 // import SimpleDivider from '@/components/SimpleDivider';
 // import styles from '@/components/SplitPanel.module.css';
 
 import { RootState } from '@/store';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import ReactMarkdown from 'react-markdown';
 import {
     addMessage,
     setMessages,
     Message
 } from '@/features/chat/chatSlice';
-import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
-import { systemPrompt as promptBuilderPrompt } from '@/app/prompt-builder/prompts';
+// import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
+import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt } from '@/app/ontology-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
+import { Textarea } from '@/components/ui/textarea';
+import { Button } from '@/components/ui/button';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
 // Import mammoth.js for DOCX conversion
-import * as mammoth from 'mammoth';
+// import * as mammoth from 'mammoth';
 // import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
 // import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
-import ModelSelector from './ModelSelector';
-import TemperatureSelector from './TemperatureSelector';
+import ModelSelector from '@/components/ai-chat/ModelSelector';
+import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
-import DigitalRainIntro from './DigitalRainIntro';
+import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
+export type ModelId = "deepseek-chat" | "dummy" | "mistral" | "gpt-5" | "gpt-5-mini";
 // import GettingStartedGuide from './GettingStartedGuide';
 // import { refineTemplates } from '@/features/documents/refine-templates';
-import { REFINE_TEMPLATES } from './refineTemplates';
-import { error } from 'console';
-import { Messages } from 'openai/resources/beta/threads/messages.mjs';
+// import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';
+// import { error } from 'console';
+// import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 // import { API_BASE_URL } from '@/config/apiConfig';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
@@ -43,30 +48,27 @@ import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 //     content: string;
 // }
 
+
+
 export interface ChatComponentProps {
-    onResponseChange: (response: string) => void;
-    onViewInMarkdown: (response: string) => void;
-    showLeftPanel: boolean;
-    setShowLeftPanel: (show: boolean) => void;
-    showRightPanel?: boolean; // Add this line to the destructuring
-    setShowRightPanel?: (show: boolean) => void; // Add this line to the destructuring
-    error?: string;
-    chatInput?: string;
     input: string;
     setInput: (input: string) => void;
-    setMdContent: (message: string) => void;
+    selectedModel: string;                // changed to string
+    setSelectedModel: (model: string) => void; // changed to accept string
+    onResponseChange: (response: string) => void;
+    onViewInMarkdown: (content: string) => void;
+    setShowLeftPanel: (show: boolean) => void;
+    setShowRightPanel?: (show: boolean) => void;
+    showLeftPanel?: boolean;
+    chatInput?: string;
+    onAddMD: () => void;
     mdContent: string;
-    onAddMD?: () => void;
-    currentDocument?: string;
-    setCurrentDocument?: (doc: string) => void; // Add this line to the destructuring
+    setMdContent: (content: string) => void;
     mdPreview: string;
-    setMdPreview: (preview: string) => void;
+    setMdPreview: (content: string) => void;
     setCurrentMessages: (messages: any[]) => void;
-    selectedModel: string;
-    setSelectedModel: (model: string) => void;
-    isMobile?: boolean; // Add this line to the destructuring
-    setIsMobile?: (isMobile: boolean) => void; // Add this line to the destructuring
-    gettingStartedGuide: React.ReactNode;
+    previewMessageIndex?: number | null;
+    gettingStartedGuide?: React.ReactNode;
     guide?: React.ReactNode;
 }
 
@@ -85,7 +87,6 @@ interface DraggableDividerProps {
     onTouchStart: () => void;
     className?: string;
 }
-
 export default function ChatComponent({
     input,
     setInput,
@@ -95,24 +96,26 @@ export default function ChatComponent({
     onViewInMarkdown,
     showLeftPanel,
     setShowLeftPanel,
-    showRightPanel,
     setShowRightPanel,
+
     chatInput,
     onAddMD,
     mdContent,
     setMdContent,
-    currentDocument,
-    setCurrentDocument,
+
     mdPreview,
     setMdPreview,
     setCurrentMessages,
     gettingStartedGuide,
     guide,
-    isMobile = false, // Default to false if not provided
-    setIsMobile
+
+
 }: ChatComponentProps) {
     const dispatch = useDispatch();
 
+    const data = useSelector((state: RootState) => state.modelUniverse);
+    const domain = useSelector((state: RootState) => state.modelUniverse.phData.domain);
+    const ontology = useSelector((state: RootState) => state.modelUniverse.phData.ontology);
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
     // Get messages from Redux instead of local state
     const messages = useSelector((state: RootState) => state.chat?.currentMessages ?? []); // safer
@@ -123,6 +126,9 @@ export default function ChatComponent({
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
     const [temperature, setTemperature] = useState<number>(0.5); // Default value 0.5
+    const [currentDocument, setCurrentDocument] = useState<string>(''); // Added missing state for currentDocument
+    const [ontologyUrl, setOntologyUrl] = useState('https://raw.githubusercontent.com/your-repo/your-ontology/main/ontology.json');
+    const [impOntologyString, setImpOntologyString] = useState(''); // imported ontology string
 
     const [topHeight, setTopHeight] = useState<number>(600); // 
 
@@ -130,6 +136,7 @@ export default function ChatComponent({
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
     const retryInProgress = useRef(false);
     // Context file state
+    const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
     const [contextFiles, setContextFiles] = useState<File[]>([]);
     const [contextContent, setContextContent] = useState<string>('');
     const [isContextAttached, setIsContextAttached] = useState(false);
@@ -142,9 +149,11 @@ export default function ChatComponent({
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
     const [showGuide, setShowGuide] = useState(false);
+    const [activeTab, setActiveTab] = useState('preview');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
+    const isMobile = typeof window !== "undefined" && window.innerWidth < 768;
     // Add right after your state definitions
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
     const [selectedCategory, setSelectedCategory] = useState<string>('Personal');
@@ -173,8 +182,6 @@ export default function ChatComponent({
         }, 75); // was 50
     }, []);
 
-
-
     // Cleanup timeout on unmount
     useEffect(() => {
         return () => {
@@ -183,56 +190,6 @@ export default function ChatComponent({
             }
         };
     }, []);
-
-    // New state for system prompt modal
-    const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
-    const [systemPrompt, setSystemPrompt] = useState<string>(`You are a Domain Expert in the domain supplied by the user. 
-Your task is to help the user define a specific domain of interest clearly, comprehensively, and in a structured way. 
-Enhance the given Domain Name if necessary.
-Domain Name:
-Domain Description:
-
-Domain Presentation:
-Please include the following:
-1. Domain Purpose and Scope.
-2. Key Concepts and Terminologies.
-3. Actors and Roles.
-4. Activities and Processes.
-5. Objects and Resources.
-6. Events and Triggers.
-7. Rules and Constraints.
-8. Data and Information Flows.
-9. External Interfaces or Contexts.
-10. Known Sub-domains or Boundaries.
-`);
-
-    const refinePrompt = (
-        `Please revise the content below for clarity, style, and grammar.
-Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
-Your task is to improve and refine the text, not to analyze it.
-Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-    `
-    )
-
-    // // Generate categories list dynamically from templates
-    // const CATEGORIES = ["All", ...Array.from(
-    //     new Set(PROMPT_TEMPLATES.map(template => template.category))
-    // ).sort()];
-
-    // const filteredTemplates = selectedCategory === 'All'
-    //     ? PROMPT_TEMPLATES
-    //     : PROMPT_TEMPLATES.filter(template => template.category === selectedCategory);
-
-    // Generate categories list dynamically from templates
-    const CATEGORIES = [...Array.from(
-        new Set(PROMPT_TEMPLATES.map(template => template.usage))
-    ).sort(), "All"];
-
-    const filteredTemplates = selectedCategory === 'All'
-        ? PROMPT_TEMPLATES
-        : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
-    // Define templates for document refinement
-    const refineTemplates = REFINE_TEMPLATES;
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
@@ -463,6 +420,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         setTemplatePlaceholders(placeholders);
     }, [input]);
 
+
     // Function to select and jump to a placeholder
     const selectTemplatePlaceholder = (idx: number) => {
         if (!textareaRef.current) return;
@@ -579,170 +537,522 @@ Do not use its contents as contextual input for other questions--I want it impro
         e.target.value = '';
     };
 
+    const ontologyReduxData = data.phData.ontology || null;
+
+    // Memoize complex computed values to prevent unnecessary re-renders
+    const existingConcepts = useMemo(() => {
+        const ontologyConcepts = ontologyReduxData?.concepts;
+        const modelConceptss = data.phData.metis?.models.map((model) =>
+            (model.objects.length > 0) && model.objects?.filter(o => o.typeName === "information")
+        );
+        const modelConcepts = modelConceptss?.flat().filter(Boolean);
+
+        return ontologyConcepts?.concat(
+            modelConcepts?.filter(c => typeof c === 'object').map(c => ({ name: c.name, description: c.description })) || []
+        );
+    }, [ontologyReduxData?.concepts, data.phData.metis?.models]);
+
+    const existingRelationships = useMemo(() => {
+        const ontologyRelationships = ontologyReduxData?.relationships;
+        const modelConceptss = data.phData.metis?.models.map((model) =>
+            (model.objects.length > 0) && model.objects?.filter(o => o.typeName === "information")
+        );
+        const modelConcepts = modelConceptss?.flat().filter(Boolean);
+
+        const modelRelationshipss = data.phData.metis?.models.map((model) =>
+            (model as any).relationships?.length > 0 &&
+            (model as any).relationships?.map((r: any) => {
+                const found = modelConcepts?.find(o => o && o.id === r.fromObj);
+                return found ? r : null;
+            }).filter(Boolean)
+        );
+        const modelRelationships = modelRelationshipss?.flat().filter(Boolean);
+
+        return ontologyRelationships?.concat(modelRelationships);
+    }, [ontologyReduxData?.relationships, data.phData.metis?.models]);
+
+    // Memoize the prompt building logic
+    const promptData = useMemo(() => {
+        let conceptString = '';
+        if (existingConcepts && existingRelationships) {
+            conceptString += `**Concepts**\n\n${existingConcepts?.map((c) => (c) && `- ${c.name} - ${c.description}`).join('\n')}\n\n`;
+            conceptString += `**Relationships**\n\n${existingRelationships?.map((r) => (r) && `- ${r.name} - ${r.nameFrom} - ${r.nameTo}`).join('\n')}\n\n`;
+        }
+
+        const userPrompt = (data.phData.domain.name !== "") ? `${UserPrompt} \n\n **Domain name:**\n  ${data.phData.domain?.name} \n\n **Domain description:**\n ${data.phData.domain?.description || ""}` : UserPrompt;
+        const userInput = (mdContent !== "") ? `**Additional domain information provided by user:** \n\n ${mdContent}` : "";
+        const newContextOntology = ``
+        const newContextItems = (conceptString !== '') ? `${ExistingContext} \n\n ${conceptString}` : "";
+        const newContextMetamodel = `${MetamodelPrompt}`;
+
+        return {
+            userPrompt,
+            userInput,
+            newContextOntology,
+            newContextItems,
+            newContextMetamodel
+        };
+    }, [existingConcepts, existingRelationships, data.phData.domain?.name, data.phData.domain?.description, impOntologyString]);
+
+    // Update state only when promptData changes
+    // useEffect(() => {
+
+
+    //     setPrintPromptsDiv(
+    //         <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+    //             <DialogTitle>---- System Prompt</DialogTitle>
+    //             <ReactMarkdown>{promptDatat}</ReactMarkdown>
+    //             <DialogTitle>---- System behaviour Guidelines Prompt</DialogTitle>
+    //             <ReactMarkdown>{promptData} < DialogTitle > ---- Ontology Prompt</>
+    //             <ReactMarkdown>{promptData.newContextOntology}</ReactMarkdown>
+    //             <DialogTitle>---- User Prompt</DialogTitle>
+    //             <ReactMarkdown>{promptData.userPrompt}</ReactMarkdown>
+    //             <DialogTitle>---- User Input</DialogTitle>
+    //             <ReactMarkdown>{promptData.userInput}</ReactMarkdown>
+    //             <DialogTitle>---- Context Prompt</DialogTitle>
+    //             <ReactMarkdown>{promptData.newContextItems}</ReactMarkdown>
+    //             <DialogTitle>---- Metamodel Prompt</DialogTitle>
+    //             <ReactMarkdown>{promptData.newContextMetamodel}</ReactMarkdown>
+    //         </div>
+    //     );
+    // }, [promptData]);
+
+    const handleFetchOntology = async () => {
+        try {
+            const response = await fetch(`/proxy?url=${encodeURIComponent(ontologyUrl)}`);
+            if (!response.ok) {
+                throw new Error(`Failed to fetch ontology from URL: ${response.statusText}`);
+            }
+            let data = await response.json();
+            if (Array.isArray(data)) {
+                data = data[0];
+            }
+
+            if (typeof data === 'object' && data !== null) {
+                // const dataArr = Object.values(data);
+                interface DataItem {
+                    group: string;
+                    entity_name: string;
+                }
+                const filteredMaster = Object.values(data).filter((item) => (item as DataItem).group === 'master-data');
+                const filteredWP = Object.values(data).filter((item) => (item as DataItem).group === 'work-product-component');
+                const conceptsNamesMaster = Array.from(new Set(filteredMaster.map((item) => (item as DataItem).entity_name + ' ')));
+                const conceptsNamesWP = Array.from(new Set(filteredWP.map((item) => (item as DataItem).entity_name + ' ')));
+                setImpOntologyString(`master-data:\n ${conceptsNamesMaster}, work-product-component:\n ${conceptsNamesWP}`);
+            } else {
+                console.error('Fetched data is neither an array nor an object:', data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch ontology data: ', error);
+        }
+    };
+
+    // Add this helper inside the ChatComponent function (near other helpers)
+    const generatedOntologyFromResponse = useCallback(async (assistantText: string) => {
+        if (!assistantText || assistantText.trim() === "") return null;
+
+        try {
+            setStatusMsg('Generating structured domain output...');
+
+            // Ensure assistantText is trimmed and used as fallback
+            const assistantTextTrimmed = assistantText?.toString().trim() ?? '';
+
+            // Build a single prompt string the server expects
+            const promptParts = [
+                promptData.userPrompt || '',
+                '\n\nAssistant response:\n',
+                assistantTextTrimmed,
+                '\n\n',
+                promptData.userInput || '',
+                '\n\n',
+                promptData.newContextItems || '',
+                '\n\n',
+                promptData.newContextMetamodel || ''
+            ];
+
+            // join parts but also ensure we have something meaningful
+            let combinedPrompt = promptParts.filter(Boolean).join('').trim();
+
+            // Fallback: if the combined prompt is empty for any reason, use assistantTextTrimmed
+            if (!combinedPrompt || combinedPrompt.length === 0) {
+                combinedPrompt = assistantTextTrimmed;
+            }
+
+            // Final defensive check
+            if (!combinedPrompt || combinedPrompt.length === 0) {
+                console.warn('generatedOntologyFromResponse: no prompt to send (assistantText empty). Aborting.');
+                setStatusMsg('No prompt available to generate domain.');
+                setTimeout(() => setStatusMsg(''), 3000);
+                return null;
+            }
+
+            const payload = {
+                prompt: combinedPrompt,
+                aiModelName: selectedModel || 'gpt-5'
+            };
+
+            // Log the outgoing payload so you can inspect it in the browser console / network tab
+            console.log('Sending /api/gendomain payload:', {
+                promptPreview: combinedPrompt.slice(0, 1000), // avoid huge logs
+                aiModelName: payload.aiModelName
+            });
+
+            const res = await fetch('/api/gendomain', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload),
+            });
+
+            // If the response isn't JSON, we'll still try to recover by reading text
+            const contentType = res.headers.get('content-type') || '';
+
+            let rawText: string | null = null;
+            let json: any = null;
+
+            try {
+                // Try to parse as JSON first (normal case)
+                json = await res.clone().json().catch(() => null);
+            } catch (e) {
+                json = null;
+            }
+
+            try {
+                // Always capture raw text too for logging/fallback
+                rawText = await res.clone().text().catch(() => null);
+            } catch (e) {
+                rawText = null;
+            }
+
+            if (!res.ok) {
+                // show any error object we can read
+                console.error('gendomain fetch failed:', res.status, {
+                    json,
+                    rawText
+                });
+                setStatusMsg(`Failed to generate domain (status ${res.status})`);
+                return null;
+            }
+
+            // Helpful debug log: show what the endpoint returned
+            console.log('gendomain returned content-type:', contentType);
+            console.log('gendomain rawText (first 2000 chars):', rawText ? rawText.slice(0, 2000) : rawText);
+            console.log('gendomain json:', json);
+
+            // Derive a canonical object to inspect
+            const candidate = json ?? (rawText ? (() => {
+                // If rawText looks like JSON, try to parse it
+                try {
+                    return JSON.parse(rawText);
+                } catch (e) {
+                    // Not JSON, return as text body under a common key
+                    return { text: rawText };
+                }
+            })() : null);
+
+            // Try common places where structured output might appear
+            const structured =
+                (candidate && (candidate.response ?? candidate.presentation ?? candidate.text ?? candidate.result ?? candidate.message ?? candidate.data ?? null)) ||
+                // If the candidate itself is an array with first item carrying content
+                (Array.isArray(candidate) && (candidate[0]?.response ?? candidate[0]?.text ?? candidate[0])) ||
+                null;
+
+            // If we still don't have a "structured" value, but the entire rawText contains something useful, use it as fallback
+            let finalStructured = structured;
+            if (!finalStructured && rawText) {
+                // If rawText is just a single JSON string without top-level keys, attempt to extract JSON block inside text
+                const trimmed = rawText.trim();
+                if (trimmed.startsWith('{') || trimmed.startsWith('[')) {
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        finalStructured = parsed;
+                    } catch (e) {
+                        // not parseable — fall back to using raw text string
+                        finalStructured = rawText;
+                    }
+                } else {
+                    finalStructured = rawText;
+                }
+            }
+
+            // Final safety: if the candidate itself is a string and we haven't set structured, use it
+            if (!finalStructured && typeof candidate === 'string') {
+                finalStructured = candidate;
+            }
+
+            if (finalStructured && setCurrentDocument) {
+                try {
+                    setCurrentDocument(finalStructured);
+                    setStatusMsg('Structured domain output generated');
+                } catch (err) {
+                    console.warn('setCurrentDocument failed', err);
+                    setStatusMsg('Generated structured output (could not set in UI)');
+                }
+            } else {
+                // More detailed warning so it's clear what shape came back
+                console.warn('No structured output found in genontology response', {
+                    candidate,
+                    finalStructured,
+                    rawText,
+                    json
+                });
+                setStatusMsg('Structured domain generator returned unexpected shape');
+            }
+
+            return candidate;
+        } catch (err) {
+            console.error('Error calling /api/genontology:', err);
+            setStatusMsg(`Error generating ontology: ${err instanceof Error ? err.message : String(err)}`);
+            return null;
+        } finally {
+            setTimeout(() => setStatusMsg(''), 4000);
+        }
+    }, [selectedModel, setCurrentDocument, setStatusMsg, promptData]);
 
     const sendMessageToAPI = useCallback(async (newMessages: Message[]) => {
         setIsLoading(true);
-        setIsStreaming(false); // non-streaming for Vercel AI proxy
+        setIsStreaming(false);
         setStreamedContent('');
-        console.log('sendMessageToAPI (gateway) called with messages:', newMessages);
+        console.log('773 sendMessageToAPI called with messages:', newMessages);
 
         if (selectedModel === 'dummy') {
             const dummyResponse =
                 "This is a loooooooooooooooooooooooooooooooooo ooooooooooooooooooooooooooooooong loooooooooooooooooooooooooooooooo ooooooooooooooooooooooooooooooooong dummy response.";
 
+            // Option A: add directly as a final assistant message (simplest)
             dispatch(addMessage({ role: 'assistant', content: dummyResponse }));
+            setIsStreaming(false);
             setIsLoading(false);
             return;
         }
 
         try {
-            // 1) Build a single prompt from system + conversation
+            // Create messagesToSend array as you did before
             const messagesToSend: Message[] = [];
-            messagesToSend.push({ role: 'system', content: systemPrompt });
 
+            messagesToSend.push({
+                role: 'system',
+                content: SystemPrompt
+            });
+
+            console.log(`598 Sending context to the model (${contextContent.length} chars).`, messagesToSend);
+            // Add conversation messages
             if (newMessages && newMessages.length > 0) {
                 messagesToSend.push(...newMessages);
             } else {
+                console.error('No messages in newMessages array');
                 setStatusMsg('Error: No prompt detected. Please enter a question or message.');
-                setIsLoading(false);
                 return;
             }
 
-            // If the model is not an OpenAI gpt-* model, use the existing streaming API
-            if (!selectedModel.startsWith('gpt-')) {
-                try {
-                    setIsStreaming(true);
-                    const sessionId = Date.now().toString();
-                    sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
-
-                    if (!messagesToSend || messagesToSend.length === 0) {
-                        setStatusMsg('Error: No messages to send. Please enter a prompt.');
-                        setIsLoading(false);
-                        setIsStreaming(false);
-                        return;
-                    }
-
-                    await fetch('/api/chat/create-stream', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionId, messages: messagesToSend, model: selectedModel, temperature })
-                    }).then(response => {
-                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                        return response.json();
-                    }).then(() => {
-                        const streamUrl = `/api/chat/stream?sessionId=${sessionId}&model=${selectedModel}&temperature=${temperature}`;
-                        const eventSource = new EventSource(streamUrl);
-
-                        eventSource.onopen = () => {
-                            console.log('EventSource opened:', { url: eventSource.url, readyState: eventSource.readyState });
-                        };
-
-                        let accumulatedResponse = '';
-                        eventSource.onmessage = (event) => {
-                            try {
-                                if (event.data === '[DONE]') {
-                                    if (streamUpdateTimeoutRef.current) {
-                                        clearTimeout(streamUpdateTimeoutRef.current);
-                                        streamUpdateTimeoutRef.current = null;
-                                    }
-                                    setStreamedContent(accumulatedResponse);
-                                    dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
-                                    setIsLoading(false);
-                                    setIsStreaming(false);
-                                    eventSource.close();
-                                    return;
-                                }
-                                const data = JSON.parse(event.data);
-                                if (data.content) {
-                                    if (typeof data.content === 'string' && data.content.includes('rate limit')) {
-                                        setStatusMsg('Rate limit exceeded. Please wait a moment before sending another message.');
-                                        setTimeout(() => setStatusMsg(''), 10000);
-                                        return;
-                                    }
-                                    accumulatedResponse += data.content;
-                                    updateStreamedContent(accumulatedResponse);
-                                }
-                            } catch (err) {
-                                console.error('Error parsing SSE message:', err);
-                            }
-                        };
-
-                        eventSource.onerror = () => {
-                            const errorMessage = `Error connecting to AI. (ReadyState: ${eventSource.readyState}, Session: ${sessionId})`;
-                            setStatusMsg(errorMessage);
-                            setIsLoading(false);
-                            setIsStreaming(false);
-                            eventSource.close();
-                            if (accumulatedResponse) {
-                                dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
-                            }
-                        };
-                    }).catch(error => {
-                        console.error('Failed to initiate streaming:', error);
-                        setStatusMsg(`Failed to start AI response: ${error instanceof Error ? error.message : String(error)}`);
-                        setIsLoading(false);
-                        setIsStreaming(false);
-                    });
-                } catch (err) {
-                    console.error('Streaming branch error:', err);
-                    const msg = err instanceof Error ? err.message : String(err);
-                    setStatusMsg(`Failed to communicate with AI ${selectedModel}: ${msg}`);
-                    setIsLoading(false);
-                } finally {
-                    retryInProgress.current = false;
-                }
-                return; // prevent falling through to gateway branch
-            }
-
-            const promptText = messagesToSend
-                .map(m => `[${m.role.toUpperCase()}]\n${m.content}`)
-                .join('\n\n');
-
-            console.log('Calling /api/vercel-ai/generate with model:', selectedModel);
-
-                const resp = await fetch('/api/vercel-ai/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptText, model: selectedModel, temperature }),
-                });
-
-            const text = await resp.text();
-            let data: any;
-            try { data = JSON.parse(text); } catch { data = { content: text }; }
-
-            if (!resp.ok) {
-                console.error('Gateway error:', data);
-                setStatusMsg(`AI error (${resp.status}): ${data?.error ?? text}`);
-                setIsLoading(false);
+            // Final safety check
+            if (messagesToSend.length === 0) {
+                console.error('messagesToSend is empty after all processing');
+                setStatusMsg('Error: Unable to create a valid message for the AI. Please try again.');
                 return;
             }
 
-            // 2) Normalize common response shapes
-            const extractContent = (payload: any): string => {
-                if (!payload) return '';
-                if (Array.isArray(payload.output)) {
-                    return payload.output.map((o: any) => o?.content ?? '').filter(Boolean).join('\n\n');
-                }
-                if (payload.choices?.length) {
-                    return payload.choices.map((c: any) => c?.message?.content ?? c?.text ?? '').filter(Boolean).join('\n');
-                }
-                if (typeof payload.content === 'string') return payload.content;
-                if (typeof payload === 'string') return payload;
-                return JSON.stringify(payload);
+            // Build the API request body
+            const requestBody: any = {
+                messages: messagesToSend,
+                model: selectedModel,
+                temperature: temperature
             };
 
-            const assistantText = extractContent(data) || '[No content returned]';
-            dispatch(addMessage({ role: 'assistant', content: assistantText }));
-            setIsLoading(false);
+            // Log what we're sending (for debugging)
+            console.log('Sending to API:', {
+                model: selectedModel,
+                messagesCount: messagesToSend.length,
+                hasContext: Boolean(contextContent && isContextAttached),
+                messagePreview: JSON.stringify(messagesToSend.slice(0, 2))
+            });
+
+            // Set up event source for streaming
+            setIsStreaming(true);
+            // First, create a session ID for this request
+            const sessionId = Date.now().toString();
+
+            // Store the messages in session storage temporarily
+            sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
+
+            // Validate messages
+            if (!messagesToSend || messagesToSend.length === 0) {
+                console.error('No messages to send');
+                setStatusMsg('Error: No messages to send. Please enter a prompt.');
+                setIsLoading(false);
+                setIsStreaming(false);
+                return;
+            }
+            console.log('832 Messages to send:', messagesToSend);
+            // Send the messages via POST
+            fetch('/api/chat/create-stream', {
+                method: 'POST',
+                headers:
+                {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    sessionId,
+                    messages: messagesToSend,
+                    model: selectedModel,
+                    temperature: temperature
+                })
+            }).then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! Status: ${response.status}`);
+                }
+                return response.json();
+            }).then(data => {
+                // Only create EventSource after successful POST
+                console.log('Create-stream successful, now starting EventSource');
+
+                const streamUrl = `/api/chat/stream?sessionId=${sessionId}&model=${selectedModel}&temperature=${temperature}`;
+                console.log('Creating EventSource with URL:', streamUrl);
+
+                const eventSource = new EventSource(streamUrl);
+
+                // Add connection state logging
+                eventSource.onopen = (event) => {
+                    console.log('EventSource connection opened successfully:', {
+                        readyState: eventSource.readyState,
+                        url: eventSource.url,
+                        timestamp: new Date().toISOString()
+                    });
+                };
+
+                let accumulatedResponse = '';
+
+                eventSource.onmessage = (event) => {
+                    try {
+                        // Check for end of stream
+                        if (event.data === "[DONE]") {
+                            console.log('672 Stream complete, adding full response to messages', accumulatedResponse);
+                            // Clear any pending updates and set final content
+                            if (streamUpdateTimeoutRef.current) {
+                                clearTimeout(streamUpdateTimeoutRef.current);
+                                streamUpdateTimeoutRef.current = null;
+                            }
+                            setStreamedContent(accumulatedResponse);
+
+                            dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
+                            setIsLoading(false);
+                            setIsStreaming(false);
+                            (async () => {
+                                try {
+                                    const genOntologyResult = await generatedOntologyFromResponse(accumulatedResponse);
+
+                                    // Optional: if the generator returns a single 'name/description' obj,
+                                    // you can adapt here to set each field appropriately (e.g., setDomainName, setDomainDescription).
+                                    // We already call setCurrentDocument inside generateOntologyFromResponse when possible.
+                                    // If you want to update other UI fields, inspect genOntologyResult and set them here.
+                                    if (!genOntologyResult) {
+                                        console.warn('genOntology returned no result');
+                                    } else {
+                                        console.log('genOntology result:', genOntologyResult);
+                                    }
+                                } catch (err) {
+                                    console.error('Error while generating ontology after stream:', err);
+                                } finally {
+                                    // close eventSource and cleanup already done by existing code
+                                    eventSource.close();
+                                }
+                            })();
+                            return;
+                        }
+
+                        const data = JSON.parse(event.data);
+                        if (data.content) {
+                            // Check if this is a rate limit message
+                            if (data.content.includes('rate limit')) {
+                                setStatusMsg('Rate limit exceeded. Please wait a moment before sending another message.');
+                                setTimeout(() => setStatusMsg(''), 10000);
+                                return;
+                            }
+
+                            accumulatedResponse += data.content;
+                            // Use throttled update instead of direct setState
+                            updateStreamedContent(accumulatedResponse);
+                            // console.log('902 Received SSE message:', data.content);
+                        }
+                    } catch (error) {
+                        console.error('Error parsing SSE message:', error);
+                    }
+                };
+
+                // Enhanced error handler
+                eventSource.onerror = (error) => {
+                    // Enhanced error logging with context
+                    const errorDetails = {
+                        readyState: eventSource.readyState, // 0=connecting, 1=open, 2=closed
+                        url: eventSource.url,
+                        timestamp: new Date().toISOString(),
+                        model: selectedModel,
+                        messageCount: messagesToSend.length,
+                        sessionId: sessionId,
+                        error: error,
+                        errorType: typeof error,
+                        errorMessage: error instanceof Error ? error.message : 'Unknown error',
+                        errorStack: error instanceof Error ? error.stack : 'No stack trace'
+                    };
+
+                    console.error('EventSource error details:', errorDetails);
+                    console.error('Full error object:', error);
+
+                    // Also log the EventSource URL for debugging
+                    console.log('EventSource URL that failed:', eventSource.url);
+
+                    // User-friendly error handling based on readyState
+                    let errorMessage = 'Error connecting to AI. ';
+
+                    if (eventSource.readyState === 2) { // CLOSED
+                        errorMessage += 'The connection was closed unexpectedly.';
+                    } else if (eventSource.readyState === 0) { // CONNECTING
+                        errorMessage += 'Unable to establish connection. The server may be unavailable.';
+                    } else if (eventSource.readyState === 1) { // OPEN
+                        errorMessage += 'Connection was open but encountered an error.';
+                    }
+
+                    // Add specific debugging info to the error message
+                    errorMessage += ` (ReadyState: ${eventSource.readyState}, Session: ${sessionId})`;
+
+                    setStatusMsg(errorMessage);
+                    setIsLoading(false);
+                    setIsStreaming(false);
+                    eventSource.close();
+
+                    // If we have accumulated some content, still show it
+                    if (accumulatedResponse) {
+                        dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
+                    }
+                };
+            }).catch(error => {
+                console.error('Failed to initiate streaming:', error);
+                setStatusMsg(`Failed to start AI response: ${error.message}`);
+                setIsLoading(false);
+                setIsStreaming(false);
+            });
         } catch (error) {
-            console.error('Error sending message via gateway:', error);
-            const errorMessage = error instanceof Error ? error.message : String(error);
-            setStatusMsg(`Failed to communicate with AI ${selectedModel}: ${errorMessage}`);
-            setIsLoading(false);
+            console.error('Error sending message:', error);
+            const errorMessage = error instanceof Error
+                ? error.message
+                : String(error);
+
+            // Check if it's a timeout error
+            const isTimeout =
+                errorMessage.includes('timeout') ||
+                errorMessage.includes('timed out') ||
+                errorMessage.includes('AbortError');
+
+            setStatusMsg(
+                isTimeout
+                    ? `Request timed out. AI is taking too long to respond. ${selectedModel} might be busy. Try again or switch models.`
+                    : `Failed to communicate with AI ${selectedModel}: ${errorMessage}`
+            );
         } finally {
+            console.log('AI request completed');
+            setIsLoading(false);
             retryInProgress.current = false;
         }
-    }, [selectedModel, dispatch, systemPrompt]);
+    }, [selectedModel, contextContent, isContextAttached, contextFiles, dispatch, temperature, updateStreamedContent]);
 
 
 
@@ -830,30 +1140,72 @@ Do not use its contents as contextual input for other questions--I want it impro
 
 
     // Simple Modal component
-    const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
-        if (!isOpen) return null;
+    // const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
+    //     if (!isOpen) return null;
 
-        return (
-            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-                <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
-                    <button
-                        onClick={onClose}
-                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                    <div className="p-6">
-                        {children}
-                    </div>
-                </div>
-            </div>
-        );
-    };
+    //     return (
+    //         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+    //             <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+    //                 <button
+    //                     onClick={onClose}
+    //                     className="absolute right-4 top-4 text-gray-400 hover:text-white"
+    //                 >
+    //                     <X className="h-6 w-6" />
+    //                 </button>
+    //                 <div className="p-6">
+    //                     {children}
+    //                 </div>
+    //             </div>
+    //         </div>
+    //     );
+    // };
 
     // Function to open system prompt modal
-    const handleSystemPromptClick = () => {
-        setIsSystemPromptOpen(true);
-    };
+    // const handleSystemPromptClick = () => {
+    //     setIsSystemPromptOpen(true);
+    // };
+
+    const handleGenerateDomainFromLastAssistant = useCallback(async () => {
+        try {
+            // Prefer the last assistant message; fall back to streamedContent if none
+            const lastAssistant = [...messages].reverse().find((m) => m.role === 'assistant');
+            const textToUse = lastAssistant?.content?.trim() ? lastAssistant!.content : (streamedContent?.trim() ? streamedContent : '');
+
+            if (!textToUse) {
+                setStatusMsg('No assistant response available to generate domain from.');
+                setTimeout(() => setStatusMsg(''), 3000);
+                return;
+            }
+
+            setStatusMsg('Generating structured domain output from last assistant message...');
+            const result = await generatedOntologyFromResponse(textToUse);
+
+            if (result) {
+                console.log('generatedOntologyFromResponse result:', result);
+                setStatusMsg('Domain generation completed.');
+            } else {
+                setStatusMsg('Domain generator returned no result.');
+            }
+        } catch (err) {
+            console.error('Error while generating domain from last assistant:', err);
+            setStatusMsg(`Error generating domain: ${err instanceof Error ? err.message : String(err)}`);
+        } finally {
+            setTimeout(() => setStatusMsg(''), 4000);
+        }
+    }, [messages, streamedContent, generatedOntologyFromResponse, setStatusMsg]);
+
+    // Add this effect to handle window messages
+    useEffect(() => {
+        const handleMessage = (e: MessageEvent) => {
+            console.log('Window message received:', {
+                origin: e.origin,
+                data: e.data,
+                source: e.source,
+            });
+        };
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
     return (
         <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
@@ -922,7 +1274,6 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 //         ? 'bg-card ml-auto text-card-foreground flex-col border border-blue-900'
                                 //         : 'bg-secondary mr-auto text-card-foreground flex-col border-4 border-secondary'
                                 //         } `}
-                                // >
                                 <div key={index}
                                     className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${message.role === 'user'
                                         ? 'bg-card ml-auto max-w-[80%] text-card-foreground flex-col border border-blue-900'
@@ -1140,231 +1491,53 @@ Do not use its contents as contextual input for other questions--I want it impro
                 {/* <div className={`flex  ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-18rem)]'} min-w-0 rounded-lg overflow-hidden relative`}></div> */}
                 {/* <div className="fixed bottom-0 left-10 right-1  bg-popover border-t border-gray-600 z-10"> */}
                 <div className={`${isMobile ? 'fixed bottom-0 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
-                    {pathname === '/ai-chat' &&
-                        <div className="flex items-center justify-between p-2 min-w-0">
-                            {/* button row above the chat */}
-                            <div className="flex items-center gap-2">
-                                {/* System Prompt Button */}
-                                {/* <div
-                                    className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
-                                    onClick={handleSystemPromptClick}
-                                    title="Click to view system prompt"
-                                >
-                                    <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                        <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
-                                    </span>
-                                </div> */}
-                                {/* Context file input */}
-                                <button
-                                    type="button"
-                                    onClick={handleAddMD}
-                                    className={`p-2 flex items-center gap-2 hover:text-gray-300 ${mdContent ? 'text-green-500' : 'text-gray-500'}`}
-                                    disabled={isLoading}
-                                    title="Add a local file to be refined."
-                                >
-                                    <FileText className="w-5 h-5" /> {statusMsg.includes('Loaded') ? (mdContent ? 'File Loaded' : 'Load a file') : 'Load a file'}
-                                </button>
-                                <input
-                                    ref={mdFileInputRef}
-                                    type="file"
-                                    accept=".md, .txt, .markdown, .docx"
-                                    style={{ display: 'none' }}
-                                    className="hidden"
-                                    onChange={handleMDFileSelect}
-                                />
-                                {currentDocument && (
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={docRefine && !currentDocument ? false : docRefine}
-                                            disabled={!currentDocument || isLoading}
-                                            onChange={() => {
-                                                if (!currentDocument) {
-                                                    setDocRefine(true);
-                                                    setInput('');
-                                                } else {
-                                                    const newRefineState = !docRefine;
-                                                    setDocRefine(newRefineState);
-                                                    // setInput(newRefineState ? refinePrompt : '');
-                                                }
-                                            }}
-                                            className="sr-only" // Hide default checkbox but keep it accessible
-                                        />
-                                        <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                                            {docRefine && mdContent && (
-                                                <div className="h-2 w-2 bg-white rounded-full"></div>
-                                            )}
-                                        </div>
-                                        <span className="text-gray-500">{currentDocument ? "Refine document" : "No document in the left panel"}</span>
-                                    </label>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                                {/* Template selection */}
-                                {currentDocument && docRefine &&
-                                    <div className="flex items-center gap-2">
-                                        <select
-                                            title="Select a style for the document"
-                                            className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
-                                            onChange={(e) => {
-                                                const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
-                                                if (selectedTemplate) {
-                                                    setInput(selectedTemplate);
-                                                    // setDocRefine(true);
-                                                }
-                                            }}
-                                            disabled={isLoading || !currentDocument}
-                                        >
-                                            <option value="">Select style...</option>
-                                            {Object.keys(refineTemplates).map((key) => (
-                                                <option key={key} value={key}>{key}</option>
-                                            ))}
-                                        </select>
-                                    </div>
-                                }
-                                {/* Template dropdown for prompt templates */}
-                                <div className="flex items-center gap-2">
-                                    {!docRefine &&
-                                        <div className="">
-                                            <button
-                                                className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
-                                                onClick={() => {
-                                                    const dropdown = document.getElementById('template-dropdown');
-                                                    if (dropdown) {
-                                                        // Check position relative to viewport
-                                                        const button = document.activeElement as HTMLElement;
-                                                        const buttonRect = button.getBoundingClientRect();
-                                                        const viewportHeight = window.innerHeight;
-                                                        const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                        const spaceAbove = buttonRect.top;
-
-                                                        // First toggle visibility
-                                                        dropdown.classList.toggle('hidden');
-
-                                                        // If there's not enough space below, position above
-                                                        if (spaceBelow < 300 && spaceAbove > 150) {
-                                                            // Position above with margin to prevent cutoff
-                                                            dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
-                                                            dropdown.style.top = 'auto';
-                                                            dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
-                                                        } else {
-                                                            // Otherwise position below with margin
-                                                            dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
-                                                            dropdown.style.bottom = 'auto';
-                                                            dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                        }
-
-                                                        // Ensure the dropdown is fully visible within viewport
-                                                        setTimeout(() => {
-                                                            const dropdownRect = dropdown.getBoundingClientRect();
-                                                            if (dropdownRect.top < 0) {
-                                                                // If still cut off at top, adjust position
-                                                                dropdown.style.top = '5px';
-                                                                dropdown.style.bottom = 'auto';
-                                                            }
-                                                        }, 0);
-                                                    }
-                                                }}
-                                                title="Select a template"
-                                            >
-                                                <span>Prompt Templates</span>
-                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                            <div
-                                                id="template-dropdown"
-                                                className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
-                                            >
-                                                <div className="p-1 border-b border-gray-600">
-                                                    <select
-                                                        className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
-                                                        value={selectedCategory}
-                                                        onChange={(e) => setSelectedCategory(e.target.value)}
-                                                    >
-                                                        {CATEGORIES.map((category) => (
-                                                            <option key={category} value={category}>
-                                                                {category === "All" ? "All" : category}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="overflow-y-auto max-h-[180px]">
-                                                    {filteredTemplates.map((template, index) => (
-                                                        <button
-                                                            key={index}
-                                                            className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                            onClick={() => {
-                                                                setSelectedReportTemplate(template.title);
-                                                                setInput(template.content);
-                                                                document.getElementById('template-dropdown')?.classList.add('hidden');
-                                                            }}
-                                                        >
-                                                            {template.title}
-                                                        </button>
-                                                    ))}
-                                                </div>
+                    {pathname === '/ontology-builder' &&
+                        <div className="flex items-center justify-between p-2">
+                            <div className="flex-1 flex flex-col min-h-0 bg-secondary/40 overflow-visible relative">
+                                <details className="sticky top-0 bottom-5 w-full z-30 pointer-events-auto">
+                                    <summary className="bg-gray-800 text-white cursor-pointer p-1">Add External Ontology Concepts...</summary>
+                                    <div className="w-full rounded-md border border-gray-600 bg-gray-800 p-2">
+                                        <div className="cursor-pointer">Import Ontology</div>
+                                        <div className="flex-grow bg-gray-700 text-gray-500">
+                                            <Textarea
+                                                id="ontologyUrl"
+                                                className="ontology-input flex-grow bg-gray-600 text-white"
+                                                value={ontologyUrl}
+                                                onChange={(e) => setOntologyUrl(e.target.value)}
+                                                placeholder="Paste ontology URL here"
+                                            />
+                                            <div className="flex justify-between">
+                                                <Button
+                                                    onClick={() => {
+                                                        handleFetchOntology();
+                                                        setActiveTab('preview');
+                                                    }}
+                                                    className="bg-green-800 text-white text-sm rounded w-full"
+                                                >
+                                                    Load Ontology
+                                                </Button>
                                             </div>
                                         </div>
-                                    }
-                                </div>
+                                    </div>
+                                </details>
                             </div>
-                        </div>
-                    }
-                    {pathname === '/prompt-builder' &&
-                        <div className="flex items-center justify-between p-2">
                             {/* button row above the chat */}
-                            {/* System Prompt Button */}
-                            <div
-                                className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
-                                onClick={handleSystemPromptClick}
-                                title="Click to view system prompt"
-                            >
-                                <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                    <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
-                                </span>
-                            </div>
-
-                            <div className="flex items-center  gap-2">
+                            <div className="flex items-center gap-2 ms-auto">
                                 <button
                                     type="button"
-                                    className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
+                                    className="bg-blue-700 text-gray-300 py-1 px-3 rounded hover:bg-blue-600"
                                     onClick={() => {
-                                        setInput('Create a prompt with the following items: [Goal], [Context], [Role]')
-                                    }}
-                                >
-                                    Create a enhanced prompt
-                                </button>
-                                {/* <button
-                                onClick={() => dispatch(setMessages([]))}
-                                title="Clear chat history"
-                                className=" py-1 text-xs text-red-500 hover:text-red-700"
-                            >
-                                <X className="w-4 h-4" />
-                            </button> */}
-                            </div>
-                        </div>
-
-                    }
-                    {pathname === '/domain-builder' &&
-                        <div className="flex items-center justify-between p-2">
-                            {/* button row above the chat */}
-                            <button
-                                type="button"
-                                className="bg-blue-700 text-gray-300 py-1 p-3 ms-auto rounded hover:bg-blue-600"
-                                onClick={() => {
-                                    setDocRefine(true);
-                                    setInput((currentDocument !== "")
-                                        ? `
-Please include [New items] in the existing domain definition below.
-Don't ask clarifying questions or for additional context, just the updated definition.
+                                        setDocRefine(true);
+                                        setInput((currentDocument !== "")
+                                            ? `
+Please include new items below.
+[New items]
 
 `
-                                        // Let’s begin by reviewing the current domain definition. I’ll provide it in the next message unless you require a specific format.
-                                        //                                         `
-                                        :
-                                        `I want to scope and define the domain: [DOMAIN NAME]
+                                            // Let’s begin by reviewing the current domain definition. I’ll provide it in the next message unless you require a specific format.
+                                            //                                         `
+                                            :
+                                            `I want to scope and define the domain: [DOMAIN NAME]
 
 Please help me:
 - Identify and formalize the core concepts.
@@ -1373,10 +1546,21 @@ Please help me:
 - Stating the Domain name and then a description of the domain.
 Don't include explanations, next steps or examples at this stage.
 `)
-                                }}
-                            >
-                                Define & Scope Domain
-                            </button>
+                                    }}
+                                >
+                                    Define & Scope Domain
+                                </button>
+
+                                {/* New button to trigger generatedOntologyFromResponse */}
+                                <button
+                                    type="button"
+                                    className="bg-emerald-700 text-white py-1 px-3 rounded hover:bg-emerald-600"
+                                    onClick={handleGenerateDomainFromLastAssistant}
+                                    title="Generate a structured domain from the last assistant response"
+                                >
+                                    Generate Domain
+                                </button>
+                            </div>
                         </div>
                     }
 
@@ -1454,7 +1638,7 @@ Don't include explanations, next steps or examples at this stage.
                             <div className="flex items-center gap-2"></div>
                             <div className="flex items-center text-foreground gap-1">
                                 <ModelSelector
-                                    selectedModel={selectedModel as "deepseek-chat" | "mistral" |  "gpt-5" | "gpt-5-mini" | "dummy"}
+                                    selectedModel={selectedModel as ModelId}
                                     onModelChange={(newModel) => {
                                         setSelectedModel(newModel);
                                         // Persist selected model to localStorage
@@ -1493,289 +1677,3 @@ Don't include explanations, next steps or examples at this stage.
     )
 }
 
-
-// // When selectedModel changes, retry sending the last non-retry user message
-// useEffect(() => {
-//     // Skip on first render
-//     if (isInitialRender.current) {
-//         isInitialRender.current = false;
-//         previousModelRef.current = selectedModel;
-//         return;
-//     }
-
-//     // Only trigger if model changed and we have messages
-//     if (
-//         selectedModel &&
-//         previousModelRef.current !== selectedModel &&
-//         modelRetryCount < MAX_MODEL_RETRIES &&
-//         !retryInProgress.current &&
-//         messages.length > 0
-//     ) {
-//         // Find the last non-retry user message
-//         const lastUserMessage = messages.findLast(
-//             (m) => m.role === 'user' && !m.content.startsWith('Retry with model:')
-//         );
-
-//         if (lastUserMessage) {
-//             retryInProgress.current = true;
-//             const modelChangeMessage: Message = {
-//                 role: 'user',
-//                 content: `Retry with model: ${selectedModel} `,
-//             };
-//             dispatch(addMessage(modelChangeMessage));
-//             setModelRetryCount((prev) => prev + 1);
-//             sendMessageToAPI([lastUserMessage, modelChangeMessage]).finally(() => {
-//                 retryInProgress.current = false;
-//             });
-//         }
-//     }
-
-//     // Update for next comparison
-//     previousModelRef.current = selectedModel;
-// }, [selectedModel, sendMessageToAPI, messages, statusMsg, dispatch]);
-
-// Add this retry function
-// const handleRetry = useCallback(async () => {
-//     setStatusMsg('Retrying last request... please wait.');
-//     console.log('Retrying request');
-//     setIsLoading(true);
-//     retryInProgress.current = true;
-
-//     try {
-//         // Find the last request to retry
-//         const lastUserMessage = messages.findLast(m => m.role === 'user');
-
-//         if (!lastUserMessage) {
-//             setStatusMsg('No previous message to retry');
-//             return;
-//         }
-
-//         // Create a retry message with a special flag
-//         const retryMessage: Message = {
-//             role: 'user',
-//             content: 'Continue with your response that was interrupted',
-//         };
-
-//         // Don't add the retry message to the conversation history yet
-//         // We'll only add it if we get a successful response
-//         const messagesForRetry = [...messages, retryMessage];
-
-//         // Send the request with a longer timeout
-//         await sendMessageToAPI(messagesForRetry);
-
-//         // If successful, update the conversation
-//         console.log('Retry completed successfully');
-//     } catch (error) {
-//         console.error('Retry failed:', error);
-//         setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
-//         setIsLoading(false);
-//         retryInProgress.current = false;
-//     }
-// }, [messages, sendMessageToAPI]);
-
-
-
-
-
-// Enhanced text extraction function with DOCX support
-//     const extractTextFromFile = async (file: File): Promise<string> => {
-//         const fileName = file.name;
-//         const fileType = fileName.split('.').pop()?.toLowerCase() || '';
-
-//         // For text-based files, use the native text() method
-//         if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-//             try {
-//                 return await file.text();
-//             } catch (error) {
-//                 console.error(`Error reading text from ${fileName}:`, error);
-//                 return `[Failed to read text content from ${fileName}]`;
-//             }
-//         }
-
-//         // Handle DOCX files using mammoth.js
-//         if (fileType === 'docx') {
-//             try {
-//                 setStatusMsg(`Converting DOCX file: ${fileName}...`);
-//                 // Read file as ArrayBuffer
-//                 const arrayBuffer = await file.arrayBuffer();
-//                 // Use mammoth to extract text
-//                 const result = await mammoth.extractRawText({ arrayBuffer });
-//                 console.log(`Extracted ${result.value.length} characters from DOCX`);
-//                 if (result.value.length > 0) {
-//                     return result.value;
-//                 } else {
-//                     return `[DOCX file ${fileName} appears to be empty or could not be parsed]`;
-//                 }
-//             } catch (error) {
-//                 console.error(`Error extracting text from DOCX ${fileName}:`, error);
-//                 return `[Failed to extract text from DOCX file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-//             }
-//         }
-
-//         // Handle PDF files using pdfjs-dist
-//         // if (fileType === 'pdf') {
-//         //     try {
-//         //         setErrorMsg(`Extracting PDF file: ${fileName}...`);
-//         //         const arrayBuffer = await file.arrayBuffer();
-//         //         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-//         //         let extractedText = '';
-
-//         //         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-//         //             const page = await pdf.getPage(pageNumber);
-//         //             const textContent = await page.getTextContent();
-//         //             const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
-//         //             extractedText += pageText + '\n\n';
-//         //         }
-
-//         //         if (extractedText.trim().length > 0) {
-//         //             return extractedText;
-//         //         } else {
-//         //             return `[PDF file ${fileName} appears to be empty or could not be parsed]`;
-//         //         }
-//         //     } catch (error) {
-//         //         console.error(`Error extracting text from PDF ${fileName}:`, error);
-//         //         return `[Failed to extract text from PDF file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-//         //     }
-//         // }
-
-//         // For other binary files, provide a more explicit message about limitations
-//         return `[File: ${fileName}
-// Type: ${fileType.toUpperCase()} (Binary file)
-// Size: ${(file.size / 1024).toFixed(1)} KB
-// "I'm sorry, but AI unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
-// "However, you can copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
-// `;
-//     };
-
-// const handleSaveToLibrary = (content: string) => {
-//     // Extract title from first line of content
-//     const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-//     const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
-
-//     const documentTitle = cleanTitle || 'Untitled Document';
-
-//     // Save to Redux store
-//     dispatch(saveMarkdownDocument({
-//         id: Date.now().toString(),
-//         name: documentTitle,
-//         content: content,
-//         type: 'markdown',
-//         createdAt: new Date().toISOString(),
-//         updatedAt: new Date().toISOString()
-//     }));
-
-//     // Show confirmation to user
-//     setStatusMsg(`Saved "${documentTitle}" to library`);
-//     setTimeout(() => setStatusMsg(''), 30000);
-// };
-
-// // Add this function with your other handler functions
-// const handleSaveToFile = (content: string) => {
-//     // Create a blob with the content
-//     const blob = new Blob([content], { type: 'text/markdown' });
-
-//     // Create a URL for the blob
-//     const url = URL.createObjectURL(blob);
-
-//     // Extract title from first line for filename
-//     const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-//     const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
-//     const fileName = `${cleanTitle || 'document'}.md`;
-
-//     // Create a temporary anchor element
-//     const a = document.createElement('a');
-//     a.href = url;
-//     a.download = fileName;
-
-//     // Trigger download
-//     document.body.appendChild(a);
-//     a.click();
-//     document.body.removeChild(a);
-//     URL.revokeObjectURL(url);
-
-//     // Show confirmation
-//     setStatusMsg(`Saved "${fileName}" to downloads`);
-//     setTimeout(() => setStatusMsg(''), 30000);
-// };
-
-// Handle file selection for context
-// Handle file selection for context
-//     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-//         const files = event.target.files;
-//         if (!files || files.length === 0) return;
-//         const selectedFiles = Array.from(files);
-//         setContextFiles(selectedFiles);
-//         setIsProcessingFile(true);
-//         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
-
-//         try {
-//             // Process files one by one with status updates
-//             const fileContents = [];
-//             const binaryFiles = [];
-
-//             for (const file of selectedFiles) {
-//                 setStatusMsg(`Reading ${file.name}...`);
-//                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-
-//                 // Track binary files to show warning later
-//                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-//                     binaryFiles.push(file.name);
-//                 }
-
-//                 const text = await extractTextFromFile(file);
-//                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
-
-//                 fileContents.push(`
-// ====================
-// DOCUMENT: ${file.name}
-// ====================
-
-// ${text}
-
-// ====================
-// END OF DOCUMENT: ${file.name}
-// ====================`);
-//             }
-
-//             const combinedContent = fileContents.join('\n\n');
-//             setContextContent(combinedContent);
-//             setIsContextAttached(true);
-//             console.log(`Total context size: ${combinedContent.length} chars`);
-
-//             // Show user feedback about attached files
-//             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
-
-//             // Add warning about binary files if any were attached
-//             if (binaryFiles.length > 0) {
-//                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-//                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-//             }
-
-//             setStatusMsg(message);
-//             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-//         } catch (error) {
-//             console.error('Error processing files:', error);
-//             setStatusMsg(
-//                 error instanceof Error
-//                     ? `Error processing files: ${error.message}`
-//                     : `Error processing files: ${String(error)}`
-//             );
-//         } finally {
-//             setIsProcessingFile(false);
-//         }
-//     };
-
-// Open file picker
-// const handleAddContext = () => {
-//     if (fileInputRef.current) {
-//         fileInputRef.current.click();
-//     }
-// };
-
-// // Remove context
-// const handleRemoveContext = () => {
-//     setContextFiles([]);
-//     setContextContent('');
-//     setIsContextAttached(false);
-//     if (fileInputRef.current) fileInputRef.current.value = '';
-// };
