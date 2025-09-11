@@ -115,7 +115,7 @@ export default function ChatComponent({
 
     const data = useSelector((state: RootState) => state.modelUniverse);
     const domain = useSelector((state: RootState) => state.modelUniverse.phData.domain);
-    const ontology = useSelector((state: RootState) => state.modelUniverse.phData.ontology);
+    const ontology = useSelector((state: RootState) => state.modelUniverse.phData.domain?.ontology);
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
     // Get messages from Redux instead of local state
     const messages = useSelector((state: RootState) => state.chat?.currentMessages ?? []); // safer
@@ -537,7 +537,7 @@ export default function ChatComponent({
         e.target.value = '';
     };
 
-    const ontologyReduxData = data.phData.ontology || null;
+    const ontologyReduxData = data.phData.domain?.ontology || null;
 
     // Memoize complex computed values to prevent unnecessary re-renders
     const existingConcepts = useMemo(() => {
@@ -1676,4 +1676,3 @@ Don't include explanations, next steps or examples at this stage.
         </div >
     )
 }
-

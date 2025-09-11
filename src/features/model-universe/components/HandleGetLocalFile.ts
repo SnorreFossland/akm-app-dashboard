@@ -31,7 +31,11 @@ export const handleGetLocalFile = (event: React.ChangeEvent<HTMLInputElement>, d
               ],
             },
             domain: existingData?.phData?.domain || fileData?.phData?.domain || {},
-            ontology: existingData?.phData?.ontology || fileData?.phData?.ontology || {},
+            // ontology moved under domain in new shape
+            // keep domain.ontology if present in either source
+            ...(existingData?.phData?.domain?.ontology || fileData?.phData?.domain?.ontology
+              ? { domain: { ...(existingData?.phData?.domain || fileData?.phData?.domain || {}), ontology: (existingData?.phData?.domain?.ontology || fileData?.phData?.domain?.ontology) } }
+              : {}),
             documents: existingData?.phData?.documents || fileData?.phData?.documents || [],
           },
           phFocus: {

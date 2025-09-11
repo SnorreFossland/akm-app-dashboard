@@ -42,7 +42,7 @@ interface IrtvConversation {
 const IrtvBuilderPage = () => {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
-    const ontology = useSelector((state: { modelUniverse: any }) => data.phData.ontology);
+    const ontology = useSelector((state: { modelUniverse: any }) => data.phData.domain?.ontology);
     const domain = useSelector((state: { modelUniverse: any }) => data.phData.domain);
     const dispatch = useDispatch();
     const [dispatchDone, setDispatchDone] = useState(false);
@@ -59,7 +59,7 @@ const IrtvBuilderPage = () => {
     const [mdContent, setMdContent] = useState('');
     const [statusMsg, setStatusMsg] = useState('');
 
-    const [currentOntology, setCurrentOntology] = useState<any>(data.phData?.ontology || null);
+    const [currentOntology, setCurrentOntology] = useState<any>(data.phData?.domain?.ontology || null);
     const [currentDomain, setCurrentDomain] = useState<any>(data.phData?.domain || null);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
     // const [metis, setMetis] = useState<Metis | null >(null);
@@ -84,7 +84,7 @@ const IrtvBuilderPage = () => {
     // IRTV Builder specific state
     const [irtvContent, setIrtvContent] = useState<string | Model | null>('');
     const [irtvPreview, setIrtvPreview] = useState('');
-    const [selectedModel, setSelectedModel] = useState<"gpt-4o-mini" | "dummy" | "deepseek-chat" | "mistral"  | "gpt-5" | "gpt-5-mini">("gpt-5-mini");
+    const [selectedModel, setSelectedModel] = useState< "dummy" | "deepseek-chat" | "mistral"  | "gpt-5" | "gpt-5-mini">("gpt-5-mini");
     const [irtvInput, setIrtvInput] = useState('');
     const [currentMessages, setCurrentMessages] = useState<any[]>([]);
     const [conversations, setConversations] = useState<IrtvConversation[]>([]);
@@ -347,7 +347,7 @@ const IrtvBuilderPage = () => {
             },
             {
                 key: 'suite',
-                label: model?.name || 'Model',
+                label: currentModel?.name || 'Model',
                 content: (
                     <div className="space-y-4">
                         {currentModel && (

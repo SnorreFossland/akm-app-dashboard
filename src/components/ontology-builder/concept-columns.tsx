@@ -69,11 +69,15 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
 const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
     const dispatch = useDispatch();
     const [isEditing, setIsEditing] = useState(false);
-    const [description, setDescription] = useState(row.original.description);
+    const [description, setDescription] = useState<string>(row.original.description || '');
+    const [expanded, setExpanded] = useState<boolean>(false);
 
     const handleSave = () => {
-        if (row.original || description.trim() === "" || description === row.original.description) {
-            console.log('Description cannot be empty.');
+        // Guard: need a valid row.original and a non-empty changed description
+        if (!row.original || description.trim() === "" || description === row.original.description) {
+            // No change or invalid input — just close edit mode
+            console.log('Description unchanged or empty; abort saving.');
+            setIsEditing(false);
             return;
         }
         console.log('Saving description for:', row.original.name, description);
@@ -81,25 +85,70 @@ const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
         setIsEditing(false);
     };
 
-    return isEditing ? (
-        <textarea
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            onBlur={handleSave}
-            onKeyDown={(e) => e.key === 'Enter' && handleSave()}
-            autoFocus
-            className="border rounded px-2 py-1 bg-background w-full"
-        />
-    ) : (
-        <span
-            className={`${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'} text-sm font-medium cursor-pointer`}
-            onDoubleClick={() => {
-                console.log('Entering edit mode for description:', row.original.name);
-                setIsEditing(true);
-            }}
-        >
-            {row.original.description}
-        </span>
+    // Render edit textarea when editing
+    if (isEditing) {
+        return (
+            <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={handleSave}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSave();
+                    }
+                }}
+                autoFocus
+                className="border rounded px-2 py-1 bg-background w-full"
+            />
+        );
+    }
+
+    // Truncate to 25 chars when not expanded
+    const maxLen = 25;
+    const needsTruncate = description && description.length > maxLen;
+    const previewText = needsTruncate ? description.slice(0, maxLen) : (description || '');
+
+    return (
+        <div className="flex  items-center">
+            <span
+                className={`${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'} text-sm font-medium cursor-pointer`}
+                onClick={() => setExpanded(prev => !prev)}
+                onDoubleClick={() => {
+                    console.log('Entering edit mode for description:', row.original.name);
+                    setIsEditing(true);
+                }}
+                title={description}
+            >
+                {expanded ? (description || '') : previewText}
+            </span>
+
+            {needsTruncate && !expanded && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded(true);
+                    }}
+                    className="ml-1 pb-1 text-xl text-blue-400 hover:underline align-middle"
+                    aria-label="Show more"
+                >
+                    ...
+                </button>
+            )}
+
+            {needsTruncate && expanded && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded(false);
+                    }}
+                    className="ml-2 text-xs text-blue-400 hover:underline"
+                    aria-label="Show less"
+                >
+                    show less
+                </button>
+            )}
+        </div>
     );
 };
 
@@ -170,6 +219,11 @@ export const columns: ColumnDef<Concept>[] = [
         accessorKey: "description",
         header: () => <span>Description</span>,
         cell: ({ row }) => <DescriptionCell row={row} />,
+    },
+    {
+        accessorKey: "typeName",
+        header: () => <span>Type</span>,
+        cell: ({ row }) => <span className="text-sm text-gray-400">{row.original.typeName || 'N/A'}</span>,
     },
     {
         id: "actions",

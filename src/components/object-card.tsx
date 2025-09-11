@@ -234,7 +234,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
                                 {/* <CardContent className="max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
-                                {model && <ObjectTable data={model.objects.map(obj => ({ ...obj, typeId: obj.typeRef }))} />}
+                                {model && <ObjectTable data={model.objects.map(obj => ({ ...obj, typeId: obj.typeRef, typeName: obj.typeName || obj.proposedType || obj.typeRef || '' }))} />}
                             </CardContent>
                         </Card>
                     </TabsContent>

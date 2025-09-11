@@ -51,6 +51,8 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
     const [pageSize, setPageSize] = React.useState(20); // Default page size
     const [pageIndex, setPageIndex] = React.useState(0); // Default page index
 
+    console.log('54 ConceptTable data:', data);
+
     const onEdit = (id: string) => {
         console.log(`Edit concept with id: ${id}`);
         // Implement global edit logic if needed
@@ -60,6 +62,15 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
         console.log(`Delete concept with id: ${id}`);
         // Your delete logic here, e.g., dispatch(deleteConcept(id))
     };
+
+    // compute at render time
+    const typeColumnVisibleInitially = React.useMemo(
+        () => data.some((d: any) => {
+            const v = d.typeName ?? d.type ?? '';
+            return String(v).trim().toLowerCase() !== 'n/a' && String(v).trim() !== '';
+        }),
+        [data]
+    );
 
     const table = useReactTable<Concept>({
         data,
@@ -71,6 +82,14 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
         state: {
             sorting,
             pagination: { pageIndex, pageSize },
+        },
+        initialState: {
+            columnVisibility: {
+                // hide by default
+                id: false,
+                rowNumber: false,
+                typeName: typeColumnVisibleInitially, // set based on data
+            },
         },
         meta: {
             onEdit,
@@ -86,7 +105,7 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
 
     return (
         <div className="m-1">
-            <div className="flex items-center p-2">
+            <div className="flex items-center py-2">
                 <Input
                     placeholder="Filter..."
                     value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
@@ -96,11 +115,11 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
                     className="max-w-sm"
                 />
                 <DropdownMenu>
-                    {/* <DropdownMenuTrigger asChild>
+                    <DropdownMenuTrigger asChild>
                         <Button variant="outline" className="ml-auto">
                             Columns
                         </Button>
-                    </DropdownMenuTrigger> */}
+                    </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                         {table
                             .getAllColumns()
@@ -128,7 +147,7 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
                             {headerGroup.headers.map((header) => (
                                 <th
                                     key={header.id}
-                                    className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                                    className="px-1 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
                                 >
                                     {header.isPlaceholder ? null : (
                                         <div

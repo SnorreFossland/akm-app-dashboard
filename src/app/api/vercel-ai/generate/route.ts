@@ -51,7 +51,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
   }
 
-  const model: string = body.model || 'gpt-4o-mini';
+  const model: string = body.model || 'gpt-5-mini';
   const prompt: string = body.prompt || '';
   const max_tokens_input = body.max_tokens;
   const max_completion_tokens_input = body.max_completion_tokens;
@@ -106,7 +106,7 @@ export async function POST(req: Request) {
   // Helper: minimal alias mapping for direct provider calls (no gateway)
   const mapAliasForDirect = (m: string): string => {
     // Map UI-friendly IDs to real provider model IDs
-    if (m === 'gpt-5-mini') return 'gpt-4o-mini';
+    if (m === 'gpt-5-mini') return 'gpt-5-mini';
     if (m === 'gpt-5') return 'gpt-4o-2024-08-06';
     if (m === 'mistral') return 'mistral-small-latest';
     return m;

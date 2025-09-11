@@ -363,7 +363,7 @@ export default function DocumentPanel({
                 {/* <div className="h-full w-full"> */}
                 {data
                     ? <Card className="bg-transparent w-full h-full overflow-hidden">
-                        <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        {/* <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <TabsList className="bg-transparent">
                                 <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Preview</TabsTrigger>
                                 <TabsTrigger value="model" className='pb-2 mt-3'>Modelview Objectviews/Relshipviews</TabsTrigger>
@@ -378,7 +378,7 @@ export default function DocumentPanel({
                                 </div>
                             </TabsContent>
 
-                            <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] ">
+                            <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] "> */}
                                 <div className="flex flex-col h-full w-full">
                                     <button
                                         title="Save to Library"
@@ -400,9 +400,8 @@ export default function DocumentPanel({
                                         )}
                                     </div>
                                 </div>
-                            </TabsContent>
-
-                            <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                        {/*</TabsContent>
+                       <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
                                 <div className="mx-1 ">
                                     {modelview && <ModelviewCard modelviews={[{
                                         // Use type assertion to match what ModelviewCard expects
@@ -413,7 +412,7 @@ export default function DocumentPanel({
                                     } as any]} />}
                                 </div>
                             </TabsContent>
-                        </Tabs>
+                        </Tabs> */}
                     </Card>
                     : <div className="flex justify-center items-center h-screen">
                         <LoadingCircularProgress />

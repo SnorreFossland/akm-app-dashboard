@@ -64,6 +64,15 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data }) => {
         // Your delete logic here, e.g., dispatch(deleteConcept(id))
     };
 
+    // compute at render time
+    const typeColumnVisibleInitially = React.useMemo(
+        () => data.some((d: any) => {
+            const v = d.typeName ?? d.type ?? '';
+            return String(v).trim().toLowerCase() !== 'n/a' && String(v).trim() !== '';
+        }),
+        [data]
+    );
+
     const table = useReactTable<Concept>({
         data,
         columns: columnsWithRowNumber,
@@ -74,6 +83,14 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data }) => {
         state: {
             sorting,
             pagination: { pageIndex, pageSize },
+        },
+        initialState: {
+            columnVisibility: {
+                // hide by default
+                id: false,
+                rowNumber: false,
+                typeName: typeColumnVisibleInitially, // set based on data
+            },
         },
         meta: {
             onEdit,

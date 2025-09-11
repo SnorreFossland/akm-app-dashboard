@@ -13,7 +13,7 @@ import { Model, ModelView, setFocusModel } from '@/features/model-universe/model
 const UniverseComponent: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
     const data = useSelector((state: RootState) => state.modelUniverse);
-    const ontology = useSelector((state: { modelUniverse: any }) => data.phData.ontology);
+    const ontology = useSelector((state: { modelUniverse: any }) => data.phData.domain?.ontology);
     const domain = useSelector((state: { modelUniverse: any }) => data.phData.domain);
     const [activeTab, setActiveTab] = useState('domain');
     const [activeSubtab, setActiveSubtab] = useState('model-list');
@@ -136,7 +136,7 @@ const UniverseComponent: React.FC = () => {
                         <div className="space-y-4">
                             <div className="grid gap-4">
                                 {ontology ? (
-                                    <OntologyCard domainData={{ ...domain || "" }} ontologyData={ontology} />
+                                    <OntologyCard domainData={domain} ontologyData={ontology} />
                                 ) : (
                                     <div className="text-center py-8">
                                         <Network className="w-12 h-12 text-gray-500 mx-auto mb-4" />

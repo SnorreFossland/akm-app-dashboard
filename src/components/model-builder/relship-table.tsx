@@ -44,11 +44,22 @@ interface RelshipTableProps {
     data: Relationship[];
 }
 
+
+
 export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
     // Manage sorting state
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [pageSize, setPageSize] = React.useState(20); // Default page size
     const [pageIndex, setPageIndex] = React.useState(0); // Default page index
+
+    // compute at render time
+    const typeColumnVisibleInitially = React.useMemo(
+        () => data.some((d: any) => {
+            const v = d.typeName ?? d.type ?? '';
+            return String(v).trim().toLowerCase() !== 'n/a' && String(v).trim() !== '';
+        }),
+        [data]
+    );
 
     const table = useReactTable<Relationship>({
         data,
@@ -62,6 +73,14 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
             pagination: {
                 pageIndex,
                 pageSize,
+            },
+        },
+        initialState: {
+            columnVisibility: {
+                // hide by default
+                id: false,
+                rowNumber: false,
+                typeName: typeColumnVisibleInitially, // set based on data
             },
         },
         onSortingChange: setSorting, // Handle sorting changes

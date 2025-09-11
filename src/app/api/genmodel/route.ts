@@ -13,8 +13,6 @@ const MODEL_PROVIDERS = {
   // OpenAI family
   'gpt-5-mini': 'openai',
   'gpt-5': 'openai',
-  'gpt-4o': 'openai',
-  'gpt-4o-mini': 'openai',
 
   // DeepSeek family
   'deepseek-chat': 'deepseek',
@@ -318,7 +316,7 @@ export async function POST(req: Request) {
             });
 
             completionResponse = await fallbackClient.chat.completions.create({
-              model: 'gpt-4o-mini',
+              model: 'gpt-5-mini',
               messages: messages,
               temperature: 0.3,
               max_tokens: 2000,

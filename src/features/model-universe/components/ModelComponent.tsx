@@ -65,9 +65,9 @@ function ModelComponent() {
   const data = useSelector((state: RootState) => state.modelUniverse);
   const prompt = useSelector((state: { prompt: any }) => data.phData.domain?.prompt);
   const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
-  const ontologyData = useSelector((state: { modelUniverse: any }) => data.phData.ontology);
+  const ontologyData = useSelector((state: { modelUniverse: any }) => data.phData.domain?.ontology);
 
-  const [currentOntology, setCurrentOntology] = useState<any>(data.phData?.ontology || null);
+  const [currentOntology, setCurrentOntology] = useState<any>(data.phData?.domain?.ontology || null);
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [currentModelview, setCurrentModelview] = useState<ModelView | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);

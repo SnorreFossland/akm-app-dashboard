@@ -17,7 +17,6 @@ interface OntologyCardProps {
         description: string;
         concepts: Concept[];
         relationships: Relationship[];
-        presentation: string;
     } | null;
     domainData?: {
         name: string;   
@@ -30,6 +29,8 @@ interface OntologyCardProps {
 interface Concept {
     name: string;
     description: string;
+    color?: string;
+    typeName?: string;
 }
 
 interface Relationship {
@@ -42,18 +43,18 @@ interface Relationship {
 
 const debug = false;
 
-export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
+export const OntologyCard = ({ ontologyData, domainData }: OntologyCardProps) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const [mermaidDiagram, setMermaidDiagram] = useState('');
     const [renderedSvg, setRenderedSvg] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [activeTab, setActiveTab] = useState('domain-ontology');
+    const [activeTab, setActiveTab] = useState('concepts');
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
 
-    if (debug) console.log('35 ontology-card', ontologyData);
+    if (!debug) console.log('57 ontology-card ontologyData: ', ontologyData);
 
     const mermaidRef = useRef<any>(null);
 
@@ -164,8 +165,6 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
         if (ontologyData && debug) {
             console.log('69 Ontology data being passed to OntologyCard:', {
                 name: ontologyData.name,
-                concepts: ontologyData.concepts?.length || 0,
-                relationships: ontologyData.relationships?.length || 0,
                 conceptsData: ontologyData.concepts,
                 relationshipsData: ontologyData.relationships
             });
@@ -278,22 +277,22 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
             {/* <pre className="text-xs bg-gray-900 text-white p-2 rounded m-2 overflow-auto max-h-40">
                 {JSON.stringify(ontologyData, null, 2)}
             </pre> */}
-            <Tabs value={activeTab} defaultValue='domain-ontology' onValueChange={setActiveTab} className=" p-1">
+            <Tabs value={activeTab} defaultValue='concepts' onValueChange={setActiveTab} className=" p-1">
                 <TabsList className="grid grid-cols-4 bg-primary-foreground my-0 h-7 flex-1 mx-2 relative z-1">
-                    {pathname === '/model-builder' && (
+                    {/* {pathname === '/model-builder' && (
                         <TabsTrigger
                             value="domain-summary"
                             className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 px-4 border-gray-400"
                         >
                             Domain
                         </TabsTrigger>
-                    )}
-                    <TabsTrigger
+                    )} */}
+                    {/* <TabsTrigger
                         value="domain-ontology"
                         className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
                     >
                         Presentation
-                    </TabsTrigger>
+                    </TabsTrigger> */}
                     <TabsTrigger
                         value="concepts"
                         className="ml-1 rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100  px-4 border-gray-400"
@@ -342,27 +341,23 @@ export const OntologyCard = ({ ontologyData }: OntologyCardProps) => {
                         </div>
                     </TabsContent>
                 )}
-                <TabsContent value="domain-ontology" className="rounded w-full mt-0 ">
+                {/* <TabsContent value="domain-ontology" className="rounded w-full mt-0 ">
                     <Card className="pt-1">
                         <CardContent className="max-h-[calc(100vh-4rem)] overflow-hidden">
                             <div className=" px-1">
                                 <h3 className="flex p-1 font-bold  text-gray-200 inline-block">
                                     Ontology name: <span className="mx-1 px-1 inline-block">{ontologyData?.name}</span>
                                 </h3>
-                                {/* <details>
-                                    <summary className="mx-1 text-gray-400 w-full cursor-pointer">Description...</summary>
-                                    <div className="mx-1 p-1 inline-block">{ontologyData?.description}</div>
-                                </details> */}
                             </div>
                             <div className="prose prose-sm bg-gray-800 mt-2 p-1 divide-y-3 divide-gray-900 max-h-[calc(100vh-4rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
                                 <h4 className="px-1 bg-gray-700">Ontology Presentation</h4>
                                 <div className="p-1 text-sm text-gray-400 bg-background rounded">
-                                    <MarkdownPreview mdPreview={ontologyData?.presentation ?? ''} />
+                                    <MarkdownPreview mdPreview={domainData?.presentation ?? ''} />
                                 </div>
                             </div>
                         </CardContent>
                     </Card>
-                </TabsContent>
+                </TabsContent> */}
 
                 <TabsContent value="concepts" className=" mt-0 rounded bg-background">
                     <Card className="pt-1">

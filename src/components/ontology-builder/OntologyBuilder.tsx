@@ -93,7 +93,7 @@ const OntologyBuilder = (
     const handleOpenModal = () => setIsModalOpen(true);
     const handleCloseModal = () => setIsModalOpen(false);
 
-    const ontologyReduxData = data.phData.ontology || null;
+    const ontologyReduxData = data.phData.domain?.ontology || null;
 
     // Memoize complex computed values to prevent unnecessary re-renders
     const existingConcepts = useMemo(() => {
@@ -235,24 +235,16 @@ const OntologyBuilder = (
             alert('No Concept data to dispatch');
             return;
         }
-        const updatedOntologyData = {
-            status: 'succeeded',
-            phData: {
-                ...data.phData,
-                ontology: suggestedOntologyData,
-            },
-            phFocus: data.phFocus,
-            phUser: data.phUser,
-            phSource: data.phSource,
-        };
-
-        const uniqueConcepts = Array.from(new Map(updatedOntologyData.phData.ontology.concepts.map((item: Concept) => [item.name, item])).values());
-        const uniqueRelationships = Array.from(new Map(updatedOntologyData.phData.ontology.relationships.map((item: Relationship) => [item.name, item])).values());
-
-        updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
-        updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
-
-        // dispatch(setOntologyData(updatedOntologyData));
+        // Dedupe locally if needed (dispatch handled in page)
+        const uniqueConcepts = Array.from(new Map((suggestedOntologyData.concepts || []).map((item: Concept) => [item.name, item])).values());
+        const uniqueRelationships = Array.from(new Map((suggestedOntologyData.relationships || []).map((item: Relationship) => [item.name, item])).values());
+        // Example: could dispatch here if needed
+        // dispatch(setOntologyData({
+        //   name: suggestedOntologyData.name,
+        //   description: suggestedOntologyData.description,
+        //   concepts: uniqueConcepts,
+        //   relationships: uniqueRelationships
+        // }));
         setSuggestedOntologyData(null);
         setDispatchDone(true);
     };
@@ -405,7 +397,7 @@ const OntologyBuilder = (
                 ...ontologyReduxData,
                 name: suggestedOntologyData?.name || ontologyReduxData?.name || 'Untitled Ontology',
                 description: suggestedOntologyData?.description || ontologyReduxData?.description || '',
-                presentation: suggestedOntologyData?.presentation || ontologyReduxData?.presentation || '',
+                presentation: suggestedOntologyData?.presentation || domainData?.presentation || '',
                 concepts: [
                     ...validConcepts.map((concept: Concept) => ({
                         ...concept,

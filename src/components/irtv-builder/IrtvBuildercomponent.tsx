@@ -57,7 +57,7 @@ export default function IrtvBuilderComponent(props: IrtvBuilderComponentProps) {
     const {
         input,
         setInput,
-        selectedModel,
+        selectedModel, //AI model
         setSelectedModel,
         onResponseChange,
         onViewInPreview,
@@ -366,7 +366,7 @@ Verify that your responses are based on the provided context and requirements.
 
         return `**${mm.name || 'Unknown'}**
 ${filteredObjectTypes
-                .map((o: any) => `id: ${o.id || 'N/A'}, name: ${o.name}, typeviewRef: ${o.typeviewRef || 'N/A'}`)
+                .map((o: any) => `id: ${o.id || 'N/A'}, name: ${o.name}, typeviewRef: ${o.typeviewRef || 'N/A'}, typeName: ${o.typeName || 'N/A'}`)
                 .join("\n")}
 
 ${filteredRelTypes
@@ -377,7 +377,7 @@ ${filteredRelTypes
 
     // ---------- 5. When curmod changes, update existing info objects and ontology diff ----------
     useEffect(() => {
-        if (!curmod || !data?.phData?.ontology) return;
+        if (!curmod || !data?.phData?.domain?.ontology) return;
 
         const infoRels =
             curmod.relships?.filter((rel: any) => {
@@ -447,7 +447,7 @@ ${filteredRelTypes
                 .join("\n")}\n\n`;
         }
 
-        const ontology = data.phData.ontology;
+        const ontology = data.phData.domain?.ontology;
         const filteredConcepts = (ontology?.concepts || []).filter(
             (c: any) => !existingNames.includes(c.name)
         );
@@ -478,7 +478,7 @@ ${filteredRelTypes
 
         (newExistingInfoObjects.objects.length > 0) && setContextItems(`${conceptString}\n\n`);
         setContextOntology(`${newOntologyString}`);
-    }, [curmod?.id, data?.phData?.ontology?.concepts]);
+    }, [curmod?.id, data?.phData?.domain?.ontology?.concepts]);
 
     // ---------- 6. Temperature preference ----------
     useEffect(() => {
@@ -677,7 +677,7 @@ ${filteredRelTypes
                     relships: []
                 };
             }
-
+            console.log("680 [ModelBuilder] validatedData: ", validatedData,"parsed :", parsed);
             setIrtvContent(parsed);
             const markdownResponse = formatJSONAsMarkdown(validatedData);
 
@@ -687,7 +687,8 @@ ${filteredRelTypes
             };
             setMessages((prev) => [...prev, assistantMessage]);
             setModel({ ...parsed, id: curmod?.id });
-            setStep(3);
+            setIrtvPreview(markdownResponse);
+
         } catch (e: any) {
             const msg = e?.message || "Unknown error";
             setStatusMsg(`Model building failed: ${msg}`);
@@ -1009,4 +1010,3 @@ ${filteredRelTypes
         </div>
     );
 }
-

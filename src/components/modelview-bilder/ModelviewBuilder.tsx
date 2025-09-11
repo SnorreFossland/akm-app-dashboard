@@ -315,7 +315,7 @@ export default function ModelviewBuilder({
         const lower = (m || '').toLowerCase();
         if (lower.startsWith('deepseek')) return lower; // deepseek-chat, deepseek-coder, deepseek-r1
         if (lower.includes('mistral')) return 'mistral';
-        if (lower.startsWith('gpt-')) return lower; // gpt-4o, gpt-4o-mini, gpt-5, gpt-5-mini
+        if (lower.startsWith('gpt-')) return lower; // gpt-5, gpt-5-mini
         if (lower === 'dummy') return 'dummy';
         return 'gpt-5-mini';
     }
@@ -667,11 +667,11 @@ export default function ModelviewBuilder({
                                 </div>
                             )}
 
-                            {isLoading && (
+                            {/* {isLoading && (
                                 <div className="flex justify-start my-4">
                                     <ThinkingAnimation />
                                 </div>
-                            )}
+                            )} */}
 
                             <div ref={messagesEndRef} />
                         </div>

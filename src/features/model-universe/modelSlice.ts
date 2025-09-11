@@ -8,14 +8,14 @@ interface DomainData {
   presentation: string;
   prompt: string;
   additionalContext?: string; // Make this optional since it's a new field
+  ontology?: OntologyData; // Ontology is now nested under domain
 }
 
 // Export the ontology interface separately
 export interface OntologyData {
   name: string;
   description: string;
-  presentation: string;
-  concepts: { name: string, description: string }[];
+  concepts: { name: string, description: string, color?: string, typeName?: string }[];
   relationships: { name: string, description: string, nameFrom: string, nameTo: string }[];
 }
 
@@ -45,7 +45,6 @@ export interface DataType {
   phData: {
     metis: Metis,
     domain: DomainData,
-    ontology: OntologyData,
     documents: MarkdownDocument[], // Add documents here
   },
   phFocus: {
@@ -119,58 +118,61 @@ export interface Model {
     toobjectRef: string,
     nameTo: string,
   }[],
-  modelviews: {
-    id: string,
-    name: string,
-    description: string,
-    modelRef: string,
-    modified: boolean,
-    markedAsDeleted: boolean,
-    objectviews: {
-      id: string,
-      name: string,
-      type: string,
-      loc: string,
-      size: string,
-      memberscale: number,
-      objectRef: string,
-      modified: boolean,
-      markedAsDeleted: boolean,
-      isSelect: boolean,
-      isGroup: boolean,
-      isExpanded: boolean,
-      image: string,
-      icon: string,
-      fillColor: string,
-      strokeColor: string,
-      strokeWidth: string,
-      strokeColor2: string,
-      textColor: string,
-      textColor2: string,
-      viewkind: string,
-    }[],
-    relshipviews: {
-      id: string,
-      name: string,
-      relshipRef: string,
-      fromobjviewRef: string,
-      toobjviewRef: string,
-      points: number[],
-    }[],
-  }[],
+  modelviews: Modelview[]
 }
 
-export interface ModelView {
+export interface Modelview {
   id: string;
   name: string;
+  description: string;
+  modelRef: string;
+  modified: boolean;
+  markedAsDeleted: boolean;
+  objectviews: {
+    id: string;
+    name: string;
+    type: string;
+    loc: string;
+    size: string;
+    memberscale: number;
+    objectRef: string;
+    modified: boolean;
+    markedAsDeleted: boolean;
+    isSelect: boolean;
+    isGroup: boolean;
+    isExpanded: boolean;
+    image: string;
+    icon: string;
+    fillColor: string;
+    strokeColor: string;
+    strokeWidth: string;
+    strokeColor2: string;
+    textColor: string;
+    textColor2: string;
+    viewkind: string;
+  }[];
+  relshipviews?: {
+    id: string;
+    name: string;
+    relshipRef: string;
+    fromobjviewRef: string;
+    toobjviewRef: string;
+    points: number[];
+  }[];
 };
 
 
 export const initialState: DataType = {
   phData: {
     metis: { name: '', description: '', models: [], metamodels: [] },
-    domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' },
-    ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] },
+    domain: {
+      name: '',
+      description: '',
+      prompt: '',
+      presentation: '',
+      additionalContext: '',
+      ontology: { name: '', description: '', concepts: [], relationships: [] },
+    },
     documents: [] // Add documents to initial state
   },
   phFocus: {
@@ -248,7 +250,43 @@ const modelSlice = createSlice({
   reducers: {
     setFileData(state, action: PayloadAction<DataType>) {
       console.log('238 setFileData action.payload', action.payload, 'state', state);
-      state.phData = { ...action.payload.phData };
+      // Migrate possible old shape where ontology was top-level under phData
+      const incomingPhData: any = { ...action.payload.phData };
+      // Coerce legacy string domain to object
+      if (typeof incomingPhData.domain === 'string') {
+        incomingPhData.domain = {
+          name: '',
+          description: '',
+          prompt: '',
+          presentation: incomingPhData.domain,
+          additionalContext: '',
+          ontology: { name: '', description: '', concepts: [], relationships: [] },
+        };
+      }
+      // Remove stray numeric keys from domain if present
+      if (incomingPhData?.domain && typeof incomingPhData.domain === 'object') {
+        Object.keys(incomingPhData.domain)
+          .filter((k) => /^\d+$/.test(k))
+          .forEach((k) => { delete (incomingPhData.domain as any)[k]; });
+      }
+      if (incomingPhData.ontology) {
+        // Ensure domain exists
+        incomingPhData.domain = incomingPhData.domain || {
+          name: '', description: '', prompt: '', presentation: '', additionalContext: ''
+        };
+        // Move ontology under domain if not already present
+        if (!incomingPhData.domain.ontology) {
+          const { presentation, ...restOntology } = incomingPhData.ontology;
+          incomingPhData.domain.ontology = { ...restOntology };
+        }
+        delete incomingPhData.ontology;
+      }
+      // Ensure ontology.presentation is not present in new shape
+      if (incomingPhData?.domain?.ontology && 'presentation' in incomingPhData.domain.ontology) {
+        const { presentation, ...rest } = incomingPhData.domain.ontology;
+        incomingPhData.domain.ontology = { ...rest };
+      }
+      state.phData = incomingPhData;
       state.phFocus = { ...action.payload.phFocus };
       state.phUser = { ...action.payload.phUser };
       state.phSource = action.payload.phSource;
@@ -343,12 +381,18 @@ const modelSlice = createSlice({
     setSource(state, action: PayloadAction<DataType['phSource']>) {
       state.phSource = action.payload;
     },
-    setDomainData(state, action: PayloadAction<DomainData>) {
+    setDomainData(state, action: PayloadAction<DomainData | string>) {
       if (typeof action.payload === 'object' && action.payload !== null) {
         state.phData.domain = {
           ...state.phData.domain,
           ...action.payload
         };
+      } else if (typeof action.payload === 'string') {
+        // Gracefully handle accidental string payloads by treating as presentation text
+        state.phData.domain = {
+          ...state.phData.domain,
+          presentation: action.payload
+        } as any;
       } else {
         console.error("setDomainData received an invalid payload:", action.payload);
       }
@@ -366,48 +410,59 @@ const modelSlice = createSlice({
     resetDomainData(state) {
       state.phData.domain = initialState.phData.domain;
     },
-    setOntologyData(state, action: PayloadAction<DataType>) {
-      console.log('348 action.payload', action.payload, state);
-      const newConcepts = (action.payload.phData.ontology?.concepts || []).map((concept) => ({
+    setOntologyData(state, action: PayloadAction<OntologyData>) {
+      console.log('348 setOntologyData payload', action.payload, state);
+      const newConcepts = (action.payload?.concepts || []).map((concept) => ({
         ...concept,
         color: 'lightgreen'
       }));
 
-      const newRelationships = (action.payload.phData.ontology?.relationships || []).map((relationship) => ({
+      const newRelationships = (action.payload?.relationships || []).map((relationship) => ({
         ...relationship,
         color: 'lightgreen'
       }));
 
-      state.phData.ontology = {
-        ...state.phData.ontology,
-        name: action.payload.phData.ontology.name,
-        description: action.payload.phData.ontology.description,
-        presentation: action.payload.phData.ontology.presentation,
+      // Initialize domain if absent
+      if (!state.phData.domain) {
+        state.phData.domain = { ...initialState.phData.domain };
+      }
+
+      // Merge into nested ontology under domain
+      const currentOntology = state.phData.domain.ontology || { name: '', description: '', concepts: [], relationships: [] };
+      state.phData.domain.ontology = {
+        ...currentOntology,
+        name: action.payload.name,
+        description: action.payload.description,
         concepts: [
-          ...(state.phData.ontology?.concepts || []),
+          ...(currentOntology?.concepts || []),
           ...newConcepts
         ],
         relationships: [
-          ...(state.phData.ontology?.relationships || []),
+          ...(currentOntology?.relationships || []),
           ...newRelationships
         ]
       };
     },
-    editConcept: (state, action: PayloadAction<DataType['phData']['ontology']['concepts'][number]>) => {
-      const index = state.phData.ontology.concepts?.findIndex(concept => concept?.name === action.payload.name);
+    editConcept: (state, action: PayloadAction<OntologyData['concepts'][number]>) => {
+      if (!state.phData.domain.ontology) {
+        state.phData.domain.ontology = { name: '', description: '', concepts: [], relationships: [] };
+      }
+      const index = state.phData.domain.ontology.concepts?.findIndex(concept => concept?.name === action.payload.name);
       if (index !== -1) {
-        state.phData.ontology.concepts[index] = action.payload;
+        state.phData.domain.ontology.concepts[index] = action.payload;
       }
     },
     deleteConcept: (state, action: PayloadAction<string>) => {
-      state.phData.ontology.concepts = state?.phData.ontology.concepts.filter(concept => concept.name !== action.payload);
+      if (!state.phData.domain.ontology) return;
+      state.phData.domain.ontology.concepts = state?.phData.domain.ontology.concepts.filter(concept => concept.name !== action.payload);
     },
-    editRelationship: (state, action: PayloadAction<DataType['phData']['ontology']['relationships'][number]>) => {
-      const index = state.phData.ontology.relationships.findIndex(r => r.name === action.payload.name);
+    editRelationship: (state, action: PayloadAction<OntologyData['relationships'][number]>) => {
+      if (!state.phData.domain.ontology) {
+        state.phData.domain.ontology = { name: '', description: '', concepts: [], relationships: [] };
+      }
+      const index = state.phData.domain.ontology.relationships.findIndex(r => r.name === action.payload.name);
       if (index !== -1) {
-        if (index !== -1) {
-          state.phData.ontology.relationships[index] = action.payload;
-        }
+        state.phData.domain.ontology.relationships[index] = action.payload;
       }
     },
 

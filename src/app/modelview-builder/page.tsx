@@ -234,19 +234,6 @@ export default function ModelviewBuilderPage() {
   const rightPanelContent = {
     tabs: [
       {
-        key: 'preview',
-        label: 'Modelview Preview',
-        content: (
-          <div className="max-h-[calc(100vh-14rem)] overflow-auto">
-            {currentModel?.modelviews?.length ? (
-              <ModelviewCard modelviews={currentModel.modelviews} />
-            ) : (
-              <div className="p-4 text-sm text-gray-400">No modelviews available for the selected model.</div>
-            )}
-          </div>
-        )
-      },
-      {
         key: 'previewModel',
         label: 'Model Preview',
         content: (

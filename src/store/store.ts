@@ -15,9 +15,15 @@ const persistConfig = {
                 state.modelUniverse = {
                     phData: {
                         metis: { name: '', description: '', models: [], metamodels: [] },
-                        domain: { name: '', description: '', prompt: '', presentation: '', additionalContext: '' },
-                        ontology: { name: '', description: '', presentation: '', concepts: [], relationships: [] },
-                        documents: []
+                        domain: {
+                            name: '',
+                            description: '',
+                            prompt: '',
+                            presentation: '',
+                            additionalContext: '',
+                            ontology: { name: '', description: '', concepts: [], relationships: [] }
+                        },
+                        documents: [],
                     },
                     phFocus: { focusModel: { id: '', name: '' }, focusModelview: { id: '', name: '' } },
                     phUser: { id: '', name: '', email: '' },
@@ -46,9 +52,67 @@ const persistConfig = {
             }
         }
 
+        // Migrate old ontology location (top-level under phData) to domain.ontology
+        try {
+            const mu = state?.modelUniverse;
+            if (mu?.phData) {
+                const phData = mu.phData;
+                // Ensure domain exists
+                if (!phData.domain) {
+                    phData.domain = {
+                        name: '',
+                        description: '',
+                        prompt: '',
+                        presentation: '',
+                        additionalContext: '',
+                        ontology: { name: '', description: '', concepts: [], relationships: [] }
+                    };
+                }
+
+                // If domain was accidentally set to a string earlier, coerce to object
+                if (typeof phData.domain === 'string') {
+                    phData.domain = {
+                        name: '',
+                        description: '',
+                        prompt: '',
+                        presentation: phData.domain,
+                        additionalContext: '',
+                        ontology: { name: '', description: '', concepts: [], relationships: [] }
+                    } as any;
+                }
+
+                // Remove any stray numeric keys (artifact of spreading a string into an object)
+                if (phData.domain && typeof phData.domain === 'object') {
+                    Object.keys(phData.domain)
+                        .filter((k) => /^\d+$/.test(k))
+                        .forEach((k) => { delete (phData.domain as any)[k]; });
+                }
+
+                // If old location exists, move and strip presentation
+                if (phData.ontology) {
+                    const { presentation, ...rest } = phData.ontology;
+                    phData.domain.ontology = {
+                        name: rest.name || '',
+                        description: rest.description || '',
+                        concepts: Array.isArray(rest.concepts) ? rest.concepts : [],
+                        relationships: Array.isArray(rest.relationships) ? rest.relationships : [],
+                    };
+                    delete phData.ontology;
+                }
+
+                // If new location contains stray presentation, remove it
+                if (phData.domain.ontology && 'presentation' in phData.domain.ontology) {
+                    const { presentation: _p, ...restOnt } = phData.domain.ontology as any;
+                    phData.domain.ontology = restOnt;
+                }
+            }
+        } catch (e) {
+            console.warn('Migration for ontology nesting failed:', e);
+        }
+
         return Promise.resolve(state);
     },
-    version: 1,
+    version: 2,
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);

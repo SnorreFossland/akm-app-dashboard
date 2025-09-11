@@ -87,6 +87,11 @@ This document explains how “agents” are structured and used in this app, and
 - Start with free-form generation to explore ideas, then switch to `/api/genmodel` once the target structure is clear.
 - Log payloads and map model ids carefully; mismatch can cause provider errors.
 
+## Do
+- use redux toolkit for state management with useLocalStore
+- use shadcn for layout components
+
+
 ## Glossary
 - Agent: A focused UI + prompt + endpoint orchestration for a specific artifact.
 - Gateway: Provider-agnostic text generation endpoint (`/api/vercel-ai/generate`).

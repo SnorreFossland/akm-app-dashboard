@@ -1213,13 +1213,17 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 onClick={() => {
                                     setDocRefine(true);
                                     setInput((currentDocument !== "")
-                                        ? `
-Please include [New items] in the existing domain definition below.
-Don't ask clarifying questions or for additional context, just the updated definition.
+                                        ? `I want to scope and define the domain: [DOMAIN NAME]
 
-`
-                                        // Let’s begin by reviewing the current domain definition. I’ll provide it in the next message unless you require a specific format.
-                                        //                                         `
+Please help me:
+- Identify and formalize the core concepts.
+- Capture domain boundaries, assumptions, and known variations.
+- Prepare the result for later use in ontology concepts definition, Process modelling and AKM modeling, data integration.
+- Stating the Domain name and then a description of the domain.
+Don't include explanations, next steps or examples at this stage.
+
+Include the following content in your analysis:                                        
+`                                     
                                         :
                                         `I want to scope and define the domain: [DOMAIN NAME]
 

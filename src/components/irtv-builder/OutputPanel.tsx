@@ -340,7 +340,7 @@ export default function DocumentPanel({
                 {/* <div className="h-full w-full"> */}
                 {data
                     ? <Card className="bg-transparent w-full h-full overflow-hidden">
-                        <Tabs value={activeTab} onValueChange={setActiveTab}>
+                        {/* <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <TabsList className="bg-transparent">
                                 <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Preview</TabsTrigger>
                                 <TabsTrigger value="model" className='pb-2 mt-3'>Objects/Relationships</TabsTrigger>
@@ -353,49 +353,54 @@ export default function DocumentPanel({
                                         <MarkdownPreview mdPreview={irtvPreview} />
                                     )}
                                 </div>
-                            </TabsContent>
+                            </TabsContent> */}
 
-                            <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] ">
-                                <div className="flex flex-col h-full w-full">
-                                    <button
-                                        title="Save to Library"
-                                        onClick={handleDispatchIrtvData}
-                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex flex-row-reverse items-center gap-1`}
-                                    >
-                                        <BookmarkPlus className="h-4 w-4" />
-                                    </button>
-                                    <div className="text-xs w-full">
-                                        <ObjectCard model={{
-                                            id: typeof irtvContent === 'object' && irtvContent ? irtvContent.id : crypto.randomUUID(),
-                                            name: typeof irtvContent === 'object' && irtvContent ? irtvContent.name : 'Generated Model',
-                                            description: typeof irtvContent === 'object' && irtvContent ? irtvContent.description : '',
-                                            objects: typeof irtvContent === 'object' && irtvContent && irtvContent.objects ? irtvContent.objects.map(obj => ({
-                                                id: obj.id || crypto.randomUUID(),
-                                                name: obj.name,
-                                                description: obj.description,
-                                                proposedType: obj.proposedType || '',
-                                                typeRef: obj.typeRef,
-                                                typeName: obj.typeName,
-                                                category: obj.category,
-                                            })) : [],
-                                            relships: (irtvContent && typeof irtvContent === 'object' && 'relships' in irtvContent ? irtvContent.relships.map(rel => ({
-                                                id: rel.id || crypto.randomUUID(),
-                                                name: rel.name || '',
-                                                typeRef: rel.typeRef || '',
-                                                fromobjectRef: rel.fromobjectRef || '',
-                                                nameFrom: rel.nameFrom || '',
-                                                toobjectRef: rel.toobjectRef || '',
-                                                nameTo: rel.nameTo || '',
-                                            })) : []),
-                                            metamodelRef: irtvContent && typeof irtvContent === 'object' ? irtvContent.metamodelRef || '' : '',
-                                            modelviews: irtvContent && typeof irtvContent === 'object' ? irtvContent.modelviews || [] : []
-                                        }}
-                                        />
-                                    </div>
-                                </div>
-                            </TabsContent>
+                        {/* <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] "> */}
+                        <div className="flex flex-col h-full w-full">
+                            {(irtvContent && typeof irtvContent === 'object') ? (
+                                <>
+                            <button
+                                title="Save to Library"
+                                onClick={handleDispatchIrtvData}
+                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex flex-row-reverse items-center gap-1`}
+                            >
+                                <BookmarkPlus className="h-4 w-4" />
+                            </button>
+                            <div className="text-xs w-full">
+                                    <ObjectCard model={{
+                                        id: typeof irtvContent === 'object' && irtvContent ? irtvContent.id : crypto.randomUUID(),
+                                        name: typeof irtvContent === 'object' && irtvContent ? irtvContent.name : 'Generated Model',
+                                        description: typeof irtvContent === 'object' && irtvContent ? irtvContent.description : '',
+                                        objects: typeof irtvContent === 'object' && irtvContent && irtvContent.objects ? irtvContent.objects.map(obj => ({
+                                            id: obj.id || crypto.randomUUID(),
+                                            name: obj.name,
+                                            description: obj.description,
+                                            proposedType: obj.proposedType || '',
+                                            typeRef: obj.typeRef,
+                                            typeName: obj.typeName,
+                                            category: obj.category,
+                                        })) : [],
+                                        relships: (irtvContent && typeof irtvContent === 'object' && 'relships' in irtvContent ? irtvContent.relships.map(rel => ({
+                                            id: rel.id || crypto.randomUUID(),
+                                            name: rel.name || '',
+                                            typeRef: rel.typeRef || '',
+                                            fromobjectRef: rel.fromobjectRef || '',
+                                            nameFrom: rel.nameFrom || '',
+                                            toobjectRef: rel.toobjectRef || '',
+                                            nameTo: rel.nameTo || '',
+                                        })) : []),
+                                        metamodelRef: irtvContent && typeof irtvContent === 'object' ? irtvContent.metamodelRef || '' : '',
+                                        modelviews: irtvContent && typeof irtvContent === 'object' ? irtvContent.modelviews || [] : []
+                                    }}
+                                    />
+                            </div>
+                            </>)
+                                : (<div className='flex justify-center text-gray-400'>No preview yet</div>)
+                            }
+                        </div>
+                        {/* </TabsContent> */}
 
-                            <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                        {/* <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
                                 <div className="mx-1 ">
                                     {modelview && <ModelviewCard modelviews={[{
                                         // Use type assertion to match what ModelviewCard expects
@@ -406,7 +411,7 @@ export default function DocumentPanel({
                                     } as any]} />}
                                 </div>
                             </TabsContent>
-                        </Tabs>
+                        </Tabs> */}
                     </Card>
                     : <div className="flex justify-center items-center h-screen">
                         <LoadingCircularProgress />

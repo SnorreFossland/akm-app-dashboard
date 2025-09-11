@@ -13,6 +13,7 @@ type GenerateResponse = { [key: string]: any };
 interface OntologyConcept { name: string; description: string }
 interface OntologyRelship { name: string; nameFrom: string; nameTo: string; description?: string }
 interface OntologyData { name: string; description: string; presentation?: string; concepts: OntologyConcept[]; relationships: OntologyRelship[] }
+type Ontology = OntologyData;
 
 interface ChatComponentProps {
     mdContent: string;
@@ -26,7 +27,9 @@ interface ChatComponentProps {
 export default function ChatComponent({ mdContent, setMdContent, startupGuide, guide, setSuggestedOntologyData, onImplementSuggestedOntology }: ChatComponentProps) {
     const [prompt, setPrompt] = useState<string>('Create an ontology for the current domain');
     const [model, setModel] = useState<string>('gpt-5-mini');
-
+    
+    const [isLoading, setIsLoading] = useState(false);
+    
     const [context, setContext] = useState<string>('');
     const [maxTokens, setMaxTokens] = useState<number>(800);
     const [temperature, setTemperature] = useState<number>(0.5);
@@ -36,7 +39,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
     const [building, setBuilding] = useState<boolean>(false);
     const [buildError, setBuildError] = useState<string | null>(null);
     const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
-
+    
     const containerRef = useRef<HTMLDivElement>(null);
     const responsePanelRef = useRef<HTMLDivElement>(null);
     const buttonAccent = useMemo(() => 'px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap', []);
@@ -46,6 +49,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
     const [inputBarHeight, setInputBarHeight] = useState(0);
     const INPUT_BAR_OFFSET = 0; // offset in px; we also account for env(safe-area-inset-bottom) below
     const EXTRA_BOTTOM_GAP = 20; // extra px to ensure the bar is visually separated from the window edge
+    const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Dynamically reserve exactly the input bar height at the bottom of the scroll area
     useEffect(() => {
@@ -157,12 +161,23 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
         // Pass through known genmodel 400: {"error":"Unsupported model","details":"Model gpt-4o is not supported"} to server
         if (lower.startsWith('deepseek')) return lower; // deepseek-chat, deepseek-coder, deepseek-r1
         if (lower.includes('mistral')) return 'mistral';
-        if (lower.startsWith('gpt-')) return lower; // gpt-4o, gpt-4o-mini, gpt-5, gpt-5-mini
+        if (lower.startsWith('gpt-')) return lower; // gpt-5, gpt-5-mini
         if (lower === 'dummy') return 'dummy';
         // Fallback to a safe OpenAI mini model
-        return 'gpt-4o-mini';
+        return 'gpt-5-mini';
     }
 
+    // Add this function for the thinking animation
+    const ThinkingAnimation = () => {
+        return (
+            <div className="flex items-center gap-1 text-blue-400 font-mono p-3 rounded-lg bg-blue-950/20 border border-blue-900/40 max-w-[200px]">
+                <span className="ml-2">Thinking</span>
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.2s' }} />
+                <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }} />
+            </div>
+        );
+    };
     async function handleOntologyBuilderFromResult(text: string) {
         if (!text || !setSuggestedOntologyData) return;
         setBuilding(true);
@@ -316,7 +331,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                                                 </div>
                                             )}
                                             {m.role === 'assistant' && idx === lastAssistantIdx && (
-                                                <div className="flex items-center gap-2 mt-3">
+                                                <div className="flex items-center justify-end gap-2 mt-3">
                                                     <button
                                                         type="button"
                                                         onClick={() => handleOntologyBuilderFromResult(m.content)}
@@ -334,6 +349,23 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                                                             Implement Changes
                                                         </button>
                                                     )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => { setPrompt(''); setResult(''); setError(null); setMessages([]); }}
+                                                        className={buttonAccent}
+                                                    >
+                                                        Reset
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleCopy}
+                                                        disabled={!result && !messages.some(m => m.role === 'assistant')}
+                                                        className={
+                                                            buttonAccent + ((result || messages.some(m => m.role === 'assistant')) ? '' : ' opacity-60')
+                                                        }
+                                                    >
+                                                        Copy Assistant
+                                                    </button>
                                                 </div>
                                             )}
                                         </div>
@@ -353,9 +385,16 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                         )}
                     </div>
                 </div>
+                {isLoading && (
+                    <div className="flex justify-start my-4">
+                        <ThinkingAnimation />
+                        <div className="h-6" />
+                    </div>
+                )}
 
+                <div ref={messagesEndRef} />
             </div>
-            {/* Absolute bottom bar spanning the full width, independent of guide */}
+            {/* Absolute bottom bar */}
             <form
                 ref={formRef}
                 onSubmit={handleGenerate}
@@ -403,21 +442,37 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                     placeholder="Describe the ontology you want to generate..."
                 />
 
-                {/* Action buttons */}
-                <div className="flex items-center justify-between py-2">
+                {/* Action buttons*/}
+                <div className="flex items-center justify-end py-2">
+                    <button
+                        type="submit"
+                        className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
+                        disabled={loading}
+                        title="Send your question"
+                    >
+                        {loading ? 'Working…' : 'Ask Assistant'}
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
+                            className="w-8 h-8"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                        </svg>
+                    </button>
+
+                    {/* 
                     <div className="flex items-center gap-2">
-
-
-                        {setSuggestedOntologyData && (
-                            <button
-                                type="button"
-                                onClick={() => handleOntologyBuilderFromResult((messages.slice().reverse().find(m => m.role === 'assistant')?.content) || result || prompt)}
-                                disabled={building}
-                                className={buttonAccent}
-                            >
-                                {building ? 'Building…' : 'Update Suggested Ontology'}
-                            </button>
-                        )}
+                        <button
+                            type="button"
+                            onClick={() => handleOntologyBuilderFromResult((messages.slice().reverse().find(m => m.role === 'assistant')?.content) || result || prompt)}
+                            disabled={building}
+                            className={buttonAccent}
+                        >
+                            {building ? 'Building…' : 'Update Suggested Ontology'}
+                        </button>
                         {onImplementSuggestedOntology && (
                             <button
                                 type="button"
@@ -427,42 +482,8 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                                 Implement Changes
                             </button>
                         )}
-                        <button
-                            type="button"
-                            onClick={() => { setPrompt(''); setResult(''); setError(null); setMessages([]); }}
-                            className={buttonAccent}
-                        >
-                            Reset
-                        </button>
-                        <button
-                            type="button"
-                            onClick={handleCopy}
-                            disabled={!result && !messages.some(m => m.role === 'assistant')}
-                            className={
-                                buttonAccent + ((result || messages.some(m => m.role === 'assistant')) ? '' : ' opacity-60')
-                            }
-                        >
-                            Copy Assistant
-                        </button>
-                        <button
-                            type="submit"
-                            className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
-                            disabled={loading}
-                            title="Send your question"
-                        >
-                            {loading ? 'Working…' : 'Ask Assistant'}
-                            <svg
-                                xmlns="http://www.w3.org/2000/svg"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                className="w-8 h-8"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                            </svg>
-                        </button>
-                    </div>
+                    </div> */}
+
                 </div>
             </form>
         </div>

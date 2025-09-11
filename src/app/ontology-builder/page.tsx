@@ -90,7 +90,7 @@ export default function OntologyBuilderPage() {
   const documents = data.phData.documents;
   const domainData = data.phData.domain;
 
-  const [ontology, setOntology] = useState<Ontology | null>(data.phData.ontology);
+  const [ontology, setOntology] = useState<Ontology | null>(data.phData.domain?.ontology);
 
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
@@ -147,16 +147,16 @@ export default function OntologyBuilderPage() {
   }
   useEffect(() => {
     console.log('128 OntologyBuilderPage mounted, data:', data);
-    if (data.phData.ontology) {
-      setOntology(data.phData.ontology);
+    if (data.phData.domain?.ontology) {
+      setOntology(data.phData.domain.ontology);
     }
   }, []);
 
   useEffect(() => {
-    if (data.phData.ontology) {
-      setOntology(data.phData.ontology);
+    if (data.phData.domain?.ontology) {
+      setOntology(data.phData.domain.ontology);
     }
-  }, [data.phData.ontology]);
+  }, [data.phData.domain?.ontology]);
   useEffect(() => {
     if (data.phData.domain) {
       setDomainData(data.phData.domain);
@@ -186,24 +186,18 @@ export default function OntologyBuilderPage() {
       alert('No Concept data to dispatch');
       return;
     }
-    const updatedOntologyData = {
-      status: 'succeeded' as const,
-      phData: {
-        ...data.phData,
-        ontology: suggestedOntologyData,
-      },
-      phFocus: data.phFocus,
-      phUser: data.phUser,
-      phSource: data.phSource,
+    // Dedupe concepts and relationships and dispatch to store
+    const uniqueConcepts = Array.from(new Map((suggestedOntologyData.concepts || []).map((item: Concept) => [item.name, item])).values());
+    const uniqueRelationships = Array.from(new Map((suggestedOntologyData.relationships || []).map((item: Relationship) => [item.name, item])).values());
+
+    const deduped = {
+      name: suggestedOntologyData.name,
+      description: suggestedOntologyData.description,
+      concepts: uniqueConcepts,
+      relationships: uniqueRelationships
     };
 
-    const uniqueConcepts = Array.from(new Map(updatedOntologyData.phData.ontology.concepts.map((item: Concept) => [item.name, item])).values());
-    const uniqueRelationships = Array.from(new Map(updatedOntologyData.phData.ontology.relationships.map((item: Relationship) => [item.name, item])).values());
-
-    updatedOntologyData.phData.ontology.concepts = uniqueConcepts;
-    updatedOntologyData.phData.ontology.relationships = uniqueRelationships;
-
-    dispatch(setOntologyData(updatedOntologyData));
+    dispatch(setOntologyData(deduped as any));
     // setSuggestedOntologyData(null);
     // }
   };
@@ -240,7 +234,7 @@ export default function OntologyBuilderPage() {
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
             <Card className="p-1 h-full">
               <CardTitle className="text-sm font-bold">Current Ontology</CardTitle>
-              <div className="flex justify-end pb-1 pt-0 mx-2">
+              {/* <div className="flex justify-end pb-1 pt-0 mx-2">
                 <button
                   title="Save to Library"
                   onClick={handleSaveToLibrary}
@@ -263,9 +257,9 @@ export default function OntologyBuilderPage() {
                     </DialogFooter>
                   </DialogContent>
                 </Dialog>
-              </div>
+              </div> */}
               <div className="mx-1 bg-gray-700">
-                <OntologyCard ontologyData={ontology} />
+                <OntologyCard domainData={domainData} ontologyData={ontology} />
               </div>
             </Card>
           </div>
@@ -285,7 +279,7 @@ export default function OntologyBuilderPage() {
         )
       },
     ],
-    defaultTab: 'context'
+    defaultTab: 'current-domain'
   };
 
   const middlePanelContent = {
@@ -342,7 +336,7 @@ export default function OntologyBuilderPage() {
                 </Dialog> */}
               </div>
               <div className="mx-1 bg-gray-700">
-                <OntologyCard ontologyData={ontology} />
+                <OntologyCard domainData={domainData} ontologyData={ontology} />
               </div>
             </Card>
           </div>
@@ -406,33 +400,21 @@ export default function OntologyBuilderPage() {
         content: (
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
             <Card className="p-1 h-full">
-              {/* <CardTitle className="text-sm font-bold">Suggested Ontology</CardTitle> */}
-              <div className="flex justify-end pb-1 pt-0 mx-2">
-                <button
-                  title="Save to Library"
-                  onClick={handleSaveToLibrary}
-                  className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                >
-                  <BookmarkPlus className="h-4 w-4" />
-                  Save to Library
-                </button>
-                <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                  <DialogContent className="max-w-5xl">
-                    <DialogHeader>
-                      <DialogDescription>
-                        {printPromptsDiv}
-                      </DialogDescription>
-                    </DialogHeader>
-                    <DialogFooter>
-                      <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                        Close
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-              </div>
+              <CardTitle className="text-sm font-bold">
+                <div className="flex items-center justify-between w-full gap-2 px-2">
+                  <span className="min-w-0 truncate">{ontology?.name || 'Suggested Ontology'}</span>
+                  <button
+                    title="Save to Library"
+                    onClick={handleSaveToLibrary}
+                    className={`text-xs ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
+                  >
+                    <BookmarkPlus className="h-4 w-4" />
+                    Save to Library
+                  </button>
+                </div>
+              </CardTitle>
               <div className="mx-1 bg-gray-700">
-                <OntologyCard ontologyData={suggestedOntologyData} />
+                <OntologyCard domainData={domainData} ontologyData={suggestedOntologyData} />
               </div>
             </Card>
           </div>
@@ -513,4 +495,3 @@ export default function OntologyBuilderPage() {
     </div>
   );
 }
-
