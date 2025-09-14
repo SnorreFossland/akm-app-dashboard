@@ -14,11 +14,11 @@ import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusMod
 import { object } from 'zod';
 import { ObjectSchema } from '@/objectSchema';
 
-interface DocumentPanelProps {
+interface OutputPanelProps {
     mvPreview: string; // The preview content to display
     setMvPreview: React.Dispatch<React.SetStateAction<string>>;
     mvContent: string | Model | null; // The main content, can be string or Model
-    setMvContent: React.Dispatch<React.SetStateAction<string | Model | null>>;
+    setMvContent: React.Dispatch<React.SetStateAction<string>>;
     onEdit?: () => void;
     onPaste?: () => void;
     onLibrary?: () => void;
@@ -30,7 +30,7 @@ interface DocumentPanelProps {
     panelType?: string; // 'left' or 'right'
 }
 
-export default function DocumentPanel({
+export default function OutputPanel({
     mvPreview,
     setMvPreview,
     mvContent,
@@ -44,10 +44,9 @@ export default function DocumentPanel({
     setIsLibraryOpen = () => { },
     isLibraryOpen = false,
     panelType = 'left' // Default to 'left' panel type
-}: DocumentPanelProps) {
+}: OutputPanelProps) {
     // Add debugging
-    // console.log('DocumentPanel render - mvContent:', mvContent?.substring(0, 100) || 'empty');
-    // console.log('DocumentPanel render - mvContent length:', mvContent?.length || 0);
+    // console.log('49 DocumentPanel render - mvPreview:', mvPreview?.substring(0, 100) || 'empty');
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch();
     const [dispatchDone, setDispatchDone] = useState(false);
@@ -390,12 +389,13 @@ export default function DocumentPanel({
                                     <div className="text-xs w-full">
                                         {modelview && (
                                             <ModelviewCard
-                                                modelviews={[{
+                                                // ModelviewCard expects a single `modelview` prop, not `modelviews`
+                                                modelview={{
                                                     name: modelview.name || 'Default View',
                                                     description: modelview.description || '',
                                                     objectviews: modelview.objectviews || [],
                                                     relshipviews: modelview.relshipviews || []
-                                                } as any]}
+                                                } as any}
                                             />
                                         )}
                                     </div>

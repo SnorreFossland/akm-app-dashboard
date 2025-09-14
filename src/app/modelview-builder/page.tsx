@@ -7,15 +7,20 @@ import { Network, Package } from 'lucide-react';
 
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
-import ModelComponent from '@/features/model-universe/components/ModelComponent';
+// import ModelComponent from '@/features/model-universe/components/ModelComponent';
 import ModelviewBuilder from '@/components/modelview-bilder/ModelviewBuilder';
-import { ModelviewCard } from '@/components/modelview-card';
+// import { ModelviewCard } from '@/components/modelview-card';
 import { FileOperations } from '@/components/FileOperations';
 import { setFocusModel } from '@/features/model-universe/modelSlice';
 import { ObjectCard } from '@/components/object-card';
+import { ObjectviewCard } from '@/components/objectview-card';
+import { ModelviewCard } from '@/components/modelview-card';
 import OutputPanel from '@/components/modelview-bilder/OutputPanel';
 import GettingStartedGuide from '@/components/modelview-bilder/GettingStartedGuide';
 import Guide from '@/components/modelview-bilder/Guide';
+import ModelSuiteSelector from '@/components/ModelSuiteSelector';
+
+type Model = { id?: string; name?: string; description?: string; objects?: any[]; relships?: any[] };
 
 export default function ModelviewBuilderPage() {
   const data = useSelector((state: RootState) => state.modelUniverse);
@@ -23,50 +28,82 @@ export default function ModelviewBuilderPage() {
   const domain = useSelector((state: { modelUniverse: any }) => data.phData.domain);
   const dispatch = useDispatch();
   const iframeRef = useRef<HTMLIFrameElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
   const [currentModel, setCurrentModel] = useState<any>(null);
+  const [curMetamodel, setCurMetamodel] = useState<any>(null);
+  const [curModelview, setCurModelview] = useState<any>(null);
   const [selectedModel, setSelectedModel] = useState<any>(null);
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [mdContent, setMdContent] = useState<string>(domain.description);
+  const [mdContent, setMdContent] = useState<string>("");
 
-  const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
+  // const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
   // const [metis, setMetis] = useState<Metis | null >(null);
   const [model, setModel] = useState<{ id?: string; name?: string; description?: string; objects?: any[]; relships?: any[] } | null>(null);
-  const [curmod, setCurmod] = useState<Model | null>(null);
-  const [modelview, setModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
-
+  // const [curmod, setCurmod] = useState<any | null>(null);
+ 
   const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
 
   const [focusModelLocal, setFocusModelLocal] = useState<{ id: string; name: string } | null>(null);
   const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
 
-  const [contextItems, setContextItems] = useState("");
+
   const [mvContent, setMvContent] = useState<string>('');
   const [mvPreview, setMvPreview] = useState<string>('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!');
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
 
+  // Keep currentModel in sync with Redux focus, without causing render loops
   useEffect(() => {
-    setCurrentModel(data?.phData?.metis?.models.find(model => model.id === data.phFocus?.focusModel?.id) || null);
-    currentModel && setModel(currentModel);
-    setCurMetamodel((data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]).find(metamodel => metamodel.id === currentModel?.metamodelRef) || null);
-  });
+    const focusedId = data?.phFocus?.focusModel?.id;
+    const models = data?.phData?.metis?.models || [];
+
+    const next = models.find((m: any) => m.id === focusedId) || null;
+    setCurrentModel((prev: typeof currentModel) => (prev?.id === next?.id ? prev : next));
+  }, [data?.phData?.metis?.models, data?.phFocus?.focusModel?.id]);
+
+  // Derive curMetamodel only when currentModel or the metamodel list changes
+  useEffect(() => {
+    if (!currentModel) {
+      setCurMetamodel(null);
+      return;
+    }
+    const metamodels = (data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]) || [];
+    const nextMeta = metamodels.find((mm) => mm.id === currentModel.metamodelRef) || null;
+    setCurMetamodel((prev: any) => (prev?.id === nextMeta?.id ? prev : nextMeta));
+  }, [currentModel?.metamodelRef, data?.phData?.metis?.metamodels]);
 
   const handleResponseChange = (response: any) => {
     console.log("Response changed:", response);
   };
 
   // Initialize current model when metis loads
-  // React.useEffect(() => {
-  //   if (!currentModel && metis?.models?.length) {
-  //     const m = metis.models[0];
-  //     setCurrentModel(m);
-  //     dispatch(setFocusModel({ id: m.id, name: m.name }));
-  //   }
-  // }, [metis, currentModel, dispatch]);
+ useEffect(() => {
+    if (!currentModel && metis?.models?.length) {
+      const m = metis.models[0];
+      setCurrentModel(m);
+      dispatch(setFocusModel({ id: m.id, name: m.name }));
+    }
+    if (currentModel && !curModelview && currentModel.modelviews?.length) {
+      const mv = currentModel.modelviews[0];
+      setCurModelview(mv);
+      setFocusModelview(mv ? { id: mv.id, name: mv.name } : null);
+    }
+  }, [metis, currentModel, curModelview, dispatch]);
+
+  useEffect(() => {
+    if (currentModel && focusModelview) {
+      const mv = currentModel.modelviews?.find((v: any) => v.id === focusModelview.id) || null;
+      console.log("100 Setting current modelview to:", mv);
+      setCurModelview(mv);
+    } else {
+      const mv = currentModel?.modelviews[0];
+      setCurModelview(mv);
+    }
+  }, [currentModel, focusModelview]);
 
   const handleViewInMarkdown = (response: string) => {
     const cleanResponse = (response: string) => {
@@ -126,7 +163,7 @@ export default function ModelviewBuilderPage() {
                 id: currentModel.id,
                 name: currentModel.name,
                 description: currentModel.description,
-                objects: currentModel.objects?.map(obj => ({
+                objects: currentModel.objects?.map((obj: any) => ({
                   id: obj.id || '',
                   name: obj.name || '',
                   description: obj.description || '',
@@ -164,8 +201,7 @@ export default function ModelviewBuilderPage() {
               onViewInPreview={handleViewInPreview}
               setShowLeftPanel={setShowLeftPanel}
               onAddContent={handleAddContent}
-              mvContent={mvContent}
-              // mvContent={typeof mvContent === 'string' ? mvContent : ''}
+              mvContent={mvContent ?? ''}
               setMvContent={setMvContent}
               mvPreview={mvPreview}
               setMvPreview={setMvPreview}
@@ -178,27 +214,19 @@ export default function ModelviewBuilderPage() {
       },
       {
         key: 'suite',
-        label: 'Model',
+        label: 'Modelview',
         content: (
-          <div className="space-y-4">
-            {currentModel && (
-              <ObjectCard model={{
-                id: currentModel.id,
-                name: currentModel.name,
-                description: currentModel.description,
-                objects: currentModel.objects?.map(obj => ({
-                  id: obj.id || '',
-                  name: obj.name || '',
-                  description: obj.description || '',
-                  proposedType: obj.proposedType || '',
-                  typeRef: obj.typeRef || '',
-                  typeName: obj.typeName || '',
-                  category: obj.category || ''
-                })) || [],
-                relships: currentModel.relships || [],
-                metamodelRef: currentModel.metamodelRef,
-                modelviews: currentModel.modelviews
-              }} />
+          <div className="text-xs w-full">
+            {curModelview && (
+              <ModelviewCard
+                // ModelviewCard expects a single `modelview` prop, not `modelviews`
+                modelview={{
+                  name: curModelview.name || 'Default View',
+                  // description: curModelview.description || '',
+                  objectviews: curModelview.objectviews || [],
+                  relshipviews: curModelview.relshipviews || []
+                } as any}
+              />
             )}
           </div>
         )
@@ -234,8 +262,8 @@ export default function ModelviewBuilderPage() {
   const rightPanelContent = {
     tabs: [
       {
-        key: 'previewModel',
-        label: 'Model Preview',
+        key: 'previewModelview',
+        label: 'Modelview Preview',
         content: (
           <OutputPanel
             mvPreview={mvPreview}
@@ -247,32 +275,54 @@ export default function ModelviewBuilderPage() {
             panelType='right'
           />
         )
-      }
+      },
+      {
+        key: 'previewModelview2',
+        label: 'Preview Modelview',
+        content: (
+          <div className="space-y-4">
+            {mvPreview?.length ? (
+              <ObjectviewCard modelview={mvPreview as any} />
+            ) : (
+              <div className="text-sm text-gray-400 p-2">No previewmodelview yet.</div>
+            )}
+          </div>
+        )
+      },
     ],
-    defaultTab: 'preview'
+    defaultTab: 'previewModelview'
+  };
+
+  const handleModelSelectByName = (modelName: string) => {
+    const selectedModel = data.phData.metis.models.find((m: any) => m.name === modelName) || null;
+    setCurrentModel(selectedModel);
+    setFocusModelLocal(selectedModel ? { id: selectedModel.id, name: selectedModel.name } : null);
+    setFocusModelview(selectedModel?.modelviews?.[0] || null);
+    if (selectedModel) {
+      dispatch(setFocusModel({ id: selectedModel.id, name: selectedModel.name }));
+    }
+  };
+
+  const handleModelviewSelectById = (modelviewId: string | null) => {
+    if (!currentModel) {
+      setFocusModelview(null);
+      return;
+    }
+    const mv = currentModel.modelviews?.find((v: any) => v.id === modelviewId) || null;
+    setFocusModelview(mv ? { id: mv.id, name: mv.name } : null);
+    // If you want to propagate to Redux or other slices, do it here.
   };
 
   const modelSelector = (
-    <div className="flex justify-between bg-gray-800 text-xs">
-      <div className="px-1">
-        <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
-        <span className="text-gray-300">{metis?.name}</span>
-      </div>
-      <div className="px-1">
-        <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
-        <select id="model-select" className="ps-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
-          {metis?.models.map((model: { name: string }) => (
-            <option key={model.name} value={model.name}>{model.name}</option>
-          ))}
-        </select>
-      </div>
-      <div className="px-1 me-auto">
-        {/* <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block"></label> */}
-        <span className="text-gray-400">{curMetamodel?.name || "Default"}</span>
-      </div>
-      <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
-    </div>
-  )
+    <ModelSuiteSelector
+      metis={metis}
+      currentModel={currentModel}
+      curMetamodel={curMetamodel}
+      currentModelviewId={focusModelview?.id ?? null}
+      onModelSelect={handleModelSelectByName}
+      onModelviewSelect={handleModelviewSelectById}
+    />
+  );
 
   return (
     <div className="flex-1 flex-row h-screen">

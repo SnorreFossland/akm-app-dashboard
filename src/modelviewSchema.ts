@@ -9,17 +9,19 @@ export const ModelviewSchema = z.object({
             id: z.string().describe("UUID - Unique identifier of the objectview"),
             name: z.string().describe("Name of the objectview"),
             description: z.string().describe("Description of the objectview"),
-            typeName: z.string().describe("Type of the objectview"),
             loc: z.string().describe("Location of the objectview"),
             objectRef: z.string().describe("Reference to the object"),
+            typeviewRef: z.string().describe("Typeview of the objectview"),
         }).describe("Objectview schema")
     ).describe("List of objectviews"),
     relshipviews: z.array(
         z.object({
             id: z.string().describe("UUID - Unique identifier of the relationship"),
             name: z.string().describe("Name of the relationship"),
-            fromobjviewRef: z.string().describe("UUID - Unique identifier of the first objectview"),
+            fromobjviewRef: z.string().describe("UUID - Unique identifier of the first objectview"),       
             toobjviewRef: z.string().describe("UUID - Unique identifier of the second objectview"),
+            relshipRef: z.string().describe("Reference to the relationship"),
+            typeviewRef: z.string().describe("Typeview of the relationship"),
             points: z.array(z.number()).describe("List of points"),
         }).describe("Relshipviews schema")
     ).describe("List of relationships"),

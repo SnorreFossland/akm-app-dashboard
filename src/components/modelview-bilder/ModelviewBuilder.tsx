@@ -15,6 +15,7 @@ import {
     setMessages as chatSetMessages,
     Message
 } from '@/features/chat/chatSlice';
+import { Model, Modelview } from '@/features/model-universe/modelSlice';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
@@ -66,43 +67,10 @@ export default function ModelviewBuilder({
 }: ModelviewBuilderProps) {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const [curmod, setCurmod] = useState<Model | null>(null);
-    const [curMetamodel, setCurMetamodel] = useState(null);
-    const [model, setModel] = useState<{
-        id?: string;
-        name?: string;
-        objects: Array<{
-            id: string;
-            name: string;
-            description: string;
-            typeName?: string;
-        }>;
-        relships: Array<{
-            id: string;
-            name: string;
-            nameFrom: string;
-            nameTo: string;
-        }>;
-    } | null>(null);
-    const [modelview, setModelview] = useState<{
-        id: string;
-        name: string;
-        description: string;
-        objectviews: Array<{
-            id: string;
-            name: string;
-            description: string;
-            typeName: string;
-            loc: string;
-            objectRef: string;
-        }>;
-        relshipviews: Array<{
-            id: string;
-            name: string;
-            fromobjviewRef: string;
-            toobjviewRef: string;
-            points: number[];
-        }>;
-    } | null>(null);
+    const [curMetamodel, setCurMetamodel] = useState<any>(null);
+    const [curModelview, setCurModelview] = useState<Modelview | null>(null);
+    const [model, setModel] = useState<Model | null>(null);
+    const [modelview, setModelview] = useState<Modelview | null>(null);
     interface ModelviewObjects {
         id: string;
         name: string;
@@ -170,38 +138,43 @@ export default function ModelviewBuilder({
 
     useEffect(() => {
         if (!data) return;
-
         const models = data?.phData?.metis?.models || [];
         const focusedId = data?.phFocus?.focusModel?.id;
-        setCurmod(models.find((m: any) => m.id === focusedId) || models[0]);
 
-        // Only update state when the model ID actually changes to avoid re-renders/loops
+        // compute the model we should focus (respect focusModel if present)
+        const newCurmod = models.find((m: any) => m.id === focusedId) || models[0] || null;
+
+        // only update curmod if actually changed
+        setCurmod((prev) => (prev?.id === newCurmod?.id ? prev : newCurmod));
+        console.log("141 Data received:", data, newCurmod, curmod);
+
+        if (!curmod?.objects || curmod.objects.length < 1) {
+            console.log("no objects in current model");
+            return;
+        }
+
+        // keep model state in sync (use newCurmod directly, not curmod which may be stale)
         setModel((prevModel) => {
-            if (!curmod) return prevModel;
-            if (prevModel && prevModel.id === curmod.id) {
-                return prevModel; // no change -> no re-render from this setter
-            }
-            return curmod;
+            if (!newCurmod) return prevModel;
+            if (prevModel && prevModel.id === newCurmod.id) return prevModel;
+            return newCurmod;
         });
 
-        // Safely compute filtered relationships and objects
-        const filteredRelationships = (curmod?.relships || []).filter((rel: any) => {
-            const fromObject = (curmod?.objects || []).find((obj: any) => obj.id === rel.nameFrom);
-            const toObject = (curmod?.objects || []).find((obj: any) => obj.id === rel.nameTo);
+        // Safely compute filtered relationships and objects based on newCurmod
+        const filteredRelationships = (newCurmod?.relships || []).filter((rel: any) => {
+            const fromObject = (newCurmod?.objects || []).find((obj: any) => obj.id === rel.nameFrom);
+            const toObject = (newCurmod?.objects || []).find((obj: any) => obj.id === rel.nameTo);
             return fromObject && toObject && rel;
         });
 
-        // compute new value
         const newExisting = {
-            objects: curmod?.objects || [],
+            objects: newCurmod?.objects || [],
             relships: (filteredRelationships || []).filter((rel: any) =>
-                (curmod?.objects || []).some((obj: any) => obj.id === rel.nameFrom || obj.id === rel.nameTo)
+                (newCurmod?.objects || []).some((obj: any) => obj.id === rel.nameFrom || obj.id === rel.nameTo)
             ) || []
         };
 
-        // guarded functional update to avoid no-op setState that triggers renders
         setExistingObjectsInModelview((prev) => {
-            // quick length checks
             const prevObjects = prev?.objects || [];
             const prevRelships = prev?.relships || [];
 
@@ -213,21 +186,19 @@ export default function ModelviewBuilder({
                 prevRelships.length === newExisting.relships.length &&
                 prevRelships.every((r: any, i: number) => r?.id === newExisting.relships[i]?.id);
 
-            if (sameObjects && sameRelships) {
-                return prev; // no change -> avoid triggering re-render
-            }
+            if (sameObjects && sameRelships) return prev;
             return newExisting;
         });
-    }, []);
+    }, [data?.phData?.metis?.models, data?.phFocus?.focusModel?.id, data]);
 
     useEffect(() => {
         console.log("224 Current model changed:", curmod);
-        const nextAutoPrompt = "Create a Modelview with Objectviews and Relshipviews for " +
-            (curmod?.objects.length || 0) + " objects and " + (curmod?.relships.length || 0) + " relationships.";
-
-
+        if (!curmod || curmod?.objects.length < 1) {
+            setStreamedContent("No objects found in the current model.");
+            return;
+        }
+        const nextAutoPrompt = `Create a Modelview with Objectviews and Relshipviews for the Objects and Relationships in the current model defined n the Context below.`
         if (!nextAutoPrompt) return;
-
         setUserPrompt(nextAutoPrompt);
 
         // Decide whether to inject/overwrite the textarea input:
@@ -250,9 +221,6 @@ export default function ModelviewBuilder({
         if (savedTemp) setTemperature(parseFloat(savedTemp));
     }, [curmod]);
 
-
-
-
     const printPromptsDiv = React.useMemo(() => (
         <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
             <DialogTitle>---- System Prompt</DialogTitle>
@@ -260,33 +228,210 @@ export default function ModelviewBuilder({
     ), [model]);
 
     const formatJSONAsMarkdown = (data: any): string => {
-        let markdown = `# ${data.name || "Generated Model"}\n\n`;
+        let markdown = `# ${data.name || "Generated Modelview"}\n\n`;
         if (data.description) {
             markdown += `**Description:** ${data.description}\n\n`;
         }
-        if (data.objects?.length) {
-            markdown += "## Objects\n\n";
-            data.objects.forEach((obj: any, i: number) => {
-                markdown += `### ${i + 1}. ${obj.name}\n\n`;
-                markdown += `- **ID:** ${obj.id}\n`;
-                markdown += `- **Description:** ${obj.description}\n`;
-                markdown += `- **Type Reference:** ${obj.typeRef}\n`;
-                markdown += `- **Type Name:** ${obj.typeName}\n`;
-                markdown += `- **Proposed Type:** ${obj.proposedType}\n\n`;
+        const oviews = data.objectviews || [];
+        if (Array.isArray(oviews) && oviews.length) {
+            markdown += "## Objectviews\n\n";
+            oviews.forEach((ov: any, i: number) => {
+                markdown += `### ${i + 1}. ${ov.name}\n\n`;
+                markdown += `- **ID:** ${ov.id}\n`;
+                markdown += `- **Type:** ${ov.typeName || ''}\n`;
+                markdown += `- **Location:** ${ov.loc || ''}\n`;
+                markdown += `- **Object Ref:** ${ov.objectRef || ''}\n`;
+                markdown += `- **Description:** ${ov.description || ''}\n`;
             });
         }
-        if (data.relships?.length) {
-            markdown += "## Relationships\n\n";
-            data.relships.forEach((rel: any, i: number) => {
-                markdown += `### ${i + 1}. ${rel.name}\n\n`;
-                markdown += `- **ID:** ${rel.id}\n`;
-                markdown += `- **Description:** ${rel.description || ""}\n`;
-                markdown += `- **From:** ${rel.from || rel.nameFrom || ""}\n`;
-                markdown += `- **To:** ${rel.to || rel.nameTo || ""}\n`;
-                markdown += `- **Type:** ${rel.type || rel.typeRef || ""}\n\n`;
+        const rviews = data.relshipviews || [];
+        if (Array.isArray(rviews) && rviews.length) {
+            markdown += "## Relationship Views\n\n";
+            rviews.forEach((rv: any, i: number) => {
+                markdown += `### ${i + 1}. ${rv.name}\n\n`;
+                markdown += `- **ID:** ${rv.id}\n`;
+                markdown += `- **From Ref:** ${rv.fromobjviewRef || ''}\n`;
+                markdown += `- **To Ref:** ${rv.toobjviewRef || ''}\n`;
+                const pts = Array.isArray(rv.points) ? rv.points.join(', ') : '';
+                markdown += `- **Points:** ${pts}\n\n`;
             });
         }
         return markdown;
+    };
+
+
+    // Normalize common AI response shapes into a single ModelviewSchema-compatible object
+    const normalizeModelviewResponse = (raw: any) => {
+        let candidate: any = raw;
+        // Unwrap if wrapped in { modelview } or { modelviews: [..] }
+        if (raw && typeof raw === 'object') {
+            if (Array.isArray(raw.modelviews) && raw.modelviews.length) {
+                candidate = raw.modelviews[0];
+            } else if (raw.modelview && typeof raw.modelview === 'object') {
+                candidate = raw.modelview;
+            }
+        }
+        // Map alternate property names
+        if (candidate.objects && !candidate.objectviews) candidate.objectviews = candidate.objects;
+        if (candidate.relationships && !candidate.relshipviews) candidate.relshipviews = candidate.relationships;
+        if (candidate.relations && !candidate.relshipviews) candidate.relshipviews = candidate.relations;
+
+        // Ensure required fields
+        if (!candidate.id) {
+            try { candidate.id = crypto.randomUUID(); } catch { candidate.id = String(Date.now()); }
+        }
+        candidate.name = candidate.name || 'Generated Modelview';
+        candidate.description = candidate.description || '';
+        candidate.objectviews = Array.isArray(candidate.objectviews) ? candidate.objectviews : [];
+        candidate.relshipviews = Array.isArray(candidate.relshipviews) ? candidate.relshipviews : [];
+
+        // Helper: strict UUID check
+        const isValidUUID = (s: any) => {
+            if (typeof s !== 'string') return false;
+            return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s);
+        };
+
+        const makeUUID = () => {
+            try { return crypto.randomUUID(); } catch {
+                // fallback formatted string with version 4 marker
+                const rnd = () => Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1);
+                // produce xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx
+                return `${rnd()}${rnd()}-${rnd()}-4${rnd().substr(0, 3)}-${((8 + (Math.random() * 4)) | 0).toString(16)}${rnd().substr(0, 3)}-${rnd()}${rnd()}${rnd()}`;
+            }
+        };
+
+        // Maps for consistent remapping of non-UUID originals -> generated UUIDs
+        const originalRelToUuid = new Map<string, string>();
+        const originalTypeToUuid = new Map<string, string>();
+        // note: objectviews mapping is built after normalizing objectviews
+
+        const ensureMappedUUID = (map: Map<string, string>, original?: any) => {
+            if (!original && original !== 0) return makeUUID();
+            const key = String(original);
+            if (isValidUUID(key)) return key;
+            if (map.has(key)) return map.get(key)!;
+            const g = makeUUID();
+            map.set(key, g);
+            return g;
+        };
+
+        // First, normalize objectviews and ensure consistent UUID ids and typeviewRef
+        const objectviews = (candidate.objectviews || []).map((ov: any, idx: number) => {
+            // try to pull potential ids from common fields (objectId, viewId, id)
+            const possibleId = ov.id || ov.objectId || ov.viewId;
+            const id = isValidUUID(possibleId) ? possibleId : makeUUID();
+
+            const typeviewKey = ov.typeviewRef || ov.typeRef || ov.typeName || ov.type || null;
+            // For typeviewRef we map names/non-uuids to generated UUIDs so schema sees a UUID
+            const typeviewRef = ensureMappedUUID(originalTypeToUuid, typeviewKey);
+
+            return {
+                // keep other fields, but guarantee id & name exist and include typeviewRef
+                id,
+                name: ov.name || ov.objectName || `object-${idx + 1}`,
+                description: ov.description || '',
+                typeName: ov.typeName || ov.type || ov.proposedType || '',
+                loc: ov.loc || ov.location || '',
+                objectRef: ov.objectRef || ov.objectId || ov.ref || '',
+                typeviewRef
+            };
+        });
+
+        // Build lookup maps to resolve refs that might be returned as names or objectRefs
+        const ovById = new Map<string, any>();
+        const ovByName = new Map<string, any>();
+        const ovByObjectRef = new Map<string, any>();
+        objectviews.forEach((ov: any) => {
+            ovById.set(ov.id, ov);
+            if (ov.name) ovByName.set(String(ov.name).toLowerCase(), ov);
+            if (ov.objectRef) ovByObjectRef.set(String(ov.objectRef), ov);
+        });
+
+        // Coerce relationship views fields and resolve references to the actual UUIDs from objectviews
+        const relshipviews = (candidate.relshipviews || []).map((rv: any, idx: number) => {
+            const id = isValidUUID(rv.id) ? rv.id : makeUUID();
+            const name = rv.name || `rel-${idx + 1}`;
+
+            // incoming potential reference strings (may be uuid, name, objectRef, index etc.)
+            const rawFrom = rv.fromobjviewRef || rv.from || rv.fromRef || rv.fromId || rv.fromObject || rv.fromName || '';
+            const rawTo = rv.toobjviewRef || rv.to || rv.toRef || rv.toId || rv.toObject || rv.toName || '';
+
+            const resolveRef = (raw: any) => {
+                if (!raw && raw !== 0) return null;
+                const s = String(raw).trim();
+                if (isValidUUID(s) && ovById.has(s)) return s;            // already uuid and points to a known objectview
+                if (isValidUUID(s) && !ovById.has(s)) return s;           // uuid but unknown: keep it (schema may still accept)
+                // try by name (case-insensitive)
+                const byName = ovByName.get(s.toLowerCase());
+                if (byName) return byName.id;
+                // try by objectRef
+                const byObjRef = ovByObjectRef.get(s);
+                if (byObjRef) return byObjRef.id;
+                // maybe it's an index-like "obj1" or "1" -> try numeric index mapping to objectviews
+                const digits = s.replace(/[^\d]/g, '');
+                if (digits) {
+                    const num = Number(digits);
+                    if (!isNaN(num) && objectviews[num - 1]) return objectviews[num - 1].id;
+                }
+                // not resolvable -> null
+                return null;
+            };
+
+            let fromResolved = resolveRef(rawFrom);
+            let toResolved = resolveRef(rawTo);
+
+            // If unresolved, try fallback heuristics: match by "fromName"/"toName" occurrences inside rv payload
+            if (!fromResolved && rv.fromName) fromResolved = resolveRef(rv.fromName);
+            if (!toResolved && rv.toName) toResolved = resolveRef(rv.toName);
+
+            // Final fallback: if still unresolved, attach to a deterministic objectview (first or a new UUID)
+            if (!fromResolved) {
+                if (objectviews.length > 0) {
+                    fromResolved = objectviews[0].id;
+                } else {
+                    fromResolved = makeUUID();
+                }
+            }
+            if (!toResolved) {
+                if (objectviews.length > 1) {
+                    toResolved = objectviews[1].id;
+                } else if (objectviews.length === 1) {
+                    // if only one objectview exists, point to the same (prevents null refs)
+                    toResolved = objectviews[0].id;
+                } else {
+                    toResolved = makeUUID();
+                }
+            }
+
+            // Ensure relshipRef exists and is a UUID
+            const relshipRefKey = rv.relshipRef || rv.relshipId || rv.relationshipId || rv.relationship || rv.rel || null;
+            const relshipRef = ensureMappedUUID(originalRelToUuid, relshipRefKey);
+
+            // Ensure typeviewRef for relationship
+            const typeviewKey = rv.typeviewRef || rv.typeRef || rv.typeName || rv.type || null;
+            const typeviewRef = ensureMappedUUID(originalTypeToUuid, typeviewKey);
+
+            // Normalize points array to numbers
+            const points = Array.isArray(rv.points)
+                ? rv.points.map((p: any) => (typeof p === 'number' ? p : Number(p))).filter((n: any) => !isNaN(n))
+                : [];
+
+            return {
+                id,
+                name,
+                fromobjviewRef: fromResolved,
+                toobjviewRef: toResolved,
+                relshipRef,
+                typeviewRef,
+                points
+            };
+        });
+
+        // Replace candidate's arrays with the normalized ones
+        candidate.objectviews = objectviews;
+        candidate.relshipviews = relshipviews;
+
+        return candidate;
     };
 
     const handleSubmit = async (e: React.FormEvent) => {
@@ -295,6 +440,7 @@ export default function ModelviewBuilder({
         if (!input) input = "Generate a modelview based on the objects and relationships.";
         const content = `${input} #Content:\n ${mvContent}`
         setMessages((prev) => [...prev, { role: "user", content }]);
+        console.log("298  Submitting modelview build with input:", content);
         await handleModelviewBuilder();
         setInput("");
         onResponseChange("");
@@ -320,6 +466,8 @@ export default function ModelviewBuilder({
         return 'gpt-5-mini';
     }
 
+    let modelviewContextItems = '';
+
     const handleModelviewBuilder = async () => {
         setIsLoading(true);
         setActiveTab('modelview');
@@ -327,6 +475,17 @@ export default function ModelviewBuilder({
         setStreamedContent('');
         setIsStreaming(true);
         setCanPreview(false);
+            if (!curmod || curmod?.objects.length < 1) {
+                setStreamedContent("No object in current model");
+                setIsLoading(false);
+                setIsStreaming(false);
+                setCanPreview(false);
+                setTimeout(() => {
+                    setMessages([]);
+                    setCurrentMessages([]);
+                }, 40000);
+                return;
+            }
 
 
         const modelviewSystemPrompt = `
@@ -349,7 +508,8 @@ export default function ModelviewBuilder({
   Make sure to also give horizontal and vertical space between the objects to make the modelview look good.
       `;
         const systemBehaviorGuidelines = `
-  - Always respond in valid JSON format according to the ModelviewSchema.
+  - Always respond with a SINGLE JSON object matching ModelviewSchema: { id, name, description, objectviews: [], relshipviews: [] }.
+  - Do NOT wrap the result in arrays or a parent property (e.g., no "modelviews").
   - Ensure all objectviews and relshipviews have unique UUIDs.
   - Maintain clear and organized layout with appropriate spacing.
   - Prioritize readability and clarity in the modelview structure.
@@ -364,76 +524,113 @@ export default function ModelviewBuilder({
   Verify that the text is based on the provided context.
       `;
 
-        const modelviewContextItems = `
-  ## Context:
-    **Objects and Relationships:**
-    ${curmod?.objects.map((obj: any) => `- ${obj.id} ${obj.name} ${obj.description}`).join('\n')} 
-    ${curmod?.relships.map((rel: any) => `- ${rel.id} ${rel.name} ${rel.nameFrom} ${rel.nameTo}`).join('\n')}
-      `;
+        modelviewContextItems = `
+## Context:
+### Objects
+${(curmod?.objects || []).map((obj: any) => `- ${obj.id}, ${obj.name}, ${obj.description}`).join('\n')}
+### Relationships
+${(curmod?.relships || []).map((rel: any) => `- ${rel.id}, ${rel.name}, ${rel.fromobjectRef}, ${rel.nameFrom}, ${rel.toobjectRef}, ${rel.nameTo}`).join('\n')}
+`;
 
-        const modelviewContextOntology = "";
         const modelviewContextMetamodel = `
 ## Metamodel:
-    Objectviews:
-        id: UUID;
-        name: "same as object name"
-        description: same as object description
-        loc: x y coordinates 
-        objectRef: Object Id
-    Relshipviews:
-        id: UUID
-        name: "same as relationship name"
-        fromobjviewRef: Object Id
-        toobjviewRef: Object Id
-        points: array of x,y coordinates for the relshipview line          
-`;
+{
+    modelviews: [
+        {
+            id: UUID;
+            name: "Modelview name"
+            description:"same as modelview description"
+            objectviews: [
+                {
+                    id: UUID;
+                    name: "same as object name"
+                    description: "same as object description"
+                    loc: x y coordinates
+                    objectRef: Object Id
+                }
+            ],
+            relshipviews: [
+                {
+                    id: UUID
+                    name: "same as relationship name"
+                    description: "same as relationship description"
+                    relshipRef: Relationship Id
+                    fromobjviewRef: Object Id
+                    toobjviewRef: Object Id
+                    points: array of x,y coordinates for the relshipview line
+                }
+            ]
+        }
+    ]
+}
+`
 
         let parsedSuccessfully = false;
         let accumulated = "";
 
+        const finalSystemPrompt = `You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling. 
+Your task is to construct a model from the user’s ontology concepts and relationships, 
+strictly conforming to the provided metamodel.
+
+Rules:
+- Always output JSON in the required envelope. 
+- IDs must be UUID. 
+- Only object and relationship types defined in the provided metamodel are allowed.
+- Relationship types must match the metamodel; relationship names may be synthesized.
+- Deduplicate and validate before output. 
+- Do not reveal internal reasoning. If needed, provide at most 5 rationale bullets.
+- After JSON, you may add a short prose summary of what was generated.
+`;
+// - On fatal errors, output only: { "errors": [ { "code": "...", "detail": "..." } ] }.
+
+        const finalDeveloperPrompt = `### Schema Contract
+Objectviews:
+- Required: id, name, description, objectRef, typeviewRef.
+
+Relshipviews:
+- Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef.
+
+### Relationship Naming Rules
+- Normalize ontology verb or synthesize deterministically.
+- Use camelCase (e.g., "composedOf", "hasVersion", "typedBy").
+- Do not use ambiguous names like "has", "is".
+- If collision on (fromobjviewRef,toobjviewRef,relshipRef, typeviewRef), append qualifier (e.g., "containsVocabulary").
+
+### Deduplication
+- Normalize names (trim, case-fold, collapse whitespace, replace "-" / "_" with space).
+- Merge if normalized name + typeName match.
+- Keep earliest id, collect aliases, prefer longer description.
+- Record merges in warnings[].
+
+### Validation Order
+1. Metamodel conformance: typeviewRef and relshipRef must exist in metamodel.
+2. Required fields present.
+3. UUID validity for all ids and refs.
+4. Referential integrity: every *Ref must resolve to an existing object id.
+5. Cardinality consistency.
+6. Relationship compatibility (fromType, toType) allowed by metamodel.
+
+    `;
+        const finalUserPrompt = `${modelviewContextMetamodel} \n ${modelviewContextItems} \n ${modelviewUserPrompt} \n ${input} `;
+
         if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',
-            'systemPrompt\n', modelviewSystemPrompt, '\n\n',
-            'systemBehaviorGuidelines\n', systemBehaviorGuidelines, '\n\n',
-            'userPrompt\n', modelviewUserPrompt, '\n\n',
-            'userInput\n', input, '\n\n',
-            'contextItems\n', modelviewContextItems, '\n\n',
-            'contextOntology\n', "", '\n\n',
-            'contextMetamodel\n', modelviewContextMetamodel);
+            'finalSystemPrompt:', finalSystemPrompt, '\n\n',
+            'finalDeveloperPrompt:', finalDeveloperPrompt, '\n\n',
+            'finalUserPrompt:', finalUserPrompt);
 
         try {
-            const determineAiModelName = (sel: any) => {
-                // If a string was passed, use it
-                if (typeof sel === 'string' && sel.trim()) return sel;
-                // If an object with id or name, prefer id then name
-                if (sel && typeof sel === 'object') {
-                    if (typeof sel.id === 'string' && sel.id.trim()) return sel.id;
-                    if (typeof sel.name === 'string' && sel.name.trim()) return sel.name;
-                }
-                // Fallback default
-                return 'gpt-5-mini';
-            };
-
-            const rawAiModelName = determineAiModelName(selectedModel);
-            const aiModelNameForGenmodel = mapModelForGenmodel ? mapModelForGenmodel(rawAiModelName) : rawAiModelName;
-
-            console.debug('[ModelviewBuilder] Sending aiModelName to /api/genmodel:', { rawAiModelName, aiModelNameForGenmodel });
-
-            // Then change the body to use `aiModelName: aiModelNameForGenmodel`:
             const res = await fetch("/api/genmodel", {
                 method: "POST",
-                headers: { 'Content-Type': 'application/json' },
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    schemaName: 'ModelviewSchema',
-                    aiModelName: aiModelNameForGenmodel,
-                    systemPrompt: modelviewSystemPrompt || "",
-                    systemBehaviorGuidelines: "",
-                    userPrompt: (input && input.trim()) ? input : (modelviewUserPrompt || ""),
-                    userInput: (input && input.trim()) ? input : (modelviewUserPrompt || ""),
-                    contextItems: modelviewContextItems || "",
-                    contextOntology: "", // no ontology for modelviews only use objects/relships
-                    contextMetamodel: modelviewContextMetamodel || ""
+                    aiModelName: selectedModel || "gpt-5-mini",
+                    schemaName: "ModelviewSchema",
+                    systemPrompt: finalSystemPrompt || "",
+                    developerPrompt: finalDeveloperPrompt || "",
+                    userPrompt: finalUserPrompt || ""
                 })
             });
+
 
             if (!res.ok) {
                 const t = await res.text();
@@ -444,23 +641,104 @@ export default function ModelviewBuilder({
             if (!reader) throw new Error("No reader available");
 
             const decoder = new TextDecoder();
+
+            // Set an initial friendly streaming message (do not show raw JSON)
+            setStreamedContent("Generating modelview…");
+
             while (true) {
                 const { done, value } = await reader.read();
                 if (done) break;
                 accumulated += decoder.decode(value, { stream: true });
 
                 // Update live preview while streaming
-                setStreamedContent(accumulated);
-                // expose the raw stream as preview for immediate UI feedback
+                // Derive a compact listing (name — description — type) from the accumulated stream
+                const deriveListing = (text: string): string => {
+                    // Try to parse full JSON first
+                    try {
+                        const parsed = JSON.parse(text);
+                        const normalized = normalizeModelviewResponse(parsed);
+                        const objs = normalized.objectviews || normalized.objects || [];
+                        if (!Array.isArray(objs) || objs.length === 0) return "";
+                        return objs
+                            .map((o: any) => {
+                                const name = o.name || o.id || "";
+                                const desc = (o.description || "").replace(/\s+/g, " ").trim();
+                                const typ = o.typeName || o.type || o.proposedType || "";
+                                // Only include parts that exist (avoid showing empty dashes)
+                                const parts = [name];
+                                if (desc) parts.push(desc);
+                                if (typ) parts.push(typ);
+                                return `- ${parts.join(" — ")}`;
+                            })
+                            .join("\n");
+                    } catch {
+                        // If JSON parse fails (partial stream), try a best-effort regex extraction.
+                        const nameRe = /"name"\s*:\s*"([^"]+)"/g;
+                        const descRe = /"description"\s*:\s*"([^"]*)"/g;
+                        const typeRe = /"typeName"\s*:\s*"([^"]*)"/g;
+
+                        const names = Array.from(text.matchAll(nameRe), (m) => m[1]);
+                        const descs = Array.from(text.matchAll(descRe), (m) => m[1]);
+                        const types = Array.from(text.matchAll(typeRe), (m) => m[1]);
+
+                        const max = Math.max(names.length, descs.length, types.length);
+                        if (max === 0) return ""; // nothing useful extracted
+
+                        const lines: string[] = [];
+                        for (let i = 0; i < max; i++) {
+                            const n = names[i] || `obj${i + 1}`;
+                            const d = descs[i] || "";
+                            const t = types[i] || "";
+                            const parts = [n];
+                            if (d) parts.push(d.replace(/\s+/g, " ").trim());
+                            if (t) parts.push(t);
+                            lines.push(`- ${parts.join(" — ")}`);
+                        }
+                        return lines.join("\n");
+                    }
+                };
+
+                const listing = deriveListing(accumulated);
+
+                // Only update the streamedContent when we can derive a compact listing.
+                // Do NOT fall back to showing raw JSON here.
+                if (listing && listing.trim().length > 0) {
+                    setStreamedContent(listing);
+                } // else: keep previous streamedContent (avoid showing partial/raw JSON)
+
+                // Keep storing the raw stream into mvPreview for the preview panel / debugging (not shown in the chat stream)
                 setMvPreview(accumulated);
 
                 // Try to parse incrementally. If parsing fails, keep streaming.
                 try {
                     const maybe = JSON.parse(accumulated);
+                    const normalized = normalizeModelviewResponse(maybe);
                     // Validate parsed data with schema
-                    const validated = ModelviewSchema.parse(maybe);
+                    const validated = ModelviewSchema.parse(normalized);
                     // Commit validated modelview
-                    setModelview(validated);
+                    setModelview({
+                        ...validated,
+                        modelRef: validated.id,
+                        modified: false,
+                        markedAsDeleted: false,
+                        objectviews: validated.objectviews.map((ov: any) => ({
+                            ...ov,
+                            type: ov.type || "",
+                            size: ov.size || "",
+                            memberscale: ov.memberscale !== undefined ? ov.memberscale : 1,
+                            modified: ov.modified !== undefined ? ov.modified : false,
+                            markedAsDeleted: ov.markedAsDeleted !== undefined ? ov.markedAsDeleted : false,
+                            isSelect: ov.isSelect !== undefined ? ov.isSelect : false,
+                            isGroup: ov.isGroup !== undefined ? ov.isGroup : false,
+                            isExpanded: ov.isExpanded !== undefined ? ov.isExpanded : false,
+                            viewkind: ov.viewkind || ""
+                        })),
+                        relshipviews: validated.relshipviews.map((rv: any) => ({
+                            ...rv,
+                            fromName: rv.fromName || "",
+                            toName: rv.toName || ""
+                        }))
+                    });
                     // store a pretty-printed JSON string in the mvContent prop and expose to library
                     const pretty = JSON.stringify(validated, null, 2);
                     const markdownResponse = formatJSONAsMarkdown(validated);
@@ -486,7 +764,8 @@ export default function ModelviewBuilder({
                 try {
                     const finalText = accumulated;
                     const parsed = JSON.parse(finalText);
-                    const validated = ModelviewSchema.parse(parsed);
+                    const normalized = normalizeModelviewResponse(parsed);
+                    const validated = ModelviewSchema.parse(normalized);
                     setModelview(validated);
                     const pretty = JSON.stringify(validated, null, 2);
                     setMvContent(pretty);
@@ -498,7 +777,17 @@ export default function ModelviewBuilder({
                     // store the final stream for debugging/preview and set an error
                     setStreamedContent(accumulated);
                     setMvPreview(accumulated);
-                    throw new Error(`Failed to parse modelview JSON from AI: ${err?.message ?? String(err)}`);
+
+                    // Instead of throwing (which can produce an unhandled rejection
+                    // if not caught by the caller), set a visible error and return cleanly.
+                    const msg = `Failed to parse modelview JSON from AI: ${err?.message ?? String(err)}`;
+                    console.error(msg, err);
+                    setError(msg);
+                    // ensure streaming/loading state reset so UI recovers gracefully
+                    setIsStreaming(false);
+                    setIsLoading(false);
+                    setCanPreview(false);
+                    return;
                 }
             }
         } catch (e: any) {
@@ -676,6 +965,8 @@ export default function ModelviewBuilder({
                             <div ref={messagesEndRef} />
                         </div>
                     </div>
+
+
                     {(messages.length > 0 || canPreview) && (
                         <div className="flex justify-end w-full">
                             <button

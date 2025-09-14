@@ -507,7 +507,7 @@ const AIChatPage = () => {
     const modelSelector = (false) ? (
         <div className="flex justify-between bg-gray-800 text-xs">
             <div className="px-1">
-                <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
+                <span className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</span>
                 <span className="text-gray-300">{metis?.name}</span>
             </div>
             <div className="px-1">

@@ -218,13 +218,13 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
                             value="objects"
                             className="rounded-b-none mt-0 data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400 relative z-20"
                         >
-                            Object List
+                            Objectviews
                         </TabsTrigger>
                         <TabsTrigger
                             value="relationships"
                             className="rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold  data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400 relative z-20"
                         >
-                            Relationship List
+                            Relationshipviews
                         </TabsTrigger>
                         <TabsTrigger value="diagram" className="rounded-b-none data-[state=active]:bg-card data-[state=active]:text-white data-[state=active]:font-semibold data-[state=active]:border-b-0 data-[state=active]:border-t-2 data-[state=active]:border-l-2 data-[state=active]:border-r-2 data-[state=active]:border-gray-300 data-[state=inactive]:text-gray-100 py-2 px-4 border-gray-400 relative z-20">
                             Preview Diagram
@@ -235,7 +235,9 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
                                 {/* <CardContent className="max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
-                                {modelview && <ObjectTable data={modelview.objectviews.map((objview: Modelview['objectviews'][number]) => ({ ...objview }))} />}
+                                {modelview && <ObjectTable data={modelview.objectviews.map((objview: any) => ({
+                                    ...objview
+                                }))} />}
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -243,7 +245,7 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
                     <TabsContent value="relationships" className="rounded  w-full mt-0 ">
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
-                                {modelview && <RelshipTable data={modelview.relshipviews.map((relview: Modelview['relshipviews'][number]) => ({ ...relview, description: '' }))} />}
+                                {modelview && <RelshipTable data={(modelview.relshipviews || []).map((relview: any) => ({ ...relview }))} />}
                             </CardContent>
                         </Card>
                     </TabsContent>

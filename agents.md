@@ -88,6 +88,7 @@ This document explains how “agents” are structured and used in this app, and
 - Log payloads and map model ids carefully; mismatch can cause provider errors.
 
 ## Do
+- use Next.js where possible
 - use redux toolkit for state management with useLocalStore
 - use shadcn for layout components
 

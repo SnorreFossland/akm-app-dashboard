@@ -109,9 +109,7 @@ export default function IrtvBuilderComponent(props: IrtvBuilderComponentProps) {
 
     const [userPrompt, setUserPrompt] = useState("");
     const [modelRetryCount, setModelRetryCount] = useState(0);
-    const [systemPrompt, setSystemPrompt] = useState<string>(`You are a helpful AI assistant that provides clear, concise, and accurate responses.
-You are provided with following documents for reference. When answering the user's questions, ALWAYS analyze and refer to the content of these documents.
-  `);
+    const [systemPrompt, setSystemPrompt] = useState<string>("");
     const [systemBehaviorGuidelines, setSystemBehaviorGuidelines] = useState("");
     const [contextItems, setContextItems] = useState("");
     const [contextOntology, setContextOntology] = useState("");
@@ -159,18 +157,18 @@ You are provided with following documents for reference. When answering the user
     );
 
     // Domain-specific prompts
-    const IRTVSystemPrompt = `You are an expert IRTV (Information Requirements for Testing and Verification) analyst. 
-Your task is to analyze requirements and generate comprehensive IRTV documentation that identifies all information needs for testing and verification activities.
+    //     const IRTVSystemPrompt = `You are an expert IRTV (Information Requirements for Testing and Verification) analyst. 
+    // Your task is to analyze requirements and generate comprehensive IRTV documentation that identifies all information needs for testing and verification activities.
 
-Focus on:
-- Information Requirements identification
-- Test data specifications
-- Verification criteria
-- Traceability requirements
-- Documentation standards
+    // Focus on:
+    // - Information Requirements identification
+    // - Test data specifications
+    // - Verification criteria
+    // - Traceability requirements
+    // - Documentation standards
 
-Verify that your responses are based on the provided context and requirements.
-`;
+    // Verify that your responses are based on the provided context and requirements.
+    // `;
 
     // ---------- Stable preview handler ----------
     const handleViewInMarkdown = useCallback(
@@ -193,6 +191,7 @@ Verify that your responses are based on the provided context and requirements.
     );
 
 
+    // ----------  Sync focus model from redux to local state ----------
     useEffect(() => {
         const metis = data?.phData?.metis;
         const focusId = data?.phFocus?.focusModel?.id;
@@ -226,11 +225,12 @@ Verify that your responses are based on the provided context and requirements.
         data?.phData?.metis?.metamodels
     ]);
 
+    // ---------- Auto-prompt generation when curmod or curMetamodel changes ----------
     useEffect(() => {
         if (!curmod || !curMetamodel) return;
         let types = (curMetamodel.objecttypes || [])
             .filter((o: any) => o.name !== "EntityType")
-            .filter((o: any) => o.name !== "Gateway") 
+            .filter((o: any) => o.name !== "Gateway")
             .map((o: any) => o.name + ', ');
         let nextAutoPrompt = "";
         // const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
@@ -240,13 +240,30 @@ Verify that your responses are based on the provided context and requirements.
                     (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
                 break;
             case "CORE_META":
-                nextAutoPrompt =
-                    "Create a Metamodel using the following object types: EntityType, " +
-                    (types.length ? types.join(" ") + " based on the #Ontology ##concepts below: " : "");
+                types = (curMetamodel.objecttypes || [])
+                    .filter((o: any) => o.name !== "InputPattern")
+                    .filter((o: any) => o.name !== "Details")
+                    .filter((o: any) => o.name !== "Method")
+                    .filter((o: any) => o.name !== "MethodType")
+                    .filter((o: any) => o.name !== "ViewFormat")
+                    .filter((o: any) => o.name !== "Fieldtype")
+                    .filter((o: any) => o.name !== "Type")
+                    .map((o: any) => o.name + ', ');
+                nextAutoPrompt = `The purpose is to create a Model that can represent the provided Ontology concepts and relationships.
+Create a Model using the following object types: ${(types.length ? types.join(" ") : "")}  
+Create an object of type Metamodel with a relship "contains" to all objects of type EntityType.
+`
                 break;
             case "POPS_META":
+                types = (curMetamodel.objecttypes || [])
+                    .filter((o: any) => o.name !== "EntityType")
+                    .filter((o: any) => o.name !== "Geobody")
+                    .filter((o: any) => o.name !== "Material")
+                    .filter((o: any) => o.name !== "DistributionNetwork")
+                    .filter((o: any) => o.name !== "Device")
+                    .map((o: any) => o.name + ', ');
                 nextAutoPrompt =
-                    "Create a POPS model using the following object types: " +
+                    "Create a POPS model of the Ontology concepts and relationships with focus on generating processes and products using the following object types: " +
                     (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
                 break;
             case "BPMN_META":
@@ -278,12 +295,13 @@ Verify that your responses are based on the provided context and requirements.
             if (debug) console.log("[auto-prompt] NOT applied (user edited)");
         }
     }, [curmod?.id, curMetamodel?.id]); // keep deps focused
-    
+
     // ---------- 4. Build system behavior + context when curMetamodel changes ----------
     useEffect(() => {
         if (!curMetamodel || !data?.phData?.metis) return;
 
         let metatypesString = "";
+        let exampleString = "";
         if (curMetamodel.name === "IRTV_META") {
 
             setSystemBehaviorGuidelines(
@@ -291,51 +309,115 @@ Verify that your responses are based on the provided context and requirements.
             );
             metatypesString = serializeTypes(curMetamodel);
         } else if (curMetamodel.name === "CORE_META") {
-            setSystemBehaviorGuidelines(
-                `You are an expert in creating Metamodels. Your task is to create a Metamodel based on the provided object types and relationships. Ensure logical consistency and Active Knowledge Modeling principles.`
+            setSystemBehaviorGuidelines(`You are an expert in creating Entity Models. 
+Your task is to create a Model based on the provided object types and relationships. 
+Create an object of type "Metamodel" that is related with "contains" to all EntityType objects.
+Ensure logical consistency and Entity relationship principles.`
             );
             metatypesString = serializeTypes(curMetamodel);
+            console.log('316 metatypesString', metatypesString);
+            exampleString += `
+    {
+        "modelviews": [
+            {
+                "name": "Main",
+                "description": "The main view of the model",
+                "objects": [
+                    {
+                        "id": "UUID",
+                        "name": "Bike",
+                        "description": "A two-wheeled vehicle that is powered by pedaling.",
+                        "typeRef": "EntityType uuid",
+                        "typeName": "EntityType"
+                        },
+                    }
+                ],
+                "relationships": [
+                    {
+                        "id": "UUID",
+                        "name": "approves",
+                        "typeRef": "Relationship Type uuid",
+                        "fromobjectRef": "EntityType uuid",
+                        "toobjectRef": "Property uuid",
+                    }
+                ]
+            }
+        ]
+    }
+        `;
         } else if (curMetamodel.name === "POPS_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating POPS models. Create a POPS model based on the provided ontology concept types and relationships. Ensure consistency with Active Knowledge Modeling principles.`
             );
             metatypesString = serializeTypes(curMetamodel);
+
+            exampleString += `
+{
+    "objects": [
+        {
+            "id": "UUID",
+            "name": "Produce",
+            "description": "A two-wheeled vehicle that is powered by pedaling.",
+            "typeRef": "Process uuid",
+            "typeName": "Process"
+            },
+        }
+    ],
+    "relationships": [
+        {
+            "id": "UUID",
+            "name": "hasOutcome",
+            "typeRef": "Relationship Type uuid",
+            "fromobjectRef": "Process uuid",
+            "nameFrom": "Process",
+            "toobjectRef": "Product uuid",
+            "nameTo": "Product"
+        }
+    ]
+}
+`;
         } else if (curMetamodel.name === "BPMN_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating BPMN models. Use BPMN notation, pools, lanes, and ensure logical consistency with Active Knowledge Modeling principles.`
             );
             metatypesString = serializeTypes(curMetamodel);
-        }
-
-        const contextmetatypesString = `## **Metamodel**\n\n${metatypesString}
-        
-- When creating objects, always assign a valid typeRef and typeName from the Metamodel.
-- When creating relationships, ensure from/to object types align with Metamodel definitions.
-        
-### ** Examples **
-
-{
+            exampleString += `
+    {
     "objects": [
         {
-            "id": "UUIDv4",
-            "name": "Bike",
+            "id": "UUID",
+            "name": "Write code",
             "description": "A two-wheeled vehicle that is powered by pedaling.",
-            "typeRef": "EntityType uuid",
-            "typeName": "EntityType"
+            "typeRef": "Task uuid",
+            "typeName": "Task"
+            },
         }
     ],
     "relationships": [
         {
-            "id": "UUIDv4",
+            "id": "UUID",
             "name": "approves",
             "typeRef": "Relationship Type uuid",
-            "fromobjectRef": "EntityType uuid",
-            "nameFrom": "EntityType",
-            "toobjectRef": "View uuid",
-            "nameTo": "View"
+            "fromobjectRef": "Role uuid",
+            "nameFrom": "Role",
+            "toobjectRef": "Task uuid",
+            "nameTo": "Task"
         }
     ]
+    }
         `;
+        }
+
+        const contextmetatypesString = `##Metamodel\n\n ${metatypesString} 
+
+- When creating objects, always assign a valid typeRef and typeName from the Metamodel.
+- When creating relationships, ensure from/to object types align with Metamodel definitions.
+        
+## Example 
+    ${exampleString}  
+`;
+
+
 
         // Set base system prompt (assuming SystemPrompt is available globally/import)
         setSystemPrompt(SystemPrompt);
@@ -354,23 +436,38 @@ Verify that your responses are based on the provided context and requirements.
 
     function serializeTypes(mm: any) {
         const objectTypes = Array.isArray(mm.objecttypes) ? mm.objecttypes : [];
-        const relationshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
+        const relshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
 
-        const filteredObjectTypes = (curMetamodel.name !== "CORE_META") ? objectTypes.filter((o: any) =>
-            o && typeof o.name === 'string' && o.name !== "EntityType"
-        ) : objectTypes;
+        // Build a non-mutating copy where we ensure nameFrom/nameTo are resolved
+        const relshipTypesWithNames = relshipTypes.map((reltype: any) => {
+            const resolvedFrom = objectTypes.find((obj: any) => obj.id === reltype.fromobjtypeRef);
+            const resolvedTo = objectTypes.find((obj: any) => obj.id === reltype.toobjtypeRef);
 
-        const filteredRelTypes = relationshipTypes.filter((r: any) =>
+            return {
+                // shallow copy to avoid mutating original reltype
+                ...reltype,
+                // prefer existing nameFrom/nameTo if present, otherwise resolved names, otherwise empty string
+                nameFrom: reltype?.nameFrom || (resolvedFrom ? resolvedFrom.name : "") || "",
+                nameTo: reltype?.nameTo || (resolvedTo ? resolvedTo.name : "") || ""
+            };
+        });
+
+        const filteredObjectTypes = objectTypes;
+
+        const filteredRelTypes = relshipTypesWithNames.filter((r: any) =>
             r && typeof r.name === 'string' && r.name !== "Is"
         );
 
-        return `**${mm.name || 'Unknown'}**
+        // Debug output kept as before
+        console.log('serializeTypes', { objectTypes, filteredObjectTypes, relshipTypes, filteredRelTypes });
+
+        return `**${mm.name}**
 ${filteredObjectTypes
-                .map((o: any) => `id: ${o.id || 'N/A'}, name: ${o.name}, typeviewRef: ${o.typeviewRef || 'N/A'}, typeName: ${o.typeName || 'N/A'}`)
+                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typename: ${o.typename} typeviewRef: `)
                 .join("\n")}
 
 ${filteredRelTypes
-                .map((r: any) => `id: ${r.id || 'N/A'}, name: ${r.name}, from: ${r.fromobjtypeRef || 'N/A'}, to: ${r.toobjtypeRef || 'N/A'}`)
+                .map((r: any) => `id: ${r.id}, name: ${r.name},  fromobjectRef: ${r.fromobjtypeRef}, nameFrom: ${r.nameFrom}, toobjectRef: ${r.toobjtypeRef}, nameTo: ${r.nameTo}, typeviewRef: ${r.typeviewRef}, relshipkind: ${r.relshipkind}`)
                 .join("\n")}
 `;
     }
@@ -458,7 +555,7 @@ ${filteredRelTypes
 
         const newOntologyString =
             filteredConcepts.length > 0
-                ? `#Ontology\n\n##Objects\n\n${filteredConcepts
+                ? `#Ontology\n\n##Concepts\n\n${filteredConcepts
                     .map((c: any) => `${c.name} - ${c.description || ""}`)
                     .join("\n")}\n\n**Relationships**\n\n${filteredRels
                         .map(
@@ -468,7 +565,7 @@ ${filteredRelTypes
                         .join("\n")}\n\n`
                 : "";
 
-        const ontologyString = `**Objects**\n\n${ontology?.concepts
+        const ontologyString = `**Concepts**\n\n${ontology?.concepts
             ?.map((c: any) => `- ${c.name} - ${c.description || ""}`)
             .join("\n")}\n\n**Relationships**\n\n${ontology?.relationships
                 ?.map(
@@ -584,34 +681,81 @@ ${filteredRelTypes
         return markdown;
     };
 
+    // ----------  Prompts ----------
+    const finalSystemPrompt = `You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling. 
+Your task is to construct a model from the context with ontology concepts and relationships, conforming to the provided metamodel.
+
+Rules:
+- IDs must be UUID. 
+- Only object and relationship types defined in the provided metamodel are allowed.
+- Objects and Relationships must match the metamodel types; relationship names may be synthesized.
+- Deduplicate and validate before output. 
+- Do not reveal internal reasoning. If needed, provide at most 5 rationale bullets.
+- After JSON, you may add a short prose summary of what was generated.
+  `;
+
+    const finalDeveloperPrompt = 
+(curMetamodel?.name === "CORE_META") ? `### Schema Contract
+Model:
+- Required: name, description, objects[], relships[].
+- Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
+- Description should be a brief summary of the model's purpose.
+
+Objects:
+- Required: id, name, description, typeRef, typeName, typeviewRef.
+- If typeName == "Property": add datatypeRef (uuid), isMandatory (bool), minCard (int ≥0), maxCard (int ≥ minCard or "*").
+- If typeName == "EntityType": may add supertypeRef (uuid) for inheritance using relshipType "Is".
+
+Relships:
+- Required: id, name, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
+- Optional: isMandatory, minCard, maxCard (if metamodel allows).
+
+### Relationship Naming Rules
+- Normalize ontology verb or synthesize deterministically.
+- Use camelCase (e.g., "composedOf", "hasVersion", "typedBy").
+- If collision on (fromobjectRef,toobjectRef,relshiptypeRef), append qualifier (e.g., "containsVocabulary").
+
+### Deduplication
+- Normalize names (trim, case-fold, collapse whitespace, replace "-" / "_" with space).
+- Merge if normalized name + typeName match.
+- Keep earliest id, collect aliases, prefer longer description.
+- Record merges in warnings[].
+
+### Validation Order
+1. Metamodel conformance: typeref and relshiptypeRef must exist in metamodel.
+2. Required fields present.
+3. UUID validity for all ids and refs.
+4. Referential integrity: every *Ref must resolve to an existing object id.
+5. Cardinality consistency.
+6. Relship compatibility (fromType, toType) allowed by metamodel.
+` 
+    :   ``; // is this necessary?
+
+
+    const finalUserPrompt = `${contextMetamodel} \n ${contextItems} \n ${contextOntology}`;
+    // const finalUserPrompt = `${userPrompt}  \n ${contextMetamodel} \n ${contextItems} \n ${contextOntology} \n ${contextMetamodel}`;
+
     const handleModelBuilder = async () => {
         setIsLoading(true);
         setStep(1);
         setActiveTab("model");
 
-        if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',
-            'systemPrompt\n', systemPrompt, '\n\n',
-            'systemBehaviorGuidelines\n', systemBehaviorGuidelines, '\n\n',
-            'userPrompt\n', userPrompt, '\n\n',
-            'userInput\n', input, '\n\n',
-            'contextItems\n', contextItems, '\n\n',
-            'contextOntology\n', contextOntology, '\n\n',
-            'contextMetamodel\n', contextMetamodel);
+        if (!debug) console.log('724 Prompts: ', selectedModel, '\n\n',
+            'finalSystemPrompt:', finalSystemPrompt, '\n\n',
+            'finalDeveloperPrompt:', finalDeveloperPrompt, '\n\n',
+            'finalUserPrompt:', finalUserPrompt);
 
         try {
+
             const res = await fetch("/api/genmodel", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    aiModelName: selectedModel || "gpt-4o",
+                    aiModelName: selectedModel || "gpt-5-mini",
                     schemaName: "ObjectSchema",
-                    systemPrompt: systemPrompt || "",
-                    systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                    userPrompt: userPrompt || "", // Generic user prompt
-                    userInput: input?.trim() || "", // Specific user input like new aspects or additional objects
-                    contextItems: contextItems || "", // Existing objects
-                    contextOntology: contextOntology || "", // Existing ontology
-                    contextMetamodel: contextMetamodel || "" // Existing metamodel
+                    systemPrompt: finalSystemPrompt || "",
+                    developerPrompt: finalDeveloperPrompt || "",
+                    userPrompt: finalUserPrompt || ""
                 })
             });
 
@@ -677,7 +821,7 @@ ${filteredRelTypes
                     relships: []
                 };
             }
-            console.log("680 [ModelBuilder] validatedData: ", validatedData,"parsed :", parsed);
+            console.log("680 [ModelBuilder] validatedData: ", validatedData, "parsed :", parsed);
             setIrtvContent(parsed);
             const markdownResponse = formatJSONAsMarkdown(validatedData);
 

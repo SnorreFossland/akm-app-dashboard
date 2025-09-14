@@ -134,8 +134,8 @@ export interface Modelview {
     type: string;
     loc: string;
     size: string;
-    memberscale: number;
     objectRef: string;
+    memberscale: number;
     modified: boolean;
     markedAsDeleted: boolean;
     isSelect: boolean;
@@ -156,7 +156,9 @@ export interface Modelview {
     name: string;
     relshipRef: string;
     fromobjviewRef: string;
+    fromName: string;
     toobjviewRef: string;
+    toName: string;
     points: number[];
   }[];
 };

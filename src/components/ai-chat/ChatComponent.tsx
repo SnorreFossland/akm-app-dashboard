@@ -700,21 +700,48 @@ Do not use its contents as contextual input for other questions--I want it impro
 
             console.log('Calling /api/vercel-ai/generate with model:', selectedModel);
 
-                const resp = await fetch('/api/vercel-ai/generate', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: promptText, model: selectedModel, temperature }),
-                });
+            const basePayload: any = { prompt: promptText, model: selectedModel };
+            if (typeof temperature === 'number' && !Number.isNaN(temperature)) {
+                basePayload.temperature = temperature;
+            }
 
-            const text = await resp.text();
+            let resp = await fetch('/api/vercel-ai/generate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(basePayload),
+            });
+
+            let text = await resp.text();
             let data: any;
             try { data = JSON.parse(text); } catch { data = { content: text }; }
 
             if (!resp.ok) {
-                console.error('Gateway error:', data);
-                setStatusMsg(`AI error (${resp.status}): ${data?.error ?? text}`);
-                setIsLoading(false);
-                return;
+                // Retry without temperature when provider rejects it
+                const errMsg = typeof data?.error?.message === 'string' ? data.error.message : String(text || '');
+                const isTempError = (resp.status === 400) && errMsg.toLowerCase().includes('temperature');
+                if (isTempError && 'temperature' in basePayload) {
+                    const retryPayload = { ...basePayload };
+                    delete (retryPayload as any).temperature;
+                    console.warn('Temperature not supported by model/provider. Retrying without temperature.');
+                    resp = await fetch('/api/vercel-ai/generate', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(retryPayload),
+                    });
+                    text = await resp.text();
+                    try { data = JSON.parse(text); } catch { data = { content: text }; }
+                    if (!resp.ok) {
+                        console.error('Gateway error (after retry):', data);
+                        setStatusMsg(`AI error (${resp.status}): ${data?.error ?? text}`);
+                        setIsLoading(false);
+                        return;
+                    }
+                } else {
+                    console.error('Gateway error:', data);
+                    setStatusMsg(`AI error (${resp.status}): ${data?.error ?? text}`);
+                    setIsLoading(false);
+                    return;
+                }
             }
 
             // 2) Normalize common response shapes

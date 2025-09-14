@@ -70,7 +70,7 @@ interface Relationship {
   name: string;
   nameFrom: string;
   nameTo: string;
-  description: string;
+  description?: string;
 }
 
 interface Ontology {
@@ -160,6 +160,7 @@ export default function OntologyBuilderPage() {
   useEffect(() => {
     if (data.phData.domain) {
       setDomainData(data.phData.domain);
+      setMdContent(data.phData.domain.presentation || '');
     }
   }, [data.phData.domain]);
   const handleResponseChange = (response: string) => {
@@ -212,9 +213,6 @@ export default function OntologyBuilderPage() {
           <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
             {data.phData.domain ? (
               <div className="p-2 bg-gray-800 rounded">
-                {/* <div className="text-xl text-gray-400">{data.phData.domain.name}</div> */}
-                {/* <div className="text-sm text-gray-400">{data.phData.domain.description}</div> */}
-                {/* <div className="text-sm text-gray-400 mt-1">Definition:</div> */}
                 <MarkdownPreview
                   mdPreview={data.phData.domain.presentation || 'No domain definition available'}
                 />
@@ -292,8 +290,8 @@ export default function OntologyBuilderPage() {
             <div className="flex overflow-hidden">
               <ChatComponent
                 mdContent={mdContent}
-                // mdContent={typeof mdContent === 'string' ? mdContent : ''}
                 setMdContent={setMdContent}
+                suggestedOntologyData={suggestedOntologyData}
                 setSuggestedOntologyData={setSuggestedOntologyData}
                 onImplementSuggestedOntology={handleSaveToLibrary}
                 startupGuide={<GettingStartedGuide />}
@@ -448,7 +446,7 @@ export default function OntologyBuilderPage() {
   const modelSelector = (false) ? (
     <div className="flex justify-between bg-gray-800 text-xs">
       <div className="px-1">
-        <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</label>
+        <span className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</span>
         <span className="text-gray-300">{metis?.name}</span>
       </div>
       <div className="px-1">

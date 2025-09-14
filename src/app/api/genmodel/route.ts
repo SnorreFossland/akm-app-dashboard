@@ -95,26 +95,34 @@ export async function POST(req: Request) {
       });
     }
 
+    // Accept both legacy and consolidated "final*" prompt fields.
     const {
       aiModelName,
       schemaName,
       systemPrompt,
-      systemBehaviorGuidelines,
-      userPrompt,
-      userInput,
-      contextItems,
-      contextOntology,
-      contextMetamodel
+      developerPrompt,
+      userPrompt
     } = parsedBody;
 
     if (debug) console.log('106 Parsed request data:', {
       aiModelName,
       schemaName,
-      parsedBody // For debugging, log the first 100 characters of systemPrompt and userPrompt
+      systemPrompt,
+      developerPrompt,
+      userPrompt
     });
 
     // Handle dummy model
     if (aiModelName === 'dummy') {
+
+      const messages = [
+        systemPrompt ? { role: 'system' as const, content: systemPrompt } : null,
+        developerPrompt ? { role: 'developer' as const, content: developerPrompt } : null,
+        userPrompt ? { role: 'user' as const, content: userPrompt } : null,
+      ].filter((message): message is { role: 'system' | 'user' | 'developer'; content: string } => message !== null);
+
+      if (!debug) console.log('124 route messages', aiModelName, messages);
+
       const dummyResponse = {
         name: "Sample Model",
         description: "This is a dummy model response for testing",
@@ -151,8 +159,6 @@ export async function POST(req: Request) {
       });
     }
 
-    if (debug) console.log('15 route \nschemaName', schemaName, '\nsystemPrompt', systemPrompt, '\nsystemBehaviorGuidelines', systemBehaviorGuidelines, '\nuserPrompt', userPrompt, '\nuserInput', userInput, '\ncontextItems', contextItems, '\ncontextOntology', contextOntology, '\ncontextMetamodel', contextMetamodel);
-
     // Create client for the specific provider
     const client = createClient(provider);
 
@@ -171,17 +177,14 @@ export async function POST(req: Request) {
 
     console.log('27 route schema', schemaName);
 
+    // Build messages array using the  prompts.
     const messages = [
       systemPrompt ? { role: 'system' as const, content: systemPrompt } : null,
-      systemBehaviorGuidelines ? { role: 'system' as const, content: systemBehaviorGuidelines } : null,
+      developerPrompt ? { role: 'developer' as const, content: developerPrompt } : null,
       userPrompt ? { role: 'user' as const, content: userPrompt } : null,
-      userInput ? { role: 'user' as const, content: userInput } : null,
-      contextItems ? { role: 'assistant' as const, content: contextItems } : null,
-      contextOntology ? { role: 'assistant' as const, content: contextOntology } : null,
-      contextMetamodel ? { role: 'assistant' as const, content: contextMetamodel } : null,
-    ].filter((message): message is { role: 'system' | 'user' | 'assistant'; content: string } => message !== null);
+    ].filter((message): message is { role: 'system' | 'user' | 'developer'; content: string } => message !== null);
 
-    if (!debug) console.log('182 route messages', aiModelName, messages);
+    if (!debug) console.log('178 route messages', aiModelName, messages);
 
     // Handle different providers differently for structured output
     let response;
@@ -197,8 +200,6 @@ export async function POST(req: Request) {
       });
     } else {
       // For Deepseek and Mistral, add detailed JSON schema instructions and collect full response
-
-      // Create a proper schema example based on the actual schema being used
       let schemaExample;
 
       if (schemaName === 'ObjectSchema') {
@@ -223,12 +224,24 @@ export async function POST(req: Request) {
               ]
             }
           ],
-          relships: [] // Ensure this is always included, even if empty
+          relships: [
+            {
+              id: "rel_1",
+              name: "ExampleRelationship",
+              description: "Example relationship description",
+              typeRef: "association",
+              fromobjectRef: "obj_1",
+              nameFrom: "ExampleObject",
+              toobjectRef: "obj_2",
+              nameTo: "ExampleObject",
+            }
+          ] // Ensure this is always included, even if empty
         }, null, 2);
       } else if (schemaName === 'DomainSchema') {
         schemaExample = JSON.stringify({
           name: "Example Domain",
           description: "Example domain description",
+          presentation: "Optional presentation text",
           // Add other required fields for DomainSchema
         }, null, 2);
       } else if (schemaName === 'OntologySchema') {
@@ -237,7 +250,6 @@ export async function POST(req: Request) {
           ontologyData: {
             name: "Example Ontology",
             description: "Example ontology description",
-            presentation: "Optional presentation text",
             concepts: [
               {
                 name: "ExampleConcept",
@@ -255,9 +267,38 @@ export async function POST(req: Request) {
           }
         }, null, 2);
       } else if (schemaName === 'ModelviewSchema') {
+        // ToDo: example shoud  be moved in a prompt
         schemaExample = JSON.stringify({
           name: "Example Modelview",
           description: "Example modelview description",
+          objectviews: [
+            {
+              id: "ov_1",
+              name: "ExampleObjectView",
+              description: "Description of the object view",
+              memberscale: 1.0,
+              objectRef: "obj_1",
+              type: "detailed",
+              loc: "0,0",
+              size: "200x100",
+              modified: false,
+              markedAsDeleted: false,
+              isSelect: false
+            }
+          ],
+          relshipviews: [
+            {
+              id: "rv_1",
+              name: "ExampleRelshipView",
+              description: "Description of the relationship view",
+              relshipRef: "rel_1",
+              fromobjviewRef: "ov_1",
+              fromName: "ExampleObjectView",
+              toobjviewRef: "ov_1",
+              toName: "ExampleObjectView",
+              points: [[0, 0], [100, 100]],
+            }
+          ]
           // Add other required fields for ModelviewSchema
         }, null, 2);
       } else {
@@ -270,21 +311,21 @@ export async function POST(req: Request) {
         }, null, 2);
       }
 
-//       const jsonInstructions = `\n\nCRITICAL: You MUST respond with ONLY valid JSON matching this EXACT structure. Every field shown is REQUIRED:
+      //       const jsonInstructions = `\n\nCRITICAL: You MUST respond with ONLY valid JSON matching this EXACT structure. Every field shown is REQUIRED:
 
-// ${schemaExample}
+      // ${schemaExample}
 
-// MANDATORY REQUIREMENTS:
-// 1. Root level MUST have: "name" (string), "description" (string), "objects" (array), "relships" (array)
-// 2. Both "objects" and "relships" arrays are REQUIRED even if empty: []
-// 3. Every object MUST have: "id", "name", "description", "typeRef", "typeName", "proposedType", "properties" (array)
-// 4. Every property MUST have: "id", "name", "description", "type"
-// 5. Every relationship MUST have: "id", "name", "description", "from", "to", "type"
-// 6. NO missing fields allowed
-// 7. NO explanatory text - ONLY the JSON object
-// 8. NO markdown formatting or code blocks
+      // MANDATORY REQUIREMENTS:
+      // 1. Root level MUST have: "name" (string), "description" (string), "objects" (array), "relships" (array)
+      // 2. Both "objects" and "relships" arrays are REQUIRED even if empty: []
+      // 3. Every object MUST have: "id", "name", "description", "typeRef", "typeName", "proposedType", "properties" (array)
+      // 4. Every property MUST have: "id", "name", "description", "type"
+      // 5. Every relationship MUST have: "id", "name", "description", "from", "to", "type"
+      // 6. NO missing fields allowed
+      // 7. NO explanatory text - ONLY the JSON object
+      // 8. NO markdown formatting or code blocks
 
-// RESPOND WITH THE JSON OBJECT ONLY - START WITH { and END WITH }`;
+      // RESPOND WITH THE JSON OBJECT ONLY - START WITH { and END WITH }`;
       const jsonInstructions = `\n\nIMPORTANT: Respond with ONLY valid JSON matching this structure:\n\n${schemaExample}\n\nNo explanatory text, just the JSON object.`;
 
       // Add instructions to the last user message

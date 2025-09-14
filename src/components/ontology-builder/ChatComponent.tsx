@@ -25,7 +25,7 @@ interface ChatComponentProps {
 }
 
 export default function ChatComponent({ mdContent, setMdContent, startupGuide, guide, setSuggestedOntologyData, onImplementSuggestedOntology }: ChatComponentProps) {
-    const [prompt, setPrompt] = useState<string>('Create an ontology for the current domain');
+    const [prompt, setPrompt] = useState<string>('Create an ontology for the current domain based on the provided Domain description, content, context and Domain Presentation.');
     const [model, setModel] = useState<string>('gpt-5-mini');
     
     const [isLoading, setIsLoading] = useState(false);
@@ -101,71 +101,107 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
         } catch { }
     }, []);
 
-    async function handleGenerate(e?: React.FormEvent) {
-        e?.preventDefault();
-        setLoading(true);
-        setError(null);
-        setResult('');
+    useEffect(() => {
+        console.log('105 ChatComponent mounted/updated with mdContent length:', mdContent?.length);
+    }, [mdContent]);
 
-        try {
-            // Nice readable console output for debugging the generation input
-            console.groupCollapsed('108 [ChatComponent] Generating ontology');
-            console.log('Model:', model);
-            console.log('Max tokens:', maxTokens);
-            console.log('Temperature:', temperature);
-            console.log('Prompt:', prompt);
-            console.log('contextItems:', mdContent);
-            console.groupEnd();
-            // Add the user's prompt to the dialog
-            setMessages(prev => [...prev, { role: 'user', content: prompt }]);
+    // async function handleGenerate(e?: React.FormEvent) {
+    //     e?.preventDefault();
+    //     setLoading(true);
+    //     setError(null);
+    //     setResult('');
 
-            const resp = await fetch('/api/vercel-ai/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                // Prefer max_completion_tokens for gateways and newer OpenAI models
-                body: JSON.stringify({ prompt, model, max_completion_tokens: maxTokens, temperature }),
-            });
+    //     try {
+    //         // Nice readable console output for debugging the generation input
+    //         console.groupCollapsed('108 [ChatComponent] Generating ontology');
+    //         console.log('Model:', model);
+    //         console.log('Max tokens:', maxTokens);
+    //         console.log('Temperature:', temperature);
+    //         console.log('Prompt:', prompt);
+    //         console.log('contextItems:', mdContent);
+    //         console.groupEnd();
+    //         // Add the user's prompt to the dialog
+    //         setMessages(prev => [...prev, { role: 'user', content: prompt }]);
 
-            if (!resp.ok) {
-                const text = await resp.text();
-                throw new Error(`Server returned ${resp.status}: ${text}`);
-            }
+    //         // Build payload; some models/providers do not accept temperature
+    //         const basePayload: any = { prompt, model, max_completion_tokens: maxTokens };
+    //         if (typeof temperature === 'number' && !Number.isNaN(temperature)) {
+    //             basePayload.temperature = temperature;
+    //         }
 
-            const json: GenerateResponse = await resp.json();
+    //         let resp = await fetch('/api/vercel-ai/generate', {
+    //             method: 'POST',
+    //             headers: { 'Content-Type': 'application/json' },
+    //             body: JSON.stringify(basePayload),
+    //         });
 
-            let outputText = '';
-            if (json.output && Array.isArray(json.output)) {
-                outputText = json.output.map((o: any) => (o.content ?? o.text ?? JSON.stringify(o))).join('\n\n');
-            } else if (json.choices && Array.isArray(json.choices)) {
-                outputText = json.choices.map((c: any) => c.text ?? c.message?.content ?? JSON.stringify(c)).join('\n\n');
-            } else if (typeof json.text === 'string') {
-                outputText = json.text;
-            } else {
-                outputText = JSON.stringify(json, null, 2);
-            }
+    //         if (!resp.ok) {
+    //             const text = await resp.text();
+    //             // Fallback: retry without temperature if provider rejects it
+    //             let shouldRetryWithoutTemp = false;
+    //             try {
+    //                 const errObj = JSON.parse(text);
+    //                 shouldRetryWithoutTemp =
+    //                     resp.status === 400 &&
+    //                     (errObj?.error?.param === 'temperature' ||
+    //                         (typeof errObj?.error?.message === 'string' && errObj.error.message.toLowerCase().includes('temperature')));
+    //             } catch {
+    //                 shouldRetryWithoutTemp = resp.status === 400 && text.toLowerCase().includes('temperature');
+    //             }
 
-            setResult(outputText);
-            // Append assistant reply to dialog
-            setMessages(prev => [...prev, { role: 'assistant', content: outputText }]);
-        } catch (err: any) {
-            console.error(err);
-            setError(err?.message ?? String(err));
-        } finally {
-            setLoading(false);
-        }
-    }
+    //             if (shouldRetryWithoutTemp && 'temperature' in basePayload) {
+    //                 try {
+    //                     const retryPayload = { ...basePayload };
+    //                     delete (retryPayload as any).temperature;
+    //                     console.warn('Temperature not supported by model/provider. Retrying without temperature.');
+    //                     resp = await fetch('/api/vercel-ai/generate', {
+    //                         method: 'POST',
+    //                         headers: { 'Content-Type': 'application/json' },
+    //                         body: JSON.stringify(retryPayload),
+    //                     });
+    //                 } catch (retryErr) {
+    //                     throw new Error(`Server returned ${resp.status}: ${text}`);
+    //                 }
+    //             } else {
+    //                 throw new Error(`Server returned ${resp.status}: ${text}`);
+    //             }
+    //         }
+
+    //         const json: GenerateResponse = await resp.json();
+
+    //         let outputText = '';
+    //         if (json.output && Array.isArray(json.output)) {
+    //             outputText = json.output.map((o: any) => (o.content ?? o.text ?? JSON.stringify(o))).join('\n\n');
+    //         } else if (json.choices && Array.isArray(json.choices)) {
+    //             outputText = json.choices.map((c: any) => c.text ?? c.message?.content ?? JSON.stringify(c)).join('\n\n');
+    //         } else if (typeof json.text === 'string') {
+    //             outputText = json.text;
+    //         } else {
+    //             outputText = JSON.stringify(json, null, 2);
+    //         }
+
+    //         setResult(outputText);
+    //         // Append assistant reply to dialog
+    //         setMessages(prev => [...prev, { role: 'assistant', content: outputText }]);
+    //     } catch (err: any) {
+    //         console.error(err);
+    //         setError(err?.message ?? String(err));
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // }
 
     // Map chat model to genmodel's supported aiModelName
-    function mapModelForGenmodel(m: string): string {
-        const lower = (m || '').toLowerCase();
-        // Pass through known genmodel 400: {"error":"Unsupported model","details":"Model gpt-4o is not supported"} to server
-        if (lower.startsWith('deepseek')) return lower; // deepseek-chat, deepseek-coder, deepseek-r1
-        if (lower.includes('mistral')) return 'mistral';
-        if (lower.startsWith('gpt-')) return lower; // gpt-5, gpt-5-mini
-        if (lower === 'dummy') return 'dummy';
-        // Fallback to a safe OpenAI mini model
-        return 'gpt-5-mini';
-    }
+    // function mapModelForGenmodel(m: string): string {
+    //     const lower = (m || '').toLowerCase();
+    //     // Pass through known genmodel 400: {"error":"Unsupported model","details":"Model gpt-4o is not supported"} to server
+    //     if (lower.startsWith('deepseek')) return lower; // deepseek-chat, deepseek-coder, deepseek-r1
+    //     if (lower.includes('mistral')) return 'mistral';
+    //     if (lower.startsWith('gpt-')) return lower; // gpt-5, gpt-5-mini
+    //     if (lower === 'dummy') return 'dummy';
+    //     // Fallback to a safe OpenAI mini model
+    //     return 'gpt-5-mini';
+    // }
 
     // Add this function for the thinking animation
     const ThinkingAnimation = () => {
@@ -178,22 +214,31 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
             </div>
         );
     };
+    
     async function handleOntologyBuilderFromResult(text: string) {
-        if (!text || !setSuggestedOntologyData) return;
+        // if (!text || !setSuggestedOntologyData) return;
         setBuilding(true);
         setBuildError(null);
 
 
         try {
+            console.log('221 DEBUG: mdContent length:', mdContent?.length, 'Content preview:', mdContent?.substring(0, 200));
+            // Temporary fallback for testing
+            const testDomainContent = mdContent || "This is a test domain for bike rental services. It includes bikes, customers, rentals, and payments.";
+
+            const enhancedUserPrompt = testDomainContent ?
+                `${UserPrompt} \n\n **Domain description:**\n ${testDomainContent}`
+                : UserPrompt;
+
             // Log the payload being sent to the genmodel endpoint for easier debugging
             console.groupCollapsed('153 [ChatComponent] Sending to /api/genmodel');
-            console.log('aiModelName:', mapModelForGenmodel(model));
+            console.log('aiModelName:', model);
             console.log('schemaName: OntologySchema');
             console.log('systemPrompt:', SystemPrompt);
             console.log('systemBehaviorGuidelines:', SystemBehaviorGuidelines);
-            console.log('userPrompt:', UserPrompt);
-            console.log('userInput:', text);
-            console.log('contextItems:', mdContent);
+            console.log('userPrompt:', enhancedUserPrompt);
+            console.log('userInput (assistant-text):', text);
+            console.log('contextItems: (empty)');
             console.log('contextOntology: (empty)');
             console.log('contextMetamodel: (empty)');
             console.groupEnd();
@@ -202,13 +247,16 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
                 body: JSON.stringify({
-                    aiModelName: mapModelForGenmodel(model),
+                    aiModelName: model, //mapModelForGenmodel(model),
                     schemaName: 'OntologySchema',
                     systemPrompt: SystemPrompt,
                     systemBehaviorGuidelines: SystemBehaviorGuidelines,
-                    userPrompt: UserPrompt,
-                    userInput: text,
-                    contextItems: mdContent,
+                    // Send the enhanced user prompt that includes domain description
+                    userPrompt: enhancedUserPrompt,
+                    // Send the assistant text/instruction as userInput
+                    userInput: text || '',
+                    // Keep contextItems empty like OntologyBuilder does
+                    contextItems: '',
                     contextOntology: '',
                     contextMetamodel: ''
                 })
@@ -256,6 +304,14 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
         const textToCopy = lastAssistant?.content || result;
         if (!textToCopy) return;
         navigator.clipboard?.writeText(textToCopy);
+    }
+    function handleSubmit(e: React.FormEvent) {
+        e.preventDefault();
+        const lastAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+        const textToSubmit = lastAssistant?.content || result;
+
+        // if (!textToSubmit) return;
+        handleOntologyBuilderFromResult(textToSubmit);
     }
 
     return (
@@ -334,7 +390,10 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                                                 <div className="flex items-center justify-end gap-2 mt-3">
                                                     <button
                                                         type="button"
-                                                        onClick={() => handleOntologyBuilderFromResult(m.content)}
+                                                        onClick={() => {
+                                                            console.log('Button clicked! mdContent:', mdContent?.length);
+                                                            handleOntologyBuilderFromResult(m.content);
+                                                        }}
                                                         disabled={building}
                                                         className={buttonAccent}
                                                     >
@@ -385,7 +444,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                         )}
                     </div>
                 </div>
-                {isLoading && (
+                {isLoading || building && (
                     <div className="flex justify-start my-4">
                         <ThinkingAnimation />
                         <div className="h-6" />
@@ -397,7 +456,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
             {/* Absolute bottom bar */}
             <form
                 ref={formRef}
-                onSubmit={handleGenerate}
+                onSubmit={handleSubmit}
                 className="absolute inset-x-0 z-10 pt-1 px-2 bg-popover/95 backdrop-blur border-t border-secondary rounded-t-lg"
                 // Place the bar above the OS/browser safe area (e.g. iPhone notch / macOS safe inset)
                 style={{ bottom: `calc(${INPUT_BAR_OFFSET}px + env(safe-area-inset-bottom) + ${EXTRA_BOTTOM_GAP}px)` }}
@@ -444,6 +503,17 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
 
                 {/* Action buttons*/}
                 <div className="flex items-center justify-end py-2">
+                    {/* <button
+                        type="button"
+                        onClick={() => {
+                            console.log('Button clicked! mdContent:', mdContent?.length);
+                            handleOntologyBuilderFromResult(m.content);
+                        }}
+                        disabled={building}
+                        className={buttonAccent}
+                    >
+                        {building ? 'Building…' : 'Update Suggested Ontology'}
+                    </button> */}
                     <button
                         type="submit"
                         className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"

@@ -99,35 +99,35 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
 {
   "objects": [
     {
-      "id": "UUIDv4",
+      "id": "UUID",
       "name": "Approve Request",
       "description": "Reviews and approves incoming requests based on predefined criteria.",
       "typeRef": "Task Type id",
       "typeName": "Task"
     },
     {
-      "id": "UUIDv4",
+      "id": "UUID",
       "name": "Manager",
       "description": "Oversees task execution and ensures objectives are met.",
       "typeRef": "Role Type id",
       "typeName": "Role"
     },
     {
-      "id": "UUIDv4",
+      "id": "UUID",
       "name": "User
       "description": "The user performing a Task.",
       "typeRef": "Role Type id",
       "typeName": "Role"
     },
     {
-      "id": "UUIDv4",
+      "id": "UUID",
       "name": "Request",
       "description": "Incoming request for approval.",
       "typeRef": "View Type id",
       "typeName": "View"
     },
     {
-      "id": "UUIDv4",
+      "id": "UUID",
       "name": "Equipment Record",
       "description": "Record of equipments.",
       "typeRef": "Information Type id",
@@ -135,7 +135,7 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
       "proposedType": "Equipment"
     },
     {
-      "id": "UUIDv4",
+      "id": "UUID",
       "name": "User Record",
       "description": "Record of users.",
       "typeRef": "Information Type id",
@@ -145,7 +145,7 @@ Ensure that all objects are interconnected, forming a cohesive knowledge structu
   ],
   "relationships": [
     {
-      "id": "UUIDv4",
+      "id": "UUID",
       "name": "approves",
       "typeRef": "Relationship Type uuid",
       "fromobjectRef": "Role uuid",

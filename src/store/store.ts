@@ -121,13 +121,32 @@ export const store = configureStore({
     reducer: persistedReducer,
     middleware: (getDefaultMiddleware) =>
         getDefaultMiddleware({
-            // Disable the middleware that's causing performance issues in development
+            // Keep immutable check disabled in development to avoid extra cost there.
             immutableCheck: process.env.NODE_ENV === 'production' ? true : false,
-            serializableCheck: process.env.NODE_ENV === 'production' ? true : {
-                ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
-                // Increase the warning threshold or disable warnings
-                warnAfter: 128, // Increase from default 32ms to 128ms
-            },
+
+            // Tune serializable state invariant middleware:
+            // - keep it enabled (helps catch bugs), but ignore heavy branches
+            // - increase the warn threshold to reduce noisy warnings for occasional long scans
+            serializableCheck: process.env.NODE_ENV === 'production'
+                ? true
+                : {
+                    // persist actions are already noisy and safe to ignore
+                    ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+
+                    // Ignore deep, frequently-large state branches that cause long scan times.
+                    // Adjust these paths to match your state shape if needed.
+                    ignoredPaths: [
+                        'modelUniverse.phData.documents',          // document library (large blobs)
+                        'modelUniverse.phData.metis',             // whole metis object (models, metamodels)
+                        'modelUniverse.phData.metis.models',      // models array (may be large)
+                        'modelUniverse.phData.metis.metamodels', // metamodels array
+                        'modelUniverse.phData.rawBlob',          // example: any raw large blob you store
+                    ],
+
+                    // Increase warning threshold in ms to avoid false positives during dev.
+                    // If you still see warnings, raise this (e.g., 500) or refine ignoredPaths.
+                    warnAfter: 250,
+                },
         }),
     devTools: process.env.NODE_ENV !== 'production', // Enable Redux DevTools in development
 });
