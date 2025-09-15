@@ -245,7 +245,11 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
                     <TabsContent value="relationships" className="rounded  w-full mt-0 ">
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
-                                {modelview && <RelshipTable data={(modelview.relshipviews || []).map((relview: any) => ({ ...relview }))} />}
+                                {modelview && <RelshipTable data={(modelview.relshipviews || []).map((relview: any) => ({ 
+                                    ...relview,
+                                    nameFrom: relview.nameFrom ? relview.nameFrom : relview.fromrelviewRef,
+                                    nameTo: relview.nameTo ? relview.nameTo : relview.torelviewRef
+                                }))} />}
                             </CardContent>
                         </Card>
                     </TabsContent>

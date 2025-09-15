@@ -222,7 +222,7 @@ export default function ModelviewBuilderPage() {
                 // ModelviewCard expects a single `modelview` prop, not `modelviews`
                 modelview={{
                   name: curModelview.name || 'Default View',
-                  // description: curModelview.description || '',
+                  description: curModelview.description || '',
                   objectviews: curModelview.objectviews || [],
                   relshipviews: curModelview.relshipviews || []
                 } as any}
@@ -261,21 +261,21 @@ export default function ModelviewBuilderPage() {
 
   const rightPanelContent = {
     tabs: [
-      {
-        key: 'previewModelview',
-        label: 'Modelview Preview',
-        content: (
-          <OutputPanel
-            mvPreview={mvPreview}
-            setMvPreview={setMvPreview}
-            mvContent={mvContent}
-            setMvContent={setMvContent}
-            setIsLibraryOpen={setIsLibraryOpen}
-            isLibraryOpen={isLibraryOpen}
-            panelType='right'
-          />
-        )
-      },
+      // {
+      //   key: 'previewModelview',
+      //   label: 'Modelview Preview',
+      //   content: (
+      //     <OutputPanel
+      //       mvPreview={mvPreview}
+      //       setMvPreview={setMvPreview}
+      //       mvContent={mvContent}
+      //       setMvContent={setMvContent}
+      //       setIsLibraryOpen={setIsLibraryOpen}
+      //       isLibraryOpen={isLibraryOpen}
+      //       panelType='right'
+      //     />
+      //   )
+      // },
       {
         key: 'previewModelview2',
         label: 'Preview Modelview',

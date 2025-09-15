@@ -1268,7 +1268,7 @@ Don't include explanations, next steps or examples at this stage.
                             value={input || ''}
                             onChange={(e) => setInput(e.target.value)}
                             onKeyDown={(e) => {
-                                console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
+                                // console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
                                 if (e.key === 'Enter' && !e.shiftKey) {
                                     console.log('Enter pressed without shift - should submit'); // Add this
                                     const now = Date.now();

@@ -20,8 +20,8 @@ import {
 import { Checkbox } from '@/components/ui/checkbox';
 import { columns } from './object-columns'; // Ensure this is correctly typed
 
-// Define the Concept type
-interface Concept {
+// Define the Object type
+interface Object {
     id: string;
     name: string;
     description: string;
@@ -32,21 +32,21 @@ interface Concept {
 }
 
 interface ObjectTableProps {
-    data: Concept[];
+    data: Object[];
 }
 
-export interface ObjectTableMeta extends TableMeta<Concept> { // Exported Interface
+export interface ObjectTableMeta extends TableMeta<Object> { // Exported Interface
     onEdit?: (id: string) => void;
     onDelete?: (id: string) => void;
 }
 
-const rowNumberColumn: ColumnDef<Concept, any> = {
+const rowNumberColumn: ColumnDef<Object, any> = {
     id: 'rowNumber',
     header: '#',
     cell: (info) => info.row.index + 1,
 };
 
-const columnsWithRowNumber: ColumnDef<Concept, any>[] = [rowNumberColumn, ...(columns as ColumnDef<Concept, any>[])];
+const columnsWithRowNumber: ColumnDef<Object, any>[] = [rowNumberColumn, ...(columns as ColumnDef<Object, any>[])];
 
 export const ObjectTable: React.FC<ObjectTableProps> = ({ data }) => {
     // Manage sorting state
@@ -55,13 +55,13 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data }) => {
     const [pageIndex, setPageIndex] = React.useState(0); // Default page index
 
     const onEdit = (id: string) => {
-        console.log(`Edit concept with id: ${id}`);
+        console.log(`Edit Object with id: ${id}`);
         // Implement global edit logic if needed
     };
 
     const onDelete = (id: string) => {
-        console.log(`Delete concept with id: ${id}`);
-        // Your delete logic here, e.g., dispatch(deleteConcept(id))
+        console.log(`Delete Object with id: ${id}`);
+        // Your delete logic here, e.g., dispatch(deleteObject(id))
     };
 
     // compute at render time
@@ -73,7 +73,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data }) => {
         [data]
     );
 
-    const table = useReactTable<Concept>({
+    const table = useReactTable<Object>({
         data,
         columns: columnsWithRowNumber,
         getCoreRowModel: getCoreRowModel(),

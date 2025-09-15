@@ -574,7 +574,7 @@ strictly conforming to the provided metamodel.
 
 Rules:
 - Always output JSON in the required envelope. 
-- IDs must be UUID. 
+- IDs should be UUIDv4. 
 - Only object and relationship types defined in the provided metamodel are allowed.
 - Relationship types must match the metamodel; relationship names may be synthesized.
 - Deduplicate and validate before output. 
