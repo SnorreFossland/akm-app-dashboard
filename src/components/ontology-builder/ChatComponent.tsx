@@ -25,7 +25,7 @@ interface ChatComponentProps {
 }
 
 export default function ChatComponent({ mdContent, setMdContent, startupGuide, guide, setSuggestedOntologyData, onImplementSuggestedOntology }: ChatComponentProps) {
-    const [prompt, setPrompt] = useState<string>('Create an ontology for the current domain based on the provided Domain description, content, context and Domain Presentation.');
+    const [prompt, setPrompt] = useState<string>('Create an ontology for the "Existing Context".'); // Initial prompt
     const [model, setModel] = useState<string>('gpt-5-mini');
     
     const [isLoading, setIsLoading] = useState(false);
@@ -224,10 +224,16 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
         try {
             console.log('221 DEBUG: mdContent length:', mdContent?.length, 'Content preview:', mdContent?.substring(0, 200));
             // Temporary fallback for testing
-            const testDomainContent = mdContent || "This is a test domain for bike rental services. It includes bikes, customers, rentals, and payments.";
+            const additionalContent = (() => {
+                const match1 = mdContent.match(/1\.(.*?)3\./s);
+                const match2 = mdContent.match(/5\.(.*?)6\./s);
+                const part1 = match1 ? match1[1].trim() : "";
+                const part2 = match2 ? match2[1].trim() : "";
+                return [part1, part2].filter(Boolean).join("\n\n");
+            })();
 
-            const enhancedUserPrompt = testDomainContent ?
-                `${UserPrompt} \n\n **Domain description:**\n ${testDomainContent}`
+            const enhancedUserPrompt = additionalContent ?
+                `${UserPrompt} \n\n ## Existing Context: \n ${additionalContent}`
                 : UserPrompt;
 
             // Log the payload being sent to the genmodel endpoint for easier debugging

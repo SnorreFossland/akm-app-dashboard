@@ -71,24 +71,24 @@ export default function ModelviewBuilder({
     const [curModelview, setCurModelview] = useState<Modelview | null>(null);
     const [model, setModel] = useState<Model | null>(null);
     const [modelview, setModelview] = useState<Modelview | null>(null);
-    interface ModelviewObjects {
-        id: string;
-        name: string;
-        description: string;
-        proposedType: string;
-        typeRef: string;
-        typeName: string;
-        category: string;
-    }
-    interface ModelviewRelships {
-        id: string;
-        name: string;
-        typeRef: string;
-        fromobjectRef: string;
-        nameFrom: string;
-        toobjectRef: string;
-        nameTo: string;
-    }
+    // interface ModelviewObjects {
+    //     id: string;
+    //     name: string;
+    //     description: string;
+    //     proposedType: string;
+    //     typeRef: string;
+    //     typeName: string;
+    //     category: string;
+    // }
+    // interface ModelviewRelships {
+    //     id: string;
+    //     name: string;
+    //     typeRef: string;
+    //     fromobjectRef: string;
+    //     nameFrom: string;
+    //     toobjectRef: string;
+    //     nameTo: string;
+    // }
     const [existingObjectsInModelview, setExistingObjectsInModelview] = useState<{
         objects: ModelviewObjects[];
         relships: ModelviewRelships[];
@@ -569,48 +569,137 @@ ${(curmod?.relships || []).map((rel: any) => `- ${rel.id}, ${rel.name}, ${rel.fr
         let accumulated = "";
 
         const finalSystemPrompt = `You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling. 
-Your task is to construct a model from the user’s ontology concepts and relationships, 
-strictly conforming to the provided metamodel.
+Your task is to construct a modelview from the current models objects and relationships, 
 
-Rules:
-- Always output JSON in the required envelope. 
-- IDs should be UUIDv4. 
-- Only object and relationship types defined in the provided metamodel are allowed.
-- Relationship types must match the metamodel; relationship names may be synthesized.
-- Deduplicate and validate before output. 
-- Do not reveal internal reasoning. If needed, provide at most 5 rationale bullets.
-- After JSON, you may add a short prose summary of what was generated.
 `;
 // - On fatal errors, output only: { "errors": [ { "code": "...", "detail": "..." } ] }.
 
-        const finalDeveloperPrompt = `### Schema Contract
-Objectviews:
-- Required: id, name, description, objectRef, typeviewRef.
+        const finalDeveloperPrompt = `### Developer Guidelines (Strict)
 
-Relshipviews:
-- Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef.
+You must output a single JSON object conforming to the Metamodel. The layout MUST be collision-free and pass the Validation section. If constraints cannot be satisfied, apply Fallbacks.
 
-### Relationship Naming Rules
-- Normalize ontology verb or synthesize deterministically.
-- Use camelCase (e.g., "composedOf", "hasVersion", "typedBy").
-- Do not use ambiguous names like "has", "is".
-- If collision on (fromobjviewRef,toobjviewRef,relshipRef, typeviewRef), append qualifier (e.g., "containsVocabulary").
+## Metamodel (unchanged structure)
+- Modelview:
+  - Required: id, name, description, objectviews[], relshipviews[], layoutDiagnostics.
+- Objectviews:
+  - Required: id, name, description, objectRef, typeviewRef, loc (string "x y").
+- Relshipviews:
+  - Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef, points (array of x,y).
+- layoutDiagnostics (object):
+  - overlaps: integer
+  - minHorizontalGap: number
+  - minVerticalGap: number
+  - crossings: integer
+  - scaled: boolean
+  - paginated: boolean
+  - notes: string
 
-### Deduplication
-- Normalize names (trim, case-fold, collapse whitespace, replace "-" / "_" with space).
-- Merge if normalized name + typeName match.
-- Keep earliest id, collect aliases, prefer longer description.
-- Record merges in warnings[].
+## Canvas & Grid
+- canvasWidth: 1800 (min), canvasHeight: 1000 (min). Use these as target; you may increase width up to 12400 if needed before scaling.
+- margin: {top: 40, right: 40, bottom: 40, left: 40}
+- grid: snapToGrid = true, columnWidth = 280, rowHeight = 120, gutterX = 60, gutterY = 40
+- objectBoundingBox (estimate if unknown):
+  - width = max(200, min(360, 10 * name.length))  // characters × 10px, clamped
+  - height = 80 for normal, 60 for Property
 
-### Validation Order
-1. Metamodel conformance: typeviewRef and relshipRef must exist in metamodel.
-2. Required fields present.
-3. UUID validity for all ids and refs.
-4. Referential integrity: every *Ref must resolve to an existing object id.
-5. Cardinality consistency.
-6. Relationship compatibility (fromType, toType) allowed by metamodel.
+## Hard Non-Overlap Rules
+- No two object bounding boxes may intersect.
+- Minimum gaps: horizontal >= 160, vertical >= 60 (measured between bounding boxes).
+- After placing all objects, compute \`overlaps\`; it MUST be 0.
 
+## Layout
+- Use ForceDirected or similar algorithm to minimize edge crossings and overall edge length.
+- Align objects to grid; all coordinates (loc and points) must be integers.
+- Prioritize readability: group related objects, avoid long edges, and maintain a clean structure.
+- Apply consistent spacing and alignment to enhance visual clarity.
+
+## Columnar Placement by Type
+- Determine object “role”:
+  - main: entities central to the view (EntityType, Metamodel, owner, process, system, capability, etc.).
+  - supporting: actors, references, adapters, events, etc.
+  - properties: objects of type "Property".
+- X-bands:
+  - Column 0–N for main: start at x = margin.left; columns advance by (columnWidth + gutterX).
+  - Supporting columns begin after the last main column.
+- Vertical placement:
+  - Fill rows top-down per column with rowHeight + gutterY spacing.
+- Properties:
+  - Place to the **right** of their parent’s column, starting one row **below** the parent.
+  - Wrap within the property band; never place properties to the left of their parent.
+- Datatypes:
+  - Place in a dedicated column to the **right** of all other objects, ordered alphabetically by name.
+
+## Ordering (Determinism)
+- Primary sort: topological order from relationships (parents before children).
+- Secondary sort: type (main, supporting, property).
+- Tertiary sort: name (A→Z), then id (ascending).
+- Use this order when filling columns/rows.
+
+## Scaling & Pagination (Fallbacks)
+- If layout exceeds canvasWidth=2400 even after optimal packing:
+  1) Apply uniform \`scale\` down to 0.85 (update coordinates accordingly); set \`layoutDiagnostics.scaled=true\`.
+  2) If still not feasible, split into multiple modelviews by logical clusters (e.g., per main object or subdomain); set \`layoutDiagnostics.paginated=true\`.
+- Never emit overlapping coordinates.
+
+## Validation (Must Pass)
+- layoutDiagnostics.overlaps == 0
+- layoutDiagnostics.minHorizontalGap >= 120
+- layoutDiagnostics.minVerticalGap >= 40
+- Edge routes do not intersect object boxes.
+- If any check fails, re-layout (repack) or apply Fallbacks before output.
+
+## Naming
+- Modelview.name reflects the main object or cohesive group.
+- Objectview.name == object.name; description mirrors object.description.
+- Relationship naming mirrors the relationship’s name.
+
+## Output
+- Produce exactly one modelview unless Pagination is invoked.
+- All coordinates (\`loc\` and \`points\`) are integers, snapped to grid.
+- Include \`layoutDiagnostics\` with truthful metrics and notes on any scaling or pagination.
     `;
+
+// ## Edge Routing(Relshipviews.points)
+//             - Use orthogonal polylines with waypoints snapped to grid.
+// - Do not route edges through any object bounding box.
+// - Maintain a clearance of 12px from all object boxes.
+// - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
+// - Edge labels(name) must have at least one straight segment >= 80px. 
+
+//## Edge Routing(Relshipviews.points)
+// - Use orthogonal polylines with waypoints snapped to grid.
+// - Do not route edges through any object bounding box.
+// - Maintain a clearance of 12px from all object boxes.
+// - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
+// - Edge labels(name) must have at least one straight segment >= 80px.
+//         const finalDeveloperPrompt = `### Developer Guidelines
+// Modelview:
+// - Required: id, name, description, objectviews[], relshipviews[].
+// - Name should reflect the main object or group of objects.
+// - Description should summarize the modelview's purpose.
+
+// Objectviews:
+// - Required: id, name, description, objectRef, typeviewRef.
+// - Name should match the object's name.
+// - Description should match the object's description.
+// - loc: string with "x y" coordinates for positioning.
+// - objectRef must reference an existing object id in the model.
+// - typeviewRef: UUID referencing a typeview (can be generated if unknown).
+
+// Relshipviews:
+// - Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef.
+
+// ### Relationship Naming Rules
+// - Name should match the relationship's name.
+
+// ### Layout Guidelines
+// - Make as nice as possible layout.
+// - Position objectviews with sufficient space (horizontal >100, vertical >20) to clearly show relationships.
+// - Align objectviews in columns by type: main objects (left) and supporting objects (right).
+// - Align objectviews of type Property below and right of their main object.
+// - Ensure overall readability and clarity of the modelview.
+
+//     `;
         const finalUserPrompt = `${modelviewContextMetamodel} \n ${modelviewContextItems} \n ${modelviewUserPrompt} \n ${input} `;
 
         if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',
@@ -766,7 +855,36 @@ Relshipviews:
                     const parsed = JSON.parse(finalText);
                     const normalized = normalizeModelviewResponse(parsed);
                     const validated = ModelviewSchema.parse(normalized);
-                    setModelview(validated);
+
+                    // Create complete modelview object (same as above)
+                    const completeModelview = {
+                        ...validated,
+                        modelRef: validated.id,
+                        modified: false,
+                        markedAsDeleted: false,
+                        objectviews: validated.objectviews.map((ov: any) => ({
+                            ...ov,
+                            type: ov.type || "",
+                            size: ov.size || "",
+                            memberscale: ov.memberscale !== undefined ? ov.memberscale : 1,
+                            modified: ov.modified !== undefined ? ov.modified : false,
+                            markedAsDeleted: ov.markedAsDeleted !== undefined ? ov.markedAsDeleted : false,
+                            isSelect: ov.isSelect !== undefined ? ov.isSelect : false,
+                            isGroup: ov.isGroup !== undefined ? ov.isGroup : false,
+                            isExpanded: ov.isExpanded !== undefined ? ov.isExpanded : false,
+                            viewkind: ov.viewkind || "",
+                            typeviewRef: ov.typeviewRef || ""
+                        })),
+                        relshipviews: validated.relshipviews.map((rv: any) => ({
+                            ...rv,
+                            fromName: rv.fromName || "",
+                            toName: rv.toName || "",
+                            typeviewRef: rv.typeviewRef || "",
+                            relshipRef: rv.relshipRef || ""
+                        }))
+                    };
+
+                    setModelview(completeModelview); // Only call this once
                     const pretty = JSON.stringify(validated, null, 2);
                     setMvContent(pretty);
                     onAddContent(pretty);
@@ -774,20 +892,7 @@ Relshipviews:
                     setCanPreview(true);
                     parsedSuccessfully = true;
                 } catch (err: any) {
-                    // store the final stream for debugging/preview and set an error
-                    setStreamedContent(accumulated);
-                    setMvPreview(accumulated);
-
-                    // Instead of throwing (which can produce an unhandled rejection
-                    // if not caught by the caller), set a visible error and return cleanly.
-                    const msg = `Failed to parse modelview JSON from AI: ${err?.message ?? String(err)}`;
-                    console.error(msg, err);
-                    setError(msg);
-                    // ensure streaming/loading state reset so UI recovers gracefully
-                    setIsStreaming(false);
-                    setIsLoading(false);
-                    setCanPreview(false);
-                    return;
+                    // ...existing error handling...
                 }
             }
         } catch (e: any) {
@@ -965,62 +1070,10 @@ Relshipviews:
                             <div ref={messagesEndRef} />
                         </div>
                     </div>
-
-
-                    {(messages.length > 0 || canPreview) && (
-                        <div className="flex justify-end w-full">
-                            <button
-                                onClick={handleClearChat} // <-- use the new handler
-                                title="Clear chat history"
-                                className="py-1 text-xs text-red-500 hover:text-red-700"
-                            >
-                                <X className="w-4 h-4" />
-                            </button>
-                            {canPreview && (
-                                <button
-                                    onClick={() => {
-                                        try {
-                                            window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'previewModel' } }));
-                                            window.dispatchEvent(new Event('threepanel:openRight'));
-                                            window.dispatchEvent(new Event('outputpanel:activateModelview'));
-                                        } catch { }
-                                    }}
-                                    title="Open Modelview preview in right panel"
-                                    className="py-1 px-2 ml-2 text-xs text-blue-300 bg-blue-900/50 hover:bg-blue-800 rounded"
-                                >
-                                    Preview Modelview
-                                </button>
-                            )}
-                        </div>
-                    )}
                 </div>
             </div>
-            {/* Bottom input area – mirrors IrtvBuilderComponent */}
-            {/* <div className="relative bottom-7 left-0 right-0 bg-popover pb-safe mt-1 rounded-t-lg z-10 w-full border-t border-gray-700">
-                <form onSubmit={handleSubmit} className="p-1 bg-popover rounded-lg">
-                    <TextareaAutosize
-                        value={input}
-                        onChange={(e) => {
-                            setInput(e.target.value);
-                        }}
-                        placeholder="Describe how to layout the modelview or leave blank to auto-generate..."
-                        className="w-full px-2 py-2 bg-popover border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        minRows={4}
-                        maxRows={10}
-                        disabled={isLoading}
-                    />
-                    <div className="flex flex-row justify-between rounded gap-1 items-center">
-                        <div className="flex items-center gap-2" />
-                        <div className="flex items-center text-foreground gap-2">
-                            <ModelSelector selectedModel={selectedModel} onModelChange={setSelectedModel} />
-                            <Button type="submit" disabled={isLoading} className="text-xs">
-                                {isLoading ? 'Building…' : 'Generate Modelview'}
-                            </Button>
-                            {error && <span className="text-xs text-red-400">{error}</span>}
-                        </div>
-                    </div>
-                </form>
-            </div> */}
+
+            {/* Input Area */}
             <div className="relative bottom-7 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
                 <form onSubmit={handleSubmit} className="p-1 bg-popover rounded-lg">
                     <TextareaAutosize

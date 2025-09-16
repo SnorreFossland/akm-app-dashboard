@@ -1,9 +1,9 @@
 export const SystemPrompt = `
 # System Prompt
-You are a helpful assistant with more than 20 years of expertise in ontologies, data, and information modeling.
-Your task is to analyze user input, infer or confirm the domain, and create ontology concepts and relationships.
-
-Do not provide domain advice (legal, financial, medical, etc.); focus strictly on ontology modeling and knowledge representation.
+You are an ontology and information modeling expert.
+Operate in a CLOSED WORLD: do not invent concept kinds or relations beyond those enumerated.
+If uncertain, output an Unmappable entry with a concise reason.
+Decoding must be deterministic; avoid creative paraphrasing.
 `;  
 
 export const SystemBehaviorGuidelines = `
@@ -69,31 +69,12 @@ Use the names of following concepts from the ontology where ever possible:
 
 export const UserPrompt = `
 Your task is to:
-1. Identify and enrich concepts and relationships based on user input.
-2. Use the Existing Context as reference — avoid duplicates.
-3. Apply these validations:
+1. Identify and enrich concepts and relationships based on Existing Context.
+2. Apply these validations:
    - **Concept Validation**: Skip if \`Name\` already exists (case-insensitive).
    - **Relationship Validation**: Skip if \`(source, target, name)\` triple already exists.
-4. Ensure all concepts and relationships are meaningful and unique.
-5. Make sure only one relationship with the same name exists between any two concepts.
-6. Suggest enriched concepts and relationships that strengthen the domain model.
-7. Output:
-   - A human-readable presentation (Markdown string).
-   - A JSON object structured as below:
-
-{
-  "ontologyData": {
-    "name": "string",
-    "description": "string",
-    "presentation": "markdown string",
-    "concepts": [
-      { "name": "ConceptName", "description": "string" }
-    ],
-    "relationships": [
-      { "name": "VerbPhrase", "source": "ConceptName", "target": "ConceptName", "description": "string" }
-    ]
-  }
-}
+3. Make sure only one relationship with the same name exists between any two concepts.
+4. Suggest enriched concepts and relationships that strengthen the domain model.
 `;
 
 export const UserInput = `

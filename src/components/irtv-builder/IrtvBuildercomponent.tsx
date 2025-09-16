@@ -315,35 +315,42 @@ Create an object of type "Metamodel" that is related with "contains" to all Enti
 Ensure logical consistency and Entity relationship principles.`
             );
             metatypesString = serializeTypes(curMetamodel);
-            console.log('316 metatypesString', metatypesString);
+            // console.log('316 metatypesString', metatypesString);
             exampleString += `
-    {
-        "modelviews": [
-            {
-                "name": "Main",
-                "description": "The main view of the model",
-                "objects": [
-                    {
-                        "id": "UUID",
-                        "name": "Bike",
-                        "description": "A two-wheeled vehicle that is powered by pedaling.",
-                        "typeRef": "EntityType uuid",
-                        "typeName": "EntityType"
-                        },
-                    }
-                ],
-                "relationships": [
-                    {
-                        "id": "UUID",
-                        "name": "approves",
-                        "typeRef": "Relationship Type uuid",
-                        "fromobjectRef": "EntityType uuid",
-                        "toobjectRef": "Property uuid",
-                    }
-                ]
-            }
-        ]
-    }
+{
+    "models: [
+        {
+            id: "UUID",
+            "name": "FoodProduction",
+            "description": "A model representing food production processes and products.",
+            "metamodelRef": "POPS_META uuid",
+            "modelviews": [
+                {
+                    "name": "Main",
+                    "description": "The main view of the model",
+                    "objects": [
+                        {
+                            "id": "UUID",
+                            "name": "Bike",
+                            "description": "A two-wheeled vehicle that is powered by pedaling.",
+                            "typeRef": "EntityType uuid",
+                            "typeName": "EntityType"
+                        }
+                    ],
+                    "relationships": [
+                        {
+                            "id": "UUID",
+                            "name": "approves",
+                            "typeRef": "Relationship Type uuid",
+                            "fromobjectRef": "EntityType uuid",
+                            "toobjectRef": "Property uuid",
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
         `;
         } else if (curMetamodel.name === "POPS_META") {
             setSystemBehaviorGuidelines(
@@ -352,26 +359,33 @@ Ensure logical consistency and Entity relationship principles.`
             metatypesString = serializeTypes(curMetamodel);
 
             exampleString += `
-{
-    "objects": [
-        {
-            "id": "UUID",
-            "name": "Produce",
-            "description": "A two-wheeled vehicle that is powered by pedaling.",
-            "typeRef": "Process uuid",
-            "typeName": "Process"
-            },
-        }
-    ],
-    "relationships": [
-        {
-            "id": "UUID",
-            "name": "hasOutcome",
-            "typeRef": "Relationship Type uuid",
-            "fromobjectRef": "Process uuid",
-            "nameFrom": "Process",
-            "toobjectRef": "Product uuid",
-            "nameTo": "Product"
+{ 
+    "models: [
+        { 
+            id: "UUID",
+            "name": "FoodProduction",
+            "description": "A model representing food production processes and products.",
+            "metamodelRef": "POPS_META uuid",
+            "objects": [
+                {
+                    "id": "UUID",
+                    "name": "Produce",
+                    "description": "A two-wheeled vehicle that is powered by pedaling.",
+                    "typeRef": "Process uuid",
+                    "typeName": "Process"
+                },
+            ],
+            "relationships": [
+                {
+                    "id": "UUID",
+                    "name": "hasOutcome",
+                    "typeRef": "Relationship Type uuid",
+                    "fromobjectRef": "Process uuid",
+                    "nameFrom": "Process",
+                    "toobjectRef": "Product uuid",
+                    "nameTo": "Product"
+                }
+            ]
         }
     ]
 }
@@ -411,11 +425,10 @@ Ensure logical consistency and Entity relationship principles.`
         const contextmetatypesString = `##Metamodel\n\n ${metatypesString} 
 
 - When creating objects, always assign a valid typeRef and typeName from the Metamodel.
-- When creating relationships, ensure from/to object types align with Metamodel definitions.
-        
-## Example 
-    ${exampleString}  
+- When creating relationships, ensure from/to object types align with Metamodel definitions.    
 `;
+// ## Example 
+//     ${exampleString}  
 
 
 
@@ -460,6 +473,7 @@ Ensure logical consistency and Entity relationship principles.`
 
         // Debug output kept as before
         console.log('serializeTypes', { objectTypes, filteredObjectTypes, relshipTypes, filteredRelTypes });
+        console.log('serializeTypes', { data });
 
         return `**${mm.name}**
 ${filteredObjectTypes
@@ -683,19 +697,11 @@ ${filteredRelTypes
 
     // ----------  Prompts ----------
     const finalSystemPrompt = `You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling. 
-Your task is to construct a model from the context with ontology concepts and relationships, conforming to the provided metamodel.
-
-Rules:
-- IDs must be UUID. 
-- Only object and relationship types defined in the provided metamodel are allowed.
-- Objects and Relationships must match the metamodel types; relationship names may be synthesized.
-- Deduplicate and validate before output. 
-- Do not reveal internal reasoning. If needed, provide at most 5 rationale bullets.
-- After JSON, you may add a short prose summary of what was generated.
+Your task is to build a model from context, conforming to the provided metamodel.
   `;
 
-    const finalDeveloperPrompt = 
-(curMetamodel?.name === "CORE_META") ? `### Schema Contract
+    const finalDeveloperPrompt =
+        (curMetamodel?.name === "CORE_META") ? `### Developer Instructions for CORE_META metamodel
 Model:
 - Required: name, description, objects[], relships[].
 - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
@@ -703,33 +709,17 @@ Model:
 
 Objects:
 - Required: id, name, description, typeRef, typeName, typeviewRef.
-- If typeName == "Property": add datatypeRef (uuid), isMandatory (bool), minCard (int ≥0), maxCard (int ≥ minCard or "*").
-- If typeName == "EntityType": may add supertypeRef (uuid) for inheritance using relshipType "Is".
 
 Relships:
-- Required: id, name, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
-- Optional: isMandatory, minCard, maxCard (if metamodel allows).
-
-### Relationship Naming Rules
-- Normalize ontology verb or synthesize deterministically.
-- Use camelCase (e.g., "composedOf", "hasVersion", "typedBy").
-- If collision on (fromobjectRef,toobjectRef,relshiptypeRef), append qualifier (e.g., "containsVocabulary").
+- Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
+- Relationship name should not include from/to object names.
+- Dont use the ontology relationship names to name relationships, but use the metamodel relshiptypeRef for typeRef.
+- Use the ontology object names to name objects, but use the metamodel typeRef for typeRef.
 
 ### Deduplication
 - Normalize names (trim, case-fold, collapse whitespace, replace "-" / "_" with space).
-- Merge if normalized name + typeName match.
-- Keep earliest id, collect aliases, prefer longer description.
-- Record merges in warnings[].
-
-### Validation Order
-1. Metamodel conformance: typeref and relshiptypeRef must exist in metamodel.
-2. Required fields present.
-3. UUID validity for all ids and refs.
-4. Referential integrity: every *Ref must resolve to an existing object id.
-5. Cardinality consistency.
-6. Relship compatibility (fromType, toType) allowed by metamodel.
-` 
-    :   ``; // is this necessary?
+`
+            : ``; // is this necessary?
 
 
     const finalUserPrompt = `${contextMetamodel} \n ${contextItems} \n ${contextOntology}`;

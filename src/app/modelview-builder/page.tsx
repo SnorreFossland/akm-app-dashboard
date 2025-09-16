@@ -213,6 +213,21 @@ export default function ModelviewBuilderPage() {
         )
       },
       {
+        key: 'previewModelview',
+        label: 'Modelview Preview',
+        content: (
+          <OutputPanel
+            mvPreview={mvPreview}
+            setMvPreview={setMvPreview}
+            mvContent={mvContent}
+            setMvContent={setMvContent}
+            setIsLibraryOpen={setIsLibraryOpen}
+            isLibraryOpen={isLibraryOpen}
+            panelType='right'
+          />
+        )
+      },
+      {
         key: 'suite',
         label: 'Modelview',
         content: (
@@ -261,21 +276,21 @@ export default function ModelviewBuilderPage() {
 
   const rightPanelContent = {
     tabs: [
-      // {
-      //   key: 'previewModelview',
-      //   label: 'Modelview Preview',
-      //   content: (
-      //     <OutputPanel
-      //       mvPreview={mvPreview}
-      //       setMvPreview={setMvPreview}
-      //       mvContent={mvContent}
-      //       setMvContent={setMvContent}
-      //       setIsLibraryOpen={setIsLibraryOpen}
-      //       isLibraryOpen={isLibraryOpen}
-      //       panelType='right'
-      //     />
-      //   )
-      // },
+      {
+        key: 'previewModelview',
+        label: 'Modelview Preview',
+        content: (
+          <OutputPanel
+            mvPreview={mvPreview}
+            setMvPreview={setMvPreview}
+            mvContent={mvContent}
+            setMvContent={setMvContent}
+            setIsLibraryOpen={setIsLibraryOpen}
+            isLibraryOpen={isLibraryOpen}
+            panelType='right'
+          />
+        )
+      },
       {
         key: 'previewModelview2',
         label: 'Preview Modelview',
