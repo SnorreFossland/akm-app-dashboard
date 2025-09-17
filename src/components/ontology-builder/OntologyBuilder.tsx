@@ -20,6 +20,8 @@ import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/m
 import {
     SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext, MetamodelPrompt
 } from '@/app/ontology-builder/prompts';
+import { streamGenmodel } from '@/lib/ai/genmodel';
+import { mapModelId } from '@/lib/ai/modelMap';
 
 
 const debug = false;
@@ -285,48 +287,17 @@ const OntologyBuilder = (
         });
 
         try {
-            const res = await fetch("/api/genmodel", {
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json'
-                },
-                body: JSON.stringify({
-                    aiModelName: "gpt-4o",
-                    schemaName: 'OntologySchema',
-                    systemPrompt: systemPrompt || "",
-                    systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                    userPrompt: userPrompt || "", // Generic user prompt
-                    userInput: userInput || "", // Specific user input like new aspects or additional concepts
-                    contextItems: contextItems || "", // Existing concepts
-                    contextOntology: contextOntology || "", // Existing ontology
-                    contextMetamodel: contextMetamodel || "" // Existing metamodel
-                })
-            });
+            const payload = {
+                aiModelName: mapModelId('gpt-4o'),
+                schemaName: 'OntologySchema',
+                systemPrompt: systemPrompt || "",
+                developerPrompt: systemBehaviorGuidelines || "",
+                userPrompt: [userPrompt, userInput, contextItems, contextOntology, contextMetamodel].filter(Boolean).join('\n\n') || "",
+            } as const;
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error("API Error Response:", {
-                    status: res.status,
-                    statusText: res.statusText,
-                    body: errorText
-                });
-                throw new Error(`Failed to fetch: ${res.status} ${res.statusText} - ${errorText}`);
-            }
-
-            const reader = res.body?.getReader();
-            if (!reader) throw new Error("No reader available");
-
-            const decoder = new TextDecoder();
-            let data = "";
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                data += decoder.decode(value, { stream: true });
-            }
-
-            // console.log("Raw API Response:", data);
+            let data = '';
+            const finalText = await streamGenmodel(payload, (chunk) => { data += chunk; });
+            if (finalText && finalText.length > data.length) data = finalText;
 
             const parsed = JSON.parse(data);
             console.log("Parsed API Response:", parsed);

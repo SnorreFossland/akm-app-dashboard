@@ -99,186 +99,15 @@ export default function OutputPanel({
     }, []);
     // Update editContent when mvContent changes from parent
     useEffect(() => {
-        setEditContent(typeof mvContent === 'string' ? mvContent : (mvContent && 'description' in mvContent ? mvContent.description : ''));
+        setEditContent(typeof mvContent === 'string' ? mvContent : (mvContent?.description || ''));
     }, [mvContent]);
 
-    // Function to detect placeholders in the format [placeholder]
+    // Focus the textarea when editing starts
     useEffect(() => {
-        if (!editContent) {
-            setTemplatePlaceholders([]);
-            return;
+        if (isEditing && textareaRef.current) {
+            textareaRef.current.focus();
         }
-
-        const placeholderRegex = /\[([^\[\]]+)\]/g;
-        const placeholders: { text: string, start: number, end: number }[] = [];
-        let match;
-
-        while ((match = placeholderRegex.exec(editContent)) !== null) {
-            placeholders.push({
-                text: match[1],
-                start: match.index,
-                end: match.index + match[0].length
-            });
-        }
-
-        setTemplatePlaceholders(placeholders);
-    }, [editContent]);
-
-
-    // Add this function with your other handler functions
-    const handleSaveToFile = (content: string) => {
-        // Create a blob with the content
-        const blob = new Blob([content], { type: 'text/markdown' });
-
-        // Create a URL for the blob
-        const url = URL.createObjectURL(blob);
-
-        // Extract title from first line for filename
-        const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-        const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
-        const fileName = `${cleanTitle || 'document'}.md`;
-
-        // Create a temporary anchor element
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-
-        // Trigger download
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-
-        // Show confirmation
-        setStatusMsg(`Saved "${fileName}" to downloads`);
-        setTimeout(() => setStatusMsg(''), 30000);
-    };
-
-    const handleCancel = () => {
-        // Don't clear mvContent when canceling, just reset editContent to original
-        setEditContent(typeof mvContent === 'string' ? mvContent : (mvContent?.description || ''));
-        setIsEditing(false);
-    };
-
-    const handleEdit = () => {
-        setIsEditing(true);
-        onEdit();
-    };
-
-    const handleSaveToLibrary = () => {
-        // Save to library in Redux store if mvContent is not null and is not a string
-        if (mvContent && typeof mvContent !== 'string') {
-            dispatch(setObjects(mvContent.objects));
-            dispatch(setRelationships(mvContent.relships));
-        }
-
-        // Also call the prop callback for parent components
-        // onSaveToLibrary(contentToSave);
-    };
-
-    const handleSave = () => {
-        dispatch(saveMarkdownDocument({
-            id: documentId || Date.now().toString(),
-            name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
-            content: editContent,
-            createdAt: new Date().toISOString()
-        }));
-
-        onSave(editContent);
-        setIsEditing(false);
-    };
-
-    // Define placeholders based on panel type
-    const getPlaceholder = () => {
-        if (panelType === 'left') {
-            return 'Type, paste content, or load from library. This will be used as context for AI chat.';
-        }
-        return '' // 'Click Markdown Preview to view or edit your document.';
-    };
-
-    const getEmptyMessage = () => {
-        if (panelType === 'left') {
-            return 'No response document. Click Edit to start writing or Library to load content.';
-        }
-        return 'No document selected!';
-    };
-
-    // Function to select and jump to a placeholder
-    const selectTemplatePlaceholder = (idx: number) => {
-        if (!textareaRef.current) return;
-
-        const placeholder = templatePlaceholders[idx];
-        if (!placeholder) return;
-
-        // Focus the textarea
-        textareaRef.current.focus();
-
-        // Set selection range to highlight the placeholder
-        textareaRef.current.setSelectionRange(
-            placeholder.start,
-            placeholder.end
-        );
-
-        // Scroll the placeholder into view if needed
-        const textarea = textareaRef.current;
-
-        // Get character position information
-        const charInfo = getCaretCoordinates(textarea, placeholder.start);
-
-        // Calculate scroll position
-        if (charInfo) {
-            const scrollTop = textarea.scrollTop;
-            const offsetTop = charInfo.top;
-            const textareaHeight = textarea.clientHeight;
-
-            // Adjust scroll if needed to ensure the placeholder is visible
-            if (offsetTop < scrollTop || offsetTop > scrollTop + textareaHeight - 30) {
-                textarea.scrollTop = Math.max(0, offsetTop - textareaHeight / 2);
-            }
-        }
-    };
-
-    // Helper function to get caret coordinates in a textarea
-    function getCaretCoordinates(element: HTMLTextAreaElement, position: number) {
-        // Create a dummy element to measure text dimensions
-        const div = document.createElement('div');
-        // Copy styles that affect dimensions
-        const styles = window.getComputedStyle(element);
-        const props = [
-            'fontFamily', 'fontSize', 'fontWeight', 'letterSpacing',
-            'paddingLeft', 'paddingTop', 'paddingRight', 'paddingBottom',
-            'width', 'lineHeight', 'textAlign', 'wordSpacing', 'whiteSpace'
-        ];
-
-        props.forEach(prop => {
-            const value = styles[prop as keyof typeof styles];
-            div.style[prop as any] = value !== null ? value.toString() : '';
-        });
-
-        // Set content up to the caret position
-        div.textContent = element.value.substring(0, position);
-
-        // Create a span where the caret would be
-        const span = document.createElement('span');
-        span.textContent = element.value.charAt(position) || '.';
-        div.appendChild(span);
-
-        // Position absolutely out of view
-        div.style.position = 'absolute';
-        div.style.visibility = 'hidden';
-        document.body.appendChild(div);
-
-        // Measure position
-        const rect = span.getBoundingClientRect();
-        const result = {
-            top: rect.top - div.getBoundingClientRect().top,
-            left: rect.left - div.getBoundingClientRect().left,
-            height: rect.height
-        };
-
-        document.body.removeChild(div);
-        return result;
-    }
+    }, [isEditing]);
 
     const handleDispatchMvData = () => {
         console.log('69 HandleDispatch:', dispatchDone); //, modelview, model);
@@ -392,3 +221,4 @@ export default function OutputPanel({
         </div >
     );
 }
+

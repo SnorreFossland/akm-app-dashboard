@@ -14,7 +14,7 @@ const nextConfig = {
     eslint: {
         // Warning: this will skip lint checks during build on Vercel
         ignoreDuringBuilds: true
-    }
+    },
 }
 
 module.exports = nextConfig;

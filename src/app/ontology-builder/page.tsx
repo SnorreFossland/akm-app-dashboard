@@ -22,6 +22,7 @@ import OntologyBuilder from '@/components/ontology-builder/OntologyBuilder';
 import ChatComponent from '@/components/ontology-builder/ChatComponent';
 // import ModelComponent from "@/features/model-universe/components/ModelComponent";
 import { OntologyCard } from '@/components/ontology-card';
+import { OntologyGraph } from '@/components/ontology-graph';
 import { LoadingCircularProgress } from "@/components/loading";
 import Guide from '@/components/ontology-builder/Guide';
 import GettingStartedGuide from '@/components/ontology-builder/GettingStartedGuide';
@@ -179,28 +180,68 @@ export default function OntologyBuilderPage() {
   };
 
   const handleSaveToLibrary: () => void = () => {
-    const contentToSave = mdContent;
-    const firstLine = contentToSave.includes('Ontology Name')
-      ? contentToSave.split('Ontology Name:**')[1].split('\n')[0]?.trim() || ''
-      : (contentToSave.split('\n')[0] || 'Document');
     if (!suggestedOntologyData) {
-      alert('No Concept data to dispatch');
+      alert('No ontology suggestions to apply');
       return;
     }
-    // Dedupe concepts and relationships and dispatch to store
-    const uniqueConcepts = Array.from(new Map((suggestedOntologyData.concepts || []).map((item: Concept) => [item.name, item])).values());
-    const uniqueRelationships = Array.from(new Map((suggestedOntologyData.relationships || []).map((item: Relationship) => [item.name, item])).values());
 
-    const deduped = {
-      name: suggestedOntologyData.name,
-      description: suggestedOntologyData.description,
-      concepts: uniqueConcepts,
-      relationships: uniqueRelationships
+    const existing = (data?.phData?.domain?.ontology ?? { name: '', description: '', presentation: '', concepts: [], relationships: [] }) as Ontology;
+
+    // Normalization helpers
+    const norm = (s: string) => (s || '').trim().toLowerCase().replace(/\s+/g, ' ');
+
+    // 1) Concepts: case-insensitive, trimmed name uniqueness
+    const conceptMap = new Map<string, Concept>();
+    (existing.concepts || []).forEach(c => {
+      conceptMap.set(norm(c.name), { name: c.name.trim(), description: (c.description || '').trim() });
+    });
+    (suggestedOntologyData.concepts || []).forEach(c => {
+      const key = norm(c.name);
+      if (!conceptMap.has(key)) {
+        conceptMap.set(key, { name: c.name.trim(), description: (c.description || '').trim() });
+      }
+    });
+
+    const mergedConcepts = Array.from(conceptMap.values());
+
+    // 2) Relationships: uniqueness on triple (name, from, to) case-insensitive + trimmed
+    const relKey = (r: Relationship) => `${norm(r.name)}|${norm(r.nameFrom)}|${norm(r.nameTo)}`;
+    const relMap = new Map<string, Relationship>();
+    (existing.relationships || []).forEach(r => {
+      relMap.set(relKey(r), {
+        name: r.name.trim(),
+        nameFrom: r.nameFrom.trim(),
+        nameTo: r.nameTo.trim(),
+        description: (r.description || '').trim(),
+      });
+    });
+    (suggestedOntologyData.relationships || []).forEach(r => {
+      const key = relKey(r);
+      if (!relMap.has(key)) {
+        relMap.set(key, {
+          name: r.name.trim(),
+          nameFrom: r.nameFrom.trim(),
+          nameTo: r.nameTo.trim(),
+          description: (r.description || '').trim(),
+        });
+      }
+    });
+
+    const mergedRelationships = Array.from(relMap.values());
+
+    const newOntology: Ontology = {
+      name: suggestedOntologyData.name?.trim() || existing.name || 'Generated Ontology',
+      description: suggestedOntologyData.description?.trim() || existing.description || '',
+      presentation: existing.presentation || '',
+      concepts: mergedConcepts,
+      relationships: mergedRelationships,
     };
 
-    dispatch(setOntologyData(deduped as any));
-    // setSuggestedOntologyData(null);
-    // }
+    // Replace the domain's ontology with the deduped/merged one to avoid duplicate appends
+    dispatch(setDomainData({
+      ...data.phData.domain,
+      ontology: newOntology,
+    } as any));
   };
 
   // Define left panel content
@@ -258,6 +299,12 @@ export default function OntologyBuilderPage() {
               </div> */}
               <div className="mx-1 bg-gray-700">
                 <OntologyCard domainData={domainData} ontologyData={ontology} />
+                {ontology && (
+                  <div className="mt-2 p-2 bg-background rounded overflow-auto">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-1">Graph</h4>
+                    <OntologyGraph ontology={ontology as any} baseline={ontology as any} />
+                  </div>
+                )}
               </div>
             </Card>
           </div>
@@ -413,6 +460,12 @@ export default function OntologyBuilderPage() {
               </CardTitle>
               <div className="mx-1 bg-gray-700">
                 <OntologyCard domainData={domainData} ontologyData={suggestedOntologyData} />
+                {suggestedOntologyData && (
+                  <div className="mt-2 p-2 bg-background rounded overflow-auto">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-1">Graph (highlight additions)</h4>
+                    <OntologyGraph ontology={suggestedOntologyData as any} baseline={ontology as any} />
+                  </div>
+                )}
               </div>
             </Card>
           </div>

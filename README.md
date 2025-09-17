@@ -4,6 +4,7 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 - Agents Guide: see `agents.md`
 - Roadmap: see `ROADMAP.md`
+- Endpoint Contracts: see `docs/endpoint-contracts.md`
 
 ## Getting Started
 

@@ -205,7 +205,7 @@ export const navigationData: NavigationData = {
 
                 {
                     title: "Model Builder",
-                    url: "/Irtv-builder",
+                    url: "/irtv-builder",
                     icon: SquareUser,
                     description: "Model building according to Metamodel",
                 },

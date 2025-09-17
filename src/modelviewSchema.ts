@@ -4,6 +4,8 @@ export const ModelviewSchema = z.object({
     id: z.string().describe("UUID - Unique identifier of the modelview"),
     name: z.string().describe("Name of the modelview"),
     description: z.string().describe("Description of the modelview"),
+    modelRef: z.string().describe("Reference to the model"),
+    focusObjectviewRef: z.string().describe("UUID - Unique identifier of the focus objectview"),
     objectviews: z.array(
         z.object({
             id: z.string().describe("UUID - Unique identifier of the objectview"),

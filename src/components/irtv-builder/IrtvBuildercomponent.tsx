@@ -7,6 +7,7 @@ import React, {
     useCallback,
     useMemo
 } from "react";
+import Link from 'next/link';
 import ReactMarkdown from "react-markdown";
 import TextareaAutosize from "react-textarea-autosize";
 import { useDispatch, useSelector } from "react-redux";
@@ -21,10 +22,13 @@ import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusMod
 import { RootState, AppDispatch } from "@/store";
 import { ObjectSchema } from "@/objectSchema";
 import ModelSelector from '@/components/ai-chat/ModelSelector';
+import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
-import { SystemPrompt, IrtvSystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext } from '@/app/model-builder/prompts';
+import { SystemPrompt, SystemBehaviorGuidelines, UserPrompt } from '@/app/irtv-builder/prompts';
+import { mapModelId } from '@/lib/ai/modelMap';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
+import { streamGenmodel } from '@/lib/ai/genmodel';
 
 const debug = false;
 
@@ -309,10 +313,11 @@ Create an object of type Metamodel with a relship "contains" to all objects of t
             );
             metatypesString = serializeTypes(curMetamodel);
         } else if (curMetamodel.name === "CORE_META") {
-            setSystemBehaviorGuidelines(`You are an expert in creating Entity Models. 
-Your task is to create a Model based on the provided object types and relationships. 
-Create an object of type "Metamodel" that is related with "contains" to all EntityType objects.
-Ensure logical consistency and Entity relationship principles.`
+            setSystemBehaviorGuidelines(`You are an expert in Type definition analysis. 
+Your task is to create a Type definition Model based on the provided CORE_META Metamodel. 
+One object of type "Metamodel"  with relationship "contains" to all EntityType objects.
+EntityType objects representing domain concepts may have properties.
+Ensure logical consistency and relationship principles.`
             );
             metatypesString = serializeTypes(curMetamodel);
             // console.log('316 metatypesString', metatypesString);
@@ -422,7 +427,7 @@ Ensure logical consistency and Entity relationship principles.`
         `;
         }
 
-        const contextmetatypesString = `##Metamodel\n\n ${metatypesString} 
+        const contextmetatypesString = `## Metamodel \n\n ${metatypesString} 
 
 - When creating objects, always assign a valid typeRef and typeName from the Metamodel.
 - When creating relationships, ensure from/to object types align with Metamodel definitions.    
@@ -432,7 +437,7 @@ Ensure logical consistency and Entity relationship principles.`
 
 
 
-        // Set base system prompt (assuming SystemPrompt is available globally/import)
+        // Set base system prompt (from local prompts.ts)
         setSystemPrompt(SystemPrompt);
         setContextMetamodel(contextmetatypesString);
         setUserPrompt(""); // reset user prompt if it matched default before
@@ -696,25 +701,37 @@ ${filteredRelTypes
     };
 
     // ----------  Prompts ----------
-    const finalSystemPrompt = `You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling. 
-Your task is to build a model from context, conforming to the provided metamodel.
-  `;
+    const finalSystemPrompt = `
+You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling.
+Your task is to build a model from the provided 'Existing Context', conforming to the provided Metamodel.
+`;
 
     const finalDeveloperPrompt =
         (curMetamodel?.name === "CORE_META") ? `### Developer Instructions for CORE_META metamodel
 Model:
-- Required: name, description, objects[], relships[].
+- Required: id, name, description, objects[], relships[].
 - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
 - Description should be a brief summary of the model's purpose.
+- All ids should be unique UUID strings.
 
 Objects:
 - Required: id, name, description, typeRef, typeName, typeviewRef.
+- All ids should be unique UUID strings.
+- TypeName and typeRef must match a valid object type from the Metamodel.
+- Use the ontology Concept names to name objects, but use the metamodel typeRef for typeRef.
 
 Relships:
 - Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
-- Relationship name should not include from/to object names.
+- Relationship name should not include from/to object name.
+- Relationship name should not have suffix "Rel".
 - Dont use the ontology relationship names to name relationships, but use the metamodel relshiptypeRef for typeRef.
-- Use the ontology object names to name objects, but use the metamodel typeRef for typeRef.
+- All ids should be unique UUID strings.
+- Ensure fromobjectRef and toobjectRef reference valid object ids defined in the objects[] array.
+- Ensure typeRef aligns with the Metamodel relshiptype.
+- Between EntityType objects use the "relationshipType" typeRef.
+
+## When building the model, follow these principles:
+- EntityType objects represent domain concepts.
 
 ### Deduplication
 - Normalize names (trim, case-fold, collapse whitespace, replace "-" / "_" with space).
@@ -737,33 +754,20 @@ Relships:
 
         try {
 
-            const res = await fetch("/api/genmodel", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    aiModelName: selectedModel || "gpt-5-mini",
-                    schemaName: "ObjectSchema",
-                    systemPrompt: finalSystemPrompt || "",
-                    developerPrompt: finalDeveloperPrompt || "",
-                    userPrompt: finalUserPrompt || ""
-                })
-            });
+            const payload = {
+                aiModelName: mapModelId(selectedModel || "gpt-5-mini"),
+                schemaName: "ObjectSchema",
+                systemPrompt: finalSystemPrompt || "",
+                developerPrompt: finalDeveloperPrompt || "",
+                userPrompt: finalUserPrompt || ""
+            } as const;
 
-            if (!res.ok) {
-                const errorText = await res.text();
-                throw new Error(`API Error ${res.status}: ${errorText}`);
-            }
-
-            const reader = res.body?.getReader();
-            if (!reader) throw new Error("No reader available");
-
-            const decoder = new TextDecoder();
             let raw = "";
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                raw += decoder.decode(value, { stream: true });
-            }
+            const finalText = await streamGenmodel(payload, (chunk) => {
+                raw += chunk;
+            });
+            // Prefer the returned final text (identical to raw), but keep raw for existing logic
+            if (finalText && finalText.length > raw.length) raw = finalText;
 
             if (!raw.trim()) throw new Error("Empty response from API");
 
@@ -875,28 +879,7 @@ Relships:
         );
     };
 
-    const TemperatureSelector = () => (
-        <div className="flex flex-row items-center justify-center text-xs text-gray-400 px-2">
-            <label className="block text-sm font-medium mr-2">Temp:</label>
-            <select
-                value={temperature}
-                onChange={(e) => {
-                    const t = parseFloat(e.target.value);
-                    setTemperature(t);
-                    localStorage.setItem("aiDashboard_temperature", t.toString());
-                }}
-                className="bg-gray-800 border border-gray-600 rounded text-sm py-1 px-2"
-                title="Lower = deterministic, higher = creative"
-            >
-                <option value="0.0">0.0</option>
-                <option value="0.3">0.3</option>
-                <option value="0.5">0.5</option>
-                <option value="0.7">0.7</option>
-                <option value="1.0">1.0</option>
-                <option value="1.2">1.2</option>
-            </select>
-        </div>
-    );
+    // use shared TemperatureSelector component
 
     const printPromptsDiv = useMemo(
         () => (
@@ -937,7 +920,7 @@ Relships:
     }
 
     return (
-        <div className="flex flex-col min-h-0 h-full rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
+        <div className="flex flex-col min-h-0 h-screen rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
             <div className="flex-1 flex flex-col h-0 bg-secondary/40 overflow-hidden relative">
                 {showGuide && (
                     <div className="flex flex-col items-center mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
@@ -1075,8 +1058,8 @@ Relships:
             </div>
 
             {/* Input Area */}
-            <div className="relative bottom-7 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
-                <form onSubmit={handleSubmit} className="p-1 bg-popover rounded-lg">
+            <div className="sticky bottom-24 left-0 right-0 bg-popover/95 backdrop-blur supports-[backdrop-filter]:bg-popover/80 border-t border-gray-700 rounded-t-lg z-10">
+                <form onSubmit={handleSubmit} className="p-1 bg-transparent rounded-lg" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)' }}>
                     <TextareaAutosize
                         ref={textareaRef}
                         value={input}
@@ -1097,11 +1080,10 @@ Relships:
                                 selectedModel={selectedModel}
                                 onModelChange={(newModel) => {
                                     setSelectedModel(newModel);
-                                    // Persist selected model to localStorage
-                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                    try { localStorage.setItem('aiDashboard_selectedModel', newModel); } catch {}
                                 }}
                             />
-                            <TemperatureSelector />
+                            <TemperatureSelector temperature={temperature} onChange={(t) => setTemperature(t)} />
                         </div>
 
                         {/* now include the send‐button here */}

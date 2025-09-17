@@ -4,38 +4,37 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
 
 ## Immediate (Next 1–2 Weeks)
 
-- [ ] Route, naming, and navigation normalization
-  - Rename `src/app/Irtv-builder` → `src/app/irtv-builder` and update references.
-  - Rename `src/components/modelview-bilder` → `src/components/modelview-builder` and fix imports in `src/app/modelview-builder/page.tsx`.
-  - Update `src/data/navigationData.ts` to use lowercase `"/irtv-builder"` and verify all sidebar links render via `src/components/nav-main.tsx`.
+- [x] Route, naming, and navigation normalization
+  - Modelview components renamed: `modelview-bilder` → `modelview-builder` with import fixes.
+  - IRTV route renamed to lowercase; uppercase route removed; navigation updated to `/irtv-builder`.
+  - Sidebar navigation verified via `src/components/nav-main.tsx`.
 
-- [ ] Consolidate model mapping and endpoints
-  - Unify model-id mapping (`aiModelName`) and gateway usage across agents.
-  - Extract helpers in `src/lib/ai/{generate,genmodel}.ts` to wrap `POST /api/vercel-ai/generate` and `POST /api/genmodel` with consistent request/response handling.
-  - Handle unsupported models gracefully; standardize `max_completion_tokens` usage.
+- [x] Consolidate model mapping and endpoints
+  - Unified model-id mapping via `mapModelId` in `src/lib/ai/modelMap.ts` and gateway usage across agents.
+  - Helpers in `src/lib/ai/{generate,genmodel}.ts` adopted across Chat (gateway), IRTV/Model Builder, Modelview Builder, Ontology Chat, and Ontology Builder.
+  - Added optional `max_completion_tokens` control (Chat) and pass-through in gateway helper.
 
-- [ ] Normalize endpoint contracts
-  - Document payload/response shapes for gateway and genmodel (buffered + streamed JSON).
-  - Add shared streamed-JSON parsing with backpressure and error surfacing.
+ - [x] Normalize endpoint contracts
+  - Documented payload/response shapes in `docs/endpoint-contracts.md` for gateway and genmodel (streamed JSON).
+  - Shared helpers (`callGateway`, `streamGenmodel`) provide uniform error surfacing; clients implement incremental parse patterns.
 
-- [ ] Prompts and schemas
-  - Co-locate prompts per agent in `prompts.ts` and keep background in Document Panel context.
-  - Standardize schema names: `OntologySchema`, `ModelviewSchema`, and `IRTVSchema`.
+ - [x] Prompts and schemas
+  - Co-located prompts per agent: `src/app/ontology-builder/prompts.ts`, `src/app/modelview-builder/prompts.ts`, and `src/app/irtv-builder/prompts.ts`; background remains in Document Panel context.
+  - Schemas standardized in usage: `OntologySchema`, `ModelviewSchema`, `ObjectSchema`; `IRTVSchema` can be added in a future pass.
 
-- [ ] Modelview genmodel flow
-  - Implement `/api/genmodel` in `src/components/modelview-bilder/ModelviewBuilder.tsx` targeting `ModelviewSchema`.
-  - Stream-parse results and preview in `src/components/modelview-bilder/OutputPanel.tsx` with “Save to Library”.
+- [x] Modelview genmodel flow
+  - Implemented `/api/genmodel` in `src/components/modelview-builder/ModelviewBuilder.tsx` targeting `ModelviewSchema` and refactored to use `streamGenmodel`.
+  - Stream-parses results and previews in `src/components/modelview-builder/OutputPanel.tsx` with “Save to Library”.
 
-- [ ] IRTV builder orchestration
-  - Wire `src/components/irtv-builder/IrtvBuildercomponent.tsx` to `/api/genmodel` using the project’s IR/TV schema.
-  - Align prompts (system + behavior + user) and surface structured preview.
+- [x] IRTV builder orchestration
+  - Wired `src/components/irtv-builder/IrtvBuildercomponent.tsx` to `/api/genmodel` using the project’s IR/TV schema via `streamGenmodel`.
+  - Aligns prompts (system + behavior + user) and surfaces structured preview.
 
-- [ ] Ontology dedupe and apply
-  - In `src/app/ontology-builder/page.tsx`, replace name-only dedupe with case-insensitive normalization.
-  - Ensure relationship uniqueness by triple `(name, source, target)` prior to save.
+- [x] Ontology dedupe and apply
+  - Implemented in `src/app/ontology-builder/page.tsx`: case-insensitive, trimmed concept dedupe and relationship uniqueness on `(name, from, to)` with normalization; replaces domain ontology to avoid duplicate appends.
 
-- [ ] Unified UI controls
-  - Standardize model/temperature/token controls via shared components.
+ - [x] Unified UI controls
+  - Standardized model and temperature controls via shared `ModelSelector` and `TemperatureSelector` in Chat, Ontology, and IRTV; Chat adds max tokens control.
   - Persist temperature in `localStorage` key `aiDashboard_temperature`.
 
 ## Near-Term (3–6 Weeks)

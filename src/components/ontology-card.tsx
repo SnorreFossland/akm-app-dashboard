@@ -23,7 +23,11 @@ interface OntologyCardProps {
         description: string;
         presentation: string;
         prompt: string;
-    }
+    };
+    baselineOntology?: {
+        concepts: Concept[];
+        relationships: Relationship[];
+    } | null;
 }
 
 interface Concept {
@@ -43,7 +47,7 @@ interface Relationship {
 
 const debug = false;
 
-export const OntologyCard = ({ ontologyData, domainData }: OntologyCardProps) => {
+export const OntologyCard = ({ ontologyData, domainData, baselineOntology }: OntologyCardProps) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const [mermaidDiagram, setMermaidDiagram] = useState('');
@@ -52,6 +56,8 @@ export const OntologyCard = ({ ontologyData, domainData }: OntologyCardProps) =>
     const containerRef = useRef<HTMLDivElement>(null);
     const [activeTab, setActiveTab] = useState('concepts');
     const [zoom, setZoom] = useState(1);
+    const [selectedConcept, setSelectedConcept] = useState<string | null>(null);
+    const rowRefs = useRef<Record<string, HTMLTableRowElement | null>>({});
     const [isZoomMode, setZoomMode] = useState(false);
 
     if (!debug) console.log('57 ontology-card ontologyData: ', ontologyData);

@@ -8,16 +8,16 @@ import { Network, Package } from 'lucide-react';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 // import ModelComponent from '@/features/model-universe/components/ModelComponent';
-import ModelviewBuilder from '@/components/modelview-bilder/ModelviewBuilder';
+import ModelviewBuilder from '@/components/modelview-builder/ModelviewBuilder';
 // import { ModelviewCard } from '@/components/modelview-card';
 import { FileOperations } from '@/components/FileOperations';
 import { setFocusModel } from '@/features/model-universe/modelSlice';
 import { ObjectCard } from '@/components/object-card';
 import { ObjectviewCard } from '@/components/objectview-card';
 import { ModelviewCard } from '@/components/modelview-card';
-import OutputPanel from '@/components/modelview-bilder/OutputPanel';
-import GettingStartedGuide from '@/components/modelview-bilder/GettingStartedGuide';
-import Guide from '@/components/modelview-bilder/Guide';
+import OutputPanel from '@/components/modelview-builder/OutputPanel';
+import GettingStartedGuide from '@/components/modelview-builder/GettingStartedGuide';
+import Guide from '@/components/modelview-builder/Guide';
 import ModelSuiteSelector from '@/components/ModelSuiteSelector';
 
 type Model = { id?: string; name?: string; description?: string; objects?: any[]; relships?: any[] };
@@ -291,19 +291,19 @@ export default function ModelviewBuilderPage() {
           />
         )
       },
-      {
-        key: 'previewModelview2',
-        label: 'Preview Modelview',
-        content: (
-          <div className="space-y-4">
-            {mvPreview?.length ? (
-              <ObjectviewCard modelview={mvPreview as any} />
-            ) : (
-              <div className="text-sm text-gray-400 p-2">No previewmodelview yet.</div>
-            )}
-          </div>
-        )
-      },
+      // {
+      //   key: 'previewModelview2',
+      //   label: 'Preview Modelview',
+      //   content: (
+      //     <div className="space-y-4">
+      //       {mvPreview?.length ? (
+      //         <ObjectviewCard modelview={mvPreview as any} />
+      //       ) : (
+      //         <div className="text-sm text-gray-400 p-2">No previewmodelview yet.</div>
+      //       )}
+      //     </div>
+      //   )
+      // },
     ],
     defaultTab: 'previewModelview'
   };

@@ -35,6 +35,8 @@ import { REFINE_TEMPLATES } from './refineTemplates';
 import { error } from 'console';
 import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 // import { API_BASE_URL } from '@/config/apiConfig';
+import { callGateway } from '@/lib/ai/generate';
+import { mapModelId } from '@/lib/ai/modelMap';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -123,6 +125,7 @@ export default function ChatComponent({
     const [modelRetryCount, setModelRetryCount] = useState(0);
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
     const [temperature, setTemperature] = useState<number>(0.5); // Default value 0.5
+    const [maxTokens, setMaxTokens] = useState<number | ''>('');
 
     const [topHeight, setTopHeight] = useState<number>(600); // 
 
@@ -276,6 +279,17 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     // Add a useEffect to set the initial height based on container size
     useEffect(() => {
+        // Load persisted settings
+        try {
+            const savedTemp = localStorage.getItem('aiDashboard_temperature');
+            if (savedTemp) setTemperature(parseFloat(savedTemp));
+            const savedMax = localStorage.getItem('aiDashboard_max_tokens');
+            if (savedMax) {
+                const parsed = parseInt(savedMax, 10);
+                if (!Number.isNaN(parsed)) setMaxTokens(parsed);
+            }
+        } catch { }
+
         // This runs once after mount to set initial size
         if (containerRef.current) {
             const containerHeight = containerRef.current.offsetHeight;
@@ -698,68 +712,23 @@ Do not use its contents as contextual input for other questions--I want it impro
                 .map(m => `[${m.role.toUpperCase()}]\n${m.content}`)
                 .join('\n\n');
 
-            console.log('Calling /api/vercel-ai/generate with model:', selectedModel);
+            console.log('Calling gateway helper with model:', selectedModel);
 
-            const basePayload: any = { prompt: promptText, model: selectedModel };
+            const basePayload: any = { prompt: promptText, model: mapModelId(selectedModel) };
             if (typeof temperature === 'number' && !Number.isNaN(temperature)) {
                 basePayload.temperature = temperature;
             }
-
-            let resp = await fetch('/api/vercel-ai/generate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(basePayload),
-            });
-
-            let text = await resp.text();
-            let data: any;
-            try { data = JSON.parse(text); } catch { data = { content: text }; }
-
-            if (!resp.ok) {
-                // Retry without temperature when provider rejects it
-                const errMsg = typeof data?.error?.message === 'string' ? data.error.message : String(text || '');
-                const isTempError = (resp.status === 400) && errMsg.toLowerCase().includes('temperature');
-                if (isTempError && 'temperature' in basePayload) {
-                    const retryPayload = { ...basePayload };
-                    delete (retryPayload as any).temperature;
-                    console.warn('Temperature not supported by model/provider. Retrying without temperature.');
-                    resp = await fetch('/api/vercel-ai/generate', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(retryPayload),
-                    });
-                    text = await resp.text();
-                    try { data = JSON.parse(text); } catch { data = { content: text }; }
-                    if (!resp.ok) {
-                        console.error('Gateway error (after retry):', data);
-                        setStatusMsg(`AI error (${resp.status}): ${data?.error ?? text}`);
-                        setIsLoading(false);
-                        return;
-                    }
-                } else {
-                    console.error('Gateway error:', data);
-                    setStatusMsg(`AI error (${resp.status}): ${data?.error ?? text}`);
-                    setIsLoading(false);
-                    return;
+            try {
+                const storedMax = typeof window !== 'undefined' ? localStorage.getItem('aiDashboard_max_tokens') : null;
+                const parsed = storedMax ? parseInt(storedMax, 10) : NaN;
+                if (!Number.isNaN(parsed) && parsed > 0) {
+                    basePayload.max_completion_tokens = parsed;
                 }
-            }
+            } catch {}
 
-            // 2) Normalize common response shapes
-            const extractContent = (payload: any): string => {
-                if (!payload) return '';
-                if (Array.isArray(payload.output)) {
-                    return payload.output.map((o: any) => o?.content ?? '').filter(Boolean).join('\n\n');
-                }
-                if (payload.choices?.length) {
-                    return payload.choices.map((c: any) => c?.message?.content ?? c?.text ?? '').filter(Boolean).join('\n');
-                }
-                if (typeof payload.content === 'string') return payload.content;
-                if (typeof payload === 'string') return payload;
-                return JSON.stringify(payload);
-            };
-
-            const assistantText = extractContent(data) || '[No content returned]';
-            dispatch(addMessage({ role: 'assistant', content: assistantText }));
+            const assistantText = await callGateway(basePayload);
+            const finalText = assistantText && assistantText.trim().length > 0 ? assistantText : '[No content returned]';
+            dispatch(addMessage({ role: 'assistant', content: finalText }));
             setIsLoading(false);
         } catch (error) {
             console.error('Error sending message via gateway:', error);
@@ -1489,6 +1458,28 @@ Don't include explanations, next steps or examples at this stage.
                                     }}
                                 />
                                 <TemperatureSelector />
+                                <div className="flex items-center gap-1 text-xs">
+                                    <span className="text-gray-400">Max tokens:</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        step={1}
+                                        value={maxTokens}
+                                        onChange={(e) => {
+                                            const v = parseInt(e.target.value, 10);
+                                            if (Number.isNaN(v)) {
+                                                setMaxTokens('');
+                                                localStorage.removeItem('aiDashboard_max_tokens');
+                                            } else {
+                                                setMaxTokens(v);
+                                                localStorage.setItem('aiDashboard_max_tokens', String(v));
+                                            }
+                                        }}
+                                        className="w-20 bg-popover border border-gray-600 rounded text-xs py-0 px-1"
+                                        placeholder="auto"
+                                        title="Max completion tokens for gateway models"
+                                    />
+                                </div>
                             </div>
 
                             {/* now include the send‐button here */}

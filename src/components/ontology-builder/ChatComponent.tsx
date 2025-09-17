@@ -7,6 +7,8 @@ import ModelSelector from '@/components/ai-chat/ModelSelector';
 import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import { HelpCircle, X } from 'lucide-react';
 import { SystemPrompt, SystemBehaviorGuidelines, UserPrompt } from '@/app/ontology-builder/prompts';
+import { streamGenmodel } from '@/lib/ai/genmodel';
+import { mapModelId } from '@/lib/ai/modelMap';
 
 type GenerateResponse = { [key: string]: any };
 
@@ -249,39 +251,17 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
             console.log('contextMetamodel: (empty)');
             console.groupEnd();
 
-            const res = await fetch('/api/genmodel', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-                body: JSON.stringify({
-                    aiModelName: model, //mapModelForGenmodel(model),
-                    schemaName: 'OntologySchema',
-                    systemPrompt: SystemPrompt,
-                    systemBehaviorGuidelines: SystemBehaviorGuidelines,
-                    // Send the enhanced user prompt that includes domain description
-                    userPrompt: enhancedUserPrompt,
-                    // Send the assistant text/instruction as userInput
-                    userInput: text || '',
-                    // Keep contextItems empty like OntologyBuilder does
-                    contextItems: '',
-                    contextOntology: '',
-                    contextMetamodel: ''
-                })
-            });
+            const payload = {
+                aiModelName: mapModelId(model),
+                schemaName: 'OntologySchema',
+                systemPrompt: SystemPrompt,
+                developerPrompt: SystemBehaviorGuidelines,
+                userPrompt: [enhancedUserPrompt, text].filter(Boolean).join('\n\n'),
+            } as const;
 
-            if (!res.ok) {
-                const t = await res.text();
-                throw new Error(`genmodel ${res.status}: ${t}`);
-            }
-
-            const reader = res.body?.getReader();
-            if (!reader) throw new Error('No reader available');
-            const decoder = new TextDecoder();
             let buf = '';
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buf += decoder.decode(value, { stream: true });
-            }
+            const finalText = await streamGenmodel(payload, (chunk) => { buf += chunk; });
+            if (finalText && finalText.length > buf.length) buf = finalText;
             const parsed = JSON.parse(buf);
             const onto = parsed?.ontologyData;
             if (onto && Array.isArray(onto.concepts) && Array.isArray(onto.relationships)) {

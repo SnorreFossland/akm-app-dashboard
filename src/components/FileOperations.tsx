@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faUpload, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { usePathname } from 'next/navigation';
+import Link from 'next/link';
 import { handleSaveToLocalFile } from '@/features/model-universe/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/model-universe/components/HandleGetLocalFile';
 import { handleGetDefaultFile, handleGetPublicFile } from '@/features/model-universe/components/HandleGetDefaultFile';
@@ -107,6 +108,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     return (
         <div className={`flex md:flex-row items-center justify-between w-full ${className}`}>
             <div className="flex items-center gap-2 w-full justify-between">
+
                 <div className="bg-gray-800 rounded border border-green-900 ms-1 px-1  text-xs text-orange-400 flex-shrink-0">
                     <span className="text-orange-300">{pathname}</span>
                 </div>
@@ -145,6 +147,33 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                     className={`bg-gray-800 px-2 rounded text-white min-w-0 flex-1 ${modelUniverse?.includes('-Template') ? 'animate-pulse placeholder:text-orange-400' : ''}`}
                     placeholder="Type your Universe/file name here"
                 />
+                {/* App quick-nav buttons */}
+                <div className="flex-1 justify-around items-center gap-1 overflow-x-auto pr-2">
+                    {[
+                        // { label: 'Dashboard', href: '/dashboard' },
+                        { label: 'AI Chat', href: '/ai-chat' },
+                        { label: 'Domain', href: '/domain-builder' },
+                        { label: 'Ontology', href: '/ontology-builder' },
+                        { label: 'Model', href: '/irtv-builder' },
+                        { label: 'Modelview', href: '/modelview-builder' },
+                        // { label: 'Prompt', href: '/prompt-builder' },
+                        // { label: 'Roadmap', href: '/roadmap' },
+                    ].map((item) => {
+                        const isActive = pathname?.startsWith(item.href);
+                        return (
+                            <Button
+                                key={item.href}
+                                asChild
+                                size={isMobile ? 'icon' : 'sm'}
+                                variant={isActive ? 'secondary' : 'ghost'}
+                                className={`whitespace-nowrap ${isActive ? 'text-orange-400 bg-orange-900/20 border-orange-800' : ''}`}
+                                title={item.label}
+                            >
+                                <Link href={item.href}>{!isMobile ? item.label : item.label.charAt(0)}</Link>
+                            </Button>
+                        );
+                    })}
+                </div>
                 <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {modelUniverse}.json</div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
 

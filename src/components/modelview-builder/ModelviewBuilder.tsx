@@ -475,17 +475,17 @@ export default function ModelviewBuilder({
         setStreamedContent('');
         setIsStreaming(true);
         setCanPreview(false);
-            if (!curmod || curmod?.objects.length < 1) {
-                setStreamedContent("No object in current model");
-                setIsLoading(false);
-                setIsStreaming(false);
-                setCanPreview(false);
-                setTimeout(() => {
-                    setMessages([]);
-                    setCurrentMessages([]);
-                }, 40000);
-                return;
-            }
+        if (!curmod || curmod?.objects.length < 1) {
+            setStreamedContent("No object in current model");
+            setIsLoading(false);
+            setIsStreaming(false);
+            setCanPreview(false);
+            setTimeout(() => {
+                setMessages([]);
+                setCurrentMessages([]);
+            }, 40000);
+            return;
+        }
 
 
         const modelviewSystemPrompt = `
@@ -527,7 +527,7 @@ export default function ModelviewBuilder({
         modelviewContextItems = `
 ## Context:
 ### Objects
-${(curmod?.objects || []).map((obj: any) => `- ${obj.id}, ${obj.name}, ${obj.description}`).join('\n')}
+${(curmod?.objects || []).map((obj: any) => `- ${obj.id}, ${obj.name}, ${obj.description}, ${obj.typeName}`).join('\n')}
 ### Relationships
 ${(curmod?.relships || []).map((rel: any) => `- ${rel.id}, ${rel.name}, ${rel.fromobjectRef}, ${rel.nameFrom}, ${rel.toobjectRef}, ${rel.nameTo}`).join('\n')}
 `;
@@ -572,7 +572,7 @@ ${(curmod?.relships || []).map((rel: any) => `- ${rel.id}, ${rel.name}, ${rel.fr
 Your task is to construct a modelview from the current models objects and relationships, 
 
 `;
-// - On fatal errors, output only: { "errors": [ { "code": "...", "detail": "..." } ] }.
+        // - On fatal errors, output only: { "errors": [ { "code": "...", "detail": "..." } ] }.
 
         const finalDeveloperPrompt = `### Developer Guidelines (Strict)
 
@@ -598,9 +598,6 @@ You must output a single JSON object conforming to the Metamodel. The layout MUS
 - canvasWidth: 1800 (min), canvasHeight: 1000 (min). Use these as target; you may increase width up to 12400 if needed before scaling.
 - margin: {top: 40, right: 40, bottom: 40, left: 40}
 - grid: snapToGrid = true, columnWidth = 280, rowHeight = 120, gutterX = 60, gutterY = 40
-- objectBoundingBox (estimate if unknown):
-  - width = max(200, min(360, 10 * name.length))  // characters × 10px, clamped
-  - height = 80 for normal, 60 for Property
 
 ## Hard Non-Overlap Rules
 - No two object bounding boxes may intersect.
@@ -608,26 +605,12 @@ You must output a single JSON object conforming to the Metamodel. The layout MUS
 - After placing all objects, compute \`overlaps\`; it MUST be 0.
 
 ## Layout
-- Use ForceDirected or similar algorithm to minimize edge crossings and overall edge length.
+- Use LayeredDiagraph or similar algorithm to get a nice layout.
+- Objects must be placed with sufficient space to show relationships clearly.
+- Objects with 'has' relationships should be placed next to their parent.
 - Align objects to grid; all coordinates (loc and points) must be integers.
 - Prioritize readability: group related objects, avoid long edges, and maintain a clean structure.
 - Apply consistent spacing and alignment to enhance visual clarity.
-
-## Columnar Placement by Type
-- Determine object “role”:
-  - main: entities central to the view (EntityType, Metamodel, owner, process, system, capability, etc.).
-  - supporting: actors, references, adapters, events, etc.
-  - properties: objects of type "Property".
-- X-bands:
-  - Column 0–N for main: start at x = margin.left; columns advance by (columnWidth + gutterX).
-  - Supporting columns begin after the last main column.
-- Vertical placement:
-  - Fill rows top-down per column with rowHeight + gutterY spacing.
-- Properties:
-  - Place to the **right** of their parent’s column, starting one row **below** the parent.
-  - Wrap within the property band; never place properties to the left of their parent.
-- Datatypes:
-  - Place in a dedicated column to the **right** of all other objects, ordered alphabetically by name.
 
 ## Ordering (Determinism)
 - Primary sort: topological order from relationships (parents before children).
@@ -651,55 +634,68 @@ You must output a single JSON object conforming to the Metamodel. The layout MUS
 ## Naming
 - Modelview.name reflects the main object or cohesive group.
 - Objectview.name == object.name; description mirrors object.description.
-- Relationship naming mirrors the relationship’s name.
+- Relationship naming mirrors the relationship's name.
 
 ## Output
-- Produce exactly one modelview unless Pagination is invoked.
-- All coordinates (\`loc\` and \`points\`) are integers, snapped to grid.
 - Include \`layoutDiagnostics\` with truthful metrics and notes on any scaling or pagination.
     `;
 
-// ## Edge Routing(Relshipviews.points)
-//             - Use orthogonal polylines with waypoints snapped to grid.
-// - Do not route edges through any object bounding box.
-// - Maintain a clearance of 12px from all object boxes.
-// - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
-// - Edge labels(name) must have at least one straight segment >= 80px. 
+    //     ## Columnar Placement by Type
+    //             - Determine object “role”:
+    //         - main: entities central to the view(MetamodelEntityType, Metamodel, etc.).
+    //   - supporting: actors, references, adapters, events, etc.
+    //   - properties: objects of type "Property".
+    // - X - bands:
+    //         - Column 0–N for main: start at x = margin.left; columns advance by(columnWidth + gutterX).
+    //   - Supporting columns begin after the last main column.
+    // - Vertical placement:
+    //         - Fill rows top - down per column with rowHeight + gutterY spacing.
+    // - Properties:
+    //         - Place to the ** right ** of their parent’s column, starting one row ** below ** the parent.
+    //   - Wrap within the property band; never place properties to the left of their parent.
+    // - Datatypes:
+    //         - Place in a dedicated column to the ** right ** of all other objects, ordered alphabetically by name.
+        // ## Edge Routing(Relshipviews.points)
+        //             - Use orthogonal polylines with waypoints snapped to grid.
+        // - Do not route edges through any object bounding box.
+        // - Maintain a clearance of 12px from all object boxes.
+        // - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
+        // - Edge labels(name) must have at least one straight segment >= 80px. 
 
-//## Edge Routing(Relshipviews.points)
-// - Use orthogonal polylines with waypoints snapped to grid.
-// - Do not route edges through any object bounding box.
-// - Maintain a clearance of 12px from all object boxes.
-// - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
-// - Edge labels(name) must have at least one straight segment >= 80px.
-//         const finalDeveloperPrompt = `### Developer Guidelines
-// Modelview:
-// - Required: id, name, description, objectviews[], relshipviews[].
-// - Name should reflect the main object or group of objects.
-// - Description should summarize the modelview's purpose.
+        //## Edge Routing(Relshipviews.points)
+        // - Use orthogonal polylines with waypoints snapped to grid.
+        // - Do not route edges through any object bounding box.
+        // - Maintain a clearance of 12px from all object boxes.
+        // - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
+        // - Edge labels(name) must have at least one straight segment >= 80px.
+        //         const finalDeveloperPrompt = `### Developer Guidelines
+        // Modelview:
+        // - Required: id, name, description, objectviews[], relshipviews[].
+        // - Name should reflect the main object or group of objects.
+        // - Description should summarize the modelview's purpose.
 
-// Objectviews:
-// - Required: id, name, description, objectRef, typeviewRef.
-// - Name should match the object's name.
-// - Description should match the object's description.
-// - loc: string with "x y" coordinates for positioning.
-// - objectRef must reference an existing object id in the model.
-// - typeviewRef: UUID referencing a typeview (can be generated if unknown).
+        // Objectviews:
+        // - Required: id, name, description, objectRef, typeviewRef.
+        // - Name should match the object's name.
+        // - Description should match the object's description.
+        // - loc: string with "x y" coordinates for positioning.
+        // - objectRef must reference an existing object id in the model.
+        // - typeviewRef: UUID referencing a typeview (can be generated if unknown).
 
-// Relshipviews:
-// - Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef.
+        // Relshipviews:
+        // - Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef.
 
-// ### Relationship Naming Rules
-// - Name should match the relationship's name.
+        // ### Relationship Naming Rules
+        // - Name should match the relationship's name.
 
-// ### Layout Guidelines
-// - Make as nice as possible layout.
-// - Position objectviews with sufficient space (horizontal >100, vertical >20) to clearly show relationships.
-// - Align objectviews in columns by type: main objects (left) and supporting objects (right).
-// - Align objectviews of type Property below and right of their main object.
-// - Ensure overall readability and clarity of the modelview.
+        // ### Layout Guidelines
+        // - Make as nice as possible layout.
+        // - Position objectviews with sufficient space (horizontal >100, vertical >20) to clearly show relationships.
+        // - Align objectviews in columns by type: main objects (left) and supporting objects (right).
+        // - Align objectviews of type Property below and right of their main object.
+        // - Ensure overall readability and clarity of the modelview.
 
-//     `;
+        //     `;
         const finalUserPrompt = `${modelviewContextMetamodel} \n ${modelviewContextItems} \n ${modelviewUserPrompt} \n ${input} `;
 
         if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',

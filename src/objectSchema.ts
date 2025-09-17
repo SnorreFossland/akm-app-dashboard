@@ -1,6 +1,8 @@
 import { z } from "zod";
 
 export const ObjectSchema = z.object({
+    // is not model level schema, so no id, name, description for now
+    // id: z.string().describe("UUID - Unique identifier of the Model"),
     name: z.string().describe("Name of the Model"),
     description: z.string().describe("Description of the Model"),
     objects: z

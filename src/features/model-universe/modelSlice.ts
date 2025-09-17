@@ -251,7 +251,9 @@ const modelSlice = createSlice({
   initialState,
   reducers: {
     setFileData(state, action: PayloadAction<DataType>) {
-      console.log('238 setFileData action.payload', action.payload, 'state', state);
+      if (process.env.NEXT_PUBLIC_DEBUG === 'true') {
+        console.log('238 setFileData action.payload', action.payload, 'state', state);
+      }
       // Migrate possible old shape where ontology was top-level under phData
       const incomingPhData: any = { ...action.payload.phData };
       // Coerce legacy string domain to object

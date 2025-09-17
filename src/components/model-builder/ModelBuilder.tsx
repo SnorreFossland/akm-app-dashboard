@@ -19,6 +19,8 @@ import { ModelviewCard } from '@/components/modelview-card';
 import ReactMarkdown from 'react-markdown';
 
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
+import { streamGenmodel } from '@/lib/ai/genmodel';
+import { mapModelId } from '@/lib/ai/modelMap';
 
 import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext } from '@/app/model-builder/prompts';
 
@@ -221,42 +223,17 @@ const Modelbuilder = () => {
         setActiveTab('model');
 
         try {
-            const requestBody = {
-                aiModelName: "gpt-4o",
+            const payload = {
+                aiModelName: mapModelId('gpt-4o'),
                 schemaName: 'ObjectSchema',
                 systemPrompt: systemPrompt || "",
-                systemBehaviorGuidelines: systemBehaviorGuidelines || "",
-                userPrompt: userPrompt || "",
-                userInput: userInput || "",
-                contextItems: contextItems || "",
-                contextOntology: contextOntology || "",
-                contextMetamodel: contextMetamodel || ""
-            };
+                developerPrompt: systemBehaviorGuidelines || "",
+                userPrompt: [userPrompt, userInput, contextItems, contextOntology, contextMetamodel].filter(Boolean).join("\n\n") || "",
+            } as const;
 
-            console.log('Request body:', requestBody); // Debug log
-
-            const res = await fetch("/api/genmodel", {
-                method: "POST",
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestBody)
-            });
-
-            if (!res.ok) {
-                const errorText = await res.text();
-                console.error('API Error:', res.status, res.statusText, errorText);
-                throw new Error(`Failed to fetch: ${res.status} ${res.statusText} - ${errorText}`);
-            }
-
-            const reader = res.body?.getReader();
-            if (!reader) throw new Error("No reader available");
-
-            const decoder = new TextDecoder();
-            let data = "";
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                data += decoder.decode(value, { stream: true });
-            }
+            let data = '';
+            const finalText = await streamGenmodel(payload, (chunk) => { data += chunk; });
+            if (finalText && finalText.length > data.length) data = finalText;
             console.log('205 Data:', data, curmod);
             const parsed = JSON.parse(data);
             console.log('206 Parsed:', parsed);
