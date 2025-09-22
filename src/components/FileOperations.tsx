@@ -22,7 +22,7 @@ interface FileOperationsProps {
 
 export function FileOperations({ className = "" }: FileOperationsProps) {
     const phSource = useAppSelector((state) => state.modelUniverse.phSource);
-    const data = useAppSelector((state) => state.modelUniverse);
+    const data = useAppSelector((state) => state.modelUniverse); 
     const domain = data.phData.domain
     const dispatch = useAppDispatch();
     const pathname = usePathname();
@@ -42,6 +42,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
 
     useEffect(() => {
         console.debug('FileOperations mounted');
+
     }, []);
 
     useEffect(() => {

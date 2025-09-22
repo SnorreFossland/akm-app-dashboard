@@ -56,6 +56,15 @@ export default function ModelviewBuilderPage() {
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!');
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
 
+
+    useEffect(() => {
+      const focusModel = data?.phFocus?.focusModel;
+      if (focusModel) {
+        const models = data?.phData?.metis?.models || [];
+        const curmod = models.find((m: any) => m.id === focusModel.id) || null;
+        setCurrentModel(curmod);
+      }
+    }, []);
   // Keep currentModel in sync with Redux focus, without causing render loops
   useEffect(() => {
     const focusedId = data?.phFocus?.focusModel?.id;

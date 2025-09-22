@@ -27,7 +27,7 @@ interface ChatComponentProps {
 }
 
 export default function ChatComponent({ mdContent, setMdContent, startupGuide, guide, setSuggestedOntologyData, onImplementSuggestedOntology }: ChatComponentProps) {
-    const [prompt, setPrompt] = useState<string>('Create an ontology for the "Existing Context".'); // Initial prompt
+    const [prompt, setPrompt] = useState<string>('Create an ontology for based on the Current Domain described in the "Existing Context".'); // Initial prompt
     const [model, setModel] = useState<string>('gpt-5-mini');
     
     const [isLoading, setIsLoading] = useState(false);
@@ -222,7 +222,6 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
         setBuilding(true);
         setBuildError(null);
 
-
         try {
             console.log('221 DEBUG: mdContent length:', mdContent?.length, 'Content preview:', mdContent?.substring(0, 200));
             // Temporary fallback for testing
@@ -245,7 +244,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
             console.log('systemPrompt:', SystemPrompt);
             console.log('systemBehaviorGuidelines:', SystemBehaviorGuidelines);
             console.log('userPrompt:', enhancedUserPrompt);
-            console.log('userInput (assistant-text):', text);
+            console.log('userInput (user-text):', text);
             console.log('contextItems: (empty)');
             console.log('contextOntology: (empty)');
             console.log('contextMetamodel: (empty)');

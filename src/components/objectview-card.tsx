@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import mermaid from 'mermaid';
+// import mermaid from 'mermaid';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ObjectTable } from "@/components/model-builder/object-table";
@@ -8,6 +8,8 @@ import { Modelview } from '@/features/model-universe/modelSlice';
 
 // A card to preview Modelview objectviews and relshipviews using tables and a simple diagram
 export const ObjectviewCard = ({ modelview }: { modelview: Modelview }) => {
+  const mermaidRef = useRef<any>(null);
+  const diagramRef = useRef<HTMLDivElement | null>(null);
   const [activeTab, setActiveTab] = useState('objects');
   const [mermaidDiagram, setMermaidDiagram] = useState('');
   const [renderedSvg, setRenderedSvg] = useState('');
@@ -16,9 +18,18 @@ export const ObjectviewCard = ({ modelview }: { modelview: Modelview }) => {
   const [isZoomMode, setZoomMode] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
+  // Dynamically load mermaid on client-side only
   useEffect(() => {
-    mermaid.initialize({
-      startOnLoad: false,
+    let cancelled = false;
+    if (typeof window === 'undefined') return;
+
+    (async () => {
+      try {
+        const mm = await import('mermaid');
+        // some bundlers put the module on default export
+        mermaidRef.current = mm.default || mm;
+        mermaidRef.current.initialize({
+          startOnLoad: false,
       theme: 'base',
       themeVariables: {
         primaryColor: '#97e499ff',
@@ -33,8 +44,16 @@ export const ObjectviewCard = ({ modelview }: { modelview: Modelview }) => {
         nodeBorderRadius: '5px',
       },
       securityLevel: 'loose',
-    });
+        });
+      } catch (e) {
+        console.error('Failed to load mermaid dynamically:', e);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
 
   const generateMermaidDiagram = useCallback(() => {
     if (!modelview || !modelview.objectviews || modelview.objectviews.length === 0) {

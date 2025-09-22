@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import mermaid from 'mermaid';
+// import mermaid from 'mermaid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from 'react-markdown';
@@ -11,7 +11,6 @@ import { Model } from '@/features/model-universe/modelSlice';
 const debug = false;
 
 export const ObjectCard = ({ model }: { model: Model }) => {
-    const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
     const [renderedSvg, setRenderedSvg] = useState('');
     const [isLoading, setIsLoading] = useState(false);
@@ -19,28 +18,45 @@ export const ObjectCard = ({ model }: { model: Model }) => {
     const [activeTab, setActiveTab] = useState('objects');
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
+    const mermaidRef = useRef<any>(null);
+    const diagramRef = useRef<HTMLDivElement | null>(null);
 
     // console.log('24 model:', model);
 
     // Initialize Mermaid once
     useEffect(() => {
-        mermaid.initialize({
-            startOnLoad: false, // Change to false
-            theme: 'base',
-            themeVariables: {
-                primaryColor: '#97e499ff',
-                edgeLabelBackground: '#21313c15',
-                secondaryColor: '#8888ff',
-                tertiaryColor: '#dddddd',
-                primaryTextColor: '#ffffff',
-                secondaryTextColor: '#ccffcc',
-                tertiaryTextColor: '#0000ff',
-                lineColor: '#dddddd',
-                background: '#ffffff',
-                nodeBorderRadius: '5px',
-            },
-            securityLevel: 'loose',
-        });
+        let cancelled = false;
+        if (typeof window === 'undefined') return;
+
+        (async () => {
+            try {
+                const mm = await import('mermaid');
+                // some bundlers put the module on default export
+                mermaidRef.current = mm.default || mm;
+                mermaidRef.current.initialize({
+                    startOnLoad: false,
+                    themeVariables: {
+                        primaryColor: '#97e499ff',
+                        edgeLabelBackground: '#21313c15',
+                        secondaryColor: '#8888ff',
+                        tertiaryColor: '#dddddd',
+                        primaryTextColor: '#ffffff',
+                        secondaryTextColor: '#ccffcc',
+                        tertiaryTextColor: '#0000ff',
+                        lineColor: '#dddddd',
+                        background: '#ffffff',
+                        nodeBorderRadius: '5px',
+                    },
+                    securityLevel: 'loose',
+                });
+            } catch (error) {
+                console.error('Error initializing Mermaid:', error);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     // Memoize the diagram generation to prevent infinite loops
@@ -128,8 +144,15 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                     // Generate unique ID for this diagram
                     const diagramId = `mermaid-diagram-${Date.now()}`;
 
-                    // Render the diagram
-                    const { svg } = await mermaid.render(diagramId, mermaidDiagram);
+                    // Use dynamically loaded mermaid module from the ref
+                    const mm = mermaidRef.current;
+                    if (!mm) {
+                        console.warn('Mermaid not yet loaded; delaying render');
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    const { svg } = await mm.render(diagramId, mermaidDiagram);
 
                     // Store the rendered SVG
                     setRenderedSvg(svg);

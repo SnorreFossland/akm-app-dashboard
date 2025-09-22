@@ -15,8 +15,8 @@ interface DomainData {
 export interface OntologyData {
   name: string;
   description: string;
-  concepts: { name: string, description: string, color?: string, typeName?: string }[];
-  relationships: { name: string, description: string, nameFrom: string, nameTo: string }[];
+  concepts: { name: string, description: string, color?: string, type?: string }[];
+  relationships: { name: string, description: string, nameFrom: string, nameTo: string, type?: string }[];
 }
 
 export interface ProjectInfo {

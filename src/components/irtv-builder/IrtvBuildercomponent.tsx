@@ -16,7 +16,7 @@ import { X, HelpCircle, Info } from "lucide-react";
 import {
     addMessage,
     setMessages as chatSetMessages,
-    Message
+    Messagegit
 } from '@/features/chat/chatSlice';
 import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
 import { RootState, AppDispatch } from "@/store";
@@ -25,10 +25,11 @@ import ModelSelector from '@/components/ai-chat/ModelSelector';
 import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 import GettingStartedGuide from '@/components/irtv-builder/GettingStartedGuide';
-import { SystemPrompt, SystemBehaviorGuidelines, UserPrompt } from '@/app/irtv-builder/prompts';
+import { SystemPrompt, DeveloperPrompt, UserPrompt } from '@/app/irtv-builder/prompts';
 import { mapModelId } from '@/lib/ai/modelMap';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import { streamGenmodel } from '@/lib/ai/genmodel';
+
 
 const debug = false;
 
@@ -89,6 +90,7 @@ export default function IrtvBuilderComponent(props: IrtvBuilderComponentProps) {
     const [showDigitalRain, setShowDigitalRain] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
     const [statusMsg, setStatusMsg] = useState("");
+    const [inputMessage, setInputMessage] = useState("");
 
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
@@ -266,6 +268,7 @@ Create an object of type Metamodel with a relship "contains" to all objects of t
                     .filter((o: any) => o.name !== "DistributionNetwork")
                     .filter((o: any) => o.name !== "Device")
                     .map((o: any) => o.name + ', ');
+
                 nextAutoPrompt =
                     "Create a POPS model of the Ontology concepts and relationships with focus on generating processes and products using the following object types: " +
                     (types.length ? types.join(" ") + " based on the ontology concepts below: " : "");
@@ -300,196 +303,7 @@ Create an object of type Metamodel with a relship "contains" to all objects of t
         }
     }, [curmod?.id, curMetamodel?.id]); // keep deps focused
 
-    // ---------- 4. Build system behavior + context when curMetamodel changes ----------
-    useEffect(() => {
-        if (!curMetamodel || !data?.phData?.metis) return;
 
-        let metatypesString = "";
-        let exampleString = "";
-        if (curMetamodel.name === "IRTV_META") {
-
-            setSystemBehaviorGuidelines(
-                `You are an expert in IRTV analysis. Your task is to create Information objects based on the ontology concepts below, then add Views, Tasks and Roles related to the Information objects. Ensure logical consistency and Active Knowledge Modeling principles.`
-            );
-            metatypesString = serializeTypes(curMetamodel);
-        } else if (curMetamodel.name === "CORE_META") {
-            setSystemBehaviorGuidelines(`You are an expert in Type definition analysis. 
-Your task is to create a Type definition Model based on the provided CORE_META Metamodel. 
-One object of type "Metamodel"  with relationship "contains" to all EntityType objects.
-EntityType objects representing domain concepts may have properties.
-Ensure logical consistency and relationship principles.`
-            );
-            metatypesString = serializeTypes(curMetamodel);
-            // console.log('316 metatypesString', metatypesString);
-            exampleString += `
-{
-    "models: [
-        {
-            id: "UUID",
-            "name": "FoodProduction",
-            "description": "A model representing food production processes and products.",
-            "metamodelRef": "POPS_META uuid",
-            "modelviews": [
-                {
-                    "name": "Main",
-                    "description": "The main view of the model",
-                    "objects": [
-                        {
-                            "id": "UUID",
-                            "name": "Bike",
-                            "description": "A two-wheeled vehicle that is powered by pedaling.",
-                            "typeRef": "EntityType uuid",
-                            "typeName": "EntityType"
-                        }
-                    ],
-                    "relationships": [
-                        {
-                            "id": "UUID",
-                            "name": "approves",
-                            "typeRef": "Relationship Type uuid",
-                            "fromobjectRef": "EntityType uuid",
-                            "toobjectRef": "Property uuid",
-                        }
-                    ]
-                }
-            ]
-        }
-    ]
-}
-        `;
-        } else if (curMetamodel.name === "POPS_META") {
-            setSystemBehaviorGuidelines(
-                `You are an expert in creating POPS models. Create a POPS model based on the provided ontology concept types and relationships. Ensure consistency with Active Knowledge Modeling principles.`
-            );
-            metatypesString = serializeTypes(curMetamodel);
-
-            exampleString += `
-{ 
-    "models: [
-        { 
-            id: "UUID",
-            "name": "FoodProduction",
-            "description": "A model representing food production processes and products.",
-            "metamodelRef": "POPS_META uuid",
-            "objects": [
-                {
-                    "id": "UUID",
-                    "name": "Produce",
-                    "description": "A two-wheeled vehicle that is powered by pedaling.",
-                    "typeRef": "Process uuid",
-                    "typeName": "Process"
-                },
-            ],
-            "relationships": [
-                {
-                    "id": "UUID",
-                    "name": "hasOutcome",
-                    "typeRef": "Relationship Type uuid",
-                    "fromobjectRef": "Process uuid",
-                    "nameFrom": "Process",
-                    "toobjectRef": "Product uuid",
-                    "nameTo": "Product"
-                }
-            ]
-        }
-    ]
-}
-`;
-        } else if (curMetamodel.name === "BPMN_META") {
-            setSystemBehaviorGuidelines(
-                `You are an expert in creating BPMN models. Use BPMN notation, pools, lanes, and ensure logical consistency with Active Knowledge Modeling principles.`
-            );
-            metatypesString = serializeTypes(curMetamodel);
-            exampleString += `
-    {
-    "objects": [
-        {
-            "id": "UUID",
-            "name": "Write code",
-            "description": "A two-wheeled vehicle that is powered by pedaling.",
-            "typeRef": "Task uuid",
-            "typeName": "Task"
-            },
-        }
-    ],
-    "relationships": [
-        {
-            "id": "UUID",
-            "name": "approves",
-            "typeRef": "Relationship Type uuid",
-            "fromobjectRef": "Role uuid",
-            "nameFrom": "Role",
-            "toobjectRef": "Task uuid",
-            "nameTo": "Task"
-        }
-    ]
-    }
-        `;
-        }
-
-        const contextmetatypesString = `## Metamodel \n\n ${metatypesString} 
-
-- When creating objects, always assign a valid typeRef and typeName from the Metamodel.
-- When creating relationships, ensure from/to object types align with Metamodel definitions.    
-`;
-// ## Example 
-//     ${exampleString}  
-
-
-
-        // Set base system prompt (from local prompts.ts)
-        setSystemPrompt(SystemPrompt);
-        setContextMetamodel(contextmetatypesString);
-        setUserPrompt(""); // reset user prompt if it matched default before
-
-        // Keep focus model synced
-        const irtvmod = data.phData.metis.models?.find(
-            (m: any) => m.metamodelRef === curMetamodel.id
-        );
-        if (irtvmod && (!curmod || curmod.id !== irtvmod.id)) {
-            setCurmod(irtvmod);
-            dispatch(setFocusModel({ id: irtvmod.id, name: irtvmod.name }));
-        }
-    }, [curMetamodel, data?.phData?.metis, dispatch, curmod]);
-
-    function serializeTypes(mm: any) {
-        const objectTypes = Array.isArray(mm.objecttypes) ? mm.objecttypes : [];
-        const relshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
-
-        // Build a non-mutating copy where we ensure nameFrom/nameTo are resolved
-        const relshipTypesWithNames = relshipTypes.map((reltype: any) => {
-            const resolvedFrom = objectTypes.find((obj: any) => obj.id === reltype.fromobjtypeRef);
-            const resolvedTo = objectTypes.find((obj: any) => obj.id === reltype.toobjtypeRef);
-
-            return {
-                // shallow copy to avoid mutating original reltype
-                ...reltype,
-                // prefer existing nameFrom/nameTo if present, otherwise resolved names, otherwise empty string
-                nameFrom: reltype?.nameFrom || (resolvedFrom ? resolvedFrom.name : "") || "",
-                nameTo: reltype?.nameTo || (resolvedTo ? resolvedTo.name : "") || ""
-            };
-        });
-
-        const filteredObjectTypes = objectTypes;
-
-        const filteredRelTypes = relshipTypesWithNames.filter((r: any) =>
-            r && typeof r.name === 'string' && r.name !== "Is"
-        );
-
-        // Debug output kept as before
-        console.log('serializeTypes', { objectTypes, filteredObjectTypes, relshipTypes, filteredRelTypes });
-        console.log('serializeTypes', { data });
-
-        return `**${mm.name}**
-${filteredObjectTypes
-                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typename: ${o.typename} typeviewRef: `)
-                .join("\n")}
-
-${filteredRelTypes
-                .map((r: any) => `id: ${r.id}, name: ${r.name},  fromobjectRef: ${r.fromobjtypeRef}, nameFrom: ${r.nameFrom}, toobjectRef: ${r.toobjtypeRef}, nameTo: ${r.nameTo}, typeviewRef: ${r.typeviewRef}, relshipkind: ${r.relshipkind}`)
-                .join("\n")}
-`;
-    }
 
     // ---------- 5. When curmod changes, update existing info objects and ontology diff ----------
     useEffect(() => {
@@ -700,14 +514,218 @@ ${filteredRelTypes
         return markdown;
     };
 
+    // ---------- Build system behavior + context when curMetamodel changes ----------
+    useEffect(() => {
+        if (!curMetamodel || !data?.phData?.metis) return;
+
+        let metatypesString = "";
+        let exampleString = "";
+        if (curMetamodel.name === "IRTV_META") {
+            setSystemBehaviorGuidelines(DeveloperPrompt);
+        
+            metatypesString = serializeTypes(curMetamodel);
+            metatypesString = metatypesString
+                .split("\n")
+                .filter(line => !line.includes("name: EntityType"))
+                .join("\n");
+        } else if (curMetamodel.name === "CORE_META") {
+            setSystemBehaviorGuidelines(`You are an expert in Type definition analysis. 
+Your task is to create a Type definition Model based on the provided CORE_META Metamodel. 
+One object of type "Metamodel"  with relationship "contains" to all EntityType objects.
+EntityType objects representing domain concepts may have properties.
+Ensure logical consistency and relationship principles.`
+            );
+            metatypesString = serializeTypes(curMetamodel);
+            // console.log('316 metatypesString', metatypesString);
+            exampleString += `
+{
+    "models: [
+        {
+            id: "UUID",
+            "name": "FoodProduction",
+            "description": "A model representing food production processes and products.",
+            "metamodelRef": "POPS_META uuid",
+            "modelviews": [
+                {
+                    "name": "Main",
+                    "description": "The main view of the model",
+                    "objects": [
+                        {
+                            "id": "UUID",
+                            "name": "Bike",
+                            "description": "A two-wheeled vehicle that is powered by pedaling.",
+                            "typeRef": "Process uuid",
+                            "typeName": "Process"
+                        }
+                    ],
+                    "relationships": [
+                        {
+                            "id": "UUID",
+                            "name": "approves",
+                            "typeRef": "Relationship Type uuid",
+                            "fromobjectRef": "Process uuid",
+                            "toobjectRef": "Property uuid",
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+        `;
+        } else if (curMetamodel.name === "POPS_META") {
+            setSystemBehaviorGuidelines(
+                `You are an expert in creating POPS models. Create a POPS model based on the provided ontology concept types and relationships. Ensure consistency with Active Knowledge Modeling principles.`
+            );
+            metatypesString = serializeTypes(curMetamodel);
+            metatypesString = metatypesString
+                .split("\n")
+                .filter(line => !line.includes("name: EntityType"))
+                .filter(line => !line.includes("name: Geobody"))
+                .filter(line => !line.includes("name: Material"))
+                .filter(line => !line.includes("name: DistributionNetwork"))
+                .filter(line => !line.includes("name: Device"))
+                .join("\n");
+
+            exampleString += `
+{ 
+    "models: [
+        { 
+            id: "UUID",
+            "name": "FoodProduction",
+            "description": "A model representing food production processes and products.",
+            "metamodelRef": "POPS_META uuid",
+            "objects": [
+                {
+                    "id": "UUID",
+                    "name": "Produce",
+                    "description": "A two-wheeled vehicle that is powered by pedaling.",
+                    "typeRef": "Process uuid",
+                    "typeName": "Process"
+                },
+            ],
+            "relationships": [
+                {
+                    "id": "UUID",
+                    "name": "hasOutcome",
+                    "typeRef": "Relationship Type uuid",
+                    "fromobjectRef": "Process uuid",
+                    "nameFrom": "Process",
+                    "toobjectRef": "Product uuid",
+                    "nameTo": "Product"
+                }
+            ]
+        }
+    ]
+}
+`;
+        } else if (curMetamodel.name === "BPMN_META") {
+            setSystemBehaviorGuidelines(
+                `You are an expert in creating BPMN models. Use BPMN notation, pools, lanes, and ensure logical consistency with Active Knowledge Modeling principles.`
+            );
+            metatypesString = serializeTypes(curMetamodel);
+            exampleString += `
+    {
+    "objects": [
+        {
+            "id": "UUID",
+            "name": "Write code",
+            "description": "A two-wheeled vehicle that is powered by pedaling.",
+            "typeRef": "Task uuid",
+            "typeName": "Task"
+            },
+        }
+    ],
+    "relationships": [
+        {
+            "id": "UUID",
+            "name": "approves",
+            "typeRef": "Relationship Type uuid",
+            "fromobjectRef": "Role uuid",
+            "nameFrom": "Role",
+            "toobjectRef": "Task uuid",
+            "nameTo": "Task"
+        }
+    ]
+    }
+        `;
+        }
+
+        const contextmetatypesString = `## Metamodel \n\n ${metatypesString} 
+
+- When creating objects, always assign a valid typeRef and typeName from the Metamodel.
+- When creating relationships, ensure from/to object types align with Metamodel definitions.    
+`;
+        // ## Example 
+        //     ${exampleString}  
+
+
+
+        // Set base system prompt (from local prompts.ts)
+        setSystemPrompt(SystemPrompt);
+        setContextMetamodel(contextmetatypesString);
+        setUserPrompt(""); // reset user prompt if it matched default before
+
+        // Keep focus model synced
+        const irtvmod = data.phData.metis.models?.find(
+            (m: any) => m.metamodelRef === curMetamodel.id
+        );
+        if (irtvmod && (!curmod || curmod.id !== irtvmod.id)) {
+            setCurmod(irtvmod);
+            dispatch(setFocusModel({ id: irtvmod.id, name: irtvmod.name }));
+        }
+    }, [curMetamodel, data?.phData?.metis, dispatch, curmod]);
+
+    function serializeTypes(mm: any) {
+        const objectTypes = Array.isArray(mm.objecttypes) ? mm.objecttypes : [];
+        const relshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
+
+        // Build a non-mutating copy where we ensure nameFrom/nameTo are resolved
+        const relshipTypesWithNames = relshipTypes.map((reltype: any) => {
+            const resolvedFrom = objectTypes.find((obj: any) => obj.id === reltype.fromobjtypeRef);
+            const resolvedTo = objectTypes.find((obj: any) => obj.id === reltype.toobjtypeRef);
+
+            return {
+                // shallow copy to avoid mutating original reltype
+                ...reltype,
+                // prefer existing nameFrom/nameTo if present, otherwise resolved names, otherwise empty string
+                nameFrom: reltype?.nameFrom || (resolvedFrom ? resolvedFrom.name : "") || "",
+                nameTo: reltype?.nameTo || (resolvedTo ? resolvedTo.name : "") || ""
+            };
+        });
+
+        const filteredObjectTypes = objectTypes;
+
+        const filteredRelTypes = relshipTypesWithNames.filter((r: any) =>
+            r && typeof r.name === 'string' && r.name !== "Is"
+        );
+
+        // Debug output kept as before
+        console.log('serializeTypes', { objectTypes, filteredObjectTypes, relshipTypes, filteredRelTypes });
+        console.log('serializeTypes', { data });
+
+        return `**${mm.name}**
+### Object Types
+${filteredObjectTypes
+                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typeName: ${o.typeName}, typeRef: ${o.typeRef}`)
+                .join("\n")}
+
+### Relationship Types
+${filteredRelTypes
+                .map((r: any) => `id: ${r.id}, name: ${r.name},  fromobjectRef: ${r.fromobjtypeRef}, nameFrom: ${r.nameFrom}, toobjectRef: ${r.toobjtypeRef}, nameTo: ${r.nameTo}, typeRef: ${r.typeRef}, relshipkind: ${r.relshipkind}`)
+                .join("\n")}
+`;
+    }
     // ----------  Prompts ----------
     const finalSystemPrompt = `
 You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling.
 Your task is to build a model from the provided 'Existing Context', conforming to the provided Metamodel.
 `;
 
-    const finalDeveloperPrompt =
-        (curMetamodel?.name === "CORE_META") ? `### Developer Instructions for CORE_META metamodel
+    let finalDeveloperPrompt = ''
+
+    finalDeveloperPrompt = 
+`### Developer Instructions
 Model:
 - Required: id, name, description, objects[], relships[].
 - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
@@ -728,24 +746,63 @@ Relships:
 - All ids should be unique UUID strings.
 - Ensure fromobjectRef and toobjectRef reference valid object ids defined in the objects[] array.
 - Ensure typeRef aligns with the Metamodel relshiptype.
-- Between EntityType objects use the "relationshipType" typeRef.
+- Dont repeat the fromName and toName in the relationship name.
+`;
 
-## When building the model, follow these principles:
-- EntityType objects represent domain concepts.
-
-### Deduplication
-- Normalize names (trim, case-fold, collapse whitespace, replace "-" / "_" with space).
+    if (curMetamodel?.name === "CORE_META") (
+    finalDeveloperPrompt +=
 `
-            : ``; // is this necessary?
+## When building the model, follow these principles:
+- Make one Metamodel object representing the Domain. The name should reflect the domain (e.g., "HealthcareMetamodel", "FinanceMetamodel").
+- From Metamodel object to EntityType objects use the "contains" relationship.
+- Make key Concepts and Terminologies into EntityType objects. Skip Tools, Software, Systems, Locations, Diagram and non-conceptual items.
+- From EntityType objects to other EntityType objects create name from the ontology using the relationship type "relationshipType".
+- From EntityType objects to parent EntityTypes objects use the "Is" for inheritance.
+- From EntityType objects to Properties use the "has" relationship.
+- Use Properties to represent attributes of EntityType objects.
+- Use Details to capture additional information about EntityType objects.
+- Use Methods to represent actions or functions related to EntityType objects.
+- Use MethodTypes to categorize Methods.
+- Use ViewFormats to define how information is presented.
+- Use Fieldtypes to specify data types for Properties.
+`)
+    if (curMetamodel?.name === "IRTV_META") (
+    finalDeveloperPrompt +=
+`## When building the model, follow these principles:
+- Make key Actors and Roles into Role objects.
+- Make Activities and Processes into Tasks.
+- Make Views to represent the information needs for the tasks.
+- 
+`)
+    if (curMetamodel?.name === "POPS_META") (
+    finalDeveloperPrompt +=
+`- ## When building the model, follow these principles:
+- Make key Activities and Processes into Process objects.
+- Make key Products into Product objects.
+- Make key Services into Service objects.
+- Use Geobodies to represent physical locations or structures.
+- Use Devices to represent tools or equipment used in processes.
+- Use DistributionNetworks to represent channels through which products/services are delivered.
+- Process triggers Process with "triggers" relationship.
+- Process hasOutcome Product with "hasOutcome" relationship.
+- Process uses Services and Systems.
+- Process input and output to Data.
+- Organizations owns Processes and Products with "owns" relationship.
+`)
+    finalDeveloperPrompt += `${contextMetamodel} \n`
 
 
-    const finalUserPrompt = `${contextMetamodel} \n ${contextItems} \n ${contextOntology}`;
+    
+// const finalUserPrompt = `${contextMetamodel} \n ${contextItems} \n ${contextOntology}`;
     // const finalUserPrompt = `${userPrompt}  \n ${contextMetamodel} \n ${contextItems} \n ${contextOntology} \n ${contextMetamodel}`;
 
-    const handleModelBuilder = async () => {
+    const handleModelBuilder = async (userText?: string) => {
         setIsLoading(true);
         setStep(1);
         setActiveTab("model");
+
+        // Use the provided userText if available; otherwise fall back to inputMessage
+        const finalUserPrompt = `${userText} \n ${contextOntology}`;
 
         if (!debug) console.log('724 Prompts: ', selectedModel, '\n\n',
             'finalSystemPrompt:', finalSystemPrompt, '\n\n',
@@ -753,7 +810,6 @@ Relships:
             'finalUserPrompt:', finalUserPrompt);
 
         try {
-
             const payload = {
                 aiModelName: mapModelId(selectedModel || "gpt-5-mini"),
                 schemaName: "ObjectSchema",
@@ -766,7 +822,6 @@ Relships:
             const finalText = await streamGenmodel(payload, (chunk) => {
                 raw += chunk;
             });
-            // Prefer the returned final text (identical to raw), but keep raw for existing logic
             if (finalText && finalText.length > raw.length) raw = finalText;
 
             if (!raw.trim()) throw new Error("Empty response from API");
@@ -842,13 +897,20 @@ Relships:
         }
     };
 
+    // Update handleSubmit to pass `input` into handleModelBuilder
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        console.log('895 Model handleSubmit called!', { input, docRefine }); // Add this first
         if (!input?.trim()) return;
         const content = docRefine ? `${input} #Content:\n ${irtvContent}` : input;
         setMessages((prev) => [...prev, { role: "user", content }]);
-        await handleModelBuilder();
+
+        // pass `input` directly so handleModelBuilder doesn't rely on a pending state update
+        await handleModelBuilder(input);
+
+        // preserve the rest of your state updates
         setInput("");
+        setInputMessage(""); // optional: you can remove inputMessage state entirely if unused elsewhere
         onResponseChange("");
         setShowDigitalRain(false);
     };
@@ -1080,7 +1142,7 @@ Relships:
                                 selectedModel={selectedModel}
                                 onModelChange={(newModel) => {
                                     setSelectedModel(newModel);
-                                    try { localStorage.setItem('aiDashboard_selectedModel', newModel); } catch {}
+                                    try { localStorage.setItem('aiDashboard_selectedModel', newModel); } catch { }
                                 }}
                             />
                             <TemperatureSelector temperature={temperature} onChange={(t) => setTemperature(t)} />

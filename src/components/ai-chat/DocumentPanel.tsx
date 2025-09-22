@@ -649,15 +649,15 @@ export default function DocumentPanel({
                         </button>
                     </div>
                 ) : (
-                    <div className="prose prose-invert custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[80vh] max-w-full whitespace-pre-wrap break-words flex-1">
-                        {mdContent ? (
-                            <MarkdownPreview mdPreview={mdContent} />
-                        ) : (
-                            <div className="text-sm text-gray-400 p-4">
-                                {getEmptyMessage()}
-                            </div>
-                        )}
-                    </div>
+                        <div className="prose prose-invert prose-xs custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[60vh] max-w-full whitespace-pre-wrap break-words [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm">
+                            {mdContent ? (
+                                <MarkdownPreview mdPreview={mdContent} />
+                            ) : (
+                                <div className="text-sm text-gray-400 p-4">
+                                    {getEmptyMessage()}
+                                </div>
+                            )}
+                        </div>
                 )}
             </div>
 

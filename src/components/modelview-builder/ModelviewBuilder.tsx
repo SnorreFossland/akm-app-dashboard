@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState, useCallback, useRef } from 'react';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
@@ -15,6 +15,7 @@ import {
     setMessages as chatSetMessages,
     Message
 } from '@/features/chat/chatSlice';
+import { setFocusModel } from '@/features/model-universe/modelSlice';
 import { Model, Modelview } from '@/features/model-universe/modelSlice';
 import ModelSelector from '@/components/ai-chat/ModelSelector';
 import TextareaAutosize from 'react-textarea-autosize';
@@ -65,30 +66,17 @@ export default function ModelviewBuilder({
     startupGuide,
     guide
 }: ModelviewBuilderProps) {
+    const dispatch = useDispatch();
     const data = useSelector((state: RootState) => state.modelUniverse);
+    const metis = useSelector((state: RootState) => state.modelUniverse.data?.metis);
     const [curmod, setCurmod] = useState<Model | null>(null);
     const [curMetamodel, setCurMetamodel] = useState<any>(null);
     const [curModelview, setCurModelview] = useState<Modelview | null>(null);
+    const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
+    
     const [model, setModel] = useState<Model | null>(null);
     const [modelview, setModelview] = useState<Modelview | null>(null);
-    // interface ModelviewObjects {
-    //     id: string;
-    //     name: string;
-    //     description: string;
-    //     proposedType: string;
-    //     typeRef: string;
-    //     typeName: string;
-    //     category: string;
-    // }
-    // interface ModelviewRelships {
-    //     id: string;
-    //     name: string;
-    //     typeRef: string;
-    //     fromobjectRef: string;
-    //     nameFrom: string;
-    //     toobjectRef: string;
-    //     nameTo: string;
-    // }
+
     const [existingObjectsInModelview, setExistingObjectsInModelview] = useState<{
         objects: ModelviewObjects[];
         relships: ModelviewRelships[];
@@ -173,6 +161,7 @@ export default function ModelviewBuilder({
                 (newCurmod?.objects || []).some((obj: any) => obj.id === rel.nameFrom || obj.id === rel.nameTo)
             ) || []
         };
+    
 
         setExistingObjectsInModelview((prev) => {
             const prevObjects = prev?.objects || [];
@@ -189,7 +178,23 @@ export default function ModelviewBuilder({
             if (sameObjects && sameRelships) return prev;
             return newExisting;
         });
+        const metamodels = (data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]) || [];
+        const curMeta = metamodels.find((mm) => mm.id === curmod.metamodelRef) || null;
+        setCurMetamodel(curMeta);
     }, [data?.phData?.metis?.models, data?.phFocus?.focusModel?.id, data]);
+
+    useEffect(() => {
+        if (!curmod && metis?.models?.length) {
+            const m = metis.models[0];
+            setCurmod(m);
+            dispatch(setFocusModel({ id: m.id, name: m.name }));
+        }
+        if (curmod && !curModelview && curmod.modelviews?.length) {
+            const mv = curmod.modelviews[0];
+            setCurModelview(mv);
+            setFocusModelview(mv ? { id: mv.id, name: mv.name } : null);
+        }
+    }, [metis, curmod, curModelview, dispatch]);
 
     useEffect(() => {
         console.log("224 Current model changed:", curmod);
@@ -488,41 +493,63 @@ export default function ModelviewBuilder({
         }
 
 
-        const modelviewSystemPrompt = `
-  You are a helpful assistant and a highly knowledgeable expert in schematic and diagramming presentation and layout.
-  You are tasked with presenting the objects and relationships generated from previous step in a modelview.
-  
-  The modelview will include objectviews and relshipviews for each object and relationship.
-  Give the objectviews and relshipviews id as uuids.
-  
-  You will place the objectviews in the modelview using the "loc" attribute with x and y coordinates as string with format "x y".
-  Make room between the objects to show the relationships clearly.
-  Align the objects horizontally and vertically to make the modelview look good.
-  Make space both horizontally (x distance more than 100) and vertically (y distance more than 20) between the objectviews to show the relationships clearly.
-  
-  Position all Roles in a column to the left.
-  Next on the right put the Tasks.
-  Next to the right of the Tasks put the Views.
-  Finally, to the right of the Views put the Information objects.
-  
-  Make sure to also give horizontal and vertical space between the objects to make the modelview look good.
-      `;
-        const systemBehaviorGuidelines = `
-  - Always respond with a SINGLE JSON object matching ModelviewSchema: { id, name, description, objectviews: [], relshipviews: [] }.
-  - Do NOT wrap the result in arrays or a parent property (e.g., no "modelviews").
-  - Ensure all objectviews and relshipviews have unique UUIDs.
-  - Maintain clear and organized layout with appropriate spacing.
-  - Prioritize readability and clarity in the modelview structure.
-      `;
-        const modelviewUserPrompt = ` 
-  Your first and primary objective is to generate a modelview with all the objects and relationships from the previous step.
-  Next, you will create objectviews and relshipviews for each object and relationship.
-  You will also create Roles, Tasks, and Views based on the concepts.
-  Position all objectviews with enough space between them to show the relationships clearly.
-  Make horizontal and vertical space between the objects to make the modelview look good.
+        //         const modelviewSystemPrompt = `
+        //   You are a helpful assistant and a highly knowledgeable expert in schematic and diagramming presentation and layout.
+        //   You are tasked with presenting the objects and relationships generated from previous step in a modelview.
 
-  Verify that the text is based on the provided context.
-      `;
+        //   The modelview will include objectviews and relshipviews for each object and relationship.
+        //   Give the objectviews and relshipviews id as uuids.
+
+        //   You will place the objectviews in the modelview using the "loc" attribute with x and y coordinates as string with format "x y".
+        //   Make room between the objects to show the relationships clearly.
+        //   Align the objects horizontally and vertically to make the modelview look good.
+        //   Make space both horizontally (x distance more than 100) and vertically (y distance more than 20) between the objectviews to show the relationships clearly.
+
+        //   Position all Roles in a column to the left.
+        //   Next on the right put the Tasks.
+        //   Next to the right of the Tasks put the Views.
+        //   Finally, to the right of the Views put the Information objects.
+
+        //   Make sure to also give horizontal and vertical space between the objects to make the modelview look good.
+        //       `;
+        //         const systemBehaviorGuidelines = `
+        //   - Always respond with a SINGLE JSON object matching ModelviewSchema: { id, name, description, objectviews: [], relshipviews: [] }.
+        //   - Do NOT wrap the result in arrays or a parent property (e.g., no "modelviews").
+        //   - Ensure all objectviews and relshipviews have unique UUIDs.
+        //   - Maintain clear and organized layout with appropriate spacing.
+        //   - Prioritize readability and clarity in the modelview structure.
+        //       `;
+
+        let modelviewUserPrompt = '';
+        if (curMetamodel?.name === "IRTV_META") {
+            modelviewUserPrompt = ` 
+You will create Roles, Tasks, and Views based on the current models objects and relationships.
+First place the Information objects with their connected Properties near on the right side.
+Next place the Views that display the Information objects nearby to the left of the connected Information objects.
+Next place the Tasks that apply the Views nearbyto the left of the Views.
+Finally place the Roles that perform the Tasks on the left side of the modelview.
+`;
+        } else if (curMetamodel?.name === "CORE_META") {
+            modelviewUserPrompt = `
+Your first and primary objective is to generate a modelview with all the objects and relationships from the previous step.
+Next, you will create objectviews and relshipviews for each object and relationship.
+You will create Metamodel objects with 'contains' relationships to the EntityTypes included in the Metamodel
+The relationships between EntityTypes must be of type 'relationshipType'
+`;
+        } else if (curMetamodel?.name === "POPS_META") {
+            modelviewUserPrompt = `
+Your first and primary objective is to generate a modelview with all the objects and relationships from the previous step.
+Next, you will create Processes, Organisations, Products and Services.
+`;
+        } else {
+            modelviewUserPrompt = `
+Your first and primary objective is to generate a modelview with all the objects and relationships from the previous step.
+Next, you will create objectviews and relshipviews for each object and relationship.
+`;
+        }
+
+
+
 
         modelviewContextItems = `
 ## Context:
@@ -568,15 +595,21 @@ ${(curmod?.relships || []).map((rel: any) => `- ${rel.id}, ${rel.name}, ${rel.fr
         let parsedSuccessfully = false;
         let accumulated = "";
 
-        const finalSystemPrompt = `You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling. 
-Your task is to construct a modelview from the current models objects and relationships, 
-
+        const finalSystemPrompt = `You are a senior assistant specialized in Diagramming and Modelview Layout.
+Your task is to construct a modelview from the current models objectviews and relationshipviews and arrange them in a clear, non-overlapping layout.
+You must follow the Developer Guidelines strictly. 
+Make sure no relationshipviews are created more then once between the same two objectviews.
+Dont do any routing of relationshipviews, just create straight lines between the objectviews.
 `;
         // - On fatal errors, output only: { "errors": [ { "code": "...", "detail": "..." } ] }.
 
-        const finalDeveloperPrompt = `### Developer Guidelines (Strict)
-
-You must output a single JSON object conforming to the Metamodel. The layout MUST be collision-free and pass the Validation section. If constraints cannot be satisfied, apply Fallbacks.
+        const finalDeveloperPrompt = `### Developer Guidelines for Modelview Layout
+- Follow the Metamodel structure exactly.
+- Ensure all required fields are present and correctly formatted.
+- Use consistent and valid UUIDs for all ids.
+- Maintain a clean, non-overlapping layout with clear spacing.
+- Prioritize readability and logical grouping of related objects.
+- Validate the final output against all rules before returning.
 
 ## Metamodel (unchanged structure)
 - Modelview:
@@ -585,32 +618,29 @@ You must output a single JSON object conforming to the Metamodel. The layout MUS
   - Required: id, name, description, objectRef, typeviewRef, loc (string "x y").
 - Relshipviews:
   - Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef, points (array of x,y).
-- layoutDiagnostics (object):
-  - overlaps: integer
-  - minHorizontalGap: number
-  - minVerticalGap: number
-  - crossings: integer
-  - scaled: boolean
-  - paginated: boolean
-  - notes: string
 
 ## Canvas & Grid
 - canvasWidth: 1800 (min), canvasHeight: 1000 (min). Use these as target; you may increase width up to 12400 if needed before scaling.
 - margin: {top: 40, right: 40, bottom: 40, left: 40}
-- grid: snapToGrid = true, columnWidth = 280, rowHeight = 120, gutterX = 60, gutterY = 40
+- grid: snapToGrid = true, columnWidth = 180, rowHeight = 20, gutterX = 60, gutterY = 40
 
 ## Hard Non-Overlap Rules
 - No two object bounding boxes may intersect.
-- Minimum gaps: horizontal >= 160, vertical >= 60 (measured between bounding boxes).
+- Minimum gaps: horizontal >= 120, vertical >= 50 (measured between bounding boxes).
 - After placing all objects, compute \`overlaps\`; it MUST be 0.
 
 ## Layout
 - Use LayeredDiagraph or similar algorithm to get a nice layout.
 - Objects must be placed with sufficient space to show relationships clearly.
+- Start with Roles on the left, then Tasks, then Views, then Information, then Properties on the right.
 - Objects with 'has' relationships should be placed next to their parent.
 - Align objects to grid; all coordinates (loc and points) must be integers.
 - Prioritize readability: group related objects, avoid long edges, and maintain a clean structure.
 - Apply consistent spacing and alignment to enhance visual clarity.
+
+The Objectviews and Relationshipviews shall have the same names as the the objects and relationships.
+Make sure to give enough space between the objects to make the modelview look good and readable.
+Make sure to align the objects horizontally and vertically to make the modelview look good.
 
 ## Ordering (Determinism)
 - Primary sort: topological order from relationships (parents before children).
@@ -640,62 +670,6 @@ You must output a single JSON object conforming to the Metamodel. The layout MUS
 - Include \`layoutDiagnostics\` with truthful metrics and notes on any scaling or pagination.
     `;
 
-    //     ## Columnar Placement by Type
-    //             - Determine object “role”:
-    //         - main: entities central to the view(MetamodelEntityType, Metamodel, etc.).
-    //   - supporting: actors, references, adapters, events, etc.
-    //   - properties: objects of type "Property".
-    // - X - bands:
-    //         - Column 0–N for main: start at x = margin.left; columns advance by(columnWidth + gutterX).
-    //   - Supporting columns begin after the last main column.
-    // - Vertical placement:
-    //         - Fill rows top - down per column with rowHeight + gutterY spacing.
-    // - Properties:
-    //         - Place to the ** right ** of their parent’s column, starting one row ** below ** the parent.
-    //   - Wrap within the property band; never place properties to the left of their parent.
-    // - Datatypes:
-    //         - Place in a dedicated column to the ** right ** of all other objects, ordered alphabetically by name.
-        // ## Edge Routing(Relshipviews.points)
-        //             - Use orthogonal polylines with waypoints snapped to grid.
-        // - Do not route edges through any object bounding box.
-        // - Maintain a clearance of 12px from all object boxes.
-        // - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
-        // - Edge labels(name) must have at least one straight segment >= 80px. 
-
-        //## Edge Routing(Relshipviews.points)
-        // - Use orthogonal polylines with waypoints snapped to grid.
-        // - Do not route edges through any object bounding box.
-        // - Maintain a clearance of 12px from all object boxes.
-        // - If direct orthogonal path fails, insert up to 2 intermediate waypoints to skirt columns.
-        // - Edge labels(name) must have at least one straight segment >= 80px.
-        //         const finalDeveloperPrompt = `### Developer Guidelines
-        // Modelview:
-        // - Required: id, name, description, objectviews[], relshipviews[].
-        // - Name should reflect the main object or group of objects.
-        // - Description should summarize the modelview's purpose.
-
-        // Objectviews:
-        // - Required: id, name, description, objectRef, typeviewRef.
-        // - Name should match the object's name.
-        // - Description should match the object's description.
-        // - loc: string with "x y" coordinates for positioning.
-        // - objectRef must reference an existing object id in the model.
-        // - typeviewRef: UUID referencing a typeview (can be generated if unknown).
-
-        // Relshipviews:
-        // - Required: id, name, fromobjviewRef, toobjviewRef, relshipRef, typeviewRef.
-
-        // ### Relationship Naming Rules
-        // - Name should match the relationship's name.
-
-        // ### Layout Guidelines
-        // - Make as nice as possible layout.
-        // - Position objectviews with sufficient space (horizontal >100, vertical >20) to clearly show relationships.
-        // - Align objectviews in columns by type: main objects (left) and supporting objects (right).
-        // - Align objectviews of type Property below and right of their main object.
-        // - Ensure overall readability and clarity of the modelview.
-
-        //     `;
         const finalUserPrompt = `${modelviewContextMetamodel} \n ${modelviewContextItems} \n ${modelviewUserPrompt} \n ${input} `;
 
         if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',

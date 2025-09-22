@@ -20,6 +20,7 @@ import ModelComponent from '@/features/model-universe/components/ModelComponent'
 import { ObjectCard } from '@/components/object-card';
 import { OntologyCard } from '@/components/ontology-card';
 import { setFocusModel, Model } from '@/features/model-universe/modelSlice';
+import next from 'next/dist/server/next';
 
 type IrtvConversation = { id: string; title: string; messages: any[]; timestamp: number };
 
@@ -53,7 +54,13 @@ export default function IrtvBuilderPage() {
     try {
       const saved = localStorage.getItem('aiDashboard_selectedModel');
       if (saved) setSelectedAiModel(saved as any);
-    } catch {}
+    } catch { }
+    const focusModel = data?.phFocus?.focusModel;
+    if (focusModel) {
+      const models = data?.phData?.metis?.models || [];
+      const curmod = models.find((m: any) => m.id === focusModel.id) || null;
+      setCurrentModel(curmod);
+    }
   }, []);
 
   // Sync currentModel from focus
@@ -83,6 +90,25 @@ export default function IrtvBuilderPage() {
   // Left panel
   const leftPanelContent = {
     tabs: [
+      {
+        key: 'current-domain',
+        label: 'Current Domain',
+        content: (
+          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+            {data.phData.domain ? (
+              <div className="p-2 bg-gray-800 rounded">
+                <MarkdownPreview
+                  mdPreview={data.phData.domain.presentation || 'No domain definition available'}
+                />
+              </div>
+            ) : (
+              <div className="p-2 bg-gray-800 rounded">
+                <div className="text-sm text-gray-400">No domain found</div>
+              </div>
+            )}
+          </div>
+        )
+      },
       {
         key: 'ontology',
         label: 'Current Ontology',
@@ -146,7 +172,7 @@ export default function IrtvBuilderPage() {
               setInput={setMdContent}
               selectedModel={selectedAiModel}
               setSelectedModel={setSelectedAiModel}
-              onResponseChange={() => {}}
+              onResponseChange={() => { }}
               onViewInPreview={(s: string) => setIrtvPreview(s)}
               onViewInMarkdown={handleViewInMarkdown}
               setShowLeftPanel={setShowLeftPanel}
@@ -257,16 +283,16 @@ export default function IrtvBuilderPage() {
   };
 
   const moduleOperations = (
-    <div className="flex justify-between bg-gray-800 text-xs">
+    <div className="flex justify-between items-center justify-center bg-gray-800 text-xs">
       <div className="px-1">
         <span className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</span>
         <span className="text-gray-300">{metis?.name}</span>
       </div>
       <div className="px-1">
         <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
-        <select id="model-select" className="ps-2 inline-block bg-gray-900 text-gray-400" onChange={handleModelChange} value={currentModel?.name}>
+        <select id="model-select" className="ps-2 text-xl font-bold inline-block bg-gray-900 text-orange-400" onChange={handleModelChange} value={currentModel?.name}>
           {metis?.models.map((m: { name: string }) => (
-            <option key={m.name} value={m.name}>{m.name}</option>
+            <option key={m.name} value={m.name} className="ps-2 text-xl font-bold inline-block bg-gray-900 text-orange-400">{m.name}</option>
           ))}
         </select>
       </div>

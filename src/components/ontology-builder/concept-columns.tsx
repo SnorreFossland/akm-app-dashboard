@@ -19,6 +19,7 @@ type Concept = {
     name: string;
     description: string;
     color?: string; // Optional color property
+    type?: string; // Optional type property
 };
 
 // More type-safe alternative
@@ -221,9 +222,9 @@ export const columns: ColumnDef<Concept>[] = [
         cell: ({ row }) => <DescriptionCell row={row} />,
     },
     {
-        accessorKey: "typeName",
+        accessorKey: "type",
         header: () => <span>Type</span>,
-        cell: ({ row }) => <span className="text-sm text-gray-400">{row.original.typeName || 'N/A'}</span>,
+        cell: ({ row }) => <span className="text-sm text-gray-400">{row.original.type || 'N/A'}</span>,
     },
     {
         id: "actions",

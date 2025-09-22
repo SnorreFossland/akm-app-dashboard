@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import mermaid from 'mermaid';
+const mermaidRef = useRef<any>(null);
+const diagramRef = useRef<HTMLDivElement | null>(null);
+// import mermaid from 'mermaid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import ReactMarkdown from 'react-markdown';
@@ -25,23 +27,39 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
 
     // Initialize Mermaid once
     useEffect(() => {
-        mermaid.initialize({
-            startOnLoad: false, // Change to false
-            theme: 'base',
-            themeVariables: {
-                primaryColor: '#97e499ff',
-                edgeLabelBackground: '#21313c15',
-                secondaryColor: '#8888ff',
-                tertiaryColor: '#dddddd',
-                primaryTextColor: '#ffffff',
-                secondaryTextColor: '#ccffcc',
-                tertiaryTextColor: '#0000ff',
-                lineColor: '#dddddd',
-                background: '#ffffff',
-                nodeBorderRadius: '5px',
-            },
-            securityLevel: 'loose',
-        });
+        let cancelled = false;
+        if (typeof window === 'undefined') return;
+
+        (async () => {
+            try {
+                const mm = await import('mermaid');
+                // some bundlers put the module on default export
+                mermaidRef.current = mm.default || mm;
+                mermaidRef.current.initialize({
+                    startOnLoad: false,
+                    theme: 'base',
+                    themeVariables: {
+                        primaryColor: '#97e499ff',
+                        edgeLabelBackground: '#21313c15',
+                        secondaryColor: '#8888ff',
+                        tertiaryColor: '#dddddd',
+                        primaryTextColor: '#ffffff',
+                        secondaryTextColor: '#ccffcc',
+                        tertiaryTextColor: '#0000ff',
+                        lineColor: '#dddddd',
+                        background: '#ffffff',
+                        nodeBorderRadius: '5px',
+                    },
+                    securityLevel: 'loose',
+                });
+            } catch (e) {
+                console.error('Failed to load mermaid dynamically:', e);
+            }
+        })();
+
+        return () => {
+            cancelled = true;
+        };
     }, []);
 
     // Memoize the diagram generation to prevent infinite loops
@@ -129,8 +147,15 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
                     // Generate unique ID for this diagram
                     const diagramId = `mermaid-diagram-${Date.now()}`;
 
-                    // Render the diagram
-                    const { svg } = await mermaid.render(diagramId, mermaidDiagram);
+                    // Use dynamically loaded mermaid module from the ref
+                    const mm = mermaidRef.current;
+                    if (!mm) {
+                        console.warn('Mermaid not yet loaded; delaying render');
+                        setIsLoading(false);
+                        return;
+                    }
+
+                    const { svg } = await mm.render(diagramId, mermaidDiagram);
 
                     // Store the rendered SVG
                     setRenderedSvg(svg);
@@ -212,7 +237,7 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
     return (
         <div className="w-full">
             <div className="w-full h-[calc(100vh-10rem)] overflow-hidden bg-gray-800 rounded-md">
-                    <Tabs defaultValue="objects" value={activeTab} onValueChange={setActiveTab} className="flex flex-col mt-1 h-full">
+                <Tabs defaultValue="objects" value={activeTab} onValueChange={setActiveTab} className="flex flex-col mt-1 h-full">
                     <TabsList className="bg-transparent">
                         <TabsTrigger
                             value="objects"
@@ -245,7 +270,7 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
                     <TabsContent value="relationships" className="rounded  w-full mt-0 ">
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
-                                {modelview && <RelshipTable data={(modelview.relshipviews || []).map((relview: any) => ({ 
+                                {modelview && <RelshipTable data={(modelview.relshipviews || []).map((relview: any) => ({
                                     ...relview,
                                     nameFrom: relview.nameFrom ? relview.nameFrom : relview.fromrelviewRef,
                                     nameTo: relview.nameTo ? relview.nameTo : relview.torelviewRef
