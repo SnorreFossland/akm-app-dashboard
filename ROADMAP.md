@@ -11,7 +11,7 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
 
 - [x] Consolidate model mapping and endpoints
   - Unified model-id mapping via `mapModelId` in `src/lib/ai/modelMap.ts` and gateway usage across agents.
-  - Helpers in `src/lib/ai/{generate,genmodel}.ts` adopted across Chat (gateway), IRTV/Model Builder, Modelview Builder, Ontology Chat, and Ontology Builder.
+  - Helpers in `src/lib/ai/{generate,genmodel}.ts` adopted across Chat (gateway), IRTV/Model Builder, and Ontology (Chat/Builder); Modelview Builder adoption pending.
   - Added optional `max_completion_tokens` control (Chat) and pass-through in gateway helper.
 
  - [x] Normalize endpoint contracts
@@ -23,11 +23,11 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
   - Schemas standardized in usage: `OntologySchema`, `ModelviewSchema`, `ObjectSchema`; `IRTVSchema` can be added in a future pass.
 
 - [x] Modelview genmodel flow
-  - Implemented `/api/genmodel` in `src/components/modelview-builder/ModelviewBuilder.tsx` targeting `ModelviewSchema` and refactored to use `streamGenmodel`.
+  - Implemented `/api/genmodel` in `src/components/modelview-builder/ModelviewBuilder.tsx` targeting `ModelviewSchema` (uses inline streaming today; refactor to `streamGenmodel` pending).
   - Stream-parses results and previews in `src/components/modelview-builder/OutputPanel.tsx` with “Save to Library”.
 
 - [x] IRTV builder orchestration
-  - Wired `src/components/irtv-builder/IrtvBuildercomponent.tsx` to `/api/genmodel` using the project’s IR/TV schema via `streamGenmodel`.
+  - Wired `src/components/irtv-builder/IrtvBuildercomponent.tsx` to `/api/genmodel` using `ObjectSchema` via `streamGenmodel`.
   - Aligns prompts (system + behavior + user) and surfaces structured preview.
 
 - [x] Ontology dedupe and apply
@@ -36,12 +36,16 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
  - [x] Unified UI controls
   - Standardized model and temperature controls via shared `ModelSelector` and `TemperatureSelector` in Chat, Ontology, and IRTV; Chat adds max tokens control.
   - Persist temperature in `localStorage` key `aiDashboard_temperature`.
+  - Modelview Builder still uses an inline temperature control; switch to shared `TemperatureSelector` is pending.
 
 ## Near-Term (3–6 Weeks)
 
-- [ ] Ontology graph visualization
-  - Render nodes (concepts) and edges (relationships) for suggested and saved ontologies.
-  - Highlight new vs existing; link selection to detail panels.
+- [ ] Ontology graph visualization (in progress)
+  - Initial Mermaid-based graph implemented in `src/components/ontology-graph.tsx` and used in `src/app/ontology-builder/page.tsx`.
+  - Next: link node selection to detail panels; wire baseline vs suggested to highlight diffs.
+
+- [ ] Modelview helper adoption
+  - Replace inline fetch/streaming with `streamGenmodel` and use `mapModelId` from `src/lib/ai/modelMap.ts`.
 
 - [ ] Context library + versioning
   - Enhance `src/components/ai-chat/DocumentPanel.tsx` and FileOperations to support version history, diff, and restore.
