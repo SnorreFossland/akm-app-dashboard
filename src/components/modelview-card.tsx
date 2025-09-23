@@ -1,6 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-const mermaidRef = useRef<any>(null);
-const diagramRef = useRef<HTMLDivElement | null>(null);
 // import mermaid from 'mermaid';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +12,7 @@ const debug = false;
 
 // export const ObjectCard = ({ model }: { model: Model }) => {
 export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
+    const mermaidRef = useRef<any>(null);
     const diagramRef = useRef<HTMLDivElement>(null);
     const [mermaidDiagram, setMermaidDiagram] = useState('');
     const [renderedSvg, setRenderedSvg] = useState('');

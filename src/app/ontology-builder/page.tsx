@@ -257,12 +257,14 @@ export default function OntologyBuilderPage() {
       setOntology(data.phData.domain.ontology);
     }
   }, [data.phData.domain?.ontology]);
+  
   useEffect(() => {
     if (data.phData.domain) {
       setDomainData(data.phData.domain);
       setMdContent(data.phData.domain.presentation || '');
     }
   }, [data.phData.domain]);
+
   const handleResponseChange = (response: string) => {
     // Handle response change
   };

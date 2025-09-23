@@ -1,591 +1,1192 @@
-"use client"
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { RootState, AppDispatch } from '@/store/store';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faRobot, faCheckCircle, faPaperPlane, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+"use client";
 
-import { Card, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { TabsContent } from '@/components/ui/tabs';
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogDescription, DialogTitle } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-
-import { LoadingCircularProgress } from '@/components/loading';
+import React, {
+    useState,
+    useEffect,
+    useRef,
+    useCallback,
+    useMemo
+} from "react";
+import Link from 'next/link';
+import ReactMarkdown from "react-markdown";
+import TextareaAutosize from "react-textarea-autosize";
+import { useDispatch, useSelector } from "react-redux";
+import { X, HelpCircle, Info } from "lucide-react";
+// (Make sure these imports exist; adjust paths to your project)
+import {
+    addMessage,
+    setMessages as chatSetMessages,
+} from '@/features/chat/chatSlice';
+import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, setFocusModelview, Metis, Model } from '@/features/model-universe/modelSlice';
+import { RootState, AppDispatch } from "@/store";
 import { ObjectSchema } from "@/objectSchema";
-import { ObjectCard } from '@/components/object-card';
-import { ModelviewSchema } from "@/modelviewSchema";
-import { ModelviewCard } from '@/components/modelview-card';
-import ReactMarkdown from 'react-markdown';
-
-import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, Metis, Model } from '@/features/model-universe/modelSlice';
-import { streamGenmodel } from '@/lib/ai/genmodel';
+import ModelSelector from '@/components/ai-chat/ModelSelector';
+import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
+import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
+import GettingStartedGuide from '@/components/model-builder/GettingStartedGuide';
+import { SystemPrompt, DeveloperPrompt, UserPrompt } from '@/app/model-builder/prompts';
 import { mapModelId } from '@/lib/ai/modelMap';
-
-import { SystemPrompt, SystemBehaviorGuidelines, ExistingOntology, UserPrompt, UserInput, ExistingContext } from '@/app/model-builder/prompts';
+import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
+import { streamGenmodel } from '@/lib/ai/genmodel';
 
 const debug = false;
+interface ModelBuilderProps {
+    input: string;
+    setInput: React.Dispatch<React.SetStateAction<string>>;
+    selectedModel: "dummy" | "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini";
+    setSelectedModel: React.Dispatch<React.SetStateAction<"dummy" | "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini">>;
+    onResponseChange: (response: string) => void;
+    onViewInMarkdown: (response: string) => void;
+    onViewInPreview: (response: string) => void;
+    setShowLeftPanel: React.Dispatch<React.SetStateAction<boolean>>;
+    onAddContent: (content: string) => void;
+    modelContent: string;
+    setModelContent: React.Dispatch<React.SetStateAction<string | Model | null>>;
+    modelPreview: string;
+    setModelPreview: React.Dispatch<React.SetStateAction<string>>;
+    setCurrentMessages: React.Dispatch<React.SetStateAction<any[]>>;
+    gettingStartedGuide: React.ReactNode;
+    guide: React.ReactNode;
+}
 
-const Modelbuilder = () => {
+export default function ModelBuilderComponent(props: ModelBuilderProps) {
+    const {
+        input,
+        setInput,
+        selectedModel, //AI model
+        setSelectedModel,
+        onResponseChange,
+        onViewInPreview,
+        onViewInMarkdown,
+        setShowLeftPanel,
+        onAddContent,
+        modelContent,
+        setModelContent,
+        modelPreview,
+        setModelPreview,
+        setCurrentMessages,
+        gettingStartedGuide,
+        guide
+    } = props;
+
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch<AppDispatch>();
-    const [dispatchDone, setDispatchDone] = useState(false);
+
+    const domain = useSelector((state: RootState) => data.phData?.domain);
+    const [model, setModel] = useState<any>(null);
+    const [curmod, setCurmod] = useState<Model | null>(null);
+    const [curMetamodel, setCurMetamodel] = useState<any>(null);
+    const [modelview, setModelview] = useState<any>(null);
+    const focusModelview = useSelector((state: RootState) => data.phFocus?.focusModelview?.id || '');
+    const [messages, setMessages] = useState<Message[]>([]);
+    const [showDigitalRain, setShowDigitalRain] = useState(false);
+    const messagesEndRef = useRef<HTMLDivElement>(null);
+    const [statusMsg, setStatusMsg] = useState("");
+    const [inputMessage, setInputMessage] = useState("");
+
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const [isLoading, setIsLoading] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
-    // const [suggestedConceptsData, setSuggestedConceptsData] = useState<string>("");
-    // const [suggestedRoles, setSuggestedRoles] = useState("");
-    // const [suggestedTasks, setSuggestedTasks] = useState("");
-    // const [suggestedViews, setSuggestedViews] = useState("");
-    // const [concepts, setConcepts] = useState("");
     const [step, setStep] = useState(0);
-    const [activeTab, setActiveTab] = useState('current-knowledge');
-    const [activeSubTab, setActiveSubTab] = useState('model-summary');
-    const [showModel, setShowModel] = useState(true);
-    const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
-    // const [metis, setMetis] = useState<Metis | null >(null);
-    const [model, setModel] = useState<{ id?: string; name?: string; description?: string; objects?: any[]; relships?: any[] } | null>(null);
-    const [curmod, setCurmod] = useState<Model | null>(null);
-    const [modelview, setModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
-    // const [focusMod, setFocusMod] = useState<{ id: any; name: any; } | null>(null);
-    const [existingInfoObjects, setExistingInfoObjects] = useState<{ objects: { id: any; name: any; description: any; typeName: any; }[], relships: { id: any; name: any; nameFrom: any; nameTo: any; }[] }>({ objects: [], relships: [] });
-    const [existingConcepts, setExistingConcepts] = useState("");
-    const [systemPrompt, setSystemPrompt] = useState("");
-    const [systemBehaviorGuidelines, setSystemBehaviorGuidelines] = useState("");
+    const [activeTab, setActiveTab] = useState("current-analysis");
+    const [activeSubTab, setActiveSubTab] = useState("requirements-summary");
+    const [dispatchDone, setDispatchDone] = useState(false);
+
+    const mdFileInputRef = useRef<HTMLInputElement>(null);
+    const [templatePlaceholders, setTemplatePlaceholders] = useState<
+        { text: string; start: number; end: number }[]
+    >([]);
+    const [showGuide, setShowGuide] = useState(false);
+
+    const [modelAnalysis, setmodelAnalysis] = useState<any>(null);
+    const [requirements, setRequirements] = useState("");
+    const [testScenarios, setTestScenarios] = useState<any[]>([]);
+    const [verificationCriteria, setVerificationCriteria] = useState<any[]>([]);
+
+    const [selectedCategory, setSelectedCategory] = useState("Business");
+
     const [userPrompt, setUserPrompt] = useState("");
-    const [userInput, setUserInput] = useState("");
+    const [modelRetryCount, setModelRetryCount] = useState(0);
+    const [systemPrompt, setSystemPrompt] = useState<string>("");
+    const [systemBehaviorGuidelines, setSystemBehaviorGuidelines] = useState("");
     const [contextItems, setContextItems] = useState("");
     const [contextOntology, setContextOntology] = useState("");
+    const [context, setContext] = useState<any>(domain);
     const [contextMetamodel, setContextMetamodel] = useState("");
-    const [printPromptsDiv, setPrintPromptsDiv] = useState(<></>);
-    const [isClient, setIsClient] = useState(false);
-    // const [modelviewSystemPrompt, setNewModelviewSystemPrompt] = useState("");
-    // const [modelviewUserPrompt, setNewModelviewUserPrompt] = useState("");
-    // const [modelviewUserInput, setNewModelviewUserInput] = useState("");
-    // const [modelviewContextItems, setNewModelviewContextItems] = useState("");
-    // const [modelviewContextOntology, setNewModelviewContextOntology] = useState("");
-    // const [modelviewContextMetamodel, setNewModelviewContextMetamodel] = useState("");
 
-    const handleOpenModal = () => setIsModalOpen(true);
-    const handleCloseModal = () => setIsModalOpen(false);
+    const [isStreaming, setIsStreaming] = useState(false);
+    const [contextFiles, setContextFiles] = useState<File[]>([]);
+    const [contextContent, setContextContent] = useState("");
+    const [isContextAttached, setIsContextAttached] = useState(false);
+    const retryInProgress = useRef(false);
+    const [selectedReportTemplate, setSelectedReportTemplate] = useState("");
+    const [existingInfoObjects, setExistingInfoObjects] = useState<{
+        objects: { id: any; name: any; description: any; typeName: any }[];
+        relships: { id: any; name: any; nameFrom: any; nameTo: any }[];
+    }>({ objects: [], relships: [] });
 
-    const handleDispatchIrtvData = () => {
-        console.log('69 HandleDispatch:', dispatchDone, modelview, model);
-        if (!model && !modelview) {
-            alert('No IRTV to dispatch');
+    const [temperature, setTemperature] = useState<number>(0.7);
+    const [docRefine, setDocRefine] = useState(false);
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(
+        null
+    );
+    const [streamedContent, setStreamedContent] = useState("");
+    const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
+    const [mdPreview, setMdPreview] = useState("");
+    const [lastAutoPrompt, setLastAutoPrompt] = useState("");
+    const [userEditedInput, setUserEditedInput] = useState(false);
+
+    const MAX_MODEL_RETRIES = 4;
+
+    // Thinking animation (single definition)
+    const ThinkingAnimation = () => (
+        <div className="flex items-center gap-1 text-blue-400 font-mono p-3 rounded-lg bg-blue-950/20 border border-blue-900/40 max-w-[200px]">
+            <span className="ml-2">Thinking</span>
+            <div className="w-3 h-3 bg-blue-500 rounded-full animate-pulse" />
+            <div
+                className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"
+                style={{ animationDelay: "0.2s" }}
+            />
+            <div
+                className="w-3 h-3 bg-blue-500 rounded-full animate-pulse"
+                style={{ animationDelay: "0.4s" }}
+            />
+        </div>
+    );
+
+    // Domain-specific prompts
+    //     const IRTVSystemPrompt = `You are an expert IRTV (Information Requirements for Testing and Verification) analyst. 
+    // Your task is to analyze requirements and generate comprehensive IRTV documentation that identifies all information needs for testing and verification activities.
+
+    // Focus on:
+    // - Information Requirements identification
+    // - Test data specifications
+    // - Verification criteria
+    // - Traceability requirements
+    // - Documentation standards
+
+    // Verify that your responses are based on the provided context and requirements.
+    // `;
+
+    // ---------- Stable preview handler ----------
+    const handleViewInMarkdown = useCallback(
+        (content: string) => {
+            setModelPreview(content);
+            onViewInPreview(content);
+            if (onViewInMarkdown) {
+                try {
+                    onViewInMarkdown(content);
+                } catch (err) {
+                    console.error("onViewInMarkdown prop error:", err);
+                }
+            } else if (process.env.NODE_ENV !== "production") {
+                console.warn(
+                    "[ModelBuilderComponent] onViewInMarkdown prop not supplied; internal preview only."
+                );
+            }
+        },
+        [onViewInPreview, onViewInMarkdown, setModelPreview]
+    );
+
+
+    // ----------  Sync focus model from redux to local state ----------
+    useEffect(() => {
+        const metis = data?.phData?.metis;
+        const focusId = data?.phFocus?.focusModel?.id;
+
+        if (!metis || !metis.models?.length || !focusId) {
+            // If focus cleared, also clear local state
+            setCurmod(null);
+            setCurMetamodel(null);
+            if (debug) console.log("[focus-sync] cleared (no metis or focusId)");
             return;
         }
-        const metamodRef = curMetamodel?.id;
-        const curmod = data.phData.metis.models[0];
-        console.log('75 Curmod:', curmod, model);
 
-        const newMod = {
-            ...curmod,
-            ...(model || {})
+        const nextModel = metis.models.find((m: any) => m.id === focusId) || null;
+        const nextMetamodel =
+            nextModel
+                ? metis.metamodels?.find((mm: any) => mm.id === nextModel.metamodelRef) || null
+                : null;
+
+        // Only update if changed (avoid extra renders)
+        setCurmod(prev => (prev?.id === nextModel?.id ? prev : nextModel));
+        setCurMetamodel((prev: any) => (prev?.id === (nextMetamodel as any)?.id ? prev : nextMetamodel));
+
+        if (debug) {
+            console.log("[focus-sync] focusId:", focusId,
+                "model:", nextModel?.name,
+                "metamodel:", (nextMetamodel as any)?.name);
         }
-        console.log('82 NewMod:', newMod);
-        setCurmod(newMod);
-        dispatch(setNewModel(newMod));
+    }, [
+        data?.phFocus?.focusModel?.id,
+        data?.phData?.metis?.models,
+        data?.phData?.metis?.metamodels
+    ]);
 
-        if (modelview) {
-            const completeModelview = {
-                ...modelview,
-                id: modelview.id || crypto.randomUUID(),
-                name: modelview.name || 'Default View',
-                description: modelview.description || '',
-                modelRef: curmod?.id || '',
-                modified: false,
-                markedAsDeleted: false,
-                objectviews: modelview.objectviews || [],
-                relshipviews: modelview.relshipviews || []
-            };
-            dispatch(setNewModelview([completeModelview]));
+    // ---------- Auto-prompt generation when curmod or curMetamodel changes ----------
+    useEffect(() => {
+        if (!curmod || !curMetamodel) return;
+        let types = (curMetamodel.objecttypes || [])
+            .filter((o: any) => o.name !== "EntityType")
+            .filter((o: any) => o.name !== "Gateway")
+            .map((o: any) => o.name + ', ');
+        let nextAutoPrompt = "";
+        // const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
+        switch (curMetamodel.name) {
+            case "IRTV_META":
+                nextAutoPrompt = `Create an IRTV Workspace for the Process: [ProcessName]. 
+First create a Container with the name [ProcessName] the Information objects with vital Properties, then add Views, Tasks and Roles related to the Information objects. ${types.length ? types.join(" ") : ""} based on the Domain description below:
+`;
+                break;
+            case "CORE_META":
+                types = (curMetamodel.objecttypes || [])
+                    .filter((o: any) => o.name !== "InputPattern")
+                    .filter((o: any) => o.name !== "Details")
+                    .filter((o: any) => o.name !== "Method")
+                    .filter((o: any) => o.name !== "MethodType")
+                    .filter((o: any) => o.name !== "ViewFormat")
+                    .filter((o: any) => o.name !== "Fieldtype")
+                    .filter((o: any) => o.name !== "Type")
+                    .map((o: any) => o.name + ', ');
+                nextAutoPrompt = `The purpose is to create a Model that can represent the provided Domain description.
+Create a Model using the following object types: ${(types.length ? types.join(" ") : "")}  
+Create an object of type Metamodel with a relship "contains" to all objects of type EntityType.
+`
+                break;
+            case "POPS_META":
+                types = (curMetamodel.objecttypes || [])
+                    .filter((o: any) => o.name !== "EntityType")
+                    .filter((o: any) => o.name !== "Geobody")
+                    .filter((o: any) => o.name !== "Material")
+                    .filter((o: any) => o.name !== "DistributionNetwork")
+                    .filter((o: any) => o.name !== "Device")
+                    .map((o: any) => o.name + ', ');
+
+                nextAutoPrompt =
+                    "Create a POPS model of the Ontology concepts and relationships with focus on generating processes and products using the following object types: " +
+                    (types.length ? types.join(" ") + " based on the domain description below: " : "");
+                break;
+            case "BPMN_META":
+                types = (curMetamodel.objecttypes || [])
+                    .filter((o: any) => o.name !== "EntityType")
+                    .filter((o: any) => o.name !== "Gateway")
+                    .map((o: any) => o.name + ', ');
+                nextAutoPrompt =
+                    "Create a BPMN model using the following object types: " +
+                    (types.length ? types.join(" ") + " based on the domain description below: " : "");
+                break;
         }
 
-        setDispatchDone(true);
-    };
+        if (!nextAutoPrompt) return;
 
+        setUserPrompt(nextAutoPrompt);
+
+        // Decide whether to inject/overwrite the textarea input:
+        // Overwrite if:
+        //  - input is empty
+        //  - OR input equals the last auto prompt (user hadn't personalized it)
+        //  - OR user never edited (userEditedInput === false)
+        if (!input || input === lastAutoPrompt || !userEditedInput) {
+            setInput(nextAutoPrompt);
+            setLastAutoPrompt(nextAutoPrompt);
+            setUserEditedInput(false); // still considered auto
+            if (debug) console.log("[auto-prompt] applied", nextAutoPrompt.slice(0, 60));
+        } else {
+            if (debug) console.log("[auto-prompt] NOT applied (user edited)");
+        }
+    }, [curmod?.id, curMetamodel?.id]); // keep deps focused
+
+
+
+    // ---------- 5. When curmod changes, update existing info objects and ontology diff ----------
     useEffect(() => {
-        setIsClient(true);
-    }, []);
+        if (!curmod || !data?.phData?.domain?.ontology) return;
 
-    useEffect(() => {
-        if (data) {
-            const metis = data.phData?.metis;
-            if (!metis) {
-                console.error('Data does not contain metis:', data);
-                return;
-            }
+        const infoRels =
+            curmod.relships?.filter((rel: any) => {
+                const fromObject = curmod.objects?.find(
+                    (o: any) => o.id === rel.fromobjectRef
+                );
+                const toObject = curmod.objects?.find(
+                    (o: any) => o.id === rel.toobjectRef
+                );
+                return (
+                    fromObject?.typeName === "Information" &&
+                    toObject?.typeName === "Information"
+                );
+            }) || [];
 
-            if (metis?.metamodels) {
-                const metamodel = metis.metamodels.find((mmodel: { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }) => mmodel.name.includes('IRTV'));
-                if (metamodel) {
-                    setCurMetamodel(metamodel);
-                }
-            }
+        // Ensure we only map arrays
+        const existingObjects =
+            Array.isArray(curmod.objects)
+                ? curmod.objects.map((o: any) => ({
+                    id: o.id,
+                    name: o.name,
+                    description: o.description,
+                    typeName: o.typeName
+                }))
+                : [];
 
-            const filteredObjTypes = curMetamodel?.objecttypes.filter((objtype: any) =>
-                objtype.typeName !== 'Element' &&
-                objtype.typeName !== 'EntityType' &&
-                objtype.typeName !== 'Generic' &&
-                objtype.typeName !== 'Label'
-            );
-
-            const filteredRelTypes = curMetamodel?.relshiptypes.filter((reltype: any) =>
-                reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Element') &&
-                reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'EntityType') &&
-                reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Generic') &&
-                reltype.fromobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Label') &&
-                reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Element') &&
-                reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'EntityType') &&
-                reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Generic') &&
-                reltype.toobjtypeRef !== filteredObjTypes?.find(ot => ot.name === 'Label')
-            );
-
-            const metatypesString = (curMetamodel) && `**${curMetamodel.name}**\n
-            ${filteredObjTypes?.map(objtype => `id: ${objtype.id}, name: ${objtype.name}, typeviewRef: ${objtype.typeviewRef}`).join('\n')}\n\n
-            ${filteredRelTypes?.map(reltype => `id: ${reltype.id},name: ${reltype.name}, from: ${reltype.fromobjtypeRef}, to: ${reltype.toobjtypeRef}`).join('\n')}\n\n
-            ${curMetamodel.objecttypeviews.map(objtypeview => `${objtypeview.id}, ${objtypeview.name}`).join('\n')}
-        `;
-
-            const contextmetatypesString = `## **Metamodel**\n\n ${metatypesString}`;
-
-            if (!debug) console.log('122 metatypesString:', curMetamodel);
-
-            const models = metis.models;
-            const irtvmod = models?.find(model => curMetamodel && (model.metamodelRef === curMetamodel.id));
-            if (irtvmod && (!curmod || curmod.id !== irtvmod.id)) {
-                setCurmod(irtvmod);
-                if (!data.phFocus?.focusModel || data.phFocus.focusModel.id !== irtvmod.id) {
-                    dispatch(setFocusModel({ id: irtvmod.id, name: irtvmod.name }));
-                }
-            }
-
-            // Initialize the prompts here
-            if (curMetamodel && irtvmod) {
-                // Set up existing info objects for context
-                const existingObjects = irtvmod.objects?.map((obj: any) => ({
-                    id: obj.id,
-                    name: obj.name,
-                    description: obj.description,
-                    typeName: obj.typeName
-                })) || [];
-
-                const existingRelships = irtvmod.relships?.map((rel: any) => ({
+        const existingRelationships =
+            Array.isArray(curmod.relships)
+                ? curmod.relships.map((rel: any) => ({
                     id: rel.id,
                     name: rel.name,
                     nameFrom: rel.nameFrom,
                     nameTo: rel.nameTo
-                })) || [];
+                }))
+                : [];
 
-                setExistingInfoObjects({ objects: existingObjects, relships: existingRelships });
+        // BUGFIX: use existingObjects (array), not existingInfoObjects (state object)
+        const newExistingInfoObjects = {
+            objects: existingObjects,
+            relships: existingRelationships
+        };
 
-                // Initialize prompt variables
-                setSystemPrompt(SystemPrompt || "You are an AI assistant that helps create domain models.");
-                setSystemBehaviorGuidelines(SystemBehaviorGuidelines || "Follow best practices for model creation.");
-                setUserPrompt(UserPrompt || "Create a comprehensive model for the given domain.");
-                setUserInput(UserInput || "Please analyze the current model and suggest improvements.");
-                setContextItems(ExistingContext || JSON.stringify({ objects: existingObjects, relships: existingRelships }, null, 2));
-                setContextOntology(ExistingOntology || "No ontology data available.");
-                setContextMetamodel(contextmetatypesString);
-            }
+        setExistingInfoObjects(newExistingInfoObjects.objects.length > 0 ? newExistingInfoObjects : { objects: [], relships: [] });
 
-            console.log('127 Curmod:', curmod, irtvmod, models);
+        // Guard against non-array
+        const existingNames = (newExistingInfoObjects.objects || []).map((o: any) => o.name);
 
-        } else {
-            console.error('Data does not contain data:', data);
+        let conceptString = `**Existing Context**
+
+**The following objects and relationships are already defined and only used for connecting new relationships.**
+- Before creating a new object, check if its name exists in existingObjectNames (case-insensitive).
+- existingObjectNames = ${existingNames.join(", ")}
+
+`;
+
+        if (newExistingInfoObjects.objects.length > 0) {
+            conceptString += `**Objects**\n\n${newExistingInfoObjects.objects
+                .map((o: any) => `- ${o.name} - ${o.description || ""}`)
+                .join("\n")}\n\n`;
         }
-    }, [data, curMetamodel, dispatch]);
+        if (newExistingInfoObjects.relships.length > 0) {
+            conceptString += `**Relationships**\n\n${newExistingInfoObjects.relships
+                .map(
+                    (r: any) =>
+                        `- ${r.name} - ${r.nameFrom || ""} -> ${r.nameTo || ""}`
+                )
+                .join("\n")}\n\n`;
+        }
 
-    useEffect(() => {
-        setPrintPromptsDiv(
-            <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                <DialogTitle>---- System Prompt</DialogTitle>
-                <ReactMarkdown>{systemPrompt}</ReactMarkdown>
-                <DialogTitle>---- System behaviour Guidelines Prompt</DialogTitle>
-                <ReactMarkdown>{systemBehaviorGuidelines}</ReactMarkdown>
-                <DialogTitle>---- Ontology Prompt</DialogTitle>
-                <ReactMarkdown>{contextOntology}</ReactMarkdown>
-                <DialogTitle>---- User Prompt</DialogTitle>
-                <ReactMarkdown>{userPrompt}</ReactMarkdown>
-                <DialogTitle>---- User Input</DialogTitle>
-                <ReactMarkdown>{userInput}</ReactMarkdown>
-                <DialogTitle>---- Context Prompt</DialogTitle>
-                <ReactMarkdown>{contextItems}</ReactMarkdown>
-                <DialogTitle>---- Metamodel Prompt</DialogTitle>
-                <ReactMarkdown>{contextMetamodel}</ReactMarkdown>
-            </div>
+        const ontology = data.phData.domain?.ontology;
+        const filteredConcepts = (ontology?.concepts || []).filter(
+            (c: any) => !existingNames.includes(c.name)
         );
-    }, [model, modelview, systemPrompt, systemBehaviorGuidelines, contextOntology, userPrompt, userInput, contextItems, contextMetamodel]);
+        const filteredRels = (ontology?.relationships || []).filter(
+            (r: any) =>
+                !newExistingInfoObjects.relships.some((ir: any) => ir.name === r.name)
+        );
 
-    const handleModelBuilder = async () => {
+        const newOntologyString =
+            filteredConcepts.length > 0
+                ? `#Ontology\n\n##Concepts\n\n${filteredConcepts
+                    .map((c: any) => `${c.name} - ${c.description || ""}`)
+                    .join("\n")}\n\n**Relationships**\n\n${filteredRels
+                        .map(
+                            (r: any) =>
+                                `${r.nameFrom || ""} - ${r.name} - ${r.nameTo || ""}`
+                        )
+                        .join("\n")}\n\n`
+                : "";
+
+        const ontologyString = `**Concepts**\n\n${ontology?.concepts
+            ?.map((c: any) => `- ${c.name} - ${c.description || ""}`)
+            .join("\n")}\n\n**Relationships**\n\n${ontology?.relationships
+                ?.map(
+                    (r: any) => `- ${r.name} - ${r.description || ""} - ${r.nameFrom} - ${r.nameTo}`
+                )
+                .join("\n")}\n\n`;
+
+        (newExistingInfoObjects.objects.length > 0) && setContextItems(`${conceptString}\n\n`);
+        setContextOntology(`${newOntologyString}`);
+    }, [curmod?.id, data?.phData?.domain?.ontology?.concepts]);
+
+    // ---------- 6. Temperature preference ----------
+    useEffect(() => {
+        const savedTemp = localStorage.getItem("aiDashboard_temperature");
+        if (savedTemp) setTemperature(parseFloat(savedTemp));
+    }, []);
+
+    // ---------- 7. Track modelContent changes (debug) ----------
+    useEffect(() => {
+        if (!modelContent) return;
+        if (!debug) return;
+        const contentString = String(modelContent);
+        console.log("488b[modelContent changed]", {
+            type: typeof modelContent,
+            length: contentString.length,
+            preview: contentString.slice(0, 120)
+        });
+    }, [modelContent, debug]);
+
+    // ---------- 8. Placeholder detection ----------
+    useEffect(() => {
+        if (!input) {
+            setTemplatePlaceholders([]);
+            return;
+        }
+        const placeholderRegex = /\[([^\[\]]+)\]/g;
+        const placeholders: { text: string; start: number; end: number }[] = [];
+        let match;
+        while ((match = placeholderRegex.exec(input)) !== null) {
+            placeholders.push({
+                text: match[1],
+                start: match.index,
+                end: match.index + match[0].length
+            });
+        }
+        setTemplatePlaceholders(placeholders);
+    }, [input]);
+
+    // ---------- Helpers ----------
+    const handleRetry = () => {
+        setStatusMsg("");
+        // could re-trigger last action
+    };
+
+    const handleSaveIRTV = () => {
+        if (!modelAnalysis) {
+            alert("No IRTV analysis to save");
+            return;
+        }
+        const updatedContent = modelContent
+            ? `${modelContent}\n\n---\n\n${modelAnalysis}`
+            : modelAnalysis;
+        setModelContent(updatedContent);
+        onAddContent(updatedContent);
+        setDispatchDone(true);
+    };
+
+    const handleCopyMessage = (content: string, index: number) => {
+        navigator.clipboard
+            .writeText(content)
+            .then(() => {
+                setCopiedIndex(index);
+                setTimeout(() => setCopiedIndex(null), 2000);
+            })
+            .catch((err) => console.error("Copy failed:", err));
+    };
+
+    const handleClearChat = useCallback(() => {
+        setMessages([]);                // clear local UI
+        dispatch(chatSetMessages([]));  // clear Redux slice (keeps global in sync)
+        setStatusMsg("");
+        setStreamedContent("");
+        setPreviewMessageIndex(null);
+    }, [dispatch]);
+
+    const formatJSONAsMarkdown = (data: any): string => {
+        let markdown = `# ${data.name || "Generated Model"}\n\n`;
+        if (data.description) {
+            markdown += `**Description:** ${data.description}\n\n`;
+        }
+        if (data.objects?.length) {
+            markdown += "## Objects\n\n";
+            data.objects.forEach((obj: any, i: number) => {
+                markdown += `### ${i + 1}. ${obj.name}\n\n`;
+                markdown += `- **ID:** ${obj.id}\n`;
+                markdown += `- **Description:** ${obj.description}\n`;
+                markdown += `- **Type Reference:** ${obj.typeRef}\n`;
+                markdown += `- **Type Name:** ${obj.typeName}\n`;
+                markdown += `- **Proposed Type:** ${obj.proposedType}\n\n`;
+            });
+        }
+        if (data.relships?.length) {
+            markdown += "## Relationships\n\n";
+            data.relships.forEach((rel: any, i: number) => {
+                markdown += `### ${i + 1}. ${rel.name}\n\n`;
+                markdown += `- **ID:** ${rel.id}\n`;
+                markdown += `- **Description:** ${rel.description || ""}\n`;
+                markdown += `- **From:** ${rel.from || rel.nameFrom || ""}\n`;
+                markdown += `- **To:** ${rel.to || rel.nameTo || ""}\n`;
+                markdown += `- **Type:** ${rel.type || rel.typeRef || ""}\n\n`;
+            });
+        }
+        return markdown;
+    };
+
+    // ---------- Build system behavior + context when curMetamodel changes ----------
+    useEffect(() => {
+        if (!curMetamodel || !data?.phData?.metis) return;
+
+        let metatypesString = "";
+        let exampleString = "";
+        if (curMetamodel.name === "IRTV_META") {
+            setSystemBehaviorGuidelines(DeveloperPrompt);
+
+            metatypesString = serializeTypes(curMetamodel);
+            metatypesString = metatypesString
+                .split("\n")
+                .filter(line => !line.includes("name: EntityType"))
+                .join("\n");
+        } else if (curMetamodel.name === "CORE_META") {
+            setSystemBehaviorGuidelines(`You are an expert in Type definition analysis. 
+Your task is to create a Type definition Model based on the provided CORE_META Metamodel. 
+One object of type "Metamodel"  with relationship "contains" to all EntityType objects.
+EntityType objects representing domain concepts may have properties.
+Ensure logical consistency and relationship principles.`
+            );
+            metatypesString = serializeTypes(curMetamodel);
+            // console.log('316 metatypesString', metatypesString);
+            exampleString += `
+{
+    "models: [
+        {
+            id: "UUID",
+            "name": "FoodProduction",
+            "description": "A model representing food production processes and products.",
+            "metamodelRef": "POPS_META uuid",
+            "modelviews": [
+                {
+                    "name": "Main",
+                    "description": "The main view of the model",
+                    "objects": [
+                        {
+                            "id": "UUID",
+                            "name": "Bike",
+                            "description": "A two-wheeled vehicle that is powered by pedaling.",
+                            "typeRef": "Process uuid",
+                            "typeName": "Process"
+                        }
+                    ],
+                    "relationships": [
+                        {
+                            "id": "UUID",
+                            "name": "approves",
+                            "typeRef": "Relationship Type uuid",
+                            "fromobjectRef": "Process uuid",
+                            "toobjectRef": "Property uuid",
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}
+        `;
+        } else if (curMetamodel.name === "POPS_META") {
+            setSystemBehaviorGuidelines(
+                `You are an expert in creating POPS models. Create a POPS model based on the provided ontology concept types and relationships. Ensure consistency with Active Knowledge Modeling principles.`
+            );
+            metatypesString = serializeTypes(curMetamodel);
+            metatypesString = metatypesString
+                .split("\n")
+                .filter(line => !line.includes("name: EntityType"))
+                .filter(line => !line.includes("name: Geobody"))
+                .filter(line => !line.includes("name: Material"))
+                .filter(line => !line.includes("name: DistributionNetwork"))
+                .filter(line => !line.includes("name: Device"))
+                .join("\n");
+
+            exampleString += `
+{ 
+    "models: [
+        { 
+            id: "UUID",
+            "name": "FoodProduction",
+            "description": "A model representing food production processes and products.",
+            "metamodelRef": "POPS_META uuid",
+            "objects": [
+                {
+                    "id": "UUID",
+                    "name": "Produce",
+                    "description": "A two-wheeled vehicle that is powered by pedaling.",
+                    "typeRef": "Process uuid",
+                    "typeName": "Process"
+                },
+            ],
+            "relationships": [
+                {
+                    "id": "UUID",
+                    "name": "hasOutcome",
+                    "typeRef": "Relationship Type uuid",
+                    "fromobjectRef": "Process uuid",
+                    "nameFrom": "Process",
+                    "toobjectRef": "Product uuid",
+                    "nameTo": "Product"
+                }
+            ]
+        }
+    ]
+}
+`;
+        } else if (curMetamodel.name === "BPMN_META") {
+            setSystemBehaviorGuidelines(
+                `You are an expert in creating BPMN models. Use BPMN notation, pools, lanes, and ensure logical consistency with Active Knowledge Modeling principles.`
+            );
+            metatypesString = serializeTypes(curMetamodel);
+            exampleString += `
+    {
+    "objects": [
+        {
+            "id": "UUID",
+            "name": "Write code",
+            "description": "A two-wheeled vehicle that is powered by pedaling.",
+            "typeRef": "Task uuid",
+            "typeName": "Task"
+            },
+        }
+    ],
+    "relationships": [
+        {
+            "id": "UUID",
+            "name": "approves",
+            "typeRef": "Relationship Type uuid",
+            "fromobjectRef": "Role uuid",
+            "nameFrom": "Role",
+            "toobjectRef": "Task uuid",
+            "nameTo": "Task"
+        }
+    ]
+    }
+        `;
+        }
+
+        const contextmetatypesString = `## Metamodel \n\n ${metatypesString} 
+
+- When creating objects, always assign a valid typeRef and typeName from the Metamodel.
+- When creating relationships, ensure from/to object types align with Metamodel definitions.    
+`;
+        // ## Example 
+        //     ${exampleString}  
+
+
+
+        // Set base system prompt (from local prompts.ts)
+        setSystemPrompt(SystemPrompt);
+        setContextMetamodel(contextmetatypesString);
+        setUserPrompt(""); // reset user prompt if it matched default before
+
+        // Keep focus model synced
+        const mod = data.phData.metis.models?.find(
+            (m: any) => m.metamodelRef === curMetamodel.id
+        );
+        if (mod && (!curmod || curmod.id !== mod.id)) {
+            setCurmod(mod);
+            dispatch(setFocusModel({ id: mod.id, name: mod.name }));
+            if (focusModelview === '') {
+                dispatch(setFocusModelview({ id: mod.modelviews?.[0]?.id, name: mod.modelviews?.[0]?.name }));
+            }
+        }
+    }, [curMetamodel, data?.phData?.metis, dispatch, curmod]);
+
+    function serializeTypes(mm: any) {
+        const objectTypes = Array.isArray(mm.objecttypes) ? mm.objecttypes : [];
+        const relshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
+
+        // Build a non-mutating copy where we ensure nameFrom/nameTo are resolved
+        const relshipTypesWithNames = relshipTypes.map((reltype: any) => {
+            const resolvedFrom = objectTypes.find((obj: any) => obj.id === reltype.fromobjtypeRef);
+            const resolvedTo = objectTypes.find((obj: any) => obj.id === reltype.toobjtypeRef);
+
+            return {
+                // shallow copy to avoid mutating original reltype
+                ...reltype,
+                // prefer existing nameFrom/nameTo if present, otherwise resolved names, otherwise empty string
+                nameFrom: reltype?.nameFrom || (resolvedFrom ? resolvedFrom.name : "") || "",
+                nameTo: reltype?.nameTo || (resolvedTo ? resolvedTo.name : "") || ""
+            };
+        });
+
+        const filteredObjectTypes = objectTypes;
+
+        const filteredRelTypes = relshipTypesWithNames.filter((r: any) =>
+            r && typeof r.name === 'string' && r.name !== "Is"
+        );
+
+        // Debug output kept as before
+        console.log('serializeTypes', { objectTypes, filteredObjectTypes, relshipTypes, filteredRelTypes });
+        console.log('serializeTypes', { data });
+
+        return `**${mm.name}**
+### Object Types
+${filteredObjectTypes
+                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typeName: ${o.typeName}, typeRef: ${o.typeRef}`)
+                .join("\n")}
+
+### Relationship Types
+${filteredRelTypes
+                .map((r: any) => `id: ${r.id}, name: ${r.name},  fromobjectRef: ${r.fromobjtypeRef}, nameFrom: ${r.nameFrom}, toobjectRef: ${r.toobjtypeRef}, nameTo: ${r.nameTo}, typeRef: ${r.typeRef}, relshipkind: ${r.relshipkind}`)
+                .join("\n")}
+`;
+    }
+    // ----------  Prompts ----------
+    const finalSystemPrompt = `
+You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling.
+Your task is to build a model from the provided 'Existing Context', conforming to the provided Metamodel.
+`;
+
+    let finalDeveloperPrompt = ''
+
+    finalDeveloperPrompt =
+`### Developer Instructions
+Model:
+- Required: id, name, description, objects[], relships[].
+- Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
+- Description should be a brief summary of the model's purpose.
+- All ids should be unique UUID strings.
+
+Objects:
+- Required: id, name, description, typeRef, typeName, typeviewRef.
+- All ids should be unique UUID strings.
+- TypeName and typeRef must match a valid object type from the Metamodel.
+- Use the ontology Concept names to name objects, but use the metamodel typeRef for typeRef.
+
+Relships:
+- Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
+- Relationship name should not include from/to object name.
+- Relationship name should not have suffix "Rel".
+- Use the metamodel relshiptypeRef for typeRef.
+- All ids should be unique UUID strings.
+- Ensure fromobjectRef and toobjectRef reference valid object ids defined in the objects[] array.
+- Ensure typeRef aligns with the Metamodel relshiptype.
+- Dont repeat the fromName and toName in the relationship name.
+`;
+
+    if (curMetamodel?.name === "CORE_META") (
+        finalDeveloperPrompt +=
+`
+# Evaluate the domain then build a TYPE definition model.
+## When building the model, follow these principles:
+- Make one Metamodel object representing the Domain. The name should reflect the domain (e.g., "HealthcareMetamodel", "FinanceMetamodel").
+- From Metamodel object to EntityType objects use the "contains" relationship.
+- Make key Concepts and Terminologies into EntityType objects. Skip Tools, Software, Systems, Locations, Diagram and non-conceptual items.
+- From EntityType objects to other EntityType objects create name from the domain using the relationship type "relationshipType".
+- From EntityType objects to parent EntityTypes objects use the "Is" for inheritance.
+- From EntityType objects to Properties use the "has" relationship.
+- Use Properties to represent attributes of EntityType objects.
+- Use Details to capture additional information about EntityType objects.
+- Use Methods to represent actions or functions related to EntityType objects.
+- Use MethodTypes to categorize Methods.
+- Use ViewFormats to define how information is presented.
+- Use Fieldtypes to specify data types for Properties.
+`)
+    if (curMetamodel?.name === "IRTV_META") (
+        finalDeveloperPrompt +=
+`
+# Evaluate the domain then build a IRTV Workplace model.
+## When building the model, follow these principles:
+- Make key Actors and Roles into Role objects.
+- Make Activities and Processes into Tasks.
+- Make Views to represent the information needs for the tasks.
+- 
+`)
+    if (curMetamodel?.name === "POPS_META") (
+        finalDeveloperPrompt +=
+        `
+# Evaluate the domain then build a POPS model.
+## When building the model, follow these principles:
+- Make key Activities and Processes into Process objects.
+- Make key Products into Product objects.
+- Make key Services into Service objects.
+- Use Geobodies to represent physical locations or structures.
+- Use Devices to represent tools or equipment used in processes.
+- Use DistributionNetworks to represent channels through which products/services are delivered.
+- Process triggers Process with "triggers" relationship.
+- Process hasOutcome Product with "hasOutcome" relationship.
+- Process uses Services and Systems.
+- Process input and output to Data.
+- Organizations owns Processes and Products with "owns" relationship.
+`)
+    finalDeveloperPrompt += `${contextMetamodel} \n`
+
+
+
+    // const finalUserPrompt = `${contextMetamodel} \n ${contextItems} \n ${contextOntology}`;
+    // const finalUserPrompt = `${userPrompt}  \n ${contextMetamodel} \n ${contextItems} \n ${contextOntology} \n ${contextMetamodel}`;
+
+    const handleModelBuilder = async (userText?: string) => {
         setIsLoading(true);
         setStep(1);
-        setActiveTab('model');
+        setActiveTab("model");
+
+        // Use the provided userText if available; otherwise fall back to inputMessage
+        const finalUserPrompt = `${userText} \n ${context.presentation}`;
+
+        if (!debug) console.log('724 Prompts: ', selectedModel, '\n\n',
+            'finalSystemPrompt:', finalSystemPrompt, '\n\n',
+            'finalDeveloperPrompt:', finalDeveloperPrompt, '\n\n',
+            'finalUserPrompt:', finalUserPrompt);
 
         try {
             const payload = {
-                aiModelName: mapModelId('gpt-4o'),
-                schemaName: 'ObjectSchema',
-                systemPrompt: systemPrompt || "",
-                developerPrompt: systemBehaviorGuidelines || "",
-                userPrompt: [userPrompt, userInput, contextItems, contextOntology, contextMetamodel].filter(Boolean).join("\n\n") || "",
+                aiModelName: mapModelId(selectedModel || "gpt-5-mini"),
+                schemaName: "ObjectSchema",
+                systemPrompt: finalSystemPrompt || "",
+                developerPrompt: finalDeveloperPrompt || "",
+                userPrompt: finalUserPrompt || ""
             } as const;
 
-            let data = '';
-            const finalText = await streamGenmodel(payload, (chunk) => { data += chunk; });
-            if (finalText && finalText.length > data.length) data = finalText;
-            console.log('205 Data:', data, curmod);
-            const parsed = JSON.parse(data);
-            console.log('206 Parsed:', parsed);
-            const validatedData = ObjectSchema.parse(parsed);
-            console.log('209 Validated data:', validatedData, curmod);
+            let raw = "";
+            const finalText = await streamGenmodel(payload, (chunk) => {
+                raw += chunk;
+            });
+            if (finalText && finalText.length > raw.length) raw = finalText;
 
-            setModel({ ...validatedData, id: curmod?.id });
-            console.log('212 Model set:', validatedData, model);
+            if (!raw.trim()) throw new Error("Empty response from API");
 
-            setStep(3);
-        } catch (e) {
-            console.error("Validation failed:", e instanceof Error ? e.message : e);
-            setStep(0); // Reset step on error
-            alert(`Error: ${e instanceof Error ? e.message : 'Unknown error occurred'}`);
+            let parsed: any;
+            try {
+                parsed = JSON.parse(raw);
+            } catch {
+                parsed = {
+                    name: "Text Response Model",
+                    description: `Raw response (truncated): ${raw.slice(0, 400)}`,
+                    objects: [],
+                    relships: []
+                };
+            }
+
+            let validatedData: any;
+            try {
+                const sanitized = {
+                    name: parsed.name || "Generated Model",
+                    description: parsed.description || "AI-generated model",
+                    objects: (parsed.objects || []).map((o: any, i: number) => ({
+                        id: o.id || `obj-${Date.now()}-${i}`,
+                        name: o.name || `Object ${i + 1}`,
+                        description: o.description || `Generated object ${i + 1}`,
+                        typeRef: o.typeRef || `type-${Date.now()}-${i}`,
+                        typeName: o.typeName || "GeneratedType",
+                        proposedType: o.proposedType || "Information"
+                    })),
+                    relships: (parsed.relships || []).map((r: any, i: number) => ({
+                        id: r.id || `rel-${Date.now()}-${i}`,
+                        name: r.name || `Relationship ${i + 1}`,
+                        typeRef: r.typeRef || `reltype-${Date.now()}-${i}`,
+                        fromobjectRef: r.fromobjectRef || "",
+                        nameFrom: r.nameFrom || "",
+                        toobjectRef: r.toobjectRef || "",
+                        nameTo: r.nameTo || ""
+                    }))
+                };
+                validatedData = ObjectSchema.parse(sanitized);
+            } catch {
+                validatedData = {
+                    name: parsed.name || "Generated Model",
+                    description: parsed.description || "AI-generated model",
+                    objects: [],
+                    relships: []
+                };
+            }
+            console.log("680 [ModelBuilder] validatedData: ", validatedData, "parsed :", parsed);
+            setModelContent(parsed);
+            const markdownResponse = formatJSONAsMarkdown(validatedData);
+
+            const assistantMessage: Message = {
+                role: "assistant",
+                content: markdownResponse
+            };
+            setMessages((prev) => [...prev, assistantMessage]);
+            setModel({ ...parsed, id: curmod?.id });
+            setModelPreview(markdownResponse);
+
+        } catch (e: any) {
+            const msg = e?.message || "Unknown error";
+            setStatusMsg(`Model building failed: ${msg}`);
+            setMessages((prev) => [
+                ...prev,
+                {
+                    role: "assistant",
+                    content: `I encountered an error:\n\n**Error:** ${msg}\n\nSuggestions:\n- Try a different model\n- Simplify your request\n- Check connectivity\n- Retry later`
+                }
+            ]);
         } finally {
             setIsLoading(false);
         }
     };
 
+    // Update handleSubmit to pass `input` into handleModelBuilder
+    const handleSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        console.log('895 Model handleSubmit called!', { input, docRefine }); // Add this first
+        if (!input?.trim()) return;
+        const content = docRefine ? `${input} #Content:\n ${modelContent}` : input;
+        setMessages((prev) => [...prev, { role: "user", content }]);
+
+        // pass `input` directly so handleModelBuilder doesn't rely on a pending state update
+        await handleModelBuilder(input);
+
+        // preserve the rest of your state updates
+        setInput("");
+        setInputMessage(""); // optional: you can remove inputMessage state entirely if unused elsewhere
+        onResponseChange("");
+        setShowDigitalRain(false);
+    };
+
+    // Minimal modal component
+    const Modal = ({
+        isOpen,
+        onClose,
+        children
+    }: {
+        isOpen: boolean;
+        onClose: () => void;
+        children: React.ReactNode;
+    }) => {
+        if (!isOpen) return null;
+        return (
+            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+                <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
+                    <button
+                        onClick={onClose}
+                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
+                    >
+                        <X className="h-6 w-6" />
+                    </button>
+                    <div className="p-6">{children}</div>
+                </div>
+            </div>
+        );
+    };
+
+    // use shared TemperatureSelector component
+
+    const printPromptsDiv = useMemo(
+        () => (
+            <div className="flex flex-col max-h-[calc(100vh-30rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                <div className="mb-4">
+                    <h3 className="text-lg font-bold text-blue-400 mb-2">System Prompt</h3>
+                    <div className="bg-gray-800 p-3 rounded">
+                        <ReactMarkdown className="prose prose-invert max-w-none text-sm">
+                            {systemPrompt}
+                        </ReactMarkdown>
+                    </div>
+                </div>
+                <div className="mb-4">
+                    <h3 className="text-lg font-bold text-blue-400 mb-2">User Prompt</h3>
+                    <div className="bg-gray-800 p-3 rounded">
+                        <ReactMarkdown className="prose prose-invert max-w-none text-sm">
+                            {userPrompt}
+                        </ReactMarkdown>
+                    </div>
+                </div>
+                <div className="mb-4">
+                    <h3 className="text-lg font-bold text-blue-400 mb-2">
+                        Document Content (Primary Input)
+                    </h3>
+                    <div className="bg-gray-800 p-3 rounded">
+                        <ReactMarkdown className="prose prose-invert max-w-none text-sm">
+                            {mdPreview || "No document content available"}
+                        </ReactMarkdown>
+                    </div>
+                </div>
+            </div>
+        ),
+        [systemPrompt, userPrompt, mdPreview]
+    );
+
+    if (debug) {
+        console.log("[dbg textarea binding]", { input, curMetamodel });
+    }
+
     return (
-        <div className="flex flex-col h-[calc(100vh-9rem)] border-solid rounded border-4 border-green-700 w-full bg-transparent">
-            <CardTitle className="flex justify-start text-gray-400 text-xl">
-                <span className="text-active-item me-auto px-2">Model Builder (IRTV)</span>
-                <span className="mx-auto text-center">AI Powered Active Knowledge Modelling Canvas</span>
-            </CardTitle>
-            <div className="flex  h-[calc(100vh-5rem)] w-full">
-                <div className="border-solid rounded border-4 border-green-700 w-1/4">
-                    <div className="m-1 mb-5">
-                        <details>
-                            <summary>
-                                <FontAwesomeIcon icon={faQuestionCircle} width="16" height="16" />Generate IRTV Model
-                            </summary>
-                            <div className="bg-gray-600 p-2">
-                                <p>Build a Concept Model assisted by AI</p>
-                                <p>This process involves several key steps, each contributing to the development of a structured and comprehensive model for a given domain.
-                                    The goal is to build a  Model that leverages AI to facilitate the creation and integration of concepts within the domain.
-                                </p>
-                                <p><strong>Establish the Concept Ontology (Conceptual Framework) for the Domain:</strong></p>
-                                <p style={{ marginLeft: '20px' }}>The Concept Ontology refers to the foundational structure that defines the essential concepts, theories, models, and frameworks within a specific domain or field. It serves as a shared vocabulary that enables clear communication and collaboration among practitioners. This ontology includes:
-                                    It encompasses the concepts, principles, and relationships that are essential for practitioners within the field to communicate effectively and advance knowledge.</p>
-                                <ul>
-                                    <li><strong>• Core Concepts: </strong>Fundamental ideas and categories that are central to the domain.</li>
-                                    <li><strong>• Principles and Theories: </strong>The underlying rules and logical structures that guide the domain’s knowledge and practices.</li>
-                                    <li><strong>• Relationships: </strong>The connections and interactions between concepts that help explain how they relate to one another.</li>
-                                </ul>
-                                <p style={{ marginLeft: '20px' }}>By establishing this ontology, you create a well-organized framework that supports knowledge sharing, problem-solving, and further advancement within the field.</p>
+        <div className="flex flex-col min-h-0 h-screen rounded-lg sm:h-[99%] sm:min-w-[460px] overflow-hidden relative">
+            <div className="flex-1 flex flex-col h-0 bg-secondary/40 overflow-hidden relative">
+                {showGuide && (
+                    <div className="flex flex-col items-center mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
+                        <div className="flex items-center justify-between w-full px-1">
+                            <div className="text-lg font-semibold text-orange-500/60">
+                                Guide
                             </div>
-                        </details>
-                    </div>
-                    <CardTitle className="flex justify-between items-center flex-grow ps-1">
-                        Generate IRTV from Ontology:
-                    </CardTitle>
-                    <div className="flex flex-wrap items-start m-1">
-                        <CardTitle
-                            className={`flex justify-between items-center flex-grow ps-1 ${(model?.objects && model.objects.length > 0) ? 'text-green-600' : 'text-green-200'}`}
-                        >
-                            Generate IRTV Obj.Rels:
-                            <div className="flex items-center ml-auto">
-                                {(isLoading && step === 2) ? (
-                                    <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                        <LoadingCircularProgress />
-                                    </div>
-                                ) : (
-                                    <div style={{ marginLeft: 8, marginRight: 8, color: model?.objects && model.objects.length > 0 ? 'green' : 'gray' }}>
-                                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                                    </div>
-                                )}
-                                <Button onClick={async () => {
-                                    await handleModelBuilder();
-                                    setActiveTab('model');
-                                }}
-                                    className={`rounded text-xl p-4 ${((model?.objects?.length ?? 0) > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
-                                >
-                                    <FontAwesomeIcon icon={faRobot} size="1x" />
-                                </Button>
-                            </div>
-                        </CardTitle>
-
-                        {/* <CardTitle
-                            className={`flex justify-between items-center flex-grow ps-1 ${(modelview?.objectviews.length > 0) ? 'text-green-600' : 'text-green-200'}`}
-                        >
-                            Workspace Builder (Create IRTV-Modelview):
-                            <div className="flex items-center ml-auto">
-                                {(isLoading && step === 2) ? (
-                                    <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                        <LoadingCircularProgress />
-                                    </div>
-                                ) : (
-                                    <div style={{ marginLeft: 8, marginRight: 8, color: modelview?.objectviews.length > 0 ? 'green' : 'gray' }}>
-                                        <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                                    </div>
-                                )}
-                                <Button onClick={async () => {
-                                    await handleModelviewBuilder();
-                                    setActiveTab('modelview');
-                                }}
-                                    className={`rounded text-xl p-4 ${(modelview?.objectviews.length > 0) ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}
-                                >
-                                    <FontAwesomeIcon icon={faRobot} size="1x" />
-                                </Button>
-                            </div>
-                        </CardTitle> */}
-                    </div>
-                    <div className="m-1 mt-auto">
-                        <CardTitle
-                            className={`flex justify-between items-center flex-grow ps-1 bg-gray-600 border border-gray-700 ${(dispatchDone) ? 'text-green-600' : 'text-green-200'}`}
-                        >
-                            <div
-                                className={`flex justify-between items-center flex-grow ${dispatchDone ? 'text-green-600' : 'text-green-200'}`}
+                            <button
+                                onClick={() => setShowGuide(false)}
+                                className="text-gray-400 hover:text-white"
+                                title="Close Guide"
                             >
-                                Save to current Model Store
-                                <div className="flex items-center ml-auto">
-                                    {!dispatchDone && step === 3 ? (
-                                        <div style={{ marginLeft: 8, marginRight: 8 }}>
-                                            <LoadingCircularProgress />
-                                        </div>
-                                    ) : (
-                                        <div style={{ marginLeft: 8, marginRight: 8, color: dispatchDone ? 'green' : 'gray' }}>
-                                            <FontAwesomeIcon icon={faCheckCircle} size="2x" />
-                                        </div>
-                                    )}
-                                    <Button
-                                        onClick={() => {
-                                            handleDispatchIrtvData();
-                                        }}
-                                        className={`rounded text-xl ${dispatchDone ? 'bg-green-900 text-white' : 'bg-green-700 text-white'}`}>
-                                        <FontAwesomeIcon icon={faPaperPlane} width="26px" size="1x" />
-                                    </Button>
-                                </div>
-                            </div>
-                        </CardTitle>
-                    </div>
-                </div>
-                <div className="border-solid rounded border-4 border-blue-800 h-full w-full">
-                    {data
-                        ? <Card className="p-1">
-                            <Tabs value={activeTab} onValueChange={setActiveTab}>
-                                <TabsList className="m-1 mb-0 bg-transparent">
-                                    <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Current Knowledge</TabsTrigger>
-                                    <TabsTrigger value="model" className='pb-2 mt-3'>GPT Suggested Model</TabsTrigger>
-                                    <TabsTrigger value="modelview" className='pb-2 mt-3'>GPT Suggested Modelview</TabsTrigger>
-                                </TabsList>
-
-                                <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background">
-                                    <Tabs value={activeSubTab} onValueChange={setActiveSubTab} className="bg-gray-700 mx-1 px-1 mt-0">
-                                        <TabsList className=" mb-0 bg-gray-700 mt-0">
-                                            <TabsTrigger value="model-summary" className='pb-2 mt-3'>Current Model Summary</TabsTrigger>
-                                            <TabsTrigger value="model-objects" className='pb-2 mt-3'>Current Model</TabsTrigger>
-                                            <TabsTrigger value="model-modelviews" className='pb-2 mt-3'>Current Modelview</TabsTrigger>
-                                        </TabsList>
-                                        <TabsContent value="model-summary" className="m-0 px-1 py-2 rounded bg-background text-gray-200">
-                                            <div className="m-1 py-1 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                <div className="">
-                                                    {data && data.phData && data.phData.metis && data.phData.metis.models && (
-                                                        <>
-                                                            <div className="flex justify-left items-center py-2 text-left">
-                                                                <h4 className="px-2 text-gray-400 font-bold">AKM File</h4>
-                                                                <h4 className="px-2 mb-1 font-bold whitespace-nowrap bg-gray-700">
-                                                                    {isClient && data?.phSource
-                                                                        ? `${data.phSource}.json`
-                                                                        : 'unknown.json'
-                                                                    }
-                                                                </h4>
-                                                            </div>
-                                                            <div className="flex flex-wrap">
-                                                                <div className="px-2 col text-left mb-4 w-1/3">
-                                                                    <h4 className="text-gray-400 font-bold">Model Suite:</h4>
-                                                                    <div className="border border-gray-600 p-2">
-                                                                        <h5 className="text-gray-400 font-bold">Name</h5>
-                                                                        <h4 className="font-bold whitespace-nowrap bg-background p-1">
-                                                                            {isClient && data?.phData?.metis?.name
-                                                                                ? data.phData.metis.name
-                                                                                : ''
-                                                                            }
-                                                                        </h4>
-                                                                        <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                                                        <h4 className=" bg-background p-1">
-                                                                            {isClient && data?.phData?.metis?.description
-                                                                                ? data.phData.metis.description
-                                                                                : ''
-                                                                            }
-                                                                        </h4>
-                                                                    </div>
-                                                                    <div className="col text-left">
-                                                                        <h4 className="text-gray-400 font-bold">Project:</h4>
-                                                                        <div className="border border-gray-600 p-2">
-                                                                            {data.phFocus && 'focusProj' in data.phFocus ? (
-                                                                                <>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">id</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.id}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">proj.no.</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.projectNumber}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">name</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.name}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.org}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">repo</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.repo}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">path</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.path}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">file</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.file}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">branch</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.branch}</h5>
-                                                                                    <h5 className="text-gray-400 font-bold px-1">username</h5>
-                                                                                    <h5 className="font-bold whitespace-nowrap bg-background p-1">{(data.phFocus as any).focusProj?.username}</h5>
-                                                                                </>
-                                                                            ) : (
-                                                                                <p className="text-gray-400">No project information available</p>
-                                                                            )}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                                <div className="px-4 col text-left w-2/3">
-                                                                    <h4 className="px-1 text-gray-400 font-bold">Models:</h4>
-                                                                    <div className="border border-gray-600 p-2">
-                                                                        {data.phData.metis.models.map((model: any, index) => (
-                                                                            <div key={model.id} className="flex flex-col">
-                                                                                <h5 className="text-gray-400 font-bold">Name</h5>
-                                                                                <h4 className="bg-background p-2"> <span className="text-gray-400">{index}: </span>{model.name}</h4>
-                                                                                <h5 className="text-gray-400 p-1 font-bold">Description</h5>
-                                                                                <h4 className="bg-background p-2">{model.description}</h4>
-                                                                                <hr className="my-1" />
-                                                                            </div>
-                                                                        ))}
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </>
-                                                    )}
-                                                </div>
-                                            </div>
-                                        </TabsContent>
-                                        <TabsContent value="model-objects" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                            <div className="mx-1 bg-gray-700 rounded overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                            </div>
-                                            {curmod && (
-                                                <ObjectCard model={{
-                                                    id: curmod.id,
-                                                    name: curmod.name,
-                                                    description: curmod.description,
-                                                    objects: curmod.objects?.map(obj => ({
-                                                        id: obj.id || '',
-                                                        name: obj.name || '',
-                                                        description: obj.description || '',
-                                                        proposedType: obj.proposedType || '',
-                                                        typeRef: obj.typeRef || '',
-                                                        typeName: obj.typeName || '',
-                                                        category: obj.category || ''
-                                                    })) || [],
-                                                    relships: curmod.relships || [],
-                                                    metamodelRef: curmod.metamodelRef,
-                                                    modelviews: curmod.modelviews
-                                                }} />
-                                            )}
-                                        </TabsContent>
-                                        {/* <TabsContent value="model-modelviews" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                            <div className="mx-1 bg-gray-700 rounded overflow-y-auto h-full scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                                                <ModelviewCard modelviews={data?.phData?.metis?.models[0].modelviews.map((modelview: any) => ({
-                                                    ...modelview,
-                                                    objectviews: Array.isArray(modelview.objectviews) ? modelview.objectviews : [modelview.objectviews]
-                                                }))} />
-                                            </div>
-                                        </TabsContent> */}
-                                    </Tabs>
-                                </TabsContent>
-
-                                <TabsContent value="model" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                    {showModel && model && (
-                                        <>
-                                            <div className="flex justify-end pb-1 pt-0 mx-2">
-                                                <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                                                    Show Prompt
-                                                </button>
-                                            </div>
-                                            <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                                <DialogContent className="max-w-5xl">
-                                                    <DialogHeader>
-                                                        <DialogDescription>
-                                                            {printPromptsDiv}
-                                                        </DialogDescription>
-                                                    </DialogHeader>
-                                                    <ObjectCard model={{
-                                                        id: model.id || crypto.randomUUID(),
-                                                        name: model.name || 'Generated Model',
-                                                        description: model.description || '',
-                                                        objects: model.objects?.map(obj => ({
-                                                            id: obj.id || crypto.randomUUID(),
-                                                            name: obj.name || '',
-                                                            description: obj.description || '',
-                                                            proposedType: obj.proposedType || '',
-                                                            typeRef: obj.typeRef || '',
-                                                            typeName: obj.typeName || '',
-                                                            category: obj.category || ''
-                                                        })) || [],
-                                                        relships: model.relships || [],
-                                                        metamodelRef: curmod?.metamodelRef || '',
-                                                        modelviews: curmod?.modelviews || []
-                                                    }} />
-                                                </DialogContent>
-                                                <DialogFooter>
-                                                    <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                        Close
-                                                    </Button>
-                                                </DialogFooter>
-                                            </Dialog>
-                                        </>
-                                    )}
-                                </TabsContent>
-                                <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
-                                    <>
-                                        <div className="flex justify-end pb-1 pt-0 mx-2">
-                                            <button onClick={handleOpenModal} className="bg-blue-500 text-white rounded px-1 text-xs  hover:bg-blue-700">
-                                                Show Prompt
-                                            </button>
-                                        </div>
-                                        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-                                            <DialogContent className="max-w-5xl">
-                                                <DialogHeader>
-                                                    <DialogDescription>
-                                                        {printPromptsDiv}
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                <DialogFooter>
-                                                    <Button onClick={handleCloseModal} className="bg-red-500 text-white rounded m-1 p-1 text-sm">
-                                                        Close
-                                                    </Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                        <div className="mx-1 ">
-                                            {modelview && <ModelviewCard modelviews={[{
-                                                // Use type assertion to match what ModelviewCard expects
-                                                name: modelview.name || 'Default View',
-                                                description: modelview.description || '',
-                                                objectviews: modelview.objectviews || [],
-                                                relshipviews: modelview.relshipviews || []
-                                            } as any]} />}
-                                        </div>
-                                    </>
-                                </TabsContent>
-                            </Tabs>
-                        </Card>
-                        : <div className="flex justify-center items-center h-screen">
-                            <LoadingCircularProgress />
+                                <X className="h-4 w-4" />
+                            </button>
                         </div>
-                    }
-                </div>
+                        <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60">
+                            {guide}
+                        </div>
+                    </div>
+                )}
 
+                <div className="flex flex-col h-full bg-secondary/40 overflow-hidden relative">
+                    <div className="flex items-center gap-2">
+                        {!showGuide && (
+                            <button
+                                onClick={() => setShowGuide(true)}
+                                className="text-gray-400 hover:text-blue-400 hover:bg-gray-800 pt-1 rounded-md"
+                                title="Show Guide"
+                            >
+                                <HelpCircle className="bg-yellow-700 text-white rounded h-4 w-4" />
+                            </button>
+                        )}
+                    </div>
+                    <div
+                        className="flex-1 min-h-0 max-h-[calc(100vh-17rem)] overflow-y-auto pb-[150px]"
+                        id="message-container"
+                    >
+                        {messages.length < 1 && (
+                            <div className="flex flex-col items-center justify-start w-full overflow-auto">
+                                {showDigitalRain ? (
+                                    <DigitalRainIntro
+                                        onInteraction={() => setShowDigitalRain(false)}
+                                        speed={4}
+                                        backgroundColor="rgba(10, 20, 10, 0.03)"
+                                    />
+                                ) : (
+                                    <GettingStartedGuide />
+                                )}
+                            </div>
+                        )}
+                        {/* Render messages */}
+                        <div className="flex flex-col p-4 rounded-lg w-full bg-transparent overflow-auto">
+                            {messages.map((message, index) => {
+                                const isUser = message.role === "user";
+                                return (
+                                    <div
+                                        key={index}
+                                        className={`mb-4 p-3 rounded-lg flex flex-col gap-2 ${isUser
+                                            ? "bg-card ml-auto max-w-[80%] border border-blue-900"
+                                            : "bg-secondary mr-auto w-full border-4 border-secondary"
+                                            }`}
+                                    >
+                                        <div className="text-xs opacity-60">
+                                            {message.role.toUpperCase()}
+                                        </div>
+                                        <div className="prose prose-invert max-w-none text-sm whitespace-pre-wrap">
+                                            <ReactMarkdown>{message.content}</ReactMarkdown>
+                                        </div>
+                                        <div className="flex gap-2">
+                                            <button
+                                                className="px-2 py-1 rounded bg-gray-700 hover:bg-gray-600 text-xs"
+                                                onClick={() => handleCopyMessage(message.content, index)}
+                                            >
+                                                {copiedIndex === index ? "Copied" : "Copy"}
+                                            </button>
+                                            {!isUser && (
+                                                <button
+                                                    className="px-2 py-1 rounded bg-blue-900/50 hover:bg-blue-800 text-xs text-blue-300"
+                                                    onClick={() => handleViewInMarkdown(message.content)}
+                                                >
+                                                    Preview
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+
+                            {isStreaming && modelAnalysis && (
+                                <div className="mb-4 p-3 rounded-lg flex flex-col gap-2 bg-secondary mr-auto w-full border-4 border-secondary">
+                                    <ThinkingAnimation />
+                                    <div className="text-sm whitespace-pre-wrap">{streamedContent}</div>
+                                </div>
+                            )}
+
+                            {isLoading && (
+                                <div className="flex justify-start my-4">
+                                    <ThinkingAnimation />
+                                </div>
+                            )}
+
+                            <div ref={messagesEndRef} />
+                        </div>
+                    </div>
+                    {messages.length > 0 && (
+                        <div className="flex justify-end w-full">
+                            <button
+                                onClick={handleClearChat} // <-- use the new handler
+                                title="Clear chat history"
+                                className="py-1 text-xs text-red-500 hover:text-red-700"
+                            >
+                                <X className="w-4 h-4" />
+                            </button>
+                        </div>
+                    )}
+                    {/* 
+                    {statusMsg && (
+                        <div className="flex items-center bg-blue-400/20 border-blue-700 text-blue-500 px-4 py-2 mb-2 rounded-md text-sm">
+                            <Info className="w-4 h-4 mr-2" />
+                            <span>{statusMsg}</span>
+                            {(statusMsg.includes("timed out") ||
+                                statusMsg.includes("Failed to communicate") ||
+                                statusMsg.includes("error")) && (
+                                    <button
+                                        onClick={handleRetry}
+                                        className="ml-auto px-2 py-1 bg-blue-500 text-white rounded text-xs hover:bg-blue-600"
+                                        disabled={isLoading || retryInProgress.current}
+                                    >
+                                        {isLoading ? "Retrying..." : "Retry Request"}
+                                    </button>
+                                )}
+                        </div>
+                    )} */}
+                </div>
+            </div>
+
+            {/* Input Area */}
+            <div className="sticky bottom-24 left-0 right-0 bg-popover/95 backdrop-blur supports-[backdrop-filter]:bg-popover/80 border-t border-gray-700 rounded-t-lg z-10">
+                <form onSubmit={handleSubmit} className="p-1 bg-transparent rounded-lg" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)' }}>
+                    <TextareaAutosize
+                        ref={textareaRef}
+                        value={input}
+                        onChange={(e) => {
+                            setInput(e.target.value);
+                            setUserEditedInput(true); // Mark as user-edited
+                        }}
+                        placeholder="Type your requirements or instructions here..."
+                        className="w-full px-2 py-2 bg-popover border border-gray-600 text-white rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minRows={6}
+                        maxRows={12}
+                        disabled={isLoading}
+                    />
+                    <div className="flex flex-row justify-between rounded gap-1">
+                        <div className="flex items-center gap-2" />
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                    try { localStorage.setItem('aiDashboard_selectedModel', newModel); } catch { }
+                                }}
+                            />
+                            <TemperatureSelector temperature={temperature} onChange={(t) => setTemperature(t)} />
+                        </div>
+
+                        {/* now include the send‐button here */}
+                        <div className="flex justify-between px-2 ">
+                            <button
+                                type="submit"
+                                className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
+                                disabled={isLoading || !input?.trim()}
+                                title="Send your question"
+                            >Send
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-8 h-8"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+
+                                </svg>
+                            </button>
+                        </div>
+                        {!isLoading && lastAutoPrompt && userEditedInput && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setInput(lastAutoPrompt);
+                                    setUserEditedInput(false);
+                                }}
+                                className="flex items-center bg-gray-700 rounded-full px-2 py-1 mb-1 text-xs text-gray-300 hover:bg-gray-600"
+                                title="Revert to generated prompt"
+                            >
+                                Reset Prompt
+                            </button>
+                        )}
+                    </div>
+                </form>
             </div>
         </div>
     );
 }
-
-export default Modelbuilder;

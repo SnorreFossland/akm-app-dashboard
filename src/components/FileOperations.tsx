@@ -27,7 +27,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     const dispatch = useAppDispatch();
     const pathname = usePathname();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const modelUniverse = data.phSource;
+    const modelUniverse = domain.name || data.phSource;
     const currentMenuItemDescription = getCurrentMenuItemDescription(pathname);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -155,7 +155,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                         { label: 'AI Chat', href: '/ai-chat' },
                         { label: 'Domain', href: '/domain-builder' },
                         { label: 'Ontology', href: '/ontology-builder' },
-                        { label: 'Model', href: '/irtv-builder' },
+                        { label: 'Model', href: '/model-builder' },
                         { label: 'Modelview', href: '/modelview-builder' },
                         // { label: 'Prompt', href: '/prompt-builder' },
                         // { label: 'Roadmap', href: '/roadmap' },

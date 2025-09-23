@@ -26,6 +26,8 @@ import ReactMarkdown from 'react-markdown';
 
 import { ModelviewSchema } from "@/modelviewSchema";
 // import { ModelviewCard } from '@/components/modelview-card';
+import { streamGenmodel } from '@/lib/ai/genmodel';
+import { mapModelId } from '@/lib/ai/modelMap';
 
 const debug = false;
 
@@ -353,7 +355,7 @@ export default function ModelviewBuilder({
         });
 
         // Coerce relationship views fields and resolve references to the actual UUIDs from objectviews
-        const relshipviews = (candidate.relshipviews || []).map((rv: any, idx: number) => {
+        const relshipviewsRaw = (candidate.relshipviews || []).map((rv: any, idx: number) => {
             const id = isValidUUID(rv.id) ? rv.id : makeUUID();
             const name = rv.name || `rel-${idx + 1}`;
 
@@ -416,10 +418,29 @@ export default function ModelviewBuilder({
             const typeviewKey = rv.typeviewRef || rv.typeRef || rv.typeName || rv.type || null;
             const typeviewRef = ensureMappedUUID(originalTypeToUuid, typeviewKey);
 
-            // Normalize points array to numbers
-            const points = Array.isArray(rv.points)
-                ? rv.points.map((p: any) => (typeof p === 'number' ? p : Number(p))).filter((n: any) => !isNaN(n))
-                : [];
+            // Normalize points array to numbers and flatten nested coordinates
+            const points: number[] = [];
+            if (Array.isArray(rv.points)) {
+                rv.points.forEach((p: any) => {
+                    if (typeof p === 'number') {
+                        if (!Number.isNaN(p)) points.push(p);
+                        return;
+                    }
+                    if (Array.isArray(p)) {
+                        p.forEach((n) => {
+                            const num = typeof n === 'number' ? n : Number(n);
+                            if (!Number.isNaN(num)) points.push(num);
+                        });
+                        return;
+                    }
+                    if (p && typeof p === 'object') {
+                        ['x', 'y'].forEach((key) => {
+                            const num = Number((p as Record<string, unknown>)[key]);
+                            if (!Number.isNaN(num)) points.push(num);
+                        });
+                    }
+                });
+            }
 
             return {
                 id,
@@ -432,9 +453,33 @@ export default function ModelviewBuilder({
             };
         });
 
+        // Deduplicate relshipviews by key (name/from/to/relshipRef/typeviewRef)
+        const seenRelKeys = new Set<string>();
+        const relshipviews = relshipviewsRaw.filter((rv) => {
+            const key = [rv.name, rv.fromobjviewRef, rv.toobjviewRef, rv.relshipRef, rv.typeviewRef].join('::');
+            if (seenRelKeys.has(key)) {
+                return false;
+            }
+            seenRelKeys.add(key);
+            return true;
+        });
+
         // Replace candidate's arrays with the normalized ones
         candidate.objectviews = objectviews;
         candidate.relshipviews = relshipviews;
+
+        // Guarantee required scalar fields so schema validation can succeed even if the model omits them
+        const firstObjectId = objectviews[0]?.id;
+        if (!candidate.id) {
+            candidate.id = makeUUID();
+        }
+        candidate.modelRef = typeof candidate.modelRef === 'string' && candidate.modelRef
+            ? candidate.modelRef
+            : candidate.modelRef?.id || candidate.id;
+        candidate.focusObjectviewRef = typeof candidate.focusObjectviewRef === 'string' && candidate.focusObjectviewRef
+            ? candidate.focusObjectviewRef
+            : (firstObjectId || candidate.focusObjectviewRef || candidate.id);
+        candidate.description = candidate.description || '';
 
         return candidate;
     };
@@ -460,16 +505,6 @@ export default function ModelviewBuilder({
     const handleCloseModal = () => {
         setIsModalOpen(false);
     };
-
-    // Map chat model to genmodel's supported aiModelName
-    function mapModelForGenmodel(m: string): string {
-        const lower = (m || '').toLowerCase();
-        if (lower.startsWith('deepseek')) return lower; // deepseek-chat, deepseek-coder, deepseek-r1
-        if (lower.includes('mistral')) return 'mistral';
-        if (lower.startsWith('gpt-')) return lower; // gpt-5, gpt-5-mini
-        if (lower === 'dummy') return 'dummy';
-        return 'gpt-5-mini';
-    }
 
     let modelviewContextItems = '';
 
@@ -671,200 +706,152 @@ Make sure to align the objects horizontally and vertically to make the modelview
     `;
 
         const finalUserPrompt = `${modelviewContextMetamodel} \n ${modelviewContextItems} \n ${modelviewUserPrompt} \n ${input} `;
+        const aiModelName = mapModelId(selectedModel);
+
+        const commitModelview = (validated: any) => {
+            const completeModelview = {
+                ...validated,
+                modelRef: validated.id,
+                modified: false,
+                markedAsDeleted: false,
+                objectviews: validated.objectviews.map((ov: any) => ({
+                    ...ov,
+                    type: ov.type || "",
+                    size: ov.size || "",
+                    memberscale: ov.memberscale !== undefined ? ov.memberscale : 1,
+                    modified: ov.modified !== undefined ? ov.modified : false,
+                    markedAsDeleted: ov.markedAsDeleted !== undefined ? ov.markedAsDeleted : false,
+                    isSelect: ov.isSelect !== undefined ? ov.isSelect : false,
+                    isGroup: ov.isGroup !== undefined ? ov.isGroup : false,
+                    isExpanded: ov.isExpanded !== undefined ? ov.isExpanded : false,
+                    viewkind: ov.viewkind || "",
+                    typeviewRef: ov.typeviewRef || "",
+                })),
+                relshipviews: validated.relshipviews.map((rv: any) => ({
+                    ...rv,
+                    fromName: rv.fromName || "",
+                    toName: rv.toName || "",
+                    typeviewRef: rv.typeviewRef || "",
+                    relshipRef: rv.relshipRef || "",
+                })),
+            };
+
+            setModelview(completeModelview);
+            const pretty = JSON.stringify(validated, null, 2);
+            const markdownResponse = formatJSONAsMarkdown(validated);
+
+            setMvContent(pretty);
+            onAddContent(pretty);
+            setMessages(prev => [...prev, { role: 'assistant', content: markdownResponse }]);
+            setCanPreview(true);
+            setStreamedContent('Modelview ready.');
+            setIsStreaming(false);
+        };
+
+        const deriveListing = (text: string): string => {
+            try {
+                const parsed = JSON.parse(text);
+                const normalized = normalizeModelviewResponse(parsed);
+                const objs = normalized.objectviews || normalized.objects || [];
+                if (!Array.isArray(objs) || objs.length === 0) return "";
+                return objs
+                    .map((o: any) => {
+                        const name = o.name || o.id || "";
+                        const desc = (o.description || "").replace(/\s+/g, " ").trim();
+                        const typ = o.typeName || o.type || o.proposedType || "";
+                        const parts = [name];
+                        if (desc) parts.push(desc);
+                        if (typ) parts.push(typ);
+                        return `- ${parts.join(" — ")}`;
+                    })
+                    .join("\n");
+            } catch {
+                const nameRe = /"name"\s*:\s*"([^"]+)"/g;
+                const descRe = /"description"\s*:\s*"([^"]*)"/g;
+                const typeRe = /"type(Name|)"\s*:\s*"([^"]*)"/g;
+
+                const names = Array.from(text.matchAll(nameRe), (m) => m[1]);
+                const descs = Array.from(text.matchAll(descRe), (m) => m[1]);
+                const types = Array.from(text.matchAll(typeRe), (m) => m[2]);
+
+                const max = Math.max(names.length, descs.length, types.length);
+                if (max === 0) return "";
+
+                const lines: string[] = [];
+                for (let i = 0; i < max; i++) {
+                    const n = names[i] || `obj${i + 1}`;
+                    const d = descs[i] || "";
+                    const t = types[i] || "";
+                    const parts = [n];
+                    if (d) parts.push(d.replace(/\s+/g, " ").trim());
+                    if (t) parts.push(t);
+                    lines.push(`- ${parts.join(" — ")}`);
+                }
+                return lines.join("\n");
+            }
+        };
 
         if (!debug) console.log('615 Prompts: ', selectedModel, '\n\n',
             'finalSystemPrompt:', finalSystemPrompt, '\n\n',
             'finalDeveloperPrompt:', finalDeveloperPrompt, '\n\n',
-            'finalUserPrompt:', finalUserPrompt);
+            'finalUserPrompt:', finalUserPrompt,
+            '\nmodelId:', aiModelName);
 
         try {
-            const res = await fetch("/api/genmodel", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    aiModelName: selectedModel || "gpt-5-mini",
-                    schemaName: "ModelviewSchema",
-                    systemPrompt: finalSystemPrompt || "",
-                    developerPrompt: finalDeveloperPrompt || "",
-                    userPrompt: finalUserPrompt || ""
-                })
-            });
-
-
-            if (!res.ok) {
-                const t = await res.text();
-                throw new Error(`genmodel ${res.status}: ${t}`);
-            }
-
-            const reader = res.body?.getReader();
-            if (!reader) throw new Error("No reader available");
-
-            const decoder = new TextDecoder();
-
             // Set an initial friendly streaming message (do not show raw JSON)
             setStreamedContent("Generating modelview…");
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                accumulated += decoder.decode(value, { stream: true });
-
-                // Update live preview while streaming
-                // Derive a compact listing (name — description — type) from the accumulated stream
-                const deriveListing = (text: string): string => {
-                    // Try to parse full JSON first
-                    try {
-                        const parsed = JSON.parse(text);
-                        const normalized = normalizeModelviewResponse(parsed);
-                        const objs = normalized.objectviews || normalized.objects || [];
-                        if (!Array.isArray(objs) || objs.length === 0) return "";
-                        return objs
-                            .map((o: any) => {
-                                const name = o.name || o.id || "";
-                                const desc = (o.description || "").replace(/\s+/g, " ").trim();
-                                const typ = o.typeName || o.type || o.proposedType || "";
-                                // Only include parts that exist (avoid showing empty dashes)
-                                const parts = [name];
-                                if (desc) parts.push(desc);
-                                if (typ) parts.push(typ);
-                                return `- ${parts.join(" — ")}`;
-                            })
-                            .join("\n");
-                    } catch {
-                        // If JSON parse fails (partial stream), try a best-effort regex extraction.
-                        const nameRe = /"name"\s*:\s*"([^"]+)"/g;
-                        const descRe = /"description"\s*:\s*"([^"]*)"/g;
-                        const typeRe = /"typeName"\s*:\s*"([^"]*)"/g;
-
-                        const names = Array.from(text.matchAll(nameRe), (m) => m[1]);
-                        const descs = Array.from(text.matchAll(descRe), (m) => m[1]);
-                        const types = Array.from(text.matchAll(typeRe), (m) => m[1]);
-
-                        const max = Math.max(names.length, descs.length, types.length);
-                        if (max === 0) return ""; // nothing useful extracted
-
-                        const lines: string[] = [];
-                        for (let i = 0; i < max; i++) {
-                            const n = names[i] || `obj${i + 1}`;
-                            const d = descs[i] || "";
-                            const t = types[i] || "";
-                            const parts = [n];
-                            if (d) parts.push(d.replace(/\s+/g, " ").trim());
-                            if (t) parts.push(t);
-                            lines.push(`- ${parts.join(" — ")}`);
-                        }
-                        return lines.join("\n");
+            const finalText = await streamGenmodel(
+                {
+                    aiModelName,
+                    schemaName: "ModelviewSchema",
+                    systemPrompt: finalSystemPrompt || "",
+                    developerPrompt: finalDeveloperPrompt || "",
+                    userPrompt: finalUserPrompt || "",
+                },
+                (chunk) => {
+                    if (parsedSuccessfully) {
+                        accumulated += chunk;
+                        return;
                     }
-                };
 
-                const listing = deriveListing(accumulated);
+                    accumulated += chunk;
 
-                // Only update the streamedContent when we can derive a compact listing.
-                // Do NOT fall back to showing raw JSON here.
-                if (listing && listing.trim().length > 0) {
-                    setStreamedContent(listing);
-                } // else: keep previous streamedContent (avoid showing partial/raw JSON)
+                    const listing = deriveListing(accumulated);
+                    if (listing && listing.trim().length > 0) {
+                        setStreamedContent(listing);
+                    }
 
-                // Keep storing the raw stream into mvPreview for the preview panel / debugging (not shown in the chat stream)
-                setMvPreview(accumulated);
+                    setMvPreview(accumulated);
 
-                // Try to parse incrementally. If parsing fails, keep streaming.
-                try {
-                    const maybe = JSON.parse(accumulated);
-                    const normalized = normalizeModelviewResponse(maybe);
-                    // Validate parsed data with schema
-                    const validated = ModelviewSchema.parse(normalized);
-                    // Commit validated modelview
-                    setModelview({
-                        ...validated,
-                        modelRef: validated.id,
-                        modified: false,
-                        markedAsDeleted: false,
-                        objectviews: validated.objectviews.map((ov: any) => ({
-                            ...ov,
-                            type: ov.type || "",
-                            size: ov.size || "",
-                            memberscale: ov.memberscale !== undefined ? ov.memberscale : 1,
-                            modified: ov.modified !== undefined ? ov.modified : false,
-                            markedAsDeleted: ov.markedAsDeleted !== undefined ? ov.markedAsDeleted : false,
-                            isSelect: ov.isSelect !== undefined ? ov.isSelect : false,
-                            isGroup: ov.isGroup !== undefined ? ov.isGroup : false,
-                            isExpanded: ov.isExpanded !== undefined ? ov.isExpanded : false,
-                            viewkind: ov.viewkind || ""
-                        })),
-                        relshipviews: validated.relshipviews.map((rv: any) => ({
-                            ...rv,
-                            fromName: rv.fromName || "",
-                            toName: rv.toName || ""
-                        }))
-                    });
-                    // store a pretty-printed JSON string in the mvContent prop and expose to library
-                    const pretty = JSON.stringify(validated, null, 2);
-                    const markdownResponse = formatJSONAsMarkdown(validated);
-
-                    const assistantMessage: Message = {
-                        role: "assistant",
-                        content: markdownResponse
-                    };
-
-                    setMvContent(pretty);
-                    onAddContent(pretty);
-                    setMessages(prev => [...prev, assistantMessage]);
-                    setCanPreview(true);
-                    parsedSuccessfully = true;
-                    break; // stop reading further once parsed & validated
-                } catch (err) {
-                    // ignore JSON parse errors while streaming (partial data)
+                    try {
+                        const maybe = JSON.parse(accumulated);
+                        const normalized = normalizeModelviewResponse(maybe);
+                        const validated = ModelviewSchema.parse(normalized);
+                        commitModelview(validated);
+                        parsedSuccessfully = true;
+                    } catch {
+                        // ignore JSON parse errors while streaming (partial data)
+                    }
                 }
-            }
+            );
 
-            // If we never parsed successfully during streaming, attempt a final parse
+            accumulated = finalText || accumulated;
+
             if (!parsedSuccessfully) {
                 try {
-                    const finalText = accumulated;
-                    const parsed = JSON.parse(finalText);
+                    const parsed = JSON.parse(accumulated);
                     const normalized = normalizeModelviewResponse(parsed);
                     const validated = ModelviewSchema.parse(normalized);
-
-                    // Create complete modelview object (same as above)
-                    const completeModelview = {
-                        ...validated,
-                        modelRef: validated.id,
-                        modified: false,
-                        markedAsDeleted: false,
-                        objectviews: validated.objectviews.map((ov: any) => ({
-                            ...ov,
-                            type: ov.type || "",
-                            size: ov.size || "",
-                            memberscale: ov.memberscale !== undefined ? ov.memberscale : 1,
-                            modified: ov.modified !== undefined ? ov.modified : false,
-                            markedAsDeleted: ov.markedAsDeleted !== undefined ? ov.markedAsDeleted : false,
-                            isSelect: ov.isSelect !== undefined ? ov.isSelect : false,
-                            isGroup: ov.isGroup !== undefined ? ov.isGroup : false,
-                            isExpanded: ov.isExpanded !== undefined ? ov.isExpanded : false,
-                            viewkind: ov.viewkind || "",
-                            typeviewRef: ov.typeviewRef || ""
-                        })),
-                        relshipviews: validated.relshipviews.map((rv: any) => ({
-                            ...rv,
-                            fromName: rv.fromName || "",
-                            toName: rv.toName || "",
-                            typeviewRef: rv.typeviewRef || "",
-                            relshipRef: rv.relshipRef || ""
-                        }))
-                    };
-
-                    setModelview(completeModelview); // Only call this once
-                    const pretty = JSON.stringify(validated, null, 2);
-                    setMvContent(pretty);
-                    onAddContent(pretty);
-                    setMessages(prev => [...prev, { role: 'assistant', content: formatJSONAsMarkdown(validated) }]);
-                    setCanPreview(true);
+                    commitModelview(validated);
                     parsedSuccessfully = true;
                 } catch (err: any) {
-                    // ...existing error handling...
+                    console.error("Modelview final parse failed:", err);
+                    setError(err?.message ?? String(err));
                 }
             }
+
+            setMvPreview(accumulated);
         } catch (e: any) {
             console.error("Modelview build failed:", e);
             setError(e?.message ?? String(e));

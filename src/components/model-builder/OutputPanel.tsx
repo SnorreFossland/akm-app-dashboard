@@ -16,10 +16,10 @@ import { object } from 'zod';
 import { ObjectSchema } from '@/objectSchema';
 
 interface DocumentPanelProps {
-    irtvPreview: string; // The preview content to display
-    setIrtvPreview: React.Dispatch<React.SetStateAction<string>>;
-    irtvContent: string | Model | null; // The main content, can be string or Model
-    setIrtvContent: React.Dispatch<React.SetStateAction<string | Model | null>>;
+    modelPreview: string; // The preview content to display
+    setModelPreview: React.Dispatch<React.SetStateAction<string>>;
+    modelContent: string | Model | null; // The main content, can be string or Model
+    setmodelContent: React.Dispatch<React.SetStateAction<string | Model | null>>;
     onEdit?: () => void;
     onPaste?: () => void;
     onLibrary?: () => void;
@@ -32,10 +32,10 @@ interface DocumentPanelProps {
 }
 
 export default function DocumentPanel({
-    irtvPreview,
-    setIrtvPreview,
-    irtvContent,
-    setIrtvContent,
+    modelPreview,
+    setModelPreview,
+    modelContent,
+    setmodelContent,
     onEdit = () => { },
     onPaste = () => { },
     onLibrary = () => { },
@@ -47,17 +47,17 @@ export default function DocumentPanel({
     panelType = 'left' // Default to 'left' panel type
 }: DocumentPanelProps) {
     // Add debugging
-    // console.log('DocumentPanel render - irtvContent:', irtvContent?.substring(0, 100) || 'empty');
-    // console.log('DocumentPanel render - irtvContent length:', irtvContent?.length || 0);
+    // console.log('DocumentPanel render - modelContent:', modelContent?.substring(0, 100) || 'empty');
+    // console.log('DocumentPanel render - modelContent length:', modelContent?.length || 0);
     const data = useSelector((state: RootState) => state.modelUniverse);
     const dispatch = useDispatch();
     const [dispatchDone, setDispatchDone] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [editContent, setEditContent] = useState(typeof irtvContent === 'string' ? irtvContent : (irtvContent?.description || ''));
+    const [editContent, setEditContent] = useState(typeof modelContent === 'string' ? modelContent : (modelContent?.description || ''));
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
-    const message = { content: irtvContent || '' }; // Default message content
+    const message = { content: modelContent || '' }; // Default message content
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
     const [activeTab, setActiveTab] = useState('current-knowledge');
 
@@ -71,14 +71,14 @@ export default function DocumentPanel({
 
 
     useEffect(() => {
-        if (!irtvContent) {
+        if (!modelContent) {
             setIsEditing(true);
         }
     }, []);
-    // Update editContent when irtvContent changes from parent
+    // Update editContent when modelContent changes from parent
     useEffect(() => {
-        setEditContent(typeof irtvContent === 'string' ? irtvContent : (irtvContent && 'description' in irtvContent ? irtvContent.description : ''));
-    }, [irtvContent]);
+        setEditContent(typeof modelContent === 'string' ? modelContent : (modelContent && 'description' in modelContent ? modelContent.description : ''));
+    }, [modelContent]);
 
     // Function to detect placeholders in the format [placeholder]
     useEffect(() => {
@@ -133,8 +133,8 @@ export default function DocumentPanel({
     };
 
     const handleCancel = () => {
-        // Don't clear irtvContent when canceling, just reset editContent to original
-        setEditContent(typeof irtvContent === 'string' ? irtvContent : (irtvContent?.description || ''));
+        // Don't clear modelContent when canceling, just reset editContent to original
+        setEditContent(typeof modelContent === 'string' ? modelContent : (modelContent?.description || ''));
         setIsEditing(false);
     };
 
@@ -144,10 +144,10 @@ export default function DocumentPanel({
     };
 
     const handleSaveToLibrary = () => {
-        // Save to library in Redux store if irtvContent is not null and is not a string
-        if (irtvContent && typeof irtvContent !== 'string') {
-            dispatch(setObjects(irtvContent.objects));
-            dispatch(setRelationships(irtvContent.relships));
+        // Save to library in Redux store if modelContent is not null and is not a string
+        if (modelContent && typeof modelContent !== 'string') {
+            dispatch(setObjects(modelContent.objects));
+            dispatch(setRelationships(modelContent.relships));
         }
 
         // Also call the prop callback for parent components
@@ -258,10 +258,10 @@ export default function DocumentPanel({
         return result;
     }
 
-    const handleDispatchIrtvData = () => {
+    const handleDispatchModelData = () => {
         console.log('69 HandleDispatch:', dispatchDone); //, modelview, model);
         if (!model && !modelview) {
-            alert('No IRTV to dispatch');
+            alert('No Model to dispatch');
             return;
         }
 
@@ -276,26 +276,26 @@ export default function DocumentPanel({
             return;
         }
 
-        // Narrow irtvContent to a Model before accessing its properties
-        const isIrtvModel = irtvContent !== null && typeof irtvContent === 'object';
+        // Narrow modelContent to a Model before accessing its properties
+        const isModel = modelContent !== null && typeof modelContent === 'object';
 
         // Merge: model (generated) into focusModel
         const mergedModel: Model = {
             ...focusModel,
             // Use narrowed access with fallback values
-            name: isIrtvModel ? (irtvContent as Model).name : 'Generated Model',
-            description: isIrtvModel ? (irtvContent as Model).description || '' : '',
+            name: isModel ? (modelContent as Model).name : 'Generated Model',
+            description: isModel ? (modelContent as Model).description || '' : '',
             objects: [
                 // existing focus model objects
                 ...focusModel.objects,
-                // append generated objects if irtvContent is a Model, else nothing
-                ...(isIrtvModel && (irtvContent as Model).objects ? (irtvContent as Model).objects : []),
+                // append generated objects if modelContent is a Model, else nothing
+                ...(isModel && (modelContent as Model).objects ? (modelContent as Model).objects : []),
             ],
             relships: [
                 // existing focus model relationships
                 ...focusModel.relships,
-                // append generated relationships if irtvContent is a Model, else nothing
-                ...(isIrtvModel && (irtvContent as Model).relships ? (irtvContent as Model).relships : []),
+                // append generated relationships if modelContent is a Model, else nothing
+                ...(isModel && (modelContent as Model).relships ? (modelContent as Model).relships : []),
             ]
         }
 
@@ -349,29 +349,29 @@ export default function DocumentPanel({
 
                             <TabsContent value="current-knowledge" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
                                 <div className="mx-1 ">
-                                    {irtvPreview && (
-                                        <MarkdownPreview mdPreview={irtvPreview} />
+                                    {modelPreview && (
+                                        <MarkdownPreview mdPreview={modelPreview} />
                                     )}
                                 </div>
                             </TabsContent> */}
 
                         {/* <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] "> */}
                         <div className="flex flex-col h-full w-full">
-                            {(irtvContent && typeof irtvContent === 'object') ? (
+                            {(modelContent && typeof modelContent === 'object') ? (
                                 <>
                             <button
                                 title="Save to Library"
-                                onClick={handleDispatchIrtvData}
+                                onClick={handleDispatchModelData}
                                 className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex flex-row-reverse items-center gap-1`}
                             >
                                 <BookmarkPlus className="h-4 w-4" />
                             </button>
                             <div className="text-xs w-full">
                                     <ObjectCard model={{
-                                        id: typeof irtvContent === 'object' && irtvContent ? irtvContent.id : crypto.randomUUID(),
-                                        name: typeof irtvContent === 'object' && irtvContent ? irtvContent.name : 'Generated Model',
-                                        description: typeof irtvContent === 'object' && irtvContent ? irtvContent.description : '',
-                                        objects: typeof irtvContent === 'object' && irtvContent && irtvContent.objects ? irtvContent.objects.map(obj => ({
+                                        id: typeof modelContent === 'object' && modelContent ? modelContent.id : crypto.randomUUID(),
+                                        name: typeof modelContent === 'object' && modelContent ? modelContent.name : 'Generated Model',
+                                        description: typeof modelContent === 'object' && modelContent ? modelContent.description : '',
+                                        objects: typeof modelContent === 'object' && modelContent && modelContent.objects ? modelContent.objects.map(obj => ({
                                             id: obj.id || crypto.randomUUID(),
                                             name: obj.name,
                                             description: obj.description,
@@ -380,7 +380,7 @@ export default function DocumentPanel({
                                             typeName: obj.typeName,
                                             category: obj.category,
                                         })) : [],
-                                        relships: (irtvContent && typeof irtvContent === 'object' && 'relships' in irtvContent ? irtvContent.relships.map(rel => ({
+                                        relships: (modelContent && typeof modelContent === 'object' && 'relships' in modelContent ? modelContent.relships.map(rel => ({
                                             id: rel.id || crypto.randomUUID(),
                                             name: rel.name || '',
                                             typeRef: rel.typeRef || '',
@@ -389,8 +389,8 @@ export default function DocumentPanel({
                                             toobjectRef: rel.toobjectRef || '',
                                             nameTo: rel.nameTo || '',
                                         })) : []),
-                                        metamodelRef: irtvContent && typeof irtvContent === 'object' ? irtvContent.metamodelRef || '' : '',
-                                        modelviews: irtvContent && typeof irtvContent === 'object' ? irtvContent.modelviews || [] : []
+                                        metamodelRef: modelContent && typeof modelContent === 'object' ? modelContent.metamodelRef || '' : '',
+                                        modelviews: modelContent && typeof modelContent === 'object' ? modelContent.modelviews || [] : []
                                     }}
                                     />
                             </div>

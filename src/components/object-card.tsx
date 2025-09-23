@@ -19,19 +19,14 @@ export const ObjectCard = ({ model }: { model: Model }) => {
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
     const mermaidRef = useRef<any>(null);
-    const diagramRef = useRef<HTMLDivElement | null>(null);
-
-    // console.log('24 model:', model);
 
     // Initialize Mermaid once
     useEffect(() => {
-        let cancelled = false;
         if (typeof window === 'undefined') return;
 
         (async () => {
             try {
                 const mm = await import('mermaid');
-                // some bundlers put the module on default export
                 mermaidRef.current = mm.default || mm;
                 mermaidRef.current.initialize({
                     startOnLoad: false,
@@ -53,13 +48,8 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                 console.error('Error initializing Mermaid:', error);
             }
         })();
-
-        return () => {
-            cancelled = true;
-        };
     }, []);
 
-    // Memoize the diagram generation to prevent infinite loops
     const generateMermaidDiagram = useCallback(() => {
         if (!model || !model.objects || model.objects.length === 0) {
             setMermaidDiagram('');
@@ -70,7 +60,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         try {
             let diagram = 'graph TD;\n';
             const validNodes = new Set();
-            // Add objects as nodes with better sanitization
             model.objects.forEach((object, index) => {
                 if (object && object.name && object.name.trim()) {
                     const nodeId = object.name
@@ -83,7 +72,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                 }
             });
 
-            // Add explicit styling for all nodes
             model.objects.forEach((object, index) => {
                 if (object && object.name && object.name.trim()) {
                     const nodeId = object.name
@@ -91,12 +79,10 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         .replace(/_+/g, '_')
                         .replace(/^_|_$/g, '') || `object_${index}`;
 
-                    // Add CSS styling for each node
                     diagram += `    style ${nodeId} fill:#4CAF50,stroke:#2E7D32,stroke-width:2px,color:#fff;\n`;
                 }
             });
 
-            // Add relationships as edges only for valid nodes
             if (model.relships && model.relships.length > 0) {
                 model.relships.forEach((rel, index) => {
                     if (rel && rel.nameFrom && rel.nameTo && rel.name &&
@@ -118,9 +104,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                 });
             }
 
-            // console.log('Generated Mermaid diagram:', diagram);
             setMermaidDiagram(diagram);
-
         } catch (error) {
             console.error('Error generating Mermaid diagram:', error);
             setMermaidDiagram('');
@@ -128,36 +112,26 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         }
     }, [model]);
 
-    // Generate diagram when model changes or when switching to diagram tab
     useEffect(() => {
         if (activeTab === 'diagram' || model) {
             generateMermaidDiagram();
         }
     }, [model, activeTab, generateMermaidDiagram]);
 
-    // Render the diagram when mermaidDiagram changes
     useEffect(() => {
         const renderDiagram = async () => {
             if (mermaidDiagram && activeTab === 'diagram') {
                 setIsLoading(true);
                 try {
-                    // Generate unique ID for this diagram
                     const diagramId = `mermaid-diagram-${Date.now()}`;
-
-                    // Use dynamically loaded mermaid module from the ref
                     const mm = mermaidRef.current;
                     if (!mm) {
                         console.warn('Mermaid not yet loaded; delaying render');
                         setIsLoading(false);
                         return;
                     }
-
                     const { svg } = await mm.render(diagramId, mermaidDiagram);
-
-                    // Store the rendered SVG
                     setRenderedSvg(svg);
-                    console.log('Mermaid diagram rendered successfully');
-
                 } catch (error) {
                     console.error('Error rendering Mermaid diagram:', error);
                     setRenderedSvg(`<div class="p-4 text-center text-red-400">Error rendering diagram: ${error}</div>`);
@@ -180,7 +154,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                 e.preventDefault();
                 const scrollAmount = e.deltaY * 2;
                 container.scrollLeft += scrollAmount;
-                console.log('Horizontal scroll', scrollAmount);
             } else if (isZoomMode) {
                 e.preventDefault();
                 const zoomSensitivity = 0.1;
@@ -214,9 +187,10 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         }
 
         if (renderedSvg) {
+            // remove forced min width. make this an inline-block so it can be scrolled horizontally inside the container
             return (
                 <div
-                    className="min-w-[1200px] w-full"
+                    className="inline-block min-w-0"
                     style={{
                         transform: `scale(${zoom})`,
                         transformOrigin: '0 0',
@@ -233,8 +207,9 @@ export const ObjectCard = ({ model }: { model: Model }) => {
 
     return (
         <div className="w-full">
+            {/* make the outer wrapper full width so the parent flex controls final sizing */}
             <div className="w-full h-[calc(100vh-10rem)] overflow-hidden bg-gray-800 rounded-md">
-                    <Tabs defaultValue="objects" value={activeTab} onValueChange={setActiveTab} className="flex flex-col mt-1 h-full">
+                <Tabs defaultValue="objects" value={activeTab} onValueChange={setActiveTab} className="flex flex-col mt-1 h-full">
                     <TabsList className="bg-transparent">
                         <TabsTrigger
                             value="objects"
@@ -253,16 +228,16 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         </TabsTrigger>
                     </TabsList>
 
-                    <TabsContent value="objects" className="rounded  w-full mt-0 ">
+                    {/* Add min-w-0 to each TabsContent so they can shrink inside flex containers */}
+                    <TabsContent value="objects" className="rounded w-full mt-0 min-w-0">
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
-                                {/* <CardContent className="max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
                                 {model && <ObjectTable data={model.objects.map(obj => ({ ...obj, typeId: obj.typeRef, typeName: obj.typeName || obj.proposedType || obj.typeRef || '' }))} />}
                             </CardContent>
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="relationships" className="rounded  w-full mt-0 ">
+                    <TabsContent value="relationships" className="rounded w-full mt-0 min-w-0">
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
                                 {model && <RelshipTable data={model.relships.map(rel => ({ ...rel, description: '' }))} />}
@@ -270,9 +245,9 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="diagram" className="rounded  w-full mt-0 ">
+                    <TabsContent value="diagram" className="rounded w-full mt-0 min-w-0">
                         <Card className="w-full h-full">
-                            <CardContent className="">
+                            <CardContent className="p-0">
                                 <div className="flex justify-between items-center m-1 py-1">
                                     <div className="flex items-center gap-2">
                                         <button
@@ -304,18 +279,22 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                                         />
                                     </div>
                                 </div>
+
+                                {/* Scrollable container: allow horizontal scroll but don't let the element force parent width */}
                                 <div
                                     ref={containerRef}
-                                    className="h-[calc(100vh-13rem)] overflow-auto bg-background rounded border relative"
+                                    className="h-[calc(100vh-13rem)] overflow-auto bg-background rounded border relative min-w-0"
                                     style={{
                                         maxWidth: '100%',
-                                        overflowX: 'auto',
                                     }}
                                 >
                                     <div className="text-xs text-gray-400 ml-2">
                                         {isZoomMode ? 'Use wheel to zoom' : 'Hold Shift+wheel for horizontal scrolling'}
                                     </div>
-                                    <div className="min-w-max p-2 w-full">
+
+                                    {/* inner wrapper should NOT force min-width; keep it flexible so the parent flex can shrink.
+                                        We render the SVG as an inline-block so it can be scrolled horizontally if it's wide. */}
+                                    <div className="w-full min-w-0 p-2">
                                         {renderMermaidDiagram()}
                                     </div>
                                 </div>
@@ -324,6 +303,6 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                     </TabsContent>
                 </Tabs>
             </div>
-        </div >
+        </div>
     );
 };

@@ -187,14 +187,17 @@ export function ThreePanelLayout({
         return (
             <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
                 {showAppHeader && (
-                    <AppHeader
-                        showLeftPanel={showLeftPanel}
-                        showRightPanel={showRightPanel}
-                        onToggleLeftPanel={undefined}
-                        onToggleRightPanel={undefined}
-                        moduleOperations={moduleOperations}
-                        isMobile={isMobile}
-                    />
+                    // ensure the header itself can shrink (min-w-0)
+                    <div className="min-w-0 w-full">
+                        <AppHeader
+                            showLeftPanel={showLeftPanel}
+                            showRightPanel={showRightPanel}
+                            onToggleLeftPanel={undefined}
+                            onToggleRightPanel={undefined}
+                            moduleOperations={moduleOperations}
+                            isMobile={isMobile}
+                        />
+                    </div>
                 )}
                 <Accordion type="single" collapsible defaultValue="main-panel" className="w-full  overflow-auto">
                     {leftPanelContent && (
@@ -210,7 +213,8 @@ export function ThreePanelLayout({
                                             ))}
                                         </TabsList>
                                         {finalLeftPanelContent.tabs.map((tab) => (
-                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                            // add min-w-0 here so tab content can shrink on small screens
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">{tab.content}</TabsContent>
                                         ))}
                                     </Tabs>
                                 </div>
@@ -239,7 +243,8 @@ export function ThreePanelLayout({
                                         ))}
                                     </TabsList>
                                     {finalMiddlePanelContent.tabs.map((tab) => (
-                                        <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                        // add min-w-0 here as well
+                                        <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">{tab.content}</TabsContent>
                                     ))}
                                 </Tabs>
                             </div>
@@ -259,7 +264,8 @@ export function ThreePanelLayout({
                                             ))}
                                         </TabsList>
                                         {finalRightPanelContent.tabs.map((tab) => (
-                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">{tab.content}</TabsContent>
+                                            // add min-w-0
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">{tab.content}</TabsContent>
                                         ))}
                                     </Tabs>
                                 </div>
@@ -292,7 +298,8 @@ export function ThreePanelLayout({
                                     ))}
                                 </TabsList>
                                 {finalLeftPanelContent.tabs.map((tab) => (
-                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 max-h-full">
+                                    // add min-w-0 so left tab content doesn't force layout
+                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 max-h-full min-w-0">
                                         {tab.content}
                                     </TabsContent>
                                 ))}
@@ -311,17 +318,20 @@ export function ThreePanelLayout({
 
                     {/* Main content area - RENDER MIDDLE PANEL CONTENT HERE */}
                     <div
-                        className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden"
+                        className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden min-w-0"
                         style={{ minWidth: `${MIN_MIDDLE_WIDTH}px` }}
                     >
                         {showAppHeader && (
-                            <AppHeader
-                                showLeftPanel={showLeftPanel}
-                                showRightPanel={showRightPanel}
-                                onToggleLeftPanel={handleToggleLeftPanel}
-                                onToggleRightPanel={handleToggleRightPanel}
-                                moduleOperations={moduleOperations}
-                            />
+                            // Wrap header to ensure it can shrink; prevents header children from forcing page width
+                            <div className="min-w-0 w-full">
+                                <AppHeader
+                                    showLeftPanel={showLeftPanel}
+                                    showRightPanel={showRightPanel}
+                                    onToggleLeftPanel={handleToggleLeftPanel}
+                                    onToggleRightPanel={handleToggleRightPanel}
+                                    moduleOperations={moduleOperations}
+                                />
+                            </div>
                         )}
                         {/* Middle panel tabs/content */}
                         {middlePanelContent ? (
@@ -339,10 +349,11 @@ export function ThreePanelLayout({
                                         ))}
                                     </TabsList>
                                     {finalMiddlePanelContent.tabs.map((tab) => (
+                                        // ensure tab pane can shrink and scroll horizontally/vertically
                                         <TabsContent
                                             key={tab.key}
                                             value={tab.key}
-                                            className="flex-1 overflow-auto m-0 p-0"
+                                            className="flex-1 overflow-auto m-0 p-0 min-w-0"
                                         >
                                             {tab.content}
                                         </TabsContent>
@@ -379,7 +390,8 @@ export function ThreePanelLayout({
                                     ))}
                                 </TabsList>
                                 {finalRightPanelContent.tabs.map((tab) => (
-                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0">
+                                    // make sure right content can shrink without pushing header
+                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">
                                         {tab.content}
                                     </TabsContent>
                                 ))}

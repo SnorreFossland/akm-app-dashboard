@@ -72,6 +72,13 @@ export default function ModelviewBuilderPage() {
 
     const next = models.find((m: any) => m.id === focusedId) || null;
     setCurrentModel((prev: typeof currentModel) => (prev?.id === next?.id ? prev : next));
+    if (next && next.modelviews && next.modelviews.length > 0) {
+      setCurModelview(next.modelviews[0]);
+    } 
+    if (next && next.modelviews && next.modelviews.length > 0) {
+      setFocusModelview({ id: next.modelviews[0].id, name: next.modelviews[0].name });
+    }
+
   }, [data?.phData?.metis?.models, data?.phFocus?.focusModel?.id]);
 
   // Derive curMetamodel only when currentModel or the metamodel list changes
@@ -94,6 +101,8 @@ export default function ModelviewBuilderPage() {
     if (!currentModel && metis?.models?.length) {
       const m = metis.models[0];
       setCurrentModel(m);
+      setCurModelview(m.modelviews?.[0] || null);
+      setMvPreview('');
       dispatch(setFocusModel({ id: m.id, name: m.name }));
     }
     if (currentModel && !curModelview && currentModel.modelviews?.length) {
@@ -101,6 +110,7 @@ export default function ModelviewBuilderPage() {
       setCurModelview(mv);
       setFocusModelview(mv ? { id: mv.id, name: mv.name } : null);
     }
+
   }, [metis, currentModel, curModelview, dispatch]);
 
   useEffect(() => {
@@ -113,6 +123,22 @@ export default function ModelviewBuilderPage() {
       setCurModelview(mv);
     }
   }, [currentModel, focusModelview]);
+
+  // Keep the preview panels in sync when the focused modelview changes
+  useEffect(() => {
+    if (curModelview) {
+      try {
+        const pretty = JSON.stringify(curModelview, null, 2);
+        setMvContent((prev) => (prev === pretty ? prev : pretty));
+        setMvPreview((prev) => (prev === pretty ? prev : pretty));
+      } catch (err) {
+        console.error('Failed to serialize modelview for preview:', err);
+      }
+    } else {
+      setMvContent('');
+      setMvPreview('');
+    }
+  }, [curModelview]);
 
   const handleViewInMarkdown = (response: string) => {
     const cleanResponse = (response: string) => {
@@ -221,21 +247,21 @@ export default function ModelviewBuilderPage() {
           </div>
         )
       },
-      {
-        key: 'previewModelview',
-        label: 'Modelview Preview',
-        content: (
-          <OutputPanel
-            mvPreview={mvPreview}
-            setMvPreview={setMvPreview}
-            mvContent={mvContent}
-            setMvContent={setMvContent}
-            setIsLibraryOpen={setIsLibraryOpen}
-            isLibraryOpen={isLibraryOpen}
-            panelType='right'
-          />
-        )
-      },
+      // {
+      //   key: 'previewModelview',
+      //   label: 'Modelview Preview',
+      //   content: (
+      //     <OutputPanel
+      //       mvPreview={mvPreview}
+      //       setMvPreview={setMvPreview}
+      //       mvContent={mvContent}
+      //       setMvContent={setMvContent}
+      //       setIsLibraryOpen={setIsLibraryOpen}
+      //       isLibraryOpen={isLibraryOpen}
+      //       panelType='right'
+      //     />
+      //   )
+      // },
       {
         key: 'suite',
         label: 'Modelview',

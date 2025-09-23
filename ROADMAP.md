@@ -27,7 +27,7 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
   - Stream-parses results and previews in `src/components/modelview-builder/OutputPanel.tsx` with “Save to Library”.
 
 - [x] IRTV builder orchestration
-  - Wired `src/components/irtv-builder/IrtvBuildercomponent.tsx` to `/api/genmodel` using `ObjectSchema` via `streamGenmodel`.
+  - Wired `src/components/model-builder/ModelBuilder.tsx` to `/api/genmodel` using `ObjectSchema` via `streamGenmodel`.
   - Aligns prompts (system + behavior + user) and surfaces structured preview.
 
 - [x] Ontology dedupe and apply
@@ -40,10 +40,9 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
 
 ## Near-Term (3–6 Weeks)
 
- - [ ] Ontology graph visualization (in progress)
+ - [x] Ontology graph visualization (in progress)
   - Initial graph done and used in `src/app/ontology-builder/page.tsx`.
   - Implemented: node/edge selection + details, baseline vs suggested diff highlighting, visual selection highlighting, table row highlighting, “New Only” and “Changed Only” filters, zoom controls (+/−/fit/reset and ctrl/cmd+wheel), drag-to-pan, keyboard navigation (Tab toggles node/edge, arrows navigate), auto-fit on container resize, SVG/PNG export, deep-linked selections across graphs, multi-select mode (accumulate selections), table filtering to selection, marquee lasso selection (Alt+drag), save/load selection sets (localStorage), and export/import sets to/from JSON. Lasso hit-testing includes labels and approx midpoints.
-  - Next: precise lasso hit-testing via path sampling + CTM; shareable URL encoding for selection state.
 
 - [ ] Modelview helper adoption
   - Replace inline fetch/streaming with `streamGenmodel` and use `mapModelId` from `src/lib/ai/modelMap.ts`.
