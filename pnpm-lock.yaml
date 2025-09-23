@@ -363,6 +363,9 @@ importers:
       redux-mock-store:
         specifier: ^1.5.5
         version: 1.5.5(redux@5.0.1)
+      spec-kit.git:
+        specifier: github:github/spec-kit
+        version: https://codeload.github.com/github/spec-kit/tar.gz/5d764e8364b1d621b4195a0c1677fb727c2eb699
       style-loader:
         specifier: ^4.0.0
         version: 4.0.0(webpack@5.101.3)
@@ -6901,6 +6904,10 @@ packages:
 
   space-separated-tokens@2.0.2:
     resolution: {integrity: sha512-PEGlAwrG8yXGXRjW32fGbg66JAlOAwbObuqVoJpv/mRgoWDQfgH1wDPvtzWyUSNAXBGSk8h755YDbbcEy3SH2Q==}
+
+  spec-kit.git@https://codeload.github.com/github/spec-kit/tar.gz/5d764e8364b1d621b4195a0c1677fb727c2eb699:
+    resolution: {tarball: https://codeload.github.com/github/spec-kit/tar.gz/5d764e8364b1d621b4195a0c1677fb727c2eb699}
+    version: 0.0.0
 
   split2@4.2.0:
     resolution: {integrity: sha512-UcjcJOWknrNkF6PLX83qcHM6KHgVKNkV62Y8a5uYDVv9ydGQVwAHMKqHdJje1VTWpljG0WYpCDhrCdAOYH4TWg==}
@@ -15423,6 +15430,8 @@ snapshots:
   space-separated-tokens@1.1.5: {}
 
   space-separated-tokens@2.0.2: {}
+
+  spec-kit.git@https://codeload.github.com/github/spec-kit/tar.gz/5d764e8364b1d621b4195a0c1677fb727c2eb699: {}
 
   split2@4.2.0: {}
 

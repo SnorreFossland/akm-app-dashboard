@@ -41,9 +41,12 @@ const columnsWithRowNumber: ColumnDef<Relationship, any>[] = [rowNumberColumn, .
 
 interface RelshipTableProps {
     data: Relationship[];
+    highlightRel?: { name: string; nameFrom: string; nameTo: string } | null;
+    selectedRels?: { name: string; nameFrom: string; nameTo: string }[] | null;
+    onSelect?: (rel: { name: string; nameFrom: string; nameTo: string }) => void;
 }
 
-export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
+export const RelshipTable: React.FC<RelshipTableProps> = ({ data, highlightRel, selectedRels = [], onSelect }) => {
     // Manage sorting state
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [pageSize, setPageSize] = React.useState(20); // Default page size
@@ -159,8 +162,16 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
                     ))}
                 </thead>
                 <tbody className="bg-background divide-y divide-gray-500">
-                    {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                    {table.getRowModel().rows.map((row) => {
+                        const lkey = `${(row.original.name || '').trim().toLowerCase()}|${(row.original.nameFrom || '').trim().toLowerCase()}|${(row.original.nameTo || '').trim().toLowerCase()}`;
+                        const singleHighlighted = !!highlightRel &&
+                          (row.original.name || '').trim().toLowerCase() === (highlightRel?.name || '').trim().toLowerCase() &&
+                          (row.original.nameFrom || '').trim().toLowerCase() === (highlightRel?.nameFrom || '').trim().toLowerCase() &&
+                          (row.original.nameTo || '').trim().toLowerCase() === (highlightRel?.nameTo || '').trim().toLowerCase();
+                        const multiHighlighted = (selectedRels || []).some(r => `${(r?.name||'').trim().toLowerCase()}|${(r?.nameFrom||'').trim().toLowerCase()}|${(r?.nameTo||'').trim().toLowerCase()}` === lkey);
+                        const isHighlighted = singleHighlighted || multiHighlighted;
+                        return (
+                        <tr key={row.id} className={isHighlighted ? 'bg-amber-900/40' : ''} onClick={() => onSelect?.({ name: row.original.name, nameFrom: row.original.nameFrom, nameTo: row.original.nameTo })}>
                             {row.getVisibleCells().map((cell) => (
                                 <td key={cell.id} className="px-3 py-1">
                                     {flexRender(
@@ -170,7 +181,7 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data }) => {
                                 </td>
                             ))}
                         </tr>
-                    ))}
+                    )})}
                 </tbody>
             </table>
             {/* Pagination */}

@@ -28,6 +28,13 @@ interface OntologyCardProps {
         concepts: Concept[];
         relationships: Relationship[];
     } | null;
+    highlightConceptName?: string | null;
+    highlightRelationship?: { name: string; nameFrom: string; nameTo: string } | null;
+    onSelectConcept?: (name: string) => void;
+    onSelectRelationship?: (rel: { name: string; nameFrom: string; nameTo: string }) => void;
+    selectedConceptNames?: string[] | null;
+    selectedRelationships?: { name: string; nameFrom: string; nameTo: string }[] | null;
+    filterToSelection?: boolean;
 }
 
 interface Concept {
@@ -47,7 +54,7 @@ interface Relationship {
 
 const debug = false;
 
-export const OntologyCard = ({ ontologyData, domainData, baselineOntology }: OntologyCardProps) => {
+export const OntologyCard = ({ ontologyData, domainData, baselineOntology, highlightConceptName, highlightRelationship, onSelectConcept, onSelectRelationship, selectedConceptNames, selectedRelationships, filterToSelection }: OntologyCardProps) => {
     const diagramRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
     const [mermaidDiagram, setMermaidDiagram] = useState('');
@@ -368,7 +375,14 @@ export const OntologyCard = ({ ontologyData, domainData, baselineOntology }: Ont
                 <TabsContent value="concepts" className=" mt-0 rounded bg-background">
                     <Card className="pt-1">
                         <CardContent className="max-h-[calc(100vh-12rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                            {ontologyData && <ConceptTable data={ontologyData.concepts} />}
+                            {ontologyData && (
+                              <ConceptTable
+                                data={(filterToSelection && (selectedConceptNames?.length || 0) > 0) ? (ontologyData.concepts || []).filter(c => (selectedConceptNames || []).some(n => (n || '').trim().toLowerCase() === (c?.name || '').trim().toLowerCase())) : (ontologyData.concepts || [])}
+                                highlightName={highlightConceptName}
+                                selectedNames={selectedConceptNames || []}
+                                onSelect={onSelectConcept}
+                              />
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
@@ -376,15 +390,24 @@ export const OntologyCard = ({ ontologyData, domainData, baselineOntology }: Ont
                 <TabsContent value="relationships" className="mt-0 rounded bg-background">
                     <Card className="pt-1">
                         <CardContent className="max-h-[calc(100vh-12rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                            {ontologyData && <RelshipTable data={ontologyData.relationships} />}
+                            {ontologyData && (
+                              <RelshipTable
+                                data={(filterToSelection && (selectedRelationships?.length || 0) > 0)
+                                  ? (ontologyData.relationships || []).filter(r => (selectedRelationships || []).some(sr => (sr?.name || '').trim().toLowerCase() === (r?.name || '').trim().toLowerCase() && (sr?.nameFrom || '').trim().toLowerCase() === (r?.nameFrom || '').trim().toLowerCase() && (sr?.nameTo || '').trim().toLowerCase() === (r?.nameTo || '').trim().toLowerCase()))
+                                  : (ontologyData.relationships || [])}
+                                highlightRel={highlightRelationship as any}
+                                selectedRels={selectedRelationships as any}
+                                onSelect={onSelectRelationship}
+                              />
+                            )}
                         </CardContent>
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="diagram" className="m-0 px-1 rounded bg-card h-[calc(100vh-10rem)] overflow-hidden">
+                <TabsContent value="diagram" className="m-0 px-1 rounded bg-card max-h-[calc(100vh-18rem)] overflow-hidden">
                     <Card className="w-full h-full">
                         <CardContent className="">
-                            <div className="flex justify-between items-center m-1 py-1">
+                            <div className="flex justify-between items-center m-1 py-1 sticky top-0 z-10 bg-card/90 backdrop-blur px-1">
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => generateMermaidDiagram()}
@@ -417,7 +440,7 @@ export const OntologyCard = ({ ontologyData, domainData, baselineOntology }: Ont
                             </div>
                             <div
                                 ref={containerRef}
-                                className="h-[calc(100vh-13rem)] overflow-auto bg-background rounded border relative"
+                                className="max-h-[calc(100vh-22rem)] overflow-auto bg-background rounded border relative"
                                 style={{
                                     maxWidth: '100%',
                                     overflowX: 'auto',

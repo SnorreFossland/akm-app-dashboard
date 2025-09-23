@@ -40,9 +40,10 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
 
 ## Near-Term (3–6 Weeks)
 
-- [ ] Ontology graph visualization (in progress)
-  - Initial Mermaid-based graph implemented in `src/components/ontology-graph.tsx` and used in `src/app/ontology-builder/page.tsx`.
-  - Next: link node selection to detail panels; wire baseline vs suggested to highlight diffs.
+ - [ ] Ontology graph visualization (in progress)
+  - Initial graph done and used in `src/app/ontology-builder/page.tsx`.
+  - Implemented: node/edge selection + details, baseline vs suggested diff highlighting, visual selection highlighting, table row highlighting, “New Only” and “Changed Only” filters, zoom controls (+/−/fit/reset and ctrl/cmd+wheel), drag-to-pan, keyboard navigation (Tab toggles node/edge, arrows navigate), auto-fit on container resize, SVG/PNG export, deep-linked selections across graphs, multi-select mode (accumulate selections), table filtering to selection, marquee lasso selection (Alt+drag), save/load selection sets (localStorage), and export/import sets to/from JSON. Lasso hit-testing includes labels and approx midpoints.
+  - Next: precise lasso hit-testing via path sampling + CTM; shareable URL encoding for selection state.
 
 - [ ] Modelview helper adoption
   - Replace inline fetch/streaming with `streamGenmodel` and use `mapModelId` from `src/lib/ai/modelMap.ts`.
@@ -71,8 +72,8 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
 - [ ] Domain Builder
   - Curate domain name/description/presentation; persist to library; preview markdown.
 
-- [ ] Ontology Builder
-  - Strengthen naming/uniqueness checks; add graph view; improve apply/rollback.
+ - [ ] Ontology Builder
+  - Enhance graph view (selection highlighting, table sync, filters); strengthen naming/uniqueness checks; improve apply/rollback.
 
 - [ ] Modelview Builder
   - Implement schema-constrained generation; render cards/tables; save to Redux.
@@ -112,6 +113,10 @@ This roadmap aligns with the Agents Guide and tracks near- and mid-term work acr
   - Reuse endpoint helper; unify temperature/token; surface rate-limits consistently.
 - `src/lib/ai/{generate,genmodel}.ts`
   - New helpers wrapping gateway/genmodel with typed responses and streaming support.
+- `src/components/ontology-graph.tsx`
+  - Add node/edge selection callbacks and baseline-diff styling; wire to details panels in ontology page.
+ - `src/components/ontology-builder/{concept-table,relship-table}.tsx`, `src/components/ontology-card.tsx`
+   - Add row highlight + click-to-select to sync with graph selection; forward callbacks from OntologyCard.
 
 ## Sequencing & Acceptance
 

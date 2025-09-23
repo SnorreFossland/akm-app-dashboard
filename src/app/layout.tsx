@@ -52,9 +52,11 @@ export default async function RootLayout({
             <SidebarProvider defaultOpen={false}>
               {/* <SidebarProvider defaultOpen={sidebarState?.value !== "false"}> */}
               <AppSidebar />
-              <main className="flex-1 flex flex-col overflow-auto">
+              <main className="flex-1 flex flex-col h-dvh min-h-0">
                 {/* <AppHeader /> */}
-                {children}
+                <div className="flex-1 overflow-y-auto">
+                  {children}
+                </div>
               </main>
             </SidebarProvider>
           </ThemeProvider>

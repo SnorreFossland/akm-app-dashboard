@@ -30,6 +30,9 @@ interface Concept {
 
 interface ConceptTableProps {
     data: Concept[];
+    highlightName?: string | null;
+    selectedNames?: string[];
+    onSelect?: (name: string) => void;
 }
 
 export interface ConceptTableMeta extends TableMeta<Concept> { // Exported Interface
@@ -45,7 +48,7 @@ const rowNumberColumn: ColumnDef<Concept> = {
 
 const columnsWithRowNumber = [rowNumberColumn, ...columns] as ColumnDef<Concept, any>[];
 
-export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
+export const ConceptTable: React.FC<ConceptTableProps> = ({ data, highlightName, selectedNames = [], onSelect }) => {
     // Manage sorting state
     const [sorting, setSorting] = React.useState<SortingState>([]);
     const [pageSize, setPageSize] = React.useState(20); // Default page size
@@ -174,8 +177,13 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
                     ))}
                 </thead>
                 <tbody className="bg-background divide-y divide-gray-500">
-                    {table.getRowModel().rows.map((row) => (
-                        <tr key={row.id}>
+                    {table.getRowModel().rows.map((row) => {
+                        const lname = (row.original.name || '').trim().toLowerCase();
+                        const isHighlightedSingle = !!highlightName && lname === (highlightName || '').trim().toLowerCase();
+                        const isHighlightedMulti = (selectedNames || []).some(n => (n || '').trim().toLowerCase() === lname);
+                        const isHighlighted = isHighlightedSingle || isHighlightedMulti;
+                        return (
+                        <tr key={row.id} className={isHighlighted ? 'bg-amber-900/40' : ''} onClick={() => onSelect?.(row.original.name)}>
                             {row.getVisibleCells().map((cell) => (
                                 <td key={cell.id} className="px-3 py-1">
                                     {flexRender(
@@ -185,7 +193,7 @@ export const ConceptTable: React.FC<ConceptTableProps> = ({ data }) => {
                                 </td>
                             ))}
                         </tr>
-                    ))}
+                    )})}
                 </tbody>
             </table>
             {/* Pagination */}

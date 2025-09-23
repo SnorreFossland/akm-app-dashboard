@@ -169,6 +169,12 @@ export const navigationData: NavigationData = {
                     url: "/roadmap",
                     icon: BookCheck,
                     description: "Planned work and priorities",
+                },
+                {
+                    title: "App Spec",
+                    url: "/docs/spec-existing-application",
+                    icon: BookOpenCheck,
+                    description: "Specification of current application",
                 }
             ]
         },
