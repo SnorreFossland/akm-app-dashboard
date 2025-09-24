@@ -3,6 +3,7 @@ import { AppHeader } from "@/components/AppHeader";
 import DocumentPanel from "@/components/ai-chat/DocumentPanel";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { ChevronLeft, ChevronRight, PanelLeft, PanelRight } from 'lucide-react';
 
 export interface PanelTab {
     key: string;
@@ -32,6 +33,7 @@ export interface ModalThreePanelLayoutProps {
     onClose?: () => void;
     children?: React.ReactNode;
 }
+
 export function ModalThreePanelLayout({
     leftPanelContent,
     middlePanelContent,
@@ -110,6 +112,10 @@ export function ModalThreePanelLayout({
         };
     }, [isOpen /* only attach when visibility changes */]);
 
+    // Toggle handlers
+    const handleToggleLeftPanel = () => setLocalShowLeft(!localShowLeft);
+    const handleToggleRightPanel = () => setLocalShowRight(!localShowRight);
+
     // Combined modal: shows left, middle and right panels side-by-side
     const combinedOpen = localShowLeft || localShowRight;
 
@@ -119,132 +125,124 @@ export function ModalThreePanelLayout({
                 {showAppHeader && (
                     <div className="min-w-0 w-full">
                         <AppHeader
-                            showLeftPanel={!!showLeftPanel}
-                            showRightPanel={!!showRightPanel}
-                            onToggleLeftPanel={() => setLocalShowLeft((s) => !s)}
-                            onToggleRightPanel={() => setLocalShowRight((s) => !s)}
+                            showLeftPanel={localShowLeft}
+                            showRightPanel={localShowRight}
+                            onToggleLeftPanel={handleToggleLeftPanel}
+                            onToggleRightPanel={handleToggleRightPanel}
                             moduleOperations={moduleOperations}
                         />
                     </div>
                 )}
 
-                <div className="flex-1 overflow-hidden min-w-0">
-                    {middlePanelContent ? (
-                        <div className="flex flex-col h-full overflow-hidden min-w-0">
-                            <Tabs value={activeMiddleTab} onValueChange={setActiveMiddleTab} className="flex flex-col h-full">
-                                <TabsList className="grid grid-cols-4 w-full pt-3 z-10">
-                                    {finalMiddle?.tabs?.map((t) => (
-                                        <TabsTrigger key={t.key} value={t.key} className="text-xs">
-                                            {t.label}
-                                        </TabsTrigger>
-                                    ))}
-                                </TabsList>
-                                <div className="flex-1 overflow-auto min-w-0">
-                                    {finalMiddle?.tabs?.map((t) => (
-                                        <TabsContent key={t.key} value={t.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">
-                                            {t.content}
-                                        </TabsContent>
-                                    ))}
-                                </div>
-                            </Tabs>
-                        </div>
-                    ) : (
-                        <div className="flex-1 overflow-hidden min-w-0 w-full">{children}</div>
-                    )}
-                </div>
 
-                <Dialog
-                    open={combinedOpen}
-                    onOpenChange={(open) => {
-                        // mirror to local states: when dialog closes -> hide both; when opens -> show both (keeps parity)
-                        if (!open) {
-                            setLocalShowLeft(false);
-                            setLocalShowRight(false);
-                            // Call the onClose callback when the internal dialog closes
-                            if (onClose) onClose();
-                        } else {
-                            // Opening: ensure both sides are open so all panels are visible
-                            setLocalShowLeft(true);
-                            setLocalShowRight(true);
-                        }
-                    }}
-                >
-                    <DialogContent className="w-[min(98vw,1400px)] max-w-full h-[90vh] overflow-hidden p-0">
-                        <DialogHeader className="p-3 border-b border-gray-700">
+                <Dialog open={isOpen} onOpenChange={onClose}>
+                    <DialogContent className="max-w-[95vw] w-[95vw] h-[90vh] p-0">
+                        <DialogHeader className="px-6 py-4 border-b">
                             <DialogTitle>AI Assistant</DialogTitle>
                         </DialogHeader>
 
-                        <div className="flex h-[calc(90vh-64px)] p-1 overflow-hidden min-w-0">
-                            {/* Left panel column */}
-                            {finalLeft && (
-                                <div className="flex-shrink-0 w-80 min-w-[220px] border-r border-gray-700 bg-surface-dark flex flex-col">
-                                    <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col h-full">
-                                        <TabsList className="flex items-center gap-2 p-2 border-b border-gray-700">
-                                            {finalLeft.tabs.map((t) => (
-                                                <TabsTrigger key={t.key} value={t.key} className="text-xs">
-                                                    {t.label}
-                                                </TabsTrigger>
+                        {/* Panel toggle buttons below the header line */}
+                        <div className="flex justify-between items-center px-6 py-2 bg-gray-50 dark:bg-gray-900 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center">
+                                {!localShowLeft && (
+                                    <button
+                                        onClick={handleToggleLeftPanel}
+                                        className="text-gray-400 hover:text-white p-1 hover:bg-gray-800 rounded"
+                                        title="Show left panel"
+                                    >
+                                        <PanelLeft className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                            <div className="flex items-center">
+                                {!localShowRight && (
+                                    <button
+                                        onClick={handleToggleRightPanel}
+                                        className="text-gray-400 hover:text-white p-1 hover:bg-gray-800 rounded"
+                                        title="Show right panel"
+                                    >
+                                        <PanelRight className="h-4 w-4" />
+                                    </button>
+                                )}
+                            </div>
+                        </div>
+
+                        <div className="flex h-full overflow-hidden">
+                            {/* Left Panel */}
+                            {localShowLeft && finalLeft && (
+                                <div className="flex flex-col bg-gray-800 border-r border-gray-600 overflow-hidden w-80 flex-shrink-0">
+                                    <div className="flex justify-between items-center p-2 border-b border-gray-600">
+                                        <h3 className="text-sm font-medium text-gray-300">Input</h3>
+                                        <button
+                                            onClick={handleToggleLeftPanel}
+                                            className="text-gray-400 hover:text-white"
+                                            title="Close panel"
+                                        >
+                                            <ChevronLeft className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1 overflow-hidden">
+                                        <TabsList className="grid w-full pt-3 z-20" style={{ gridTemplateColumns: `repeat(${finalLeft.tabs.length}, 1fr)` }}>
+                                            {finalLeft.tabs.map((tab: any) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
                                             ))}
                                         </TabsList>
-                                        <div className="flex-1 overflow-auto min-w-0">
-                                            {finalLeft.tabs.map((t) => (
-                                                <TabsContent key={t.key} value={t.key} className="p-3 m-0 min-w-0">
-                                                    {t.content}
-                                                </TabsContent>
-                                            ))}
-                                        </div>
+                                        {finalLeft.tabs.map((tab: any) => (
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">
+                                                {tab.content}
+                                            </TabsContent>
+                                        ))}
                                     </Tabs>
                                 </div>
                             )}
 
-                            {/* Middle panel column (main editor/chat) */}
-                            <div className="flex-1 min-w-0 overflow-hidden">
-                                {finalMiddle ? (
-                                    <Tabs value={activeMiddleTab} onValueChange={setActiveMiddleTab} className="flex flex-col h-full">
-                                        <TabsList className="flex items-center gap-2 p-2 border-b border-gray-700">
-                                            {finalMiddle.tabs.map((t) => (
-                                                <TabsTrigger key={t.key} value={t.key} className="text-xs">
-                                                    {t.label}
-                                                </TabsTrigger>
+                            {/* Middle Panel */}
+                            <div className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden min-w-0">
+                                {finalMiddle && (
+                                    <Tabs value={activeMiddleTab} onValueChange={setActiveMiddleTab} className="flex flex-col flex-1 overflow-hidden">
+                                        <TabsList className="grid w-full pt-3 z-10" style={{ gridTemplateColumns: `repeat(${finalMiddle.tabs.length}, 1fr)` }}>
+                                            {finalMiddle.tabs.map((tab: any) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
                                             ))}
                                         </TabsList>
-                                        <div className="flex-1 overflow-auto min-w-0">
-                                            {finalMiddle.tabs.map((t) => (
-                                                <TabsContent key={t.key} value={t.key} className="p-3 m-0 min-w-0">
-                                                    {t.content}
-                                                </TabsContent>
-                                            ))}
-                                        </div>
+                                        {finalMiddle.tabs.map((tab: any) => (
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">
+                                                {tab.content}
+                                            </TabsContent>
+                                        ))}
                                     </Tabs>
-                                ) : (
-                                    <div className="h-full w-full overflow-auto min-w-0">{children}</div>
                                 )}
+                                {children}
                             </div>
 
-                            {/* Right panel column */}
-                            {finalRight && (
-                                <div className="flex-shrink-0 w-80 min-w-[220px] border-l border-gray-700 bg-surface-dark flex flex-col">
-                                    <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col h-full">
-                                        <TabsList className="flex items-center gap-2 px-2 border-b border-gray-700">
-                                            {finalRight.tabs.map((t) => (
-                                                <TabsTrigger key={t.key} value={t.key} className="text-xs">
-                                                    {t.label}
-                                                </TabsTrigger>
+                            {/* Right Panel */}
+                            {localShowRight && finalRight && (
+                                <div className="flex flex-col bg-gray-800 border-l border-gray-600 overflow-hidden w-80 flex-shrink-0">
+                                    <div className="flex justify-between items-center p-2 border-b border-gray-600">
+                                        <h3 className="text-sm font-medium text-gray-300">Output</h3>
+                                        <button
+                                            onClick={handleToggleRightPanel}
+                                            className="text-gray-400 hover:text-white"
+                                            title="Close panel"
+                                        >
+                                            <ChevronRight className="h-4 w-4" />
+                                        </button>
+                                    </div>
+                                    <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
+                                        <TabsList className="grid w-full pt-3 z-20" style={{ gridTemplateColumns: `repeat(${finalRight.tabs.length}, 1fr)` }}>
+                                            {finalRight.tabs.map((tab: any) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
                                             ))}
                                         </TabsList>
-                                        <div className="flex-1 overflow-auto min-w-0">
-                                            {finalRight.tabs.map((t) => (
-                                                <TabsContent key={t.key} value={t.key} className="p-3 m-0 min-w-0">
-                                                    {t.content}
-                                                </TabsContent>
-                                            ))}
-                                        </div>
+                                        {finalRight.tabs.map((tab: any) => (
+                                            <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">
+                                                {tab.content}
+                                            </TabsContent>
+                                        ))}
                                     </Tabs>
                                 </div>
                             )}
                         </div>
-
-                        <DialogFooter />
                     </DialogContent>
                 </Dialog>
             </div>

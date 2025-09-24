@@ -49,8 +49,8 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
     const [responseMaxHeight, setResponseMaxHeight] = useState<number | undefined>(undefined);
     const formRef = useRef<HTMLFormElement>(null);
     const [inputBarHeight, setInputBarHeight] = useState(0);
-    const INPUT_BAR_OFFSET = 0; // offset in px; we also account for env(safe-area-inset-bottom) below
-    const EXTRA_BOTTOM_GAP = 20; // extra px to ensure the bar is visually separated from the window edge
+    const INPUT_BAR_OFFSET = 10; // offset in px; we also account for env(safe-area-inset-bottom) below
+    const EXTRA_BOTTOM_GAP = 80; // extra px to ensure the bar is visually separated from the window edge
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Dynamically reserve exactly the input bar height at the bottom of the scroll area
@@ -300,7 +300,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
     }
 
     return (
-        <div ref={containerRef} className="relative flex w-full h-full min-h-0">
+        <div ref={containerRef} className="relative flex w-full min-h-0 overflow-hidden">
             {/* Optional Guide Sidebar */}
             {showGuide && (
                 <div className="flex flex-col items-center justify-between mt-1 mb-2 me-2 px-1 border border-yellow-800 rounded-lg w-80 h-full flex-shrink-0">
@@ -314,7 +314,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                             <X className="h-4 w-4" />
                         </button>
                     </div>
-                    <div className="flex-1 max-h-[calc(100vh-22rem)] overflow-y-auto p-1 bg-yellow-900/60 w-full">
+                    <div className="flex-1 max-h-[calc(80vh-32rem)] overflow-y-auto p-1 bg-yellow-900/60 w-full">
                         {guide}
                     </div>
                 </div>
@@ -322,19 +322,20 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
 
             {/* Main Column */}
             <div
-                className="flex flex-col w-full h-full min-h-0 gap-2"
+                className="flex flex-col w-full min-h-0 gap-2"
                 // Reserve the measured input bar height plus the platform safe-area inset so the bar isn't overlapped
                 style={{ paddingBottom: `calc(${Math.max(0, inputBarHeight + INPUT_BAR_OFFSET)}px + env(safe-area-inset-bottom))` }}
             >
-                <div className="flex items-center gap-2">
+                {/* Help button fixed in top-left corner */}
+                <div className="absolute top-0 left-0 z-20">
                     {!showGuide && (
                         <button
                             onClick={() => setShowGuide(true)}
-                            className="text-gray-400 hover:text-blue-400 hover:bg-gray-800 pt-1 rounded-md"
+                            className="text-gray-400 hover:text-blue-400 hover:bg-gray-800/60 p-1 rounded-md transition-colors"
                             title="Show Guide"
                             type="button"
                         >
-                            <HelpCircle className="bg-yellow-700 text-white rounded h-4 w-4" />
+                            <HelpCircle className="bg-yellow-700 text-white rounded h-5 w-5" />
                         </button>
                     )}
                 </div>
@@ -419,7 +420,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
                         ) : result ? (
                             <MarkdownPreview mdPreview={result} />
                         ) : startupGuide ? (
-                            <div className="flex flex-col items-center justify-center w-full p-4 gap-4 text-gray-400 text-sm flex-1">
+                            <div className="flex flex-col items-center justify-center w-full gap-1 text-gray-400 text-sm flex-1">
                                 {startupGuide}
                             </div>
                         ) : (

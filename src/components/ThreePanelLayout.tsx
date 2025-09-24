@@ -54,11 +54,11 @@ export function ThreePanelLayout({
     setShowRightPanel,
 }: ThreePanelLayoutProps) {
     const MIN_PANEL_WIDTH = 150;
-    const MIN_MIDDLE_WIDTH = 200;
+    const MIN_MIDDLE_WIDTH = 180;
 
     // Use the same mobile detection as sidebar
     const isMobile = useIsMobile();
-    const [leftPanelWidth, setLeftPanelWidth] = useState(400);
+    const [leftPanelWidth, setLeftPanelWidth] = useState(500);
     const [rightPanelWidth, setRightPanelWidth] = useState(500);
 
     // Remove duplicate mobile detection useEffect
@@ -341,7 +341,7 @@ export function ThreePanelLayout({
                                     onValueChange={setActiveMiddleTab}
                                     className="flex flex-col flex-1 overflow-hidden"
                                 >
-                                    <TabsList className="grid grid-cols-4 w-full pt-3 z-10">
+                                    <TabsList className="grid grid-cols-4 w-full pt-0 z-10">
                                         {finalMiddlePanelContent.tabs.map((tab) => (
                                             <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
                                                 {tab.label}

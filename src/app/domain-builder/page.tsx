@@ -467,7 +467,6 @@ export default function DomainBuilderPage() {
         )
       }
     ],
-    // modal should default to the domain-builder tab so opening the modal shows the AI Domain Builder
     defaultTab: 'domain-builder'
   };
 
@@ -526,12 +525,12 @@ export default function DomainBuilderPage() {
     </div>
   )
 
-  // page-level inline tabs: 'current-domain' and 'current-suite'
-  const [pageTab, setPageTab] = useState<'current-domain' | 'current-suite'>('current-domain');
+  // // page-level inline tabs: 'current-domain' and 'current-suite'
+  // const [pageTab, setPageTab] = useState<'current-domain' | 'current-suite'>('current-domain');
 
-  // helpers to locate tab content
-  const findLeftTabContent = (key: string) => leftPanelContent.tabs.find((t: any) => t.key === key)?.content || null;
-  const findMiddleTabContent = (key: string) => middlePanelContentInline.tabs.find((t: any) => t.key === key)?.content || null;
+  // // helpers to locate tab content
+  // const findLeftTabContent = (key: string) => leftPanelContent.tabs.find((t: any) => t.key === key)?.content || null;
+  // const findMiddleTabContent = (key: string) => middlePanelContentInline.tabs.find((t: any) => t.key === key)?.content || null;
 
   return (
     <div className="flex-1 flex-row h-screen">
