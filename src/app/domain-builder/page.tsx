@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
+import { setMessages } from '@/features/chat/chatSlice';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 // import DomainBuilder from "@/components/domain-builder/DomainBuilder";
 import ChatComponent from '@/components/domain-builder/ChatComponent';
@@ -21,9 +22,11 @@ import Guide from '@/components/domain-builder/Guide';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
+import ModalThreePanelLayout from '@/components/ModalThreePanelLayout';
 import { FileOperations } from '@/components/FileOperations';
 import UniverseComponent from '@/features/model-universe/components/UniverseComponent';
 import { labelRect } from 'mermaid/dist/rendering-util/rendering-elements/shapes/labelRect.js';
+import DomainEditorModal from "@/components/DomainEditorModal";
 
 type Model = any;
 
@@ -65,7 +68,35 @@ export default function DomainBuilderPage() {
     | 'gpt-5'
     | 'gpt-5-mini'
   >('gpt-5-mini'); // Default model
-  
+
+
+
+  // Add clear chat function
+  const handleClearChat = () => {
+    // Clear Redux chat store
+    dispatch(setMessages([]));
+    // Clear local messages state as well (backup)
+    setCurrentMessages([]);
+    // Optionally clear input as well
+    setInput('');
+  };
+
+
+  // Create a function that saves to library AND clears chat AND preview
+  const handleSaveToLibraryAndClearChat = (content: string) => {
+    // Clear the chat messages in Redux store
+    dispatch(setMessages([]));
+    // Clear local messages state as well (backup)
+    setCurrentMessages([]);
+    // Clear input field
+    setInput('');
+
+    // Clear the markdown preview
+    setMdPreview('Nothing to preview yet!');
+
+    console.log('Chat and preview cleared after saving to library:', content.substring(0, 50) + '...');
+  };
+
   const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const selectedModelName = e.target.value;
     const model = metis?.models ? metis.models.find((m: { name: string }) => m.name === selectedModelName) : null;
@@ -77,6 +108,7 @@ export default function DomainBuilderPage() {
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
   const [showGuideModal, setShowGuideModal] = useState(false);
+  const [showEditorModal, setShowEditorModal] = useState(false);
 
   const [lastResponse, setLastResponse] = useState<string>('');
   const [activeTab, setActiveTab] = useState("chat");
@@ -236,7 +268,8 @@ export default function DomainBuilderPage() {
 
           // Import each document to Redux
           importedDocuments.forEach(doc => {
-            dispatch(saveMarkdownDocument({id: doc.id, name: doc.name, content: doc.content, type: doc.type || 'markdown', createdAt: doc.createdAt || new Date().toISOString(), updatedAt: doc.updatedAt || new Date().toISOString()
+            dispatch(saveMarkdownDocument({
+              id: doc.id, name: doc.name, content: doc.content, type: doc.type || 'markdown', createdAt: doc.createdAt || new Date().toISOString(), updatedAt: doc.updatedAt || new Date().toISOString()
             }));
           });
 
@@ -300,25 +333,25 @@ export default function DomainBuilderPage() {
 
   const leftPanelContent = {
     tabs: [
-      {
-        key: 'current-domain',
-        label: 'Current Domain',
-        content: (
-          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            {currentDocument ? (
-              <div className="p-2 bg-gray-800 rounded">
-                <MarkdownPreview
-                  mdPreview={currentDocument || 'No definition available'}
-                />
-              </div>
-            ) : (
-              <div className="p-2 bg-gray-800 rounded">
-                <div className="text-sm text-gray-400">No domain found</div>
-              </div>
-            )}
-          </div>
-        )
-      },
+      // {
+      //   key: 'current-domain',
+      //   label: 'Current Domain',
+      //   content: (
+      //     <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+      //       {currentDocument ? (
+      //         <div className="p-2 bg-gray-800 rounded">
+      //           <MarkdownPreview
+      //             mdPreview={currentDocument || 'No definition available'}
+      //           />
+      //         </div>
+      //       ) : (
+      //         <div className="p-2 bg-gray-800 rounded">
+      //           <div className="text-sm text-gray-400">No domain found</div>
+      //         </div>
+      //       )}
+      //     </div>
+      //   )
+      // },
       {
         key: 'context',
         label: 'Additional Context',
@@ -333,15 +366,77 @@ export default function DomainBuilderPage() {
         )
       },
     ],
-    defaultTab: 'current-domain'
+    defaultTab: 'context'
   };
   // Middle Panel Content
   const middlePanelContent = {
     tabs: [
       {
+        key: 'document',
+        label: 'Current Domain',
+        content: (
+          <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+            {/* <div className="flex flex-col space-y-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Name</label>
+                <input
+                  type="text"
+                  value={domainName}
+                  onChange={(e) => handleFieldChange('name', e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  placeholder="Enter domain name"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300">Description</label>
+                <textarea
+                  value={domainDescription}
+                  onChange={(e) => handleFieldChange('description', e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                  placeholder="Enter domain description"
+                  rows={3}
+                />
+              </div>
+            </div> */}
+            <div className="space-y-4">
+              {/* Current Document Panel */}
+              {currentDocument ? (
+                <DocumentPanel
+                  mdContent={currentDocument}
+                  setMdContent={setCurrentDocument}
+                  setIsLibraryOpen={setIsLibraryOpen}
+                  isLibraryOpen={isLibraryOpen}
+                  panelType='middle'
+                  currentDocumentContent={currentDocument}
+                  markdownPreviewContent={mdPreview}
+                />
+              ) : (
+                <></>
+              )}
+            </div>
+          </div>
+        )
+      },
+      {
+        key: 'suite',
+        label: 'Current Model Suite',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
+            <UniverseComponent />
+          </div>
+        )
+      }
+    ],
+    defaultTab: 'domain-builder'
+  };
+  // Full middle panel (for the modal) — includes AI Domain Builder as a tab
+  const middlePanelContentModal = {
+    tabs: [
+      {
         key: 'domain-builder',
         label: 'AI Domain Builder',
-        content: (
+        // Only create/render the ChatComponent when the editor modal is open
+        content: showEditorModal ? (
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
             <ChatComponent
               input={input}
@@ -364,66 +459,19 @@ export default function DomainBuilderPage() {
               guide={<Guide />}
             />
           </div>
-        )
-      },
-      {
-        key: 'document',
-        label: 'Current Domain',
-        content: (
-          <div className="bg-background rounded-lg p-4 h-full overflow-auto">
-            <div className="flex flex-col space-y-4 mb-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-300">Name</label>
-                <input
-                  type="text"
-                  value={domainName}
-                  onChange={(e) => handleFieldChange('name', e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="Enter domain name"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-300">Description</label>
-                <textarea
-                  value={domainDescription}
-                  onChange={(e) => handleFieldChange('description', e.target.value)}
-                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                  placeholder="Enter domain description"
-                  rows={3}
-                />
-              </div>
-            </div>
-            <div className="space-y-4">
-              {/* Current Document Panel */}
-              {currentDocument ? (
-              <DocumentPanel
-                mdContent={currentDocument}
-                setMdContent={setCurrentDocument}
-                setIsLibraryOpen={setIsLibraryOpen}
-                isLibraryOpen={isLibraryOpen}
-                panelType='middle'
-                currentDocumentContent={currentDocument}
-                markdownPreviewContent={mdPreview}
-              />
-              ) : ( 
-                <></>
-              )}
-            </div>
-          </div>
-        )
-      },
-      {
-        key: 'suite',
-        label: 'Current Model Suite',
-        content: (
-          <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
-            <UniverseComponent />
+        ) : (
+          // lightweight placeholder avoids creating the heavy component before modal is opened
+          <div className="p-4 text-sm text-gray-400">
+            Open the editor to use the AI Domain Builder
           </div>
         )
       }
     ],
+    // modal should default to the domain-builder tab so opening the modal shows the AI Domain Builder
     defaultTab: 'domain-builder'
   };
+
+
   // Define right panel content with the new props
   const rightPanelContent = {
     tabs: [
@@ -439,6 +487,7 @@ export default function DomainBuilderPage() {
             panelType='right'
             currentDocumentContent={currentDocument} // Pass Current Document content
             markdownPreviewContent={mdPreview} // Pass Markdown Preview content
+            onSaveToLibrary={handleSaveToLibraryAndClearChat} // Add the callback to clear chat
           />
         )
       }
@@ -446,8 +495,8 @@ export default function DomainBuilderPage() {
     defaultTab: 'preview'
   };
 
-  const modelSelector = (false) ? (
-    <div className="flex justify-between bg-gray-800 text-xs">
+  const modelSelector = (true) ? (
+    <div className="flex justify-between bg-gray-800 text-xl">
       <div className="px-1">
         <span className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</span>
         <span className="text-gray-300">{metis?.name}</span>
@@ -470,18 +519,26 @@ export default function DomainBuilderPage() {
     <div className="flex justify-between bg-gray-800 text-xs">
       <div className="px-1">
         <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
-        <span className="text-gray-300">
-          {Array.isArray(documents) && documents.length > 0 ? documents[0].name : "No document"}
+        <span className="text-gray-300 italic px-2">
+          {Array.isArray(documents) && documents.length > 0 ? documents[0].name : "Domain Definition"}
         </span>
       </div>
     </div>
   )
+
+  // page-level inline tabs: 'current-domain' and 'current-suite'
+  const [pageTab, setPageTab] = useState<'current-domain' | 'current-suite'>('current-domain');
+
+  // helpers to locate tab content
+  const findLeftTabContent = (key: string) => leftPanelContent.tabs.find((t: any) => t.key === key)?.content || null;
+  const findMiddleTabContent = (key: string) => middlePanelContentInline.tabs.find((t: any) => t.key === key)?.content || null;
 
   return (
     <div className="flex-1 flex-row h-screen">
       <div className="w-full border-b-2 border-gray-600">
         <FileOperations />
       </div>
+
       <ThreePanelLayout
         moduleOperations={modelSelector}
         leftPanelContent={leftPanelContent}
@@ -495,6 +552,24 @@ export default function DomainBuilderPage() {
       >
         <></>
       </ThreePanelLayout>
+
+
+      {/* Domain editor modal - only mounted when explicitly opened */}
+      {showEditorModal && (
+        <DomainEditorModal
+          isOpen={true}
+          onClose={() => setShowEditorModal(false)}
+          moduleOperations={modelSelector}
+          leftPanelContent={leftPanelContent}
+          middlePanelContent={middlePanelContentModal} // <-- use only builder tab in modal
+          rightPanelContent={rightPanelContent}
+          showLeftPanel={showLeftPanel}
+          setShowLeftPanel={setShowLeftPanel}
+          showRightPanel={showRightPanel}
+          setShowRightPanel={setShowRightPanel}
+          className="h-full min-w-0 bg-background text-gray-100"
+        />
+      )}
 
       {/* Modals */}
       <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
@@ -549,6 +624,26 @@ export default function DomainBuilderPage() {
           </div>
         </div>
       )}
+
+
+      {/* Floating "Open Editor" button (always visible) - Centered with AI icon */}
+      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
+        <button
+          aria-label="Open Editor"
+          title="Open AI Domain Builder Editor"
+          onClick={() => {
+            setPageTab('current-domain');
+            setShowEditorModal(true);
+          }}
+          className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:scale-105"
+        >
+          <FontAwesomeIcon
+            icon={faRobot}
+            className="w-5 h-5"
+          />
+          <span className="text-sm font-semibold">Open AI Assistant</span>
+        </button>
+      </div>
     </div>
   );
 }

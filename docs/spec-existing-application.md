@@ -7,7 +7,7 @@
 
 ## Execution Flow (main)
 ```
-1. User selects an agent from the sidebar (Domain, Ontology, Model/IRTV, Modelview, Prompt, Chat)
+1. User selects an agent from the sidebar or from the top-bar(Domain, Ontology, Model/IRTV, Modelview, Prompt, Chat) .
 2. User adds/edit Markdown context via Document Panel and picks model + temperature
 3. For exploratory text → call POST /api/vercel-ai/generate
    → Route normalizes provider output (OpenAI, Mistral, DeepSeek)
