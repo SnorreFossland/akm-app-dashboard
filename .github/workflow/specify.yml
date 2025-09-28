@@ -1,0 +1,38 @@
+name: Spec Kit Gates
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  spec:
+    name: specify:spec
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Run spec phase check
+        run: uvx --from git+https://github.com/github/spec-kit.git specify check --phase spec
+
+  plan:
+    name: specify:plan
+    runs-on: ubuntu-latest
+    needs: spec
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Run plan phase check
+        run: uvx --from git+https://github.com/github/spec-kit.git specify check --phase plan
+
+  impl:
+    name: specify:impl
+    runs-on: ubuntu-latest
+    needs: plan
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Run implementation phase check
+        run: uvx --from git+https://github.com/github/spec-kit.git specify check --phase impl

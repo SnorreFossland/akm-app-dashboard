@@ -179,6 +179,45 @@
     /* Adjust the width as needed */
     max-width: 100%;
     /* Ensure it doesn't exceed the container's width */
+    line-height: 1.25;
+}
+
+.custom-markdown p {
+    margin-top: 0.1rem !important;
+    margin-bottom: 0.1rem !important;
+}
+
+.custom-markdown :where(p, ul, ol) {
+    margin-block: 0.08rem !important;
+}
+
+.custom-markdown :where(h1, h2, h3, h4, h5, h6) {
+    margin-top: 0.18rem !important;
+    margin-bottom: 0.12rem !important;
+}
+
+.custom-markdown :where(ul, ol) {
+    margin-block: 0.1rem !important;
+    padding-left: 1rem !important;
+}
+
+.custom-markdown :where(li) {
+    margin-block: 0.04rem !important;
+}
+
+.custom-markdown.prose {
+    line-height: 1.2;
+}
+
+/* Override for specific elements within custom markdown */
+.custom-markdown h1,
+.custom-markdown h2,
+.custom-markdown h3,
+.custom-markdown h4,
+.custom-markdown h5,
+.custom-markdown h6 {
+    margin-top: 0.35rem !important;
+    margin-bottom: 0.2rem !important;
 }
 
 .markdown-preview h1,
@@ -573,4 +612,24 @@
 .prose.markdown-preview figure {
     margin-top: 0 !important;
     margin-bottom: 0 !important;
+}
+
+.custom-markdown :where(p) {
+    margin-top: 0.1rem !important;
+    margin-bottom: 0.1rem !important;
+}
+
+.custom-markdown :where(h1, h2, h3, h4, h5, h6) {
+    margin-top: 0.35rem !important;
+    margin-bottom: 0.2rem !important;
+}
+
+.custom-markdown :where(ul, ol) {
+    margin-top: 0.15rem !important;
+    margin-bottom: 0.15rem !important;
+}
+
+.custom-markdown :where(li) {
+    margin-top: 0.05rem !important;
+    margin-bottom: 0.05rem !important;
 }

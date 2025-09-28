@@ -1,0 +1,86 @@
+# Tasks for the ontology agent
+# Phases: spec | plan | impl
+
+version: 1
+project: ai-dashboard
+
+tasks:
+  - id: SPEC-ONT-001
+    title: Finalize ontology product spec
+    phase: spec
+    owners: [ "@you" ]
+    docs:
+      - .specify/product_spec.md#problem-statement
+      - .specify/product_spec.md#acceptance-criteria-ux
+    done_when:
+      - product_spec.md committed with Goals, Inputs, Outputs, Acceptance Criteria
+      - reviewers approved in PR
+
+  - id: PLAN-ONT-001
+    title: Author technical plan and endpoint contracts
+    phase: plan
+    owners: [ "@you" ]
+    docs:
+      - .specify/tech_plan.md#architecture
+      - docs/endpoint-contracts.md
+    done_when:
+      - tech_plan.md includes endpoints, data flow, validation, errors
+      - endpoint-contracts.md aligned and linked
+
+  - id: IMPL-ONT-001
+    title: Scaffold ontology agent page and orchestrator
+    phase: impl
+    owners: [ "@you" ]
+    code:
+      - src/app/ontology/page.tsx
+      - src/components/ontology/Orchestrator.tsx
+    deps: [ PLAN-ONT-001 ]
+    done_when:
+      - page renders ThreePanelLayout with controls and panels
+      - orchestrator wires streamGenmodel and mapModelId
+
+  - id: IMPL-ONT-002
+    title: Add Zod schema and validation path
+    phase: impl
+    owners: [ "@you" ]
+    code:
+      - src/schemas/ontology.ts
+      - tests/schemas/ontology.spec.ts
+    deps: [ PLAN-ONT-001 ]
+    done_when:
+      - invalid payloads produce SCHEMA_INVALID
+      - tests cover success and failure
+
+  - id: IMPL-ONT-003
+    title: Redux persistence and ontology dedupe
+    phase: impl
+    owners: [ "@you" ]
+    code:
+      - src/store/modelUniverseSlice.ts
+    deps: [ IMPL-ONT-002 ]
+    done_when:
+      - concepts deduped case-insensitively
+      - triple uniqueness enforced
+
+  - id: IMPL-ONT-004
+    title: Graph visualization and diff
+    phase: impl
+    owners: [ "@you" ]
+    code:
+      - src/components/ontology/GraphView.tsx
+    deps: [ IMPL-ONT-003 ]
+    done_when:
+      - new/changed nodes highlighted
+      - zoom/pan/lasso and export work
+
+  - id: QA-ONT-001
+    title: Smoke tests and CI gates
+    phase: impl
+    owners: [ "@you" ]
+    code:
+      - tests/streamGenmodel.smoke.spec.ts
+      - .github/workflows/specify.yml
+    deps: [ IMPL-ONT-004 ]
+    done_when:
+      - typecheck, lint, test pass
+      - specify:spec, specify:plan, specify:impl checks green

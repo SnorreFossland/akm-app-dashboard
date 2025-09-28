@@ -5,7 +5,7 @@ import { usePathname } from 'next/navigation';
 import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import extractDomainNameAndDescription from './docExtraction';
-import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import DiffModal from './DiffModal';
 
@@ -25,6 +25,12 @@ interface DocumentPanelProps {
     // Add these new props for diff comparison
     currentDocumentContent?: string; // Content from Current Document tab
     markdownPreviewContent?: string; // Content from Markdown Preview (AI response)
+    startInEditMode?: boolean;
+    onPreview?: (content: string) => void;
+    showLibraryButton?: boolean;
+    showSaveButton?: boolean;
+    showApplyButton?: boolean;
+    showDocumentList?: boolean;
 }
 
 export default function DocumentPanel({
@@ -41,14 +47,20 @@ export default function DocumentPanel({
     isLibraryOpen = false,
     panelType = 'middle',
     currentDocumentContent = '', // Default to empty string
-    markdownPreviewContent = '' // Default to empty string
+    markdownPreviewContent = '', // Default to empty string
+    startInEditMode = false,
+    onPreview,
+    showLibraryButton = true,
+    showSaveButton = true,
+    showApplyButton = true,
+    showDocumentList = true
 }: DocumentPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
     const pathname = usePathname();
-    const [isEditing, setIsEditing] = useState(false);
+    const [isEditing, setIsEditing] = useState(startInEditMode);
     const [editContent, setEditContent] = useState(mdContent || '');
-    const [showDocumentList, setShowDocumentList] = useState(false);
+    const [isDocumentListVisible, setIsDocumentListVisible] = useState(showDocumentList);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
@@ -57,11 +69,22 @@ export default function DocumentPanel({
     const [showDiffModal, setShowDiffModal] = useState(false);
     const [pendingSaveContent, setPendingSaveContent] = useState('');
 
+    // Sync initial edit mode state
+    useEffect(() => {
+        if (startInEditMode) {
+            setIsEditing(true);
+        }
+    }, [startInEditMode]);
+
     // Update editContent when mdContent changes from parent
     useEffect(() => {
         setEditContent(mdContent || '');
         // console.log('60 DocumentPanel useEffect - mdContent updated:', mdContent?.substring(0, 100) || 'empty');
     }, [mdContent]);
+
+    useEffect(() => {
+        setIsDocumentListVisible(showDocumentList);
+    }, [showDocumentList]);
 
     // Function to detect placeholders in the format [placeholder]
     useEffect(() => {
@@ -89,7 +112,9 @@ export default function DocumentPanel({
     const handleDocumentSelect = (doc: any) => {
         setMdContent(doc.content);
         setEditContent(doc.content);
-        setShowDocumentList(false);
+        if (showDocumentList) {
+            setIsDocumentListVisible(false);
+        }
         onSelect(doc.content, doc.name);
     };
 
@@ -145,7 +170,7 @@ export default function DocumentPanel({
         if (panelType === 'right') {
             // For right panel (Markdown Preview), compare Current Document with Markdown Preview
             oldContent = currentDocumentContent;
-            newContent = markdownPreviewContent;
+            newContent = markdownPreviewContent || contentToSave;
             console.log('143 Right panel - comparing currentDoc vs markdownPreview');
             console.log('144 oldContent (currentDoc):', oldContent?.substring(0, 100) || 'empty');
             console.log('145 newContent (markdownPreview):', newContent?.substring(0, 100) || 'empty');
@@ -165,22 +190,14 @@ export default function DocumentPanel({
             console.log('159 newContent (contentToSave):', newContent?.substring(0, 100) || 'empty');
         }
 
-        console.log('162 Diff check conditions:');
-        console.log('163 - oldContent exists:', !!oldContent);
-        console.log('164 - contents are different:', oldContent !== newContent);
-        console.log('165 - oldContent not empty after trim:', oldContent && oldContent.trim() !== '');
-        console.log('166 - Should show diff modal:', oldContent && oldContent !== newContent && oldContent.trim() !== '');
+        const contentsDiffer = oldContent !== newContent;
 
-        // Show diff if there's content to compare and they're different
-        // if (oldContent && oldContent !== newContent && oldContent.trim() !== '') {
-        setPendingSaveContent(newContent);
-        setShowDiffModal(true);
-        console.log('171 Opening diff modal');
-        return; // Don't save yet, wait for user confirmation
-        // }
+        if (oldContent && oldContent.trim() !== '' && contentsDiffer) {
+            setPendingSaveContent(newContent);
+            setShowDiffModal(true);
+            return;
+        }
 
-        console.log('175 Saving directly without diff modal');
-        // If no existing content or no changes, save directly
         performSaveToLibrary(contentToSave);
     };
     // Create a separate function to perform the actual save
@@ -414,15 +431,17 @@ export default function DocumentPanel({
         return result;
     }
 
+    const allowDocumentList = panelType === 'middle' && showDocumentList;
+
     return (
         <div className="p-2 flex h-full">
             {/* Document List Sidebar */}
-            {showDocumentList && panelType === 'middle' && (
+            {allowDocumentList && isDocumentListVisible && (
                 <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b border-gray-600">
                         <h3 className="text-sm font-medium text-gray-300">Documents</h3>
                         <button
-                            onClick={() => setShowDocumentList(false)}
+                            onClick={() => setIsDocumentListVisible(false)}
                             className="text-gray-400 hover:text-white"
                             title="Hide document list"
                         >
@@ -456,9 +475,9 @@ export default function DocumentPanel({
             <div className="flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-2">
-                        {!showDocumentList && (
+                        {allowDocumentList && !isDocumentListVisible && (
                             <button
-                                onClick={() => setShowDocumentList(true)}
+                                onClick={() => setIsDocumentListVisible(true)}
                                 className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
                                 title="Show document list"
                             >
@@ -529,48 +548,63 @@ export default function DocumentPanel({
                             </>
                         ) : (
                             <>
-                                <button
-                                    onClick={() => setIsLibraryOpen(true)}
-                                    className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
-                                    title="Open library modal"
-                                >
-                                    <Library className="h-4 w-4" />
-                                </button>
-                                <button
-                                    onClick={handleSaveToLibrary}
-                                    className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
-                                    title="Save to library"
-                                >
-                                    <BookmarkPlus className="h-4 w-4" />
-                                </button>
-                                {isEditing ? (
+                                {panelType === 'middle' && typeof onPreview === 'function' && (
                                     <button
-                                        onClick={() => {
-                                            console.log('303 Applying changes:', editContent.substring(0, 100)); // Debug log
-                                            console.log('304 Before setMdContent - current mdContent:', mdContent?.substring(0, 100) || 'empty');
-                                            // Update parent component's state
-                                            setMdContent(editContent);
-                                            setIsEditing(false);
-                                            // Also call onSave to notify parent components
-                                            onSave(editContent);
-                                            console.log('After setMdContent - editContent applied:', editContent.substring(0, 100) || 'empty');
-                                        }}
-                                        className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
-                                        title="Apply changes"
+                                        onClick={() => onPreview(isEditing ? editContent : mdContent)}
+                                        className="p-1.5 text-gray-400 hover:text-purple-300 hover:bg-gray-800 rounded-md"
+                                        title="Update preview"
                                     >
-                                        <Check className="h-4 w-4" />
+                                        <Eye className="h-4 w-4" />
                                     </button>
-                                ) : (
+                                )}
+                                {showLibraryButton && (
                                     <button
-                                        onClick={() => {
-                                            setIsEditing(true);
-                                            onEdit();
-                                        }}
+                                        onClick={() => setIsLibraryOpen(true)}
                                         className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
-                                        title="Edit document"
+                                        title="Open library modal"
                                     >
-                                        <Edit className="h-4 w-4" />
+                                        <Library className="h-4 w-4" />
                                     </button>
+                                )}
+                                {showSaveButton && (
+                                    <button
+                                        onClick={handleSaveToLibrary}
+                                        className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
+                                        title="Save to library"
+                                    >
+                                        <BookmarkPlus className="h-4 w-4" />
+                                    </button>
+                                )}
+                                {showApplyButton && (
+                                    isEditing ? (
+                                        <button
+                                            onClick={() => {
+                                                console.log('303 Applying changes:', editContent.substring(0, 100)); // Debug log
+                                                console.log('304 Before setMdContent - current mdContent:', mdContent?.substring(0, 100) || 'empty');
+                                                // Update parent component's state
+                                                setMdContent(editContent);
+                                                setIsEditing(false);
+                                                // Also call onSave to notify parent components
+                                                onSave(editContent);
+                                                console.log('After setMdContent - editContent applied:', editContent.substring(0, 100) || 'empty');
+                                            }}
+                                            className="p-1.5 text-green-500 hover:text-green-200 hover:bg-gray-800 rounded-md"
+                                            title="Apply changes"
+                                        >
+                                            <Check className="h-4 w-4" />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            onClick={() => {
+                                                setIsEditing(true);
+                                                onEdit();
+                                            }}
+                                            className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
+                                            title="Edit document"
+                                        >
+                                            <Edit className="h-4 w-4" />
+                                        </button>
+                                    )
                                 )}
                                 <button
                                     onClick={() => {
@@ -651,7 +685,10 @@ export default function DocumentPanel({
                 ) : (
                         <div className="prose prose-invert prose-xs custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[60vh] max-w-full whitespace-pre-wrap break-words [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm">
                             {mdContent ? (
-                                <MarkdownPreview mdPreview={mdContent} />
+                                <MarkdownPreview
+                                    mdPreview={mdContent}
+                                    variant={panelType === 'right' || panelType === 'middle' ? 'compact' : 'default'}
+                                />
                             ) : (
                                 <div className="text-sm text-gray-400 p-4">
                                     {getEmptyMessage()}

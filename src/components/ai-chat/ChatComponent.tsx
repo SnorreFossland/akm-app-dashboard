@@ -44,7 +44,6 @@ import { mapModelId } from '@/lib/ai/modelMap';
 //     role: 'user' | 'assistant' | 'system';
 //     content: string;
 // }
-
 export interface ChatComponentProps {
     onResponseChange: (response: string) => void;
     onViewInMarkdown: (response: string) => void;
@@ -73,7 +72,6 @@ export interface ChatComponentProps {
 }
 
 const MAX_MODEL_RETRIES = 4;
-
 
 interface DraggableDividerProps {
     direction: string;
@@ -600,6 +598,14 @@ Do not use its contents as contextual input for other questions--I want it impro
         setStreamedContent('');
         console.log('sendMessageToAPI (gateway) called with messages:', newMessages);
 
+        // Log context info for debugging
+        console.log('602 Context information available:', {
+            mdContentLength: mdContent?.length || 0,
+            currentDocumentLength: currentDocument?.length || 0,
+            mdContentSample: mdContent?.substring(0, 50),
+            currentDocumentSample: currentDocument?.substring(0, 50),
+        });
+
         if (selectedModel === 'dummy') {
             const dummyResponse =
                 "This is a loooooooooooooooooooooooooooooooooo ooooooooooooooooooooooooooooooong loooooooooooooooooooooooooooooooo ooooooooooooooooooooooooooooooooong dummy response.";
@@ -622,125 +628,138 @@ Do not use its contents as contextual input for other questions--I want it impro
                 return;
             }
 
-            // If the model is not an OpenAI gpt-* model, use the existing streaming API
-            if (!selectedModel.startsWith('gpt-')) {
-                try {
-                    setIsStreaming(true);
-                    const sessionId = Date.now().toString();
-                    sessionStorage.setItem(`chat_session_${sessionId}`, JSON.stringify(messagesToSend));
-
-                    if (!messagesToSend || messagesToSend.length === 0) {
-                        setStatusMsg('Error: No messages to send. Please enter a prompt.');
-                        setIsLoading(false);
-                        setIsStreaming(false);
-                        return;
-                    }
-
-                    await fetch('/api/chat/create-stream', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ sessionId, messages: messagesToSend, model: selectedModel, temperature })
-                    }).then(response => {
-                        if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
-                        return response.json();
-                    }).then(() => {
-                        const streamUrl = `/api/chat/stream?sessionId=${sessionId}&model=${selectedModel}&temperature=${temperature}`;
-                        const eventSource = new EventSource(streamUrl);
-
-                        eventSource.onopen = () => {
-                            console.log('EventSource opened:', { url: eventSource.url, readyState: eventSource.readyState });
-                        };
-
-                        let accumulatedResponse = '';
-                        eventSource.onmessage = (event) => {
-                            try {
-                                if (event.data === '[DONE]') {
-                                    if (streamUpdateTimeoutRef.current) {
-                                        clearTimeout(streamUpdateTimeoutRef.current);
-                                        streamUpdateTimeoutRef.current = null;
-                                    }
-                                    setStreamedContent(accumulatedResponse);
-                                    dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
-                                    setIsLoading(false);
-                                    setIsStreaming(false);
-                                    eventSource.close();
-                                    return;
-                                }
-                                const data = JSON.parse(event.data);
-                                if (data.content) {
-                                    if (typeof data.content === 'string' && data.content.includes('rate limit')) {
-                                        setStatusMsg('Rate limit exceeded. Please wait a moment before sending another message.');
-                                        setTimeout(() => setStatusMsg(''), 10000);
-                                        return;
-                                    }
-                                    accumulatedResponse += data.content;
-                                    updateStreamedContent(accumulatedResponse);
-                                }
-                            } catch (err) {
-                                console.error('Error parsing SSE message:', err);
-                            }
-                        };
-
-                        eventSource.onerror = () => {
-                            const errorMessage = `Error connecting to AI. (ReadyState: ${eventSource.readyState}, Session: ${sessionId})`;
-                            setStatusMsg(errorMessage);
-                            setIsLoading(false);
-                            setIsStreaming(false);
-                            eventSource.close();
-                            if (accumulatedResponse) {
-                                dispatch(addMessage({ role: 'assistant', content: accumulatedResponse }));
-                            }
-                        };
-                    }).catch(error => {
-                        console.error('Failed to initiate streaming:', error);
-                        setStatusMsg(`Failed to start AI response: ${error instanceof Error ? error.message : String(error)}`);
-                        setIsLoading(false);
-                        setIsStreaming(false);
-                    });
-                } catch (err) {
-                    console.error('Streaming branch error:', err);
-                    const msg = err instanceof Error ? err.message : String(err);
-                    setStatusMsg(`Failed to communicate with AI ${selectedModel}: ${msg}`);
-                    setIsLoading(false);
-                } finally {
-                    retryInProgress.current = false;
-                }
-                return; // prevent falling through to gateway branch
-            }
-
             const promptText = messagesToSend
                 .map(m => `[${m.role.toUpperCase()}]\n${m.content}`)
                 .join('\n\n');
 
+            // Create final prompt with context from both mdContent and currentDocument
+            // Using a more explicit format that clearly identifies domain/context
+            let finalPromptText = promptText;
+
+            // Add context section with more explicit formatting
+            if (mdContent?.trim() || currentDocument?.trim()) {
+                // Add a distinctive marker that stands out to the AI
+                finalPromptText += '\n\n=== DOMAIN AND CONTEXT INFORMATION ===\n';
+
+                // Add current document if it exists with clear domain marker
+                if (currentDocument?.trim()) {
+                    if (docRefine) {
+                        finalPromptText += `\nRefine and extend the following document:\n## EXISTING DOCUMENT:\n${currentDocument}\n\n`;
+                    } else {
+                        finalPromptText += `\n## EXISTING CONTEXT:\n${currentDocument}\n\n`;
+                    }
+                }
+
+                // Add additional context if it exists
+                if (mdContent?.trim()) {
+                    finalPromptText += `\n## ADDITIONAL CONTEXT:\n${mdContent}\n\n`;
+                }
+
+                // Close context section with clear marker
+                finalPromptText += '=== END OF DOMAIN AND CONTEXT ===\n\n';
+
+                // Add explicit instruction to use the context
+                finalPromptText += 'Please use the domain and context information provided above to inform your response.\n\n';
+            }
+
+            // Log the final prompt structure (truncated for readability)
+            console.log('Final prompt structure:', {
+                totalLength: finalPromptText.length,
+                hasContext: finalPromptText.includes('DOMAIN AND CONTEXT'),
+                messageSections: messagesToSend.length,
+                preview: finalPromptText.substring(0, 200) + '...',
+                contextIncluded: finalPromptText.includes(currentDocument?.substring(0, 20) || '') ||
+                    finalPromptText.includes(mdContent?.substring(0, 20) || '')
+            });
+
             console.log('Calling gateway helper with model:', selectedModel);
 
-            const basePayload: any = { prompt: promptText, model: mapModelId(selectedModel) };
-            if (typeof temperature === 'number' && !Number.isNaN(temperature)) {
-                basePayload.temperature = temperature;
+            const basePayload: any = {
+                prompt: finalPromptText,
+                model: mapModelId(selectedModel),
+                // Add explicit flags to indicate context is provided
+                hasContext: !!(mdContent?.trim() || currentDocument?.trim()),
+                contextType: currentDocument?.trim() ? 'domain' : (mdContent?.trim() ? 'general' : 'none'),
+            };
+
+            // Check API availability before making the full request
+            let healthCheckError: unknown = null;
+            if (typeof window !== 'undefined' && typeof fetch === 'function') {
+                const healthOptions: RequestInit = { method: 'HEAD' };
+                let controller: AbortController | null = null;
+                let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+                if (typeof AbortController !== 'undefined') {
+                    controller = new AbortController();
+                    healthOptions.signal = controller.signal;
+                    timeoutId = setTimeout(() => controller?.abort(), 2000);
+                }
+
+                try {
+                    const testResponse = await fetch('/api/health-check', healthOptions);
+                    if (!testResponse.ok) {
+                        healthCheckError = new Error(`API health check failed with status: ${testResponse.status}`);
+                    }
+                } catch (err) {
+                    healthCheckError = err;
+                } finally {
+                    if (timeoutId) {
+                        clearTimeout(timeoutId);
+                    }
+                }
             }
+
+            if (healthCheckError) {
+                console.warn('API health check warning; continuing request:', healthCheckError);
+                setStatusMsg('API health check warning; attempting request anyway.');
+            }
+
             try {
                 const storedMax = typeof window !== 'undefined' ? localStorage.getItem('aiDashboard_max_tokens') : null;
                 const parsed = storedMax ? parseInt(storedMax, 10) : NaN;
                 if (!Number.isNaN(parsed) && parsed > 0) {
                     basePayload.max_completion_tokens = parsed;
                 }
-            } catch {}
+            } catch { }
 
-            const assistantText = await callGateway(basePayload);
-            const finalText = assistantText && assistantText.trim().length > 0 ? assistantText : '[No content returned]';
-            dispatch(addMessage({ role: 'assistant', content: finalText }));
+            try {
+                const assistantText = await callGateway(basePayload);
+                const finalText = assistantText && assistantText.trim().length > 0 ? assistantText : '[No content returned]';
+                dispatch(addMessage({ role: 'assistant', content: finalText }));
+            } catch (gatewayError) {
+                console.error('Gateway API call failed:', gatewayError);
+
+                // Provide more user-friendly error message
+                const errorMessage =
+                    `Unable to connect to AI service. This could be because:\n\n` +
+                    `1. The API endpoint is unavailable\n` +
+                    `2. Your request may have timed out\n` +
+                    `3. The model "${selectedModel}" might be temporarily unavailable\n\n` +
+                    `Technical details: ${gatewayError instanceof Error ? gatewayError.message : String(gatewayError)}`;
+
+                dispatch(addMessage({
+                    role: 'assistant',
+                    content: errorMessage
+                }));
+            }
+
             setIsLoading(false);
         } catch (error) {
             console.error('Error sending message via gateway:', error);
             const errorMessage = error instanceof Error ? error.message : String(error);
             setStatusMsg(`Failed to communicate with AI ${selectedModel}: ${errorMessage}`);
+
+            // Add error to chat as assistant message for better visibility
+            dispatch(addMessage({
+                role: 'assistant',
+                content: `⚠️ Error: Failed to communicate with AI service. Please try again later or check your connection.\n\nDetails: ${errorMessage}`
+            }));
+
             setIsLoading(false);
         } finally {
             retryInProgress.current = false;
         }
-    }, [selectedModel, dispatch, systemPrompt]);
-
-
+    }, [selectedModel, dispatch, systemPrompt, mdContent, currentDocument]);
 
     // Update handleSubmit to use Redux actions
     const handleSubmit = async (e: React.FormEvent) => {
@@ -890,7 +909,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                     </div>
                     {/* Message container with scrollable area */}
                     <div
-                        className="flex-1 overflow-y-auto w-full min-w-0 message-container transform-gpu will-change-transform"
+                        className="flex-1 overflow-y-auto w-full min-w-0 message-container transform-gpu will-change-transform mb-4"
                         id="message-container"
                     >
                         {messages.length < 1 && (!input || input.trim() === "") && !isStreaming && !streamedContent ? (
@@ -1130,13 +1149,12 @@ Do not use its contents as contextual input for other questions--I want it impro
                     ) */}
                 {/* <div className="pb-[600px]"></div> */}
             </div>
-            {/* Input Area */}
-            <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
+
+            {/* Input Area - Adjusted with more bottom margin/padding */}
+            <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10 mb-5">
                 {/* Input area always at the bottom */}
-                {/* <div className={`flex  ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-18rem)]'} min-w-0 rounded-lg overflow-hidden relative`}></div> */}
-                {/* <div className="fixed bottom-0 left-10 right-1  bg-popover border-t border-gray-600 z-10"> */}
-                <div className={`${isMobile ? 'fixed bottom-0 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
-                    {pathname === '/ai-chat' &&
+                <div className={`${isMobile ? 'fixed bottom-5 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
+                    {pathname === '/ai-chat/modal' &&
                         <div className="flex items-center justify-between p-2 min-w-0">
                             {/* button row above the chat */}
                             <div className="flex items-center gap-2">
@@ -1221,89 +1239,87 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 }
                                 {/* Template dropdown for prompt templates */}
                                 <div className="flex items-center gap-2">
-                                    {!docRefine &&
-                                        <div className="">
-                                            <button
-                                                className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
-                                                onClick={() => {
-                                                    const dropdown = document.getElementById('template-dropdown');
-                                                    if (dropdown) {
-                                                        // Check position relative to viewport
-                                                        const button = document.activeElement as HTMLElement;
-                                                        const buttonRect = button.getBoundingClientRect();
-                                                        const viewportHeight = window.innerHeight;
-                                                        const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                        const spaceAbove = buttonRect.top;
+                                    <div className="">
+                                        <button
+                                            className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
+                                            onClick={() => {
+                                                const dropdown = document.getElementById('template-dropdown');
+                                                if (dropdown) {
+                                                    // Check position relative to viewport
+                                                    const button = document.activeElement as HTMLElement;
+                                                    const buttonRect = button.getBoundingClientRect();
+                                                    const viewportHeight = window.innerHeight;
+                                                    const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                    const spaceAbove = buttonRect.top;
 
-                                                        // First toggle visibility
-                                                        dropdown.classList.toggle('hidden');
+                                                    // First toggle visibility
+                                                    dropdown.classList.toggle('hidden');
 
-                                                        // If there's not enough space below, position above
-                                                        if (spaceBelow < 300 && spaceAbove > 150) {
-                                                            // Position above with margin to prevent cutoff
-                                                            dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
-                                                            dropdown.style.top = 'auto';
-                                                            dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
-                                                        } else {
-                                                            // Otherwise position below with margin
-                                                            dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
-                                                            dropdown.style.bottom = 'auto';
-                                                            dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                        }
-
-                                                        // Ensure the dropdown is fully visible within viewport
-                                                        setTimeout(() => {
-                                                            const dropdownRect = dropdown.getBoundingClientRect();
-                                                            if (dropdownRect.top < 0) {
-                                                                // If still cut off at top, adjust position
-                                                                dropdown.style.top = '5px';
-                                                                dropdown.style.bottom = 'auto';
-                                                            }
-                                                        }, 0);
+                                                    // If there's not enough space below, position above
+                                                    if (spaceBelow < 300 && spaceAbove > 150) {
+                                                        // Position above with margin to prevent cutoff
+                                                        dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
+                                                        dropdown.style.top = 'auto';
+                                                        dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
+                                                    } else {
+                                                        // Otherwise position below with margin
+                                                        dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
+                                                        dropdown.style.bottom = 'auto';
+                                                        dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
                                                     }
-                                                }}
-                                                title="Select a template"
-                                            >
-                                                <span>Prompt Templates</span>
-                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                                </svg>
-                                            </button>
-                                            <div
-                                                id="template-dropdown"
-                                                className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
-                                            >
-                                                <div className="p-1 border-b border-gray-600">
-                                                    <select
-                                                        className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
-                                                        value={selectedCategory}
-                                                        onChange={(e) => setSelectedCategory(e.target.value)}
-                                                    >
-                                                        {CATEGORIES.map((category) => (
-                                                            <option key={category} value={category}>
-                                                                {category === "All" ? "All" : category}
-                                                            </option>
-                                                        ))}
-                                                    </select>
-                                                </div>
-                                                <div className="overflow-y-auto max-h-[180px]">
-                                                    {filteredTemplates.map((template, index) => (
-                                                        <button
-                                                            key={index}
-                                                            className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                            onClick={() => {
-                                                                setSelectedReportTemplate(template.title);
-                                                                setInput(template.content);
-                                                                document.getElementById('template-dropdown')?.classList.add('hidden');
-                                                            }}
-                                                        >
-                                                            {template.title}
-                                                        </button>
+
+                                                    // Ensure the dropdown is fully visible within viewport
+                                                    setTimeout(() => {
+                                                        const dropdownRect = dropdown.getBoundingClientRect();
+                                                        if (dropdownRect.top < 0) {
+                                                            // If still cut off at top, adjust position
+                                                            dropdown.style.top = '5px';
+                                                            dropdown.style.bottom = 'auto';
+                                                        }
+                                                    }, 0);
+                                                }
+                                            }}
+                                            title="Select a template"
+                                        >
+                                            <span>Prompt Templates</span>
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        <div
+                                            id="template-dropdown"
+                                            className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
+                                        >
+                                            <div className="p-1 border-b border-gray-600">
+                                                <select
+                                                    className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
+                                                    value={selectedCategory}
+                                                    onChange={(e) => setSelectedCategory(e.target.value)}
+                                                >
+                                                    {CATEGORIES.map((category) => (
+                                                        <option key={category} value={category}>
+                                                            {category === "All" ? "All" : category}
+                                                        </option>
                                                     ))}
-                                                </div>
+                                                </select>
+                                            </div>
+                                            <div className="overflow-y-auto max-h-[180px]">
+                                                {filteredTemplates.map((template, index) => (
+                                                    <button
+                                                        key={index}
+                                                        className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                        onClick={() => {
+                                                            setSelectedReportTemplate(template.title);
+                                                            setInput(template.content);
+                                                            document.getElementById('template-dropdown')?.classList.add('hidden');
+                                                        }}
+                                                    >
+                                                        {template.title}
+                                                    </button>
+                                                ))}
                                             </div>
                                         </div>
-                                    }
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -1379,421 +1395,137 @@ Don't include explanations, next steps or examples at this stage.
                     <div className="flex items-center gap-2"></div>
 
                     {/* START FORM */}
-                    <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0 w-full">
-                        {/* Add placeholder jump buttons */}
-                        {templatePlaceholders.length > 0 && (
-                            <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                                <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                                {templatePlaceholders.map((placeholder, idx) => (
-                                    <button
-                                        key={idx}
-                                        type="button" // Add this to prevent form submission
-                                        onClick={() => selectTemplatePlaceholder(idx)}
-                                        className={buttonAccent}
-                                    >
-                                        {placeholder.text.length > 50
-                                            ? `${placeholder.text.substring(0, 49)}...`
-                                            : placeholder.text}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        <TextareaAutosize
-                            ref={textareaRef}
-                            value={input || ''}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    console.log('Enter pressed without shift - should submit'); // Add this
-                                    const now = Date.now();
-                                    // Use a custom property on the event target to track the last Enter key time
-                                    const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                                    if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                        e.preventDefault();
-                                        // If two returns occur within 2 seconds, submit the form
-                                        handleSubmit(e);
-                                        textarea.lastEnterTime = 0;
-                                    } else {
-                                        // Set the last enter time and allow the default new line insertion
-                                        textarea.lastEnterTime = now;
-                                    }
-                                }
-
-                                // Add tab key navigation for placeholders
-                                if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                                    e.preventDefault(); // Prevent default tab behavior
-
-                                    // Get current cursor position
-                                    const cursorPos = e.currentTarget.selectionStart;
-
-                                    // Find the next placeholder after cursor position
-                                    let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                                    // If no next placeholder, loop back to the first one
-                                    if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                        nextPlaceholder = templatePlaceholders[0];
+                    {pathname !== '/ai-chat' &&
+                        <form onSubmit={handleSubmit} className="pt-1 px-2 pb-4 bg-popover rounded-lg min-w-0 w-full">
+                            {/* Add placeholder jump buttons */}
+                            {templatePlaceholders.length > 0 && (
+                                <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                                    <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                                    {templatePlaceholders.map((placeholder, idx) => (
+                                        <button
+                                            key={idx}
+                                            type="button" // Add this to prevent form submission
+                                            onClick={() => selectTemplatePlaceholder(idx)}
+                                            className={buttonAccent}
+                                        >
+                                            {placeholder.text.length > 50
+                                                ? `${placeholder.text.substring(0, 49)}...`
+                                                : placeholder.text}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
+                            <TextareaAutosize
+                                ref={textareaRef}
+                                value={input || ''}
+                                onChange={(e) => setInput(e.target.value)}
+                                onKeyDown={(e) => {
+                                    console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        // console.log('Enter pressed without shift - should submit'); // Add this
+                                        const now = Date.now();
+                                        // Use a custom property on the event target to track the last Enter key time
+                                        const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                        if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                            e.preventDefault();
+                                            // If two returns occur within 2 seconds, submit the form
+                                            handleSubmit(e);
+                                            textarea.lastEnterTime = 0;
+                                        } else {
+                                            // Set the last enter time and allow the default new line insertion
+                                            textarea.lastEnterTime = now;
+                                        }
                                     }
 
-                                    if (nextPlaceholder) {
-                                        selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                    // Add tab key navigation for placeholders
+                                    if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                        e.preventDefault(); // Prevent default tab behavior
+
+                                        // Get current cursor position
+                                        const cursorPos = e.currentTarget.selectionStart;
+
+                                        // Find the next placeholder after cursor position
+                                        let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+
+                                        // If no next placeholder, loop back to the first one
+                                        if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                            nextPlaceholder = templatePlaceholders[0];
+                                        }
+
+                                        if (nextPlaceholder) {
+                                            selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                        }
                                     }
-                                }
-                            }}
-                            placeholder="Ask anything …"
-                            className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            minRows={6}
-                            maxRows={12}
-                            disabled={isLoading}
-                        />
-                        <div className="flex justify-between">
-                            <div className="flex items-center gap-2"></div>
-                            <div className="flex items-center text-foreground gap-1">
-                                <ModelSelector
-                                    selectedModel={selectedModel as "deepseek-chat" | "mistral" |  "gpt-5" | "gpt-5-mini" | "dummy"}
-                                    onModelChange={(newModel) => {
-                                        setSelectedModel(newModel);
-                                        // Persist selected model to localStorage
-                                        localStorage.setItem('aiDashboard_selectedModel', newModel);
-                                    }}
-                                />
-                                <TemperatureSelector />
-                                <div className="flex items-center gap-1 text-xs">
-                                    <span className="text-gray-400">Max tokens:</span>
-                                    <input
-                                        type="number"
-                                        min={1}
-                                        step={1}
-                                        value={maxTokens}
-                                        onChange={(e) => {
-                                            const v = parseInt(e.target.value, 10);
-                                            if (Number.isNaN(v)) {
-                                                setMaxTokens('');
-                                                localStorage.removeItem('aiDashboard_max_tokens');
-                                            } else {
-                                                setMaxTokens(v);
-                                                localStorage.setItem('aiDashboard_max_tokens', String(v));
-                                            }
+                                }}
+                                placeholder="Ask anything …"
+                                className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                minRows={6}
+                                maxRows={12}
+                                disabled={isLoading}
+                            />
+                            <div className="flex justify-between">
+                                <div className="flex items-center gap-2"></div>
+                                <div className="flex items-center text-foreground gap-1">
+                                    <ModelSelector
+                                        selectedModel={selectedModel as "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini" | "dummy"}
+                                        onModelChange={(newModel) => {
+                                            setSelectedModel(newModel);
+                                            // Persist selected model to localStorage
+                                            localStorage.setItem('aiDashboard_selectedModel', newModel);
                                         }}
-                                        className="w-20 bg-popover border border-gray-600 rounded text-xs py-0 px-1"
-                                        placeholder="auto"
-                                        title="Max completion tokens for gateway models"
                                     />
+                                    <TemperatureSelector />
+                                    <div className="flex items-center gap-1 text-xs">
+                                        <span className="text-gray-400">Max tokens:</span>
+                                        <input
+                                            type="number"
+                                            min={1}
+                                            step={1}
+                                            value={maxTokens}
+                                            onChange={(e) => {
+                                                const v = parseInt(e.target.value, 10);
+                                                if (Number.isNaN(v)) {
+                                                    setMaxTokens('');
+                                                    localStorage.removeItem('aiDashboard_max_tokens');
+                                                } else {
+                                                    setMaxTokens(v);
+                                                    localStorage.setItem('aiDashboard_max_tokens', String(v));
+                                                }
+                                            }}
+                                            className="w-20 bg-popover border border-gray-600 rounded text-xs py-0 px-1"
+                                            placeholder="auto"
+                                            title="Max completion tokens for gateway models"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* now include the send‐button here */}
+                                <div className="flex justify-between px-2 ">
+                                    <button
+                                        type="submit"
+                                        className="flex items-center bg-gray-800 rounded-full px-2 mb-3 text-blue-300 hover:text-blue-800"
+                                        disabled={isLoading || !input?.trim()}
+                                        title="Send your question"
+                                    >Send
+                                        <svg
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            strokeWidth={2}
+                                            className="w-8 h-8"
+                                        >
+                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+
+                                        </svg>
+                                    </button>
                                 </div>
                             </div>
-
-                            {/* now include the send‐button here */}
-                            <div className="flex justify-between px-2 ">
-                                <button
-                                    type="submit"
-                                    className="flex items-center bg-gray-800 rounded-full px-2 mb-1 text-blue-300 hover:text-blue-800"
-                                    disabled={isLoading || !input?.trim()}
-                                    title="Send your question"
-                                >Send
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
-                                        className="w-8 h-8"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
+                        </form>
+                    }
                 </div>
             </div>
         </div >
     )
 }
 
-
-// // When selectedModel changes, retry sending the last non-retry user message
-// useEffect(() => {
-//     // Skip on first render
-//     if (isInitialRender.current) {
-//         isInitialRender.current = false;
-//         previousModelRef.current = selectedModel;
-//         return;
-//     }
-
-//     // Only trigger if model changed and we have messages
-//     if (
-//         selectedModel &&
-//         previousModelRef.current !== selectedModel &&
-//         modelRetryCount < MAX_MODEL_RETRIES &&
-//         !retryInProgress.current &&
-//         messages.length > 0
-//     ) {
-//         // Find the last non-retry user message
-//         const lastUserMessage = messages.findLast(
-//             (m) => m.role === 'user' && !m.content.startsWith('Retry with model:')
-//         );
-
-//         if (lastUserMessage) {
-//             retryInProgress.current = true;
-//             const modelChangeMessage: Message = {
-//                 role: 'user',
-//                 content: `Retry with model: ${selectedModel} `,
-//             };
-//             dispatch(addMessage(modelChangeMessage));
-//             setModelRetryCount((prev) => prev + 1);
-//             sendMessageToAPI([lastUserMessage, modelChangeMessage]).finally(() => {
-//                 retryInProgress.current = false;
-//             });
-//         }
-//     }
-
-//     // Update for next comparison
-//     previousModelRef.current = selectedModel;
-// }, [selectedModel, sendMessageToAPI, messages, statusMsg, dispatch]);
-
-// Add this retry function
-// const handleRetry = useCallback(async () => {
-//     setStatusMsg('Retrying last request... please wait.');
-//     console.log('Retrying request');
-//     setIsLoading(true);
-//     retryInProgress.current = true;
-
-//     try {
-//         // Find the last request to retry
-//         const lastUserMessage = messages.findLast(m => m.role === 'user');
-
-//         if (!lastUserMessage) {
-//             setStatusMsg('No previous message to retry');
-//             return;
-//         }
-
-//         // Create a retry message with a special flag
-//         const retryMessage: Message = {
-//             role: 'user',
-//             content: 'Continue with your response that was interrupted',
-//         };
-
-//         // Don't add the retry message to the conversation history yet
-//         // We'll only add it if we get a successful response
-//         const messagesForRetry = [...messages, retryMessage];
-
-//         // Send the request with a longer timeout
-//         await sendMessageToAPI(messagesForRetry);
-
-//         // If successful, update the conversation
-//         console.log('Retry completed successfully');
-//     } catch (error) {
-//         console.error('Retry failed:', error);
-//         setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
-//         setIsLoading(false);
-//         retryInProgress.current = false;
-//     }
-// }, [messages, sendMessageToAPI]);
-
-
-
-
-
-// Enhanced text extraction function with DOCX support
-//     const extractTextFromFile = async (file: File): Promise<string> => {
-//         const fileName = file.name;
-//         const fileType = fileName.split('.').pop()?.toLowerCase() || '';
-
-//         // For text-based files, use the native text() method
-//         if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-//             try {
-//                 return await file.text();
-//             } catch (error) {
-//                 console.error(`Error reading text from ${fileName}:`, error);
-//                 return `[Failed to read text content from ${fileName}]`;
-//             }
-//         }
-
-//         // Handle DOCX files using mammoth.js
-//         if (fileType === 'docx') {
-//             try {
-//                 setStatusMsg(`Converting DOCX file: ${fileName}...`);
-//                 // Read file as ArrayBuffer
-//                 const arrayBuffer = await file.arrayBuffer();
-//                 // Use mammoth to extract text
-//                 const result = await mammoth.extractRawText({ arrayBuffer });
-//                 console.log(`Extracted ${result.value.length} characters from DOCX`);
-//                 if (result.value.length > 0) {
-//                     return result.value;
-//                 } else {
-//                     return `[DOCX file ${fileName} appears to be empty or could not be parsed]`;
-//                 }
-//             } catch (error) {
-//                 console.error(`Error extracting text from DOCX ${fileName}:`, error);
-//                 return `[Failed to extract text from DOCX file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-//             }
-//         }
-
-//         // Handle PDF files using pdfjs-dist
-//         // if (fileType === 'pdf') {
-//         //     try {
-//         //         setErrorMsg(`Extracting PDF file: ${fileName}...`);
-//         //         const arrayBuffer = await file.arrayBuffer();
-//         //         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-//         //         let extractedText = '';
-
-//         //         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-//         //             const page = await pdf.getPage(pageNumber);
-//         //             const textContent = await page.getTextContent();
-//         //             const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
-//         //             extractedText += pageText + '\n\n';
-//         //         }
-
-//         //         if (extractedText.trim().length > 0) {
-//         //             return extractedText;
-//         //         } else {
-//         //             return `[PDF file ${fileName} appears to be empty or could not be parsed]`;
-//         //         }
-//         //     } catch (error) {
-//         //         console.error(`Error extracting text from PDF ${fileName}:`, error);
-//         //         return `[Failed to extract text from PDF file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-//         //     }
-//         // }
-
-//         // For other binary files, provide a more explicit message about limitations
-//         return `[File: ${fileName}
-// Type: ${fileType.toUpperCase()} (Binary file)
-// Size: ${(file.size / 1024).toFixed(1)} KB
-// "I'm sorry, but AI unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
-// "However, you can copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
-// `;
-//     };
-
-// const handleSaveToLibrary = (content: string) => {
-//     // Extract title from first line of content
-//     const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-//     const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
-
-//     const documentTitle = cleanTitle || 'Untitled Document';
-
-//     // Save to Redux store
-//     dispatch(saveMarkdownDocument({
-//         id: Date.now().toString(),
-//         name: documentTitle,
-//         content: content,
-//         type: 'markdown',
-//         createdAt: new Date().toISOString(),
-//         updatedAt: new Date().toISOString()
-//     }));
-
-//     // Show confirmation to user
-//     setStatusMsg(`Saved "${documentTitle}" to library`);
-//     setTimeout(() => setStatusMsg(''), 30000);
-// };
-
-// // Add this function with your other handler functions
-// const handleSaveToFile = (content: string) => {
-//     // Create a blob with the content
-//     const blob = new Blob([content], { type: 'text/markdown' });
-
-//     // Create a URL for the blob
-//     const url = URL.createObjectURL(blob);
-
-//     // Extract title from first line for filename
-//     const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-//     const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
-//     const fileName = `${cleanTitle || 'document'}.md`;
-
-//     // Create a temporary anchor element
-//     const a = document.createElement('a');
-//     a.href = url;
-//     a.download = fileName;
-
-//     // Trigger download
-//     document.body.appendChild(a);
-//     a.click();
-//     document.body.removeChild(a);
-//     URL.revokeObjectURL(url);
-
-//     // Show confirmation
-//     setStatusMsg(`Saved "${fileName}" to downloads`);
-//     setTimeout(() => setStatusMsg(''), 30000);
-// };
-
-// Handle file selection for context
-// Handle file selection for context
-//     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-//         const files = event.target.files;
-//         if (!files || files.length === 0) return;
-//         const selectedFiles = Array.from(files);
-//         setContextFiles(selectedFiles);
-//         setIsProcessingFile(true);
-//         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
-
-//         try {
-//             // Process files one by one with status updates
-//             const fileContents = [];
-//             const binaryFiles = [];
-
-//             for (const file of selectedFiles) {
-//                 setStatusMsg(`Reading ${file.name}...`);
-//                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-
-//                 // Track binary files to show warning later
-//                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-//                     binaryFiles.push(file.name);
-//                 }
-
-//                 const text = await extractTextFromFile(file);
-//                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
-
-//                 fileContents.push(`
-// ====================
-// DOCUMENT: ${file.name}
-// ====================
-
-// ${text}
-
-// ====================
-// END OF DOCUMENT: ${file.name}
-// ====================`);
-//             }
-
-//             const combinedContent = fileContents.join('\n\n');
-//             setContextContent(combinedContent);
-//             setIsContextAttached(true);
-//             console.log(`Total context size: ${combinedContent.length} chars`);
-
-//             // Show user feedback about attached files
-//             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
-
-//             // Add warning about binary files if any were attached
-//             if (binaryFiles.length > 0) {
-//                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-//                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-//             }
-
-//             setStatusMsg(message);
-//             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-//         } catch (error) {
-//             console.error('Error processing files:', error);
-//             setStatusMsg(
-//                 error instanceof Error
-//                     ? `Error processing files: ${error.message}`
-//                     : `Error processing files: ${String(error)}`
-//             );
-//         } finally {
-//             setIsProcessingFile(false);
-//         }
-//     };
-
-// Open file picker
-// const handleAddContext = () => {
-//     if (fileInputRef.current) {
-//         fileInputRef.current.click();
-//     }
-// };
-
-// // Remove context
-// const handleRemoveContext = () => {
-//     setContextFiles([]);
-//     setContextContent('');
-//     setIsContextAttached(false);
-//     if (fileInputRef.current) fileInputRef.current.value = '';
-// };

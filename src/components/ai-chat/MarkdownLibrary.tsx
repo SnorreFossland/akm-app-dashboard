@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { saveMarkdownDocument, deleteMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
+import extractDomainNameAndDescription from './docExtraction';
 import { ChevronDown, ChevronRight, Eye } from 'lucide-react';
 
 interface MarkdownLibraryProps {
@@ -136,6 +137,18 @@ const MarkdownLibrary = ({
     }
   };
 
+  const handleSaveAsDomain = (content: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const { name: domainName, description } = extractDomainNameAndDescription(content);
+    dispatch(setDomainData({
+      name: domainName || name,
+      description: description || '',
+      presentation: content,
+      prompt: '',
+      additionalContext: ''
+    }));
+  };
+
   return (
     <div className="flex flex-col gap-4 w-full h-full p-4 bg-gray-800 rounded-lg">
       <input
@@ -159,7 +172,7 @@ const MarkdownLibrary = ({
       </div>
 
       {!filteredDocuments && <div className="text-gray-400 text-center p-4">No documents found.</div>}
-      
+
       {filteredDocuments?.length === 0 ? (
         <div className="text-gray-400 text-center p-4">
           Select a document to view or edit
@@ -251,6 +264,12 @@ const MarkdownLibrary = ({
                         >
                           {/* <Eye className="h-3 w-3" /> */}
                           Add as current Document
+                        </button>
+                        <button
+                          onClick={(e) => handleSaveAsDomain(doc.content, doc.name, e)}
+                          className="flex items-center gap-1 text-xs bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 rounded"
+                        >
+                          Save as domain
                         </button>
                       </div>
                     </div>

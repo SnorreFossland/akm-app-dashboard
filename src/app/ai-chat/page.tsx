@@ -3,7 +3,9 @@ import { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import mermaid from 'mermaid';
-import { RootState } from '@/store';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faComments } from '@fortawesome/free-solid-svg-icons';
+import Link from 'next/link'; import { RootState } from '@/store';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
@@ -48,6 +50,7 @@ const AIChatPage = () => {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
     const documents = useSelector((state: RootState) => data.phData.documents);
+    const domain = data?.phData?.domain;
 
     const [currentModel, setCurrentModel] = useState<any | null>(null);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
@@ -373,14 +376,12 @@ const AIChatPage = () => {
         tabs: [
             {
                 key: 'current-content',
-                label: 'Current Content',
+                label: 'Current Domain',
                 content: (
                     <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        {currentDocument ? (
+                        {domain?.presentation ? (
                             <div className="p-2 bg-gray-800 rounded">
-                                <MarkdownPreview
-                                    mdPreview={currentDocument || 'No definition available'}
-                                />
+                                <MarkdownPreview mdPreview={domain.presentation} />
                             </div>
                         ) : (
                             <div className="p-2 bg-gray-800 rounded">
@@ -391,8 +392,8 @@ const AIChatPage = () => {
                 )
             },
             {
-                key: 'context',
-                label: 'Add. Context',
+                key: 'projects',
+                label: 'Projects',
                 content: (
                     <DocumentPanel
                         mdContent={mdContent}
@@ -404,51 +405,19 @@ const AIChatPage = () => {
                 )
             },
         ],
-        defaultTab: 'context'
+        defaultTab: 'current-content'
     };
 
     // Define middle panel content
     const middlePanelContent = {
         tabs: [
             {
-                key: 'chat',
-                label: 'Chat',
+                key: 'current',
+                label: 'Current Document',
                 content: (
-                    <div className="h-full min-w-0 overflow-y-auto bg-gray-800/20 rounded">
-                        <ChatComponent
-                            input={input}
-                            setInput={setInput}
-                            selectedModel={selectedModel}
-                            setSelectedModel={setSelectedModel}
-                            currentDocument={currentDocument}
-                            setCurrentDocument={setCurrentDocument}
-                            onResponseChange={handleResponseChange}
-                            onViewInMarkdown={handleViewInMarkdown}
-                            showLeftPanel={showLeftPanel}
-                            setShowLeftPanel={setShowLeftPanel}
-                            setShowRightPanel={setShowRightPanel}
-                            chatInput={chatInput}
-                            onAddMD={handleAddMD}
-                            mdContent={mdContent}
-                            setMdContent={setMdContent}
-                            mdPreview={mdPreview}
-                            setMdPreview={setMdPreview}
-                            setCurrentMessages={setCurrentMessages}
-                            gettingStartedGuide={<GettingStartedGuide />}
-                            guide={<Guide />}
-                            isMobile={isMobile}
-                            setIsMobile={setIsMobile}
-                        />
-                    </div>
-                )
-            },
-            {
-                key: 'current-doc',
-                label: 'CurrentDoc',
-                content: (
-                    <div className="bg-background rounded-lg p-4 h-full overflow-auto">
-                        <div className="space-y-4">
-                            {/* Current Document Panel */}
+                    <div className="flex flex-col bg-background rounded-lg h-[calc(100vh-9rem)] overflow-hidden">
+                        {/* Fill available height with DocumentPanel using flex-grow */}
+                        <div className="flex-grow overflow-hidden">
                             <DocumentPanel
                                 mdContent={currentDocument}
                                 setMdContent={setCurrentDocument}
@@ -462,32 +431,15 @@ const AIChatPage = () => {
                     </div>
                 )
             },
-            {
-                key: 'saved-chats',
-                label: 'Saved Chats',
-                content: (
-                    <div className="p-2 h-full overflow-auto">
-                        <ConversationsPanel
-                            conversations={conversations}
-                            onSelectConversation={handleSelectConversation}
-                            onDeleteConversation={handleDeleteConversation}
-                            onSaveConversation={handleSaveCurrentConversation}
-                            onViewInMarkdown={handleViewInMarkdown}
-                            mdPreview={mdPreview}
-                            currentMessages={messages}
-                        />
-                    </div>
-                )
-            }
         ],
-        defaultTab: 'chat'
+        defaultTab: 'current'
     };
     // Define right panel content with the new props
     const rightPanelContent = {
         tabs: [
             {
-                key: 'preview',
-                label: 'Preview',
+                key: 'reports',
+                label: 'Reports',
                 content: (
                     <DocumentPanel
                         mdContent={mdPreview}
@@ -501,7 +453,7 @@ const AIChatPage = () => {
                 )
             }
         ],
-        defaultTab: 'preview'
+        defaultTab: 'reports'
     };
 
     const modelSelector = (false) ? (
@@ -534,7 +486,7 @@ const AIChatPage = () => {
     )
 
     return (
-        <div className="flex-1 flex-row h-screen">
+        <div className="flex-1 flex-col h-screen">
             <div className="w-full border-b-2 border-gray-600">
                 <FileOperations />
             </div>
@@ -547,10 +499,28 @@ const AIChatPage = () => {
                 setShowLeftPanel={setShowLeftPanel}
                 showRightPanel={showRightPanel}
                 setShowRightPanel={setShowRightPanel}
-                className="h-full min-w-0 bg-background text-gray-100"
+                className="h-[calc(100vh-2.5rem)] min-w-0 bg-background text-gray-100"
             >
                 <></>
             </ThreePanelLayout>
+
+            {/* Floating "Open AI Assistant" button - Centered with chat icon */}
+            <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-50 flex gap-3">
+                <Link
+                    href="/ai-chat/aiAssistant "
+                    className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gray-800/90 hover:bg-gray-700 text-blue-300 shadow-lg ring-1 ring-blue-900/50 transition-all duration-200 hover:scale-105"
+                >
+                    <FontAwesomeIcon icon={faComments} className="w-5 h-5" />
+                    <span className="text-sm font-semibold">AI Assistant</span>
+                </Link>
+                <Link
+                    href="/ai-chat/edit"
+                    className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gray-800/90 hover:bg-gray-700 text-emerald-300 shadow-lg ring-1 ring-emerald-900/50 transition-all duration-200 hover:scale-105"
+                >
+                    <Edit className="w-5 h-5" />
+                    <span className="text-sm font-semibold">Edit Document</span>
+                </Link>
+            </div>
 
             {/* Library Modal */}
             {isLibraryOpen && (
