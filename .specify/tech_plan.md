@@ -8,7 +8,7 @@
 
 ## Architecture
 - Next.js App Router.
-- Page: `src/app/ontology/page.tsx` using `ThreePanelLayout`.
+- Page: `src/app/ontology-builder/page.tsx` using `ThreePanelLayout`.
 - Orchestrator: `src/components/ontology/Orchestrator.tsx`.
 - Shared panels: `DocumentPanel`, `FileOperations`.
 - State: Redux slice `model-universe`.

@@ -8,6 +8,7 @@ tasks:
   - id: SPEC-ONT-001
     title: Finalize ontology product spec
     phase: spec
+    status: done
     owners: [ "@you" ]
     docs:
       - .specify/product_spec.md#problem-statement
@@ -19,6 +20,7 @@ tasks:
   - id: PLAN-ONT-001
     title: Author technical plan and endpoint contracts
     phase: plan
+    status: done
     owners: [ "@you" ]
     docs:
       - .specify/tech_plan.md#architecture

@@ -1,7 +1,7 @@
 # Product Spec
 
 ## Meta
-- Project: AI Dashboard
+- Project: AI Mimris Dashboard
 - Agent: ontology
 - Phase: spec
 - Source of truth: This document governs WHAT. See `tech_plan.md` for HOW.
@@ -10,7 +10,7 @@
 Users need deterministic generation and visualization of ontologies inside a three-panel agent UI.
 
 ## Goals
-1. Generate ontology JSON conforming to `OntologySchema`.
+1. Generate ontology JSON based on current Domain and conforming to `OntologySchema`.
 2. Deduplicate concepts (case-insensitive) and relationship triplets.
 3. Persist to Redux `model-universe` and visualize with graph diff.
 4. Enforce prompt scope and naming rules.
