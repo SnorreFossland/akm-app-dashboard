@@ -9,6 +9,7 @@ import { Onest } from 'next/font/google';
 import { OntologyCard } from '@/components/ontology-card';
 import ModelComponent from './ModelComponent';
 import { Model, ModelView, setFocusModel } from '@/features/model-universe/modelSlice';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 
 const UniverseComponent: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -104,15 +105,15 @@ const UniverseComponent: React.FC = () => {
                                         {domain.presentation ? (
                                             <div className="mt-4">
                                                 <h4 className="text-sm font-medium text-gray-300 mb-2">Domain Presentation</h4>
-                                                <div className="border border-gray-600 rounded-lg overflow-hidden">
-                                                    <DocumentPanel
-                                                        mdContent={domain.presentation}
-                                                        setMdContent={() => { }} // Read-only
-                                                        setIsLibraryOpen={setIsLibraryOpen}
-                                                        isLibraryOpen={isLibraryOpen}
-                                                        panelType="middle"
-                                                        onSave={() => { }} // No-op function for read-only mode
-                                                    />
+                                                <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+                                                    <div className="flex flex-col space-y-4 mb-4">
+                                                        <div>
+                                                            <label className="block text-sm font-medium text-gray-300 mb-1">Domain Presentation</label>
+                                                            <div className="p-2 bg-gray-800 rounded min-h-[120px]">
+                                                                <MarkdownPreview mdPreview={domain?.presentation || 'No presentation available.'} />
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         ) : (

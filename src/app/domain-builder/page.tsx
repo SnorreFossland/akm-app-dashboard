@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
-import { setMessages } from '@/features/chat/chatSlice';
+import { setMessages } from '@/features/domainChat/domainChatSlice';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 // import DomainBuilder from "@/components/domain-builder/DomainBuilder";
 import ChatComponent from '@/components/domain-builder/ChatComponent';
@@ -23,6 +23,7 @@ import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import ModalThreePanelLayout from '@/components/ModalThreePanelLayout';
+import { FloatingActionButtons } from '@/components/FloatingActionButtons';
 import { FileOperations } from '@/components/FileOperations';
 import UniverseComponent from '@/features/model-universe/components/UniverseComponent';
 import { labelRect } from 'mermaid/dist/rendering-util/rendering-elements/shapes/labelRect.js';
@@ -372,12 +373,12 @@ export default function DomainBuilderPage() {
   const middlePanelContent = {
     tabs: [
       {
-        key: 'document',
+        key: 'domain',
         label: 'Current Domain',
         content: (
           <div className="bg-background rounded-lg p-4 h-full overflow-auto">
-            {/* <div className="flex flex-col space-y-4 mb-4">
-              <div>
+            <div className="flex flex-col space-y-4 mb-4">
+              {/* <div>
                 <label className="block text-sm font-medium text-gray-300">Name</label>
                 <input
                   type="text"
@@ -396,24 +397,15 @@ export default function DomainBuilderPage() {
                   placeholder="Enter domain description"
                   rows={3}
                 />
-              </div>
-            </div> */}
-            <div className="space-y-4">
-              {/* Current Document Panel */}
-              {currentDocument ? (
-                <DocumentPanel
-                  mdContent={currentDocument}
-                  setMdContent={setCurrentDocument}
-                  setIsLibraryOpen={setIsLibraryOpen}
-                  isLibraryOpen={isLibraryOpen}
-                  panelType='middle'
-                  currentDocumentContent={currentDocument}
-                  markdownPreviewContent={mdPreview}
-                />
-              ) : (
-                <></>
-              )}
+              </div> */}
+                <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Domain Presentation</label>
+                <div className="p-2 bg-gray-800 rounded min-h-[120px]">
+                  <MarkdownPreview mdPreview={domainPresentation || 'No presentation available.'} />
+                </div>
+                </div>
             </div>
+
           </div>
         )
       },
@@ -427,7 +419,7 @@ export default function DomainBuilderPage() {
         )
       }
     ],
-    defaultTab: 'domain-builder'
+    defaultTab: 'domain'
   };
   // Full middle panel (for the modal) — includes AI Domain Builder as a tab
   const middlePanelContentModal = {
@@ -524,6 +516,21 @@ export default function DomainBuilderPage() {
       </div>
     </div>
   )
+
+  const floatingActions = [
+    {
+      label: 'AI Assistant',
+      href: '/domain-builder/aiAssistant',
+      icon: <FontAwesomeIcon icon={faRobot} className="w-5 h-5" />, 
+      className: 'text-blue-300 ring-blue-900/50'
+    },
+    {
+      label: 'Edit Document',
+      href: '/domain-builder/edit',
+      icon: <Edit className="w-5 h-5" />, 
+      className: 'text-emerald-300 ring-emerald-900/50'
+    }
+  ] as const;
 
   // // page-level inline tabs: 'current-domain' and 'current-suite'
   // const [pageTab, setPageTab] = useState<'current-domain' | 'current-suite'>('current-domain');
@@ -624,25 +631,7 @@ export default function DomainBuilderPage() {
         </div>
       )}
 
-
-      {/* Floating "Open Editor" button (always visible) - Centered with AI icon */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50">
-        <button
-          aria-label="Open Editor"
-          title="Open AI Domain Builder Editor"
-          onClick={() => {
-            setPageTab('current-domain');
-            setShowEditorModal(true);
-          }}
-          className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:scale-105"
-        >
-          <FontAwesomeIcon
-            icon={faRobot}
-            className="w-5 h-5"
-          />
-          <span className="text-sm font-semibold">Open AI Assistant</span>
-        </button>
-      </div>
+      <FloatingActionButtons actions={floatingActions} />
     </div>
   );
 }

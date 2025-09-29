@@ -14,8 +14,8 @@ import {
     addMessage,
     setMessages,
     Message
-} from '@/features/chat/chatSlice';
-// import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
+} from '@/features/domainChat/domainChatSlice';
+import { DOMAIN_PROMPT_TEMPLATES } from './domainPromptTemplates';
 import { SystemPrompt  } from '@/app/domain-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
@@ -31,7 +31,7 @@ import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 // import GettingStartedGuide from './GettingStartedGuide';
 // import { refineTemplates } from '@/features/documents/refine-templates';
-// import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';
+import { REFINE_TEMPLATES } from '@/components/ai-chat/refineTemplates';
 import { error } from 'console';
 import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 // import { API_BASE_URL } from '@/config/apiConfig';
@@ -115,7 +115,7 @@ export default function ChatComponent({
 
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
     // Get messages from Redux instead of local state
-    const messages = useSelector((state: RootState) => state.chat?.currentMessages ?? []); // safer
+    const messages = useSelector((state: RootState) => state.domainChat?.currentMessages ?? []); // safer
     const [isLoading, setIsLoading] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -138,7 +138,14 @@ export default function ChatComponent({
     const isInitialRender = useRef(true);
     const previousModelRef = useRef<string | null>(null);
     const mdFileInputRef = useRef<HTMLInputElement>(null);
-    const [docRefine, setDocRefine] = useState(false);
+
+    const domainData = useSelector((state: RootState) => state.modelUniverse?.phData?.domain);
+    const hasExistingDomainDefinition = useMemo(() => {
+        const definition = domainData?.presentation || domainData?.description || '';
+        return definition.trim().length > 0;
+    }, [domainData?.description, domainData?.presentation]);
+
+    const [docRefine, setDocRefine] = useState<boolean>(() => hasExistingDomainDefinition);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
     const [showGuide, setShowGuide] = useState(false);
@@ -147,8 +154,40 @@ export default function ChatComponent({
     const pathname = usePathname();
     // Add right after your state definitions
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
-    const [selectedCategory, setSelectedCategory] = useState<string>('Personal');
-    const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('');
+    const refineTemplates = REFINE_TEMPLATES;
+    const domainTemplates = useMemo(() => {
+        const templates = [...DOMAIN_PROMPT_TEMPLATES];
+        const currentDefinition = domainData?.presentation || domainData?.description || '';
+        if (currentDefinition && currentDefinition.trim().length > 0) {
+            templates.push({
+                title: 'Domain: Enhance Existing Definition',
+                usage: 'Enhancement',
+                content: `You are reviewing the current domain documentation for "${domainData?.name || 'this domain'}".
+
+Step 1: Analyse the existing definition below and identify any gaps, ambiguities, or opportunities to clarify scope.
+Step 2: Produce an enhanced domain definition that:
+- Preserves factual accuracy.
+- Clarifies purpose, boundaries, and major constraints.
+- Highlights the most important actors, objects, and recurring events.
+- Adds missing context that would help ontology and process modellers.
+
+Existing definition:
+${currentDefinition}
+
+Return the result as:
+1. Refined Domain Definition (2-3 paragraphs).
+2. Key Clarifications Added (bullet list).
+3. Follow-up Questions (if any).
+`
+            });
+        }
+        return templates;
+    }, [domainData?.description, domainData?.name, domainData?.presentation]);
+    const templateCategories = useMemo(() => ['All', ...Array.from(new Set(domainTemplates.map(template => template.usage))).sort()], [domainTemplates]);
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
+    const filteredTemplates = useMemo(() => selectedCategory === 'All'
+        ? domainTemplates
+        : domainTemplates.filter(template => template.usage === selectedCategory), [domainTemplates, selectedCategory]);
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
     const [streamedContent, setStreamedContent] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
@@ -181,6 +220,12 @@ export default function ChatComponent({
             }
         };
     }, []);
+
+    useEffect(() => {
+        if (hasExistingDomainDefinition && !docRefine) {
+            setDocRefine(true);
+        }
+    }, [hasExistingDomainDefinition, docRefine]);
 
     // New state for system prompt modal
     const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
@@ -244,6 +289,31 @@ Do not use its contents as contextual input for other questions--I want it impro
     }, []);
 
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            const dropdown = document.getElementById('domain-template-dropdown');
+            if (!dropdown || dropdown.classList.contains('hidden')) return;
+            const button = dropdown.previousElementSibling as HTMLElement | null;
+            const targetNode = event.target as Node;
+            if (dropdown.contains(targetNode)) return;
+            if (button && button.contains(targetNode)) return;
+            dropdown.classList.add('hidden');
+        };
+
+        const handleEsc = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                document.getElementById('domain-template-dropdown')?.classList.add('hidden');
+            }
+        };
+
+        document.addEventListener('click', handleClickOutside);
+        document.addEventListener('keydown', handleEsc);
+        return () => {
+            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('keydown', handleEsc);
+        };
+    }, []);
 
 
     // Add this effect to adjust topHeight based on input size
@@ -1197,21 +1267,173 @@ Do not use its contents as contextual input for other questions--I want it impro
                 {/* <div className="pb-[600px]"></div> */}
             </div>
             {/* Input Area */}
-            <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
+            <div className="relative bottom- left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10">
                 {/* Input area always at the bottom */}
                 {/* <div className={`flex  ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-18rem)]'} min-w-0 rounded-lg overflow-hidden relative`}></div> */}
                 {/* <div className="fixed bottom-0 left-10 right-1  bg-popover border-t border-gray-600 z-10"> */}
-                <div className={`${isMobile ? 'fixed bottom-0 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
-                    {pathname === '/domain-builder' &&
-                        <div className="flex items-center justify-between p-2">
-                            {/* button row above the chat */}
-                            <button
-                                type="button"
-                                className="bg-blue-700 text-gray-300 py-1 p-3 ms-auto rounded hover:bg-blue-600"
-                                onClick={() => {
-                                    setDocRefine(true);
-                                    setInput((currentDocument !== "")
-                                        ? `I want to scope and define the domain: [DOMAIN NAME]
+                <div className={`${isMobile ? 'fixed bottom-5 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
+                    <div className="flex flex-col gap-2 p-2">
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
+                                <button
+                                    type="button"
+                                    onClick={handleAddMD}
+                                    className={`inline-flex items-center gap-2 rounded-md border border-gray-600 px-3 py-1.5 text-sm transition-colors hover:bg-gray-700 ${mdContent ? 'text-green-400' : 'text-gray-400'}`}
+                                    disabled={isLoading}
+                                    title="Attach a local Markdown or DOCX file to refine."
+                                >
+                                    <FileText className="w-4 h-4" />
+                                    {mdContent ? 'File loaded' : 'Load domain text'}
+                                </button>
+                                <input
+                                    ref={mdFileInputRef}
+                                    type="file"
+                                    accept=".md, .txt, .markdown, .docx"
+                                    style={{ display: 'none' }}
+                                    className="hidden"
+                                    onChange={handleMDFileSelect}
+                                />
+
+                                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                                    <input
+                                        type="checkbox"
+                                        checked={docRefine}
+                                        disabled={isLoading}
+                                        onChange={() => {
+                                            const newRefineState = !docRefine;
+                                            setDocRefine(newRefineState);
+                                            if (!newRefineState) {
+                                                setSelectedRefineTemplate('');
+                                            }
+                                        }}
+                                        className="sr-only"
+                                    />
+                                    <div className={`h-5 w-5 border ${docRefine ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center transition-colors`}>
+                                        {docRefine && (
+                                            <div className="h-2 w-2 bg-white rounded-full" />
+                                        )}
+                                    </div>
+                                    <span className="text-gray-400">Refine Domain text</span>
+                                    {!currentDocument && (
+                                        <span className="text-[11px] text-yellow-500/80">(no domain presentation loaded)</span>
+                                    )}
+                                </label>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-3 text-sm">
+                                {docRefine && (
+                                    <select
+                                        title="Select a refinement template"
+                                        className="bg-popover border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
+                                        value={selectedRefineTemplate}
+                                        onChange={(e) => {
+                                            const key = e.target.value;
+                                            setSelectedRefineTemplate(key);
+                                            const selectedTemplate = key ? refineTemplates[key as keyof typeof refineTemplates] : '';
+                                            if (selectedTemplate) {
+                                                setInput(selectedTemplate);
+                                            } else {
+                                                setInput('');
+                                            }
+                                        }}
+                                        disabled={isLoading || !currentDocument}
+                                    >
+                                        <option value="">Select refinement template…</option>
+                                        {Object.keys(refineTemplates).map((key) => (
+                                            <option key={key} value={key}>{key}</option>
+                                        ))}
+                                    </select>
+                                )}
+
+                                <div className="relative">
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-popover px-3 py-1 text-xs text-gray-200 hover:bg-gray-700"
+                                        onClick={() => {
+                                            const dropdown = document.getElementById('domain-template-dropdown');
+                                            if (!dropdown) return;
+
+                                            const button = dropdown.previousElementSibling as HTMLElement | null;
+                                            dropdown.classList.toggle('hidden');
+
+                                            if (button) {
+                                                const buttonRect = button.getBoundingClientRect();
+                                                const viewportHeight = window.innerHeight;
+                                                const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                const spaceAbove = buttonRect.top;
+
+                                                if (spaceBelow < 300 && spaceAbove > 150) {
+                                                    dropdown.style.bottom = 'calc(100% + 5px)';
+                                                    dropdown.style.top = 'auto';
+                                                    dropdown.style.maxHeight = `${spaceAbove - 20}px`;
+                                                } else {
+                                                    dropdown.style.top = 'calc(100% + 5px)';
+                                                    dropdown.style.bottom = 'auto';
+                                                    dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
+                                                }
+                                            }
+                                        }}
+                                        title="Select a prompt template"
+                                    >
+                                        <span>Prompt Templates</span>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
+                                    </button>
+                                    <div
+                                        id="domain-template-dropdown"
+                                        className="absolute right-0 z-50 mt-1 hidden w-64 rounded border border-gray-600 bg-popover shadow-lg"
+                                    >
+                                        <div className="p-1 border-b border-gray-600">
+                                            <select
+                                                className="w-full rounded border border-gray-600 bg-popover px-1 py-0.5 text-xs"
+                                                value={selectedCategory}
+                                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                            >
+                                                {templateCategories.map((category) => (
+                                                    <option key={category} value={category}>
+                                                        {category}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="max-h-[180px] overflow-y-auto">
+                                            {filteredTemplates.map((template, index) => (
+                                                <button
+                                                    key={`${template.title}-${index}`}
+                                                    className="w-full truncate px-2 py-1 text-left text-xs hover:bg-gray-700"
+                                                    onClick={() => {
+                                                        setInput(template.content);
+                                                        document.getElementById('domain-template-dropdown')?.classList.add('hidden');
+                                                    }}
+                                                >
+                                                    {template.title}
+                                                </button>
+                                            ))}
+                                            {filteredTemplates.length === 0 && (
+                                                <div className="px-2 py-2 text-xs text-gray-500">No templates found for this category.</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {pathname === '/domain-builder' && (
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-3 py-1.5 text-sm text-gray-100 hover:bg-blue-600"
+                                            onClick={() => {
+                                                setDocRefine(true);
+                                                setInput((currentDocument !== '')
+                                                ? `I want to enhance the current domain
+
+Please help me:
+- Identify and formalize the more core concepts.
+- Capture extended domain boundaries, assumptions, and known variations.
+- Prepare the result for later use in ontology concepts definition, Process modelling and AKM modeling, data integration.
+- Change the Domain name and then a description of the domain if needed.
+Don't include explanations, next steps or examples at this stage.
+`
+                                                : `I want to scope and define the domain: [DOMAIN NAME]
 
 Please help me:
 - Identify and formalize the core concepts.
@@ -1219,27 +1441,15 @@ Please help me:
 - Prepare the result for later use in ontology concepts definition, Process modelling and AKM modeling, data integration.
 - Stating the Domain name and then a description of the domain.
 Don't include explanations, next steps or examples at this stage.
-
-Include the following content in your analysis:                                        
-`                                     
-                                        :
-                                        `I want to scope and define the domain: [DOMAIN NAME]
-
-Please help me:
-- Identify and formalize the core concepts.
-- Capture domain boundaries, assumptions, and known variations.
-- Prepare the result for later use in ontology concepts definition, Process modelling and AKM modeling, data integration.
-- Stating the Domain name and then a description of the domain.
-Don't include explanations, next steps or examples at this stage.
-`)
-                                }}
-                            >
-                                Define & Scope Domain
-                            </button>
+`);
+                                        }}
+                                    >
+                                        Define & Scope Domain
+                                    </button>
+                                )}
+                            </div>
                         </div>
-                    }
-
-                    <div className="flex items-center gap-2"></div>
+                    </div>
 
                     {/* START FORM */}
                     <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0 w-full">
@@ -1351,290 +1561,3 @@ Don't include explanations, next steps or examples at this stage.
         </div >
     )
 }
-
-
-// // When selectedModel changes, retry sending the last non-retry user message
-// useEffect(() => {
-//     // Skip on first render
-//     if (isInitialRender.current) {
-//         isInitialRender.current = false;
-//         previousModelRef.current = selectedModel;
-//         return;
-//     }
-
-//     // Only trigger if model changed and we have messages
-//     if (
-//         selectedModel &&
-//         previousModelRef.current !== selectedModel &&
-//         modelRetryCount < MAX_MODEL_RETRIES &&
-//         !retryInProgress.current &&
-//         messages.length > 0
-//     ) {
-//         // Find the last non-retry user message
-//         const lastUserMessage = messages.findLast(
-//             (m) => m.role === 'user' && !m.content.startsWith('Retry with model:')
-//         );
-
-//         if (lastUserMessage) {
-//             retryInProgress.current = true;
-//             const modelChangeMessage: Message = {
-//                 role: 'user',
-//                 content: `Retry with model: ${selectedModel} `,
-//             };
-//             dispatch(addMessage(modelChangeMessage));
-//             setModelRetryCount((prev) => prev + 1);
-//             sendMessageToAPI([lastUserMessage, modelChangeMessage]).finally(() => {
-//                 retryInProgress.current = false;
-//             });
-//         }
-//     }
-
-//     // Update for next comparison
-//     previousModelRef.current = selectedModel;
-// }, [selectedModel, sendMessageToAPI, messages, statusMsg, dispatch]);
-
-// Add this retry function
-// const handleRetry = useCallback(async () => {
-//     setStatusMsg('Retrying last request... please wait.');
-//     console.log('Retrying request');
-//     setIsLoading(true);
-//     retryInProgress.current = true;
-
-//     try {
-//         // Find the last request to retry
-//         const lastUserMessage = messages.findLast(m => m.role === 'user');
-
-//         if (!lastUserMessage) {
-//             setStatusMsg('No previous message to retry');
-//             return;
-//         }
-
-//         // Create a retry message with a special flag
-//         const retryMessage: Message = {
-//             role: 'user',
-//             content: 'Continue with your response that was interrupted',
-//         };
-
-//         // Don't add the retry message to the conversation history yet
-//         // We'll only add it if we get a successful response
-//         const messagesForRetry = [...messages, retryMessage];
-
-//         // Send the request with a longer timeout
-//         await sendMessageToAPI(messagesForRetry);
-
-//         // If successful, update the conversation
-//         console.log('Retry completed successfully');
-//     } catch (error) {
-//         console.error('Retry failed:', error);
-//         setStatusMsg(`Retry failed: ${error instanceof Error ? error.message : String(error)}`);
-//         setIsLoading(false);
-//         retryInProgress.current = false;
-//     }
-// }, [messages, sendMessageToAPI]);
-
-
-
-
-
-// Enhanced text extraction function with DOCX support
-//     const extractTextFromFile = async (file: File): Promise<string> => {
-//         const fileName = file.name;
-//         const fileType = fileName.split('.').pop()?.toLowerCase() || '';
-
-//         // For text-based files, use the native text() method
-//         if (['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-//             try {
-//                 return await file.text();
-//             } catch (error) {
-//                 console.error(`Error reading text from ${fileName}:`, error);
-//                 return `[Failed to read text content from ${fileName}]`;
-//             }
-//         }
-
-//         // Handle DOCX files using mammoth.js
-//         if (fileType === 'docx') {
-//             try {
-//                 setStatusMsg(`Converting DOCX file: ${fileName}...`);
-//                 // Read file as ArrayBuffer
-//                 const arrayBuffer = await file.arrayBuffer();
-//                 // Use mammoth to extract text
-//                 const result = await mammoth.extractRawText({ arrayBuffer });
-//                 console.log(`Extracted ${result.value.length} characters from DOCX`);
-//                 if (result.value.length > 0) {
-//                     return result.value;
-//                 } else {
-//                     return `[DOCX file ${fileName} appears to be empty or could not be parsed]`;
-//                 }
-//             } catch (error) {
-//                 console.error(`Error extracting text from DOCX ${fileName}:`, error);
-//                 return `[Failed to extract text from DOCX file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-//             }
-//         }
-
-//         // Handle PDF files using pdfjs-dist
-//         // if (fileType === 'pdf') {
-//         //     try {
-//         //         setErrorMsg(`Extracting PDF file: ${fileName}...`);
-//         //         const arrayBuffer = await file.arrayBuffer();
-//         //         const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-//         //         let extractedText = '';
-
-//         //         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
-//         //             const page = await pdf.getPage(pageNumber);
-//         //             const textContent = await page.getTextContent();
-//         //             const pageText = textContent.items.map((item: any) => item.str || '').join(' ');
-//         //             extractedText += pageText + '\n\n';
-//         //         }
-
-//         //         if (extractedText.trim().length > 0) {
-//         //             return extractedText;
-//         //         } else {
-//         //             return `[PDF file ${fileName} appears to be empty or could not be parsed]`;
-//         //         }
-//         //     } catch (error) {
-//         //         console.error(`Error extracting text from PDF ${fileName}:`, error);
-//         //         return `[Failed to extract text from PDF file: ${fileName}. Error: ${error instanceof Error ? error.message : String(error)}]`;
-//         //     }
-//         // }
-
-//         // For other binary files, provide a more explicit message about limitations
-//         return `[File: ${fileName}
-// Type: ${fileType.toUpperCase()} (Binary file)
-// Size: ${(file.size / 1024).toFixed(1)} KB
-// "I'm sorry, but AI unable to directly access or analyze the content of ${fileName} as it is a binary file and content extraction is not supported in this environment."
-// "However, you can copy and paste the relevant text from the document into our conversation, or if you have specific questions about the topic."
-// `;
-//     };
-
-// const handleSaveToLibrary = (content: string) => {
-//     // Extract title from first line of content
-//     const firstLine = content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-//     const cleanTitle = firstLine.replace(/[#*]/g, '').trim().substring(0, 50); // Limit title length
-
-//     const documentTitle = cleanTitle || 'Untitled Document';
-
-//     // Save to Redux store
-//     dispatch(saveMarkdownDocument({
-//         id: Date.now().toString(),
-//         name: documentTitle,
-//         content: content,
-//         type: 'markdown',
-//         createdAt: new Date().toISOString(),
-//         updatedAt: new Date().toISOString()
-//     }));
-
-//     // Show confirmation to user
-//     setStatusMsg(`Saved "${documentTitle}" to library`);
-//     setTimeout(() => setStatusMsg(''), 30000);
-// };
-
-// // Add this function with your other handler functions
-// const handleSaveToFile = (content: string) => {
-//     // Create a blob with the content
-//     const blob = new Blob([content], { type: 'text/markdown' });
-
-//     // Create a URL for the blob
-//     const url = URL.createObjectURL(blob);
-
-//     // Extract title from first line for filename
-//     const firstLine = 'AIChat: ' + content.split('\n')[0].replace(/^[#\-*>`_]+\s*/, '');
-//     const cleanTitle = firstLine.replace(/[#*/\\:?<>|"]/g, '').trim().substring(0, 50); // Clean title for filename
-//     const fileName = `${cleanTitle || 'document'}.md`;
-
-//     // Create a temporary anchor element
-//     const a = document.createElement('a');
-//     a.href = url;
-//     a.download = fileName;
-
-//     // Trigger download
-//     document.body.appendChild(a);
-//     a.click();
-//     document.body.removeChild(a);
-//     URL.revokeObjectURL(url);
-
-//     // Show confirmation
-//     setStatusMsg(`Saved "${fileName}" to downloads`);
-//     setTimeout(() => setStatusMsg(''), 30000);
-// };
-
-// Handle file selection for context
-// Handle file selection for context
-//     const handleFileSelect = async (event: React.ChangeEvent<HTMLInputElement>) => {
-//         const files = event.target.files;
-//         if (!files || files.length === 0) return;
-//         const selectedFiles = Array.from(files);
-//         setContextFiles(selectedFiles);
-//         setIsProcessingFile(true);
-//         setStatusMsg(`Processing ${selectedFiles.length} file(s)...`);
-
-//         try {
-//             // Process files one by one with status updates
-//             const fileContents = [];
-//             const binaryFiles = [];
-
-//             for (const file of selectedFiles) {
-//                 setStatusMsg(`Reading ${file.name}...`);
-//                 const fileType = file.name.split('.').pop()?.toLowerCase() || '';
-
-//                 // Track binary files to show warning later
-//                 if (!['txt', 'md', 'js', 'ts', 'json', 'css', 'html', 'csv', 'docx'].includes(fileType)) {
-//                     binaryFiles.push(file.name);
-//                 }
-
-//                 const text = await extractTextFromFile(file);
-//                 console.log(`File processed: ${file.name}, size: ${text.length} chars`);
-
-//                 fileContents.push(`
-// ====================
-// DOCUMENT: ${file.name}
-// ====================
-
-// ${text}
-
-// ====================
-// END OF DOCUMENT: ${file.name}
-// ====================`);
-//             }
-
-//             const combinedContent = fileContents.join('\n\n');
-//             setContextContent(combinedContent);
-//             setIsContextAttached(true);
-//             console.log(`Total context size: ${combinedContent.length} chars`);
-
-//             // Show user feedback about attached files
-//             let message = `${selectedFiles.length} file(s) attached successfully. Total size: ${Math.round(combinedContent.length / 1024)}KB`;
-
-//             // Add warning about binary files if any were attached
-//             if (binaryFiles.length > 0) {
-//                 message += `\n\n⚠️ WARNING: ${binaryFiles.length > 1 ? 'These files' : 'This file'} (${binaryFiles.join(', ')}) ${binaryFiles.length > 1 ? 'are' : 'is'} in binary format. The AI will see the filenames but CANNOT access their content.`;
-//                 message += `\nTo get help with these files, you'll need to copy and paste the relevant text into the chat, or ask specific questions about the topic.`;
-//             }
-
-//             setStatusMsg(message);
-//             setTimeout(() => setStatusMsg(''), binaryFiles.length > 0 ? 100000 : 60000); // Show longer for binary files
-//         } catch (error) {
-//             console.error('Error processing files:', error);
-//             setStatusMsg(
-//                 error instanceof Error
-//                     ? `Error processing files: ${error.message}`
-//                     : `Error processing files: ${String(error)}`
-//             );
-//         } finally {
-//             setIsProcessingFile(false);
-//         }
-//     };
-
-// Open file picker
-// const handleAddContext = () => {
-//     if (fileInputRef.current) {
-//         fileInputRef.current.click();
-//     }
-// };
-
-// // Remove context
-// const handleRemoveContext = () => {
-//     setContextFiles([]);
-//     setContextContent('');
-//     setIsContextAttached(false);
-//     if (fileInputRef.current) fileInputRef.current.value = '';
-// };

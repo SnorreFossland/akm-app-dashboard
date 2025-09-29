@@ -5,7 +5,7 @@ import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check
 import mermaid from 'mermaid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faComments } from '@fortawesome/free-solid-svg-icons';
-import Link from 'next/link'; import { RootState } from '@/store';
+import { RootState } from '@/store';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
@@ -16,6 +16,7 @@ import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
 import Guide from '@/components/ai-chat/Guide';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
+import { FloatingActionButtons } from '@/components/FloatingActionButtons';
 import { FileOperations } from "@/components/FileOperations";
 import {
     saveConversation,
@@ -485,6 +486,21 @@ const AIChatPage = () => {
         </div>
     )
 
+    const floatingActions = [
+        {
+            label: 'AI Assistant',
+            href: '/ai-chat/aiAssistant',
+            icon: <FontAwesomeIcon icon={faComments} className="w-5 h-5" />, 
+            className: 'text-blue-300 ring-blue-900/50',
+        },
+        {
+            label: 'Edit Document',
+            href: '/ai-chat/edit',
+            icon: <Edit className="w-5 h-5" />, 
+            className: 'text-emerald-300 ring-emerald-900/50',
+        },
+    ] as const;
+
     return (
         <div className="flex-1 flex-col h-screen">
             <div className="w-full border-b-2 border-gray-600">
@@ -505,22 +521,7 @@ const AIChatPage = () => {
             </ThreePanelLayout>
 
             {/* Floating "Open AI Assistant" button - Centered with chat icon */}
-            <div className="fixed bottom-2 left-1/2 transform -translate-x-1/2 z-50 flex gap-3">
-                <Link
-                    href="/ai-chat/aiAssistant "
-                    className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gray-800/90 hover:bg-gray-700 text-blue-300 shadow-lg ring-1 ring-blue-900/50 transition-all duration-200 hover:scale-105"
-                >
-                    <FontAwesomeIcon icon={faComments} className="w-5 h-5" />
-                    <span className="text-sm font-semibold">AI Assistant</span>
-                </Link>
-                <Link
-                    href="/ai-chat/edit"
-                    className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gray-800/90 hover:bg-gray-700 text-emerald-300 shadow-lg ring-1 ring-emerald-900/50 transition-all duration-200 hover:scale-105"
-                >
-                    <Edit className="w-5 h-5" />
-                    <span className="text-sm font-semibold">Edit Document</span>
-                </Link>
-            </div>
+            <FloatingActionButtons actions={floatingActions} className="bottom-2" />
 
             {/* Library Modal */}
             {isLibraryOpen && (
