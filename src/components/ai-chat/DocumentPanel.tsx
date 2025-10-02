@@ -1,10 +1,10 @@
 'use client';
 import React, { useState, useEffect, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
-import extractDomainNameAndDescription from './docExtraction';
+import extractDomainNameAndDescription from '@/components/ai-chat/docExtraction';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
 import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import DiffModal from './DiffModal';
@@ -53,14 +53,17 @@ export default function DocumentPanel({
     showLibraryButton = true,
     showSaveButton = true,
     showApplyButton = true,
-    showDocumentList = true
+    showDocumentList,
 }: DocumentPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
     const pathname = usePathname();
+    const router = useRouter();
     const [isEditing, setIsEditing] = useState(startInEditMode);
     const [editContent, setEditContent] = useState(mdContent || '');
-    const [isDocumentListVisible, setIsDocumentListVisible] = useState(showDocumentList);
+    // Determine if the document list should be shown (fallback to true if prop is undefined)
+    const effectiveShowDocumentList = typeof showDocumentList === 'boolean' ? showDocumentList : true;
+    const [isDocumentListVisible, setIsDocumentListVisible] = useState(effectiveShowDocumentList);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
@@ -68,6 +71,7 @@ export default function DocumentPanel({
     const [statusMsg, setStatusMsg] = useState(''); // <-- error state
     const [showDiffModal, setShowDiffModal] = useState(false);
     const [pendingSaveContent, setPendingSaveContent] = useState('');
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null); // Track which message was copied
 
     // Sync initial edit mode state
     useEffect(() => {
@@ -83,8 +87,8 @@ export default function DocumentPanel({
     }, [mdContent]);
 
     useEffect(() => {
-        setIsDocumentListVisible(showDocumentList);
-    }, [showDocumentList]);
+        setIsDocumentListVisible(effectiveShowDocumentList);
+    }, [effectiveShowDocumentList]);
 
     // Function to detect placeholders in the format [placeholder]
     useEffect(() => {
@@ -159,6 +163,26 @@ export default function DocumentPanel({
         onEdit();
     };
 
+    const handleSaveToDomain = (content: string, index: number) => {
+        // Extract domain name and description
+        const { name, description } = extractDomainNameAndDescription(content);
+
+        if (!name || name.trim() === '') {
+            setStatusMsg('Error: Document must have a title (first line starting with #)');
+            setTimeout(() => setStatusMsg(''), 5000);
+            return;
+        }
+
+        // Dispatch action to save domain data
+        const domainData = {
+            name,
+            description,
+            presentation: content,
+            prompt: '',
+        };
+        dispatch(setDomainData(domainData));
+    };
+
     const handleSaveToLibrary = () => {
         const contentToSave = isEditing ? editContent : mdContent;
         console.log('135 DocumentPanel handleSaveToLibrary - content to save:', contentToSave?.substring(0, 100), 'mdContent', mdContent?.substring(0, 100));
@@ -201,13 +225,18 @@ export default function DocumentPanel({
         performSaveToLibrary(contentToSave);
     };
     // Create a separate function to perform the actual save
+    const navigateToAiChat = () => {
+        if (pathname === '/ai-chat/aiAssistant') {
+            router.push('/ai-chat');
+        }
+    };
+
     const performSaveToLibrary = (contentToSave: string) => {
         // Extract name and description using helper (kept as ES import)
         const { name: finalFirstLine, description: finalSecondLine } = extractDomainNameAndDescription(contentToSave);
 
-        console.log('133 DocumentPanel handleSaveToLibrary - first:', finalFirstLine, 'second:', finalSecondLine, 'pathname:', pathname);
-
-        if (pathname === '/domain-builder') {
+        // console.log('133 DocumentPanel handleSaveToLibrary - first:', finalFirstLine, 'second:', finalSecondLine, 'pathname:', pathname);
+        if (!finalFirstLine || finalFirstLine.trim().includes('Domain')) {
             const domain = {
                 name: finalFirstLine,
                 description: finalSecondLine,
@@ -217,94 +246,34 @@ export default function DocumentPanel({
             }
             console.log('141 DomainBuilderPage dispatching domain data:', domain);
             dispatch(setDomainData({ ...domain }));
-        } else if (pathname === '/ai-chat') {
-            // Check if a document with the same name already exists
-            const existingDocument = documents?.find(doc => doc.name === finalFirstLine);
-            console.log('148 Existing document check:', existingDocument);
-            if (existingDocument) {
-                // Document exists - ask user what to do
-                const userChoice = window.confirm(
-                    `A document named "${finalFirstLine}" already exists.\n\n` +
-                    `Click "OK" to replace the existing document.\n` +
-                    `Click "Cancel" to save as a new document with a timestamp.`
-                );
-
-                if (userChoice) {
-                    // User chose to replace - use the existing document's ID
-                    dispatch(saveMarkdownDocument({
-                        id: existingDocument.id,
-                        name: finalFirstLine,
-                        type: 'markdown',
-                        content: contentToSave,
-                        createdAt: existingDocument.createdAt, // Keep original creation date
-                        updatedAt: new Date().toISOString()
-                    }));
-                } else {
-                    // User chose to save as new - add timestamp to name
-                    const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
-                    dispatch(saveMarkdownDocument({
-                        id: Date.now().toString(),
-                        name: `${finalFirstLine} (${timestamp})`,
-                        type: 'markdown',
-                        content: contentToSave,
-                        createdAt: new Date().toISOString(),
-                        updatedAt: new Date().toISOString()
-                    }));
-                }
-            } else {
-                // No existing document - save normally
-                dispatch(saveMarkdownDocument({
-                    id: Date.now().toString(),
-                    name: finalFirstLine,
-                    type: 'markdown',
-                    content: contentToSave,
-                    createdAt: new Date().toISOString(),
-                    updatedAt: new Date().toISOString()
-                }));
-            }
         } else {
-            dispatch(saveMarkdownDocument({
-                id: documentId || Date.now().toString(),
-                name: finalFirstLine,
-                type: 'markdown',
-                content: contentToSave,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString()
+
+            // Also update localStorage and dispatch custom event for same-tab updates
+            localStorage.setItem('currentDocument', contentToSave);
+
+            // Dispatch custom event to notify other components in the same tab
+            window.dispatchEvent(new CustomEvent('localStorageChange', {
+                detail: {
+                    key: 'currentDocument',
+                    newValue: contentToSave,
+                    oldValue: localStorage.getItem('currentDocument')
+                }
             }));
-            console.log('DocumentPanel handleSaveToLibrary - saved document:', finalFirstLine);
+
+            // Also call the prop callback for parent components
+            onSaveToLibrary(contentToSave);
+
+            // Show confirmation
+            setStatusMsg('Saved to library');
         }
-
-        // Exit editing mode first, then update content
-        if (isEditing) {
-            setIsEditing(false);
-        }
-
-        // Update the currentDocument state in the parent component
-        console.log('About to update parent with content:', contentToSave?.substring(0, 100));
-        setMdContent(contentToSave);
-
-        // Also update localStorage and dispatch custom event for same-tab updates
-        localStorage.setItem('currentDocument', contentToSave);
-
-        // Dispatch custom event to notify other components in the same tab
-        window.dispatchEvent(new CustomEvent('localStorageChange', {
-            detail: {
-                key: 'currentDocument',
-                newValue: contentToSave,
-                oldValue: localStorage.getItem('currentDocument')
-            }
-        }));
-
-        // Also call the prop callback for parent components
-        onSaveToLibrary(contentToSave);
-
-        // Show confirmation
-        setStatusMsg('Saved to library');
         setTimeout(() => setStatusMsg(''), 3000);
 
         // Close diff modal if it was open
         setShowDiffModal(false);
         setPendingSaveContent('');
+
+        navigateToAiChat();
+
     };
 
     // Add the handlers for the diff modal
@@ -328,6 +297,46 @@ export default function DocumentPanel({
         }));
         onSave(editContent);
         setIsEditing(false);
+    };
+
+    // const handleSaveDomain = (content: string, index: number) => {
+    //     // Extract domain name and description
+
+    //            const { name: finalFirstLine, description: finalSecondLine } = extractDomainNameAndDescription(contentToSave);
+
+    //     const { name, description } = extractDomainNameAndDescription(content);
+
+    //     if (!name || name.trim() === '') {
+    //         setStatusMsg('Error: Document must have a title (first line starting with #)');
+    //         setTimeout(() => setStatusMsg(''), 5000);
+    //         return;
+    //     }
+
+    //     // Dispatch action to save domain data
+    //     dispatch(setDomainData({
+    //         id: Date.now().toString(),
+    //         name,
+    //         description,
+    //         createdAt: new Date().toISOString()
+    //     }));
+
+    //     setStatusMsg(`Saved domain: ${name}`);
+    //     setCopiedIndex(index);
+    //     setTimeout(() => {
+    //         setStatusMsg('');
+    //         setCopiedIndex(null);
+    //     }, 5000);
+    // }
+
+    const handleCopyMessage = (content: string, index: number) => {
+        navigator.clipboard.writeText(content)
+            .then(() => {
+                setCopiedIndex(index);
+                setTimeout(() => setCopiedIndex(null), 2000);
+            })
+            .catch((err) => {
+                console.error('Failed to copy text: ', err);
+            });
     };
 
     // Define placeholders based on panel type
@@ -431,7 +440,7 @@ export default function DocumentPanel({
         return result;
     }
 
-    const allowDocumentList = panelType === 'middle' && showDocumentList;
+    const allowDocumentList = panelType === 'middle' && effectiveShowDocumentList;
 
     return (
         <div className="p-2 flex h-full">
@@ -440,6 +449,13 @@ export default function DocumentPanel({
                 <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b border-gray-600">
                         <h3 className="text-sm font-medium text-gray-300">Documents</h3>
+                        <button
+                            onClick={() => setIsLibraryOpen(true)}
+                            className="ms-auto me-4 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
+                            title="Open library modal"
+                        >
+                            <Library className="h-4 w-4" />
+                        </button>
                         <button
                             onClick={() => setIsDocumentListVisible(false)}
                             className="text-gray-400 hover:text-white"
@@ -546,17 +562,24 @@ export default function DocumentPanel({
                                     <X className="h-4 w-4" />
                                 </button>
                             </>
+                        ) : (panelType === 'middle') ? (
+
+                            <>
+                                <button
+                                    onClick={() => handleSaveToDomain(message.content, 1)}
+                                    className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                >
+                                    {copiedIndex === 1 ? 'Saved!' : 'Save Domain'}
+                                </button>
+                                <button
+                                    onClick={() => handleCopyMessage(message.content, 1)}
+                                    className="ms-2 text-xs text-gray-400 hover:text-gray-200"
+                                >
+                                    {copiedIndex === 1 ? 'Copied!' : 'Copy'}
+                                </button>
+                            </>
                         ) : (
                             <>
-                                {panelType === 'middle' && typeof onPreview === 'function' && (
-                                    <button
-                                        onClick={() => onPreview(isEditing ? editContent : mdContent)}
-                                        className="p-1.5 text-gray-400 hover:text-purple-300 hover:bg-gray-800 rounded-md"
-                                        title="Update preview"
-                                    >
-                                        <Eye className="h-4 w-4" />
-                                    </button>
-                                )}
                                 {showLibraryButton && (
                                     <button
                                         onClick={() => setIsLibraryOpen(true)}
@@ -683,18 +706,18 @@ export default function DocumentPanel({
                         </button>
                     </div>
                 ) : (
-                        <div className="prose prose-invert prose-xs custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[60vh] max-w-full whitespace-pre-wrap break-words [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm">
-                            {mdContent ? (
-                                <MarkdownPreview
-                                    mdPreview={mdContent}
-                                    variant={panelType === 'right' || panelType === 'middle' ? 'compact' : 'default'}
-                                />
-                            ) : (
-                                <div className="text-sm text-gray-400 p-4">
-                                    {getEmptyMessage()}
-                                </div>
-                            )}
-                        </div>
+                    <div className="prose prose-invert prose-xs custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[90vh] max-w-[60ch] whitespace-pre-wrap break-words [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm">
+                        {mdContent ? (
+                            <MarkdownPreview
+                                mdPreview={mdContent}
+                                variant={panelType === 'right' || panelType === 'middle' ? 'compact' : 'default'}
+                            />
+                        ) : (
+                            <div className="text-sm text-gray-400 p-4">
+                                {getEmptyMessage()}
+                            </div>
+                        )}
+                    </div>
                 )}
             </div>
 
