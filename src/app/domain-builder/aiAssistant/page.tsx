@@ -222,13 +222,15 @@ const DomainAssistantPage = () => {
                 key: 'preview',
                 label: 'Preview',
                 content: (
-                    <div className="h-[calc(100vh-9rem)] overflow-auto px-2 py-2">
-                        {mdPreview && mdPreview.trim().length > 0 && mdPreview !== 'Nothing to preview yet!' ? (
-                            <MarkdownPreview mdPreview={mdPreview} variant="compact" />
-                        ) : (
-                            <div className="text-sm text-gray-400">Nothing to preview yet!</div>
-                        )}
-                    </div>
+                    <DocumentPanel
+                        mdContent={mdPreview}
+                        setMdContent={setMdPreview}
+                        setIsLibraryOpen={handleOpenLibrary} // Use the new handler
+                        isLibraryOpen={isLibraryOpen}
+                        panelType='right'
+                        currentDocumentContent={currentDocument}
+                        markdownPreviewContent={mdPreview}
+                    />
                 )
             }
         ],

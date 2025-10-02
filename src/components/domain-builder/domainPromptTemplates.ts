@@ -1,7 +1,7 @@
 export const DOMAIN_PROMPT_TEMPLATES = [
     {
-        title: 'Domain: Discovery Session',
-        usage: 'Discovery',
+        title: 'Domain: New Domain Session',
+        usage: 'New Domain Session',
         content: `I want to scope and define the domain: [DOMAIN NAME]
 
 Please help me capture:
@@ -12,13 +12,22 @@ Please help me capture:
 - Known boundaries, assumptions, integrations, or constraints.
 - Open questions or areas needing clarification.
 
-Present the output as:
-1. Domain Purpose
-2. Actors & Roles
-3. Core Concepts
-4. Activities & Events
-5. Constraints & Interfaces
-6. Outstanding Questions
+Enhance the given Domain Name if necessary.
+Domain Name:
+Domain Description:
+
+Domain Presentation:
+Please include the following:
+1. Domain Purpose and Scope.
+2. Key Concepts and Terminologies.
+3. Actors and Roles.
+4. Activities and Processes.
+5. Objects and Resources.
+6. Events and Triggers.
+7. Rules and Constraints.
+8. Data and Information Flows.
+9. External Interfaces or Contexts.
+10. Known Sub-domains or Boundaries.
 `,
     },
 ];

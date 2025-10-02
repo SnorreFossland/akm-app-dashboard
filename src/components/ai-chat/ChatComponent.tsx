@@ -153,6 +153,9 @@ export default function ChatComponent({
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
     const [streamedContent, setStreamedContent] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
+    const templateButtonRef = useRef<HTMLButtonElement | null>(null);
+    const templateDropdownRef = useRef<HTMLDivElement | null>(null);
+    const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
 
     // Add throttling for stream updates
     const streamUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -408,34 +411,34 @@ Do not use its contents as contextual input for other questions--I want it impro
         };
     }, [resetInactivityTimer, showDigitalRain]);
 
-    // Function to handle clicks outside dropdown
     useEffect(() => {
+        if (!showTemplateDropdown) return;
+
         const handleClickOutside = (event: MouseEvent) => {
-            const dropdown = document.getElementById('template-dropdown');
-            const templateButton = document.querySelector('[title="Select a template"]');
+            const dropdown = templateDropdownRef.current;
+            const button = templateButtonRef.current;
 
-            if (dropdown && !dropdown.classList.contains('hidden')) {
-                // Check if click is outside both the dropdown and the button
-                if (
-                    dropdown &&
-                    templateButton &&
-                    !dropdown.contains(event.target as Node) &&
-                    !templateButton.contains(event.target as Node)
-                ) {
-                    dropdown.classList.add('hidden');
-                }
+            if (!dropdown || !button) return;
+
+                                                        if (!dropdown.contains(event.target as Node) && !button.contains(event.target as Node)) {
+                                                            setShowTemplateDropdown(false);
+                                                        }
+        };
+
+        const handleEsc = (event: KeyboardEvent) => {
+            if (event.key === 'Escape') {
+                setShowTemplateDropdown(false);
             }
-
         };
 
-        // Add event listener
-        document.addEventListener('mousedown', handleClickOutside);
+        document.addEventListener('click', handleClickOutside);
+        document.addEventListener('keydown', handleEsc);
 
-        // Cleanup
         return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
+            document.removeEventListener('click', handleClickOutside);
+            document.removeEventListener('keydown', handleEsc);
         };
-    }, []);
+    }, [showTemplateDropdown]);
 
     // Load saved model preference from localStorage on component mount
     useEffect(() => {
@@ -1154,21 +1157,10 @@ Do not use its contents as contextual input for other questions--I want it impro
             <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10 mb-5">
                 {/* Input area always at the bottom */}
                 <div className={`${isMobile ? 'fixed bottom-5 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
-                    {pathname === '/ai-chat/modal' &&
+                    {pathname === '/ai-chat/aiAssistant' &&
                         <div className="flex items-center justify-between p-2 min-w-0">
                             {/* button row above the chat */}
                             <div className="flex items-center gap-2">
-                                {/* System Prompt Button */}
-                                {/* <div
-                                    className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
-                                    onClick={handleSystemPromptClick}
-                                    title="Click to view system prompt"
-                                >
-                                    <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                        <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
-                                    </span>
-                                </div> */}
-                                {/* Context file input */}
                                 <button
                                     type="button"
                                     onClick={handleAddMD}
@@ -1239,45 +1231,43 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 }
                                 {/* Template dropdown for prompt templates */}
                                 <div className="flex items-center gap-2">
-                                    <div className="">
+                                    <div className="relative">
                                         <button
+                                            ref={templateButtonRef}
                                             className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
-                                            onClick={() => {
-                                                const dropdown = document.getElementById('template-dropdown');
-                                                if (dropdown) {
-                                                    // Check position relative to viewport
-                                                    const button = document.activeElement as HTMLElement;
-                                                    const buttonRect = button.getBoundingClientRect();
-                                                    const viewportHeight = window.innerHeight;
-                                                    const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                    const spaceAbove = buttonRect.top;
+                                            onClick={(event) => {
+                                                const dropdown = templateDropdownRef.current;
+                                                const button = templateButtonRef.current;
+                                                if (!dropdown || !button) return;
 
-                                                    // First toggle visibility
-                                                    dropdown.classList.toggle('hidden');
+                                                setShowTemplateDropdown((prev) => {
+                                                    const next = !prev;
+                                                    if (next) {
+                                                        const buttonRect = button.getBoundingClientRect();
+                                                        const viewportHeight = window.innerHeight;
+                                                        const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                        const spaceAbove = buttonRect.top;
 
-                                                    // If there's not enough space below, position above
-                                                    if (spaceBelow < 300 && spaceAbove > 150) {
-                                                        // Position above with margin to prevent cutoff
-                                                        dropdown.style.bottom = 'calc(100% + 5px)';  // Add 5px gap
-                                                        dropdown.style.top = 'auto';
-                                                        dropdown.style.maxHeight = `${spaceAbove - 20}px`;  // Leave more space
-                                                    } else {
-                                                        // Otherwise position below with margin
-                                                        dropdown.style.top = 'calc(100% + 5px)';  // Add 5px gap
-                                                        dropdown.style.bottom = 'auto';
-                                                        dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                    }
-
-                                                    // Ensure the dropdown is fully visible within viewport
-                                                    setTimeout(() => {
-                                                        const dropdownRect = dropdown.getBoundingClientRect();
-                                                        if (dropdownRect.top < 0) {
-                                                            // If still cut off at top, adjust position
-                                                            dropdown.style.top = '5px';
+                                                        if (spaceBelow < 300 && spaceAbove > 150) {
+                                                            dropdown.style.bottom = 'calc(100% + 5px)';
+                                                            dropdown.style.top = 'auto';
+                                                            dropdown.style.maxHeight = `${spaceAbove - 20}px`;
+                                                        } else {
+                                                            dropdown.style.top = 'calc(100% + 5px)';
                                                             dropdown.style.bottom = 'auto';
+                                                            dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
                                                         }
-                                                    }, 0);
-                                                }
+
+                                                        requestAnimationFrame(() => {
+                                                            const dropdownRect = dropdown.getBoundingClientRect();
+                                                            if (dropdownRect.top < 0) {
+                                                                dropdown.style.top = '5px';
+                                                                dropdown.style.bottom = 'auto';
+                                                            }
+                                                        });
+                                                    }
+                                                    return next;
+                                                });
                                             }}
                                             title="Select a template"
                                         >
@@ -1287,8 +1277,9 @@ Do not use its contents as contextual input for other questions--I want it impro
                                             </svg>
                                         </button>
                                         <div
+                                            ref={templateDropdownRef}
                                             id="template-dropdown"
-                                            className="absolute z-50 mt-1 hidden bg-popover border border-gray-600 rounded shadow-lg w-64 right-0"
+                                            className={`absolute right-0 z-50 mt-1 w-64 rounded border border-gray-600 bg-popover shadow-lg ${showTemplateDropdown ? '' : 'hidden'}`}
                                         >
                                             <div className="p-1 border-b border-gray-600">
                                                 <select
@@ -1307,14 +1298,14 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                 {filteredTemplates.map((template, index) => (
                                                     <button
                                                         key={index}
-                                                        className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                        onClick={() => {
-                                                            setSelectedReportTemplate(template.title);
-                                                            setInput(template.content);
-                                                            document.getElementById('template-dropdown')?.classList.add('hidden');
-                                                        }}
-                                                    >
-                                                        {template.title}
+                                                    className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                    onClick={() => {
+                                                        setSelectedReportTemplate(template.title);
+                                                        setInput(template.content);
+                                                        setShowTemplateDropdown(false);
+                                                    }}
+                                                >
+                                                    {template.title}
                                                     </button>
                                                 ))}
                                             </div>
@@ -1348,20 +1339,13 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 >
                                     Create a enhanced prompt
                                 </button>
-                                {/* <button
-                                onClick={() => dispatch(setMessages([]))}
-                                title="Clear chat history"
-                                className=" py-1 text-xs text-red-500 hover:text-red-700"
-                            >
-                                <X className="w-4 h-4" />
-                            </button> */}
                             </div>
                         </div>
 
                     }
-                    {pathname === '/domain-builder' &&
+                    {/* {pathname === '/domain-builder' &&
                         <div className="flex items-center justify-between p-2">
-                            {/* button row above the chat */}
+
                             <button
                                 type="button"
                                 className="bg-blue-700 text-gray-300 py-1 p-3 ms-auto rounded hover:bg-blue-600"
@@ -1390,7 +1374,7 @@ Don't include explanations, next steps or examples at this stage.
                                 Define & Scope Domain
                             </button>
                         </div>
-                    }
+                    } */}
 
                     <div className="flex items-center gap-2"></div>
 
@@ -1528,4 +1512,3 @@ Don't include explanations, next steps or examples at this stage.
         </div >
     )
 }
-

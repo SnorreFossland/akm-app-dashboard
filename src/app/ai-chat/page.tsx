@@ -499,7 +499,7 @@ const AIChatPage = () => {
             icon: <Edit className="w-5 h-5" />, 
             className: 'text-emerald-300 ring-emerald-900/50',
         },
-    ] as const;
+    ];
 
     return (
         <div className="flex-1 flex-col h-screen">

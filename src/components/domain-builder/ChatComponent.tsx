@@ -16,7 +16,7 @@ import {
     Message
 } from '@/features/domainChat/domainChatSlice';
 import { DOMAIN_PROMPT_TEMPLATES } from './domainPromptTemplates';
-import { SystemPrompt  } from '@/app/domain-builder/prompts';
+import { SystemPrompt } from '@/app/domain-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
@@ -63,7 +63,7 @@ export interface ChatComponentProps {
     setMdPreview: (preview: string) => void;
     setCurrentMessages: (messages: any[]) => void;
     selectedModel: "dummy" | "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini";
-    setSelectedModel: (model: "dummy" | "deepseek-chat" |  "mistral" | "gpt-5" | "gpt-5-mini") => void;
+    setSelectedModel: (model: "dummy" | "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini") => void;
     isMobile?: boolean; // Add this line to the destructuring
     setIsMobile?: (isMobile: boolean) => void; // Add this line to the destructuring
     gettingStartedGuide: React.ReactNode;
@@ -96,7 +96,7 @@ export default function ChatComponent({
     showLeftPanel,
     setShowLeftPanel,
     showRightPanel,
-    setShowRightPanel,
+    setShowRightPanel = () => {true}, // Default to a no-op function if not provided
     chatInput,
     onAddMD,
     mdContent,
@@ -160,9 +160,9 @@ export default function ChatComponent({
         const currentDefinition = domainData?.presentation || domainData?.description || '';
         if (currentDefinition && currentDefinition.trim().length > 0) {
             templates.push({
-                title: 'Domain: Enhance Existing Definition',
+                title: 'Domain: Enhance Existing Domain Definition',
                 usage: 'Enhancement',
-                content: `You are reviewing the current domain documentation for "${domainData?.name || 'this domain'}".
+                content: `You are reviewing the current domain documentation supplied below  in Existing definition.
 
 Step 1: Analyse the existing definition below and identify any gaps, ambiguities, or opportunities to clarify scope.
 Step 2: Produce an enhanced domain definition that:
@@ -171,26 +171,53 @@ Step 2: Produce an enhanced domain definition that:
 - Highlights the most important actors, objects, and recurring events.
 - Adds missing context that would help ontology and process modellers.
 
-Existing definition:
+Return the result as:
+- Refined Domain Definition (markdown format)
+- List of Key Concepts (bullet points)
+- First line should be: ## Domain name
+
+## Existing definition:
 ${currentDefinition}
 
-Return the result as:
-1. Refined Domain Definition (2-3 paragraphs).
-2. Key Clarifications Added (bullet list).
-3. Follow-up Questions (if any).
+
+
 `
             });
         }
         return templates;
     }, [domainData?.description, domainData?.name, domainData?.presentation]);
-    const templateCategories = useMemo(() => ['All', ...Array.from(new Set(domainTemplates.map(template => template.usage))).sort()], [domainTemplates]);
+    const availablePromptTemplates = useMemo(() => {
+        if (docRefine) {
+            const enhancementTemplates = domainTemplates.filter(template => template.usage === 'Enhancement');
+            if (enhancementTemplates.length > 0) {
+                return enhancementTemplates;
+            }
+        }
+        return domainTemplates;
+    }, [docRefine, domainTemplates]);
+    const templateCategories = useMemo(() => {
+        const categories = Array.from(new Set(availablePromptTemplates.map(template => template.usage))).sort();
+        if (categories.length <= 1) {
+            return categories;
+        }
+        return ['All', ...categories];
+    }, [availablePromptTemplates]);
     const [selectedCategory, setSelectedCategory] = useState<string>('All');
-    const filteredTemplates = useMemo(() => selectedCategory === 'All'
-        ? domainTemplates
-        : domainTemplates.filter(template => template.usage === selectedCategory), [domainTemplates, selectedCategory]);
+    const filteredTemplates = useMemo(() => {
+        if (docRefine) {
+            return availablePromptTemplates;
+        }
+        if (templateCategories.length > 1 && selectedCategory !== 'All') {
+            return availablePromptTemplates.filter(template => template.usage === selectedCategory);
+        }
+        return availablePromptTemplates;
+    }, [availablePromptTemplates, docRefine, selectedCategory, templateCategories.length]);
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
     const [streamedContent, setStreamedContent] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState<boolean>(false);
+    const templateButtonRef = useRef<HTMLButtonElement | null>(null);
+    const templateDropdownRef = useRef<HTMLDivElement | null>(null);
+    const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
 
     // Add throttling for stream updates
     const streamUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
@@ -231,51 +258,8 @@ Return the result as:
     const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a Domain Expert in the domain supplied by the user. 
 Your task is to help the user define a specific domain of interest clearly, comprehensively, and in a structured way. 
-Enhance the given Domain Name if necessary.
-Domain Name:
-Domain Description:
 
-Domain Presentation:
-Please include the following:
-1. Domain Purpose and Scope.
-2. Key Concepts and Terminologies.
-3. Actors and Roles.
-4. Activities and Processes.
-5. Objects and Resources.
-6. Events and Triggers.
-7. Rules and Constraints.
-8. Data and Information Flows.
-9. External Interfaces or Contexts.
-10. Known Sub-domains or Boundaries.
 `);
-
-    const refinePrompt = (
-        `Please revise the content below for clarity, style, and grammar.
-Take into consideration the following changes or additions: [Please describe the changes you want in detail here].
-Your task is to improve and refine the text, not to analyze it.
-Do not use its contents as contextual input for other questions--I want it improved not analyzed:
-    `
-    )
-
-    // // Generate categories list dynamically from templates
-    // const CATEGORIES = ["All", ...Array.from(
-    //     new Set(PROMPT_TEMPLATES.map(template => template.category))
-    // ).sort()];
-
-    // const filteredTemplates = selectedCategory === 'All'
-    //     ? PROMPT_TEMPLATES
-    //     : PROMPT_TEMPLATES.filter(template => template.category === selectedCategory);
-
-    // Generate categories list dynamically from templates
-    // const CATEGORIES = [...Array.from(
-    //     new Set(PROMPT_TEMPLATES.map(template => template.usage))
-    // ).sort(), "All"];
-
-    // const filteredTemplates = selectedCategory === 'All'
-    //     ? PROMPT_TEMPLATES
-    //     : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
-    // // Define templates for document refinement
-    // const refineTemplates = REFINE_TEMPLATES;
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
@@ -291,19 +275,20 @@ Do not use its contents as contextual input for other questions--I want it impro
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     useEffect(() => {
+        if (!showTemplateDropdown) return;
+
         const handleClickOutside = (event: MouseEvent) => {
-            const dropdown = document.getElementById('domain-template-dropdown');
-            if (!dropdown || dropdown.classList.contains('hidden')) return;
-            const button = dropdown.previousElementSibling as HTMLElement | null;
-            const targetNode = event.target as Node;
-            if (dropdown.contains(targetNode)) return;
-            if (button && button.contains(targetNode)) return;
-            dropdown.classList.add('hidden');
+            const dropdown = templateDropdownRef.current;
+            const button = templateButtonRef.current;
+            if (!dropdown || !button) return;
+            if (!dropdown.contains(event.target as Node) && !button.contains(event.target as Node)) {
+                setShowTemplateDropdown(false);
+            }
         };
 
         const handleEsc = (event: KeyboardEvent) => {
             if (event.key === 'Escape') {
-                document.getElementById('domain-template-dropdown')?.classList.add('hidden');
+                setShowTemplateDropdown(false);
             }
         };
 
@@ -313,7 +298,13 @@ Do not use its contents as contextual input for other questions--I want it impro
             document.removeEventListener('click', handleClickOutside);
             document.removeEventListener('keydown', handleEsc);
         };
-    }, []);
+    }, [showTemplateDropdown]);
+
+    useEffect(() => {
+        if (!docRefine) {
+            setSelectedCategory('All');
+        }
+    }, [docRefine]);
 
 
     // Add this effect to adjust topHeight based on input size
@@ -1272,168 +1263,23 @@ Do not use its contents as contextual input for other questions--I want it impro
                 {/* <div className={`flex  ${isMobile ? 'max-h-[calc(100vh-22rem)]' : 'max-h-[calc(100vh-18rem)]'} min-w-0 rounded-lg overflow-hidden relative`}></div> */}
                 {/* <div className="fixed bottom-0 left-10 right-1  bg-popover border-t border-gray-600 z-10"> */}
                 <div className={`${isMobile ? 'fixed bottom-5 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
-                    <div className="flex flex-col gap-2 p-2">
-                        <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex flex-wrap items-center gap-3 text-xs text-gray-400">
-                                <button
-                                    type="button"
-                                    onClick={handleAddMD}
-                                    className={`inline-flex items-center gap-2 rounded-md border border-gray-600 px-3 py-1.5 text-sm transition-colors hover:bg-gray-700 ${mdContent ? 'text-green-400' : 'text-gray-400'}`}
-                                    disabled={isLoading}
-                                    title="Attach a local Markdown or DOCX file to refine."
-                                >
-                                    <FileText className="w-4 h-4" />
-                                    {mdContent ? 'File loaded' : 'Load domain text'}
-                                </button>
-                                <input
-                                    ref={mdFileInputRef}
-                                    type="file"
-                                    accept=".md, .txt, .markdown, .docx"
-                                    style={{ display: 'none' }}
-                                    className="hidden"
-                                    onChange={handleMDFileSelect}
-                                />
+                    {/* <div className="flex items-center justify-between p-2">
 
-                                <label className="flex items-center gap-2 cursor-pointer text-sm">
-                                    <input
-                                        type="checkbox"
-                                        checked={docRefine}
-                                        disabled={isLoading}
-                                        onChange={() => {
-                                            const newRefineState = !docRefine;
-                                            setDocRefine(newRefineState);
-                                            if (!newRefineState) {
-                                                setSelectedRefineTemplate('');
-                                            }
-                                        }}
-                                        className="sr-only"
-                                    />
-                                    <div className={`h-5 w-5 border ${docRefine ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center transition-colors`}>
-                                        {docRefine && (
-                                            <div className="h-2 w-2 bg-white rounded-full" />
-                                        )}
-                                    </div>
-                                    <span className="text-gray-400">Refine Domain text</span>
-                                    {!currentDocument && (
-                                        <span className="text-[11px] text-yellow-500/80">(no domain presentation loaded)</span>
-                                    )}
-                                </label>
-                            </div>
+                            <button
+                                type="button"
+                                className="bg-blue-700 text-gray-300 py-1 p-3 ms-auto rounded hover:bg-blue-600"
+                                onClick={() => {
+                                    setDocRefine(true);
+                                    setInput((currentDocument !== "")
+                                        ? `
+Please include [New items] in the existing domain definition below.
+Don't ask clarifying questions or for additional context, just the updated definition.
 
-                            <div className="flex flex-wrap items-center gap-3 text-sm">
-                                {docRefine && (
-                                    <select
-                                        title="Select a refinement template"
-                                        className="bg-popover border border-gray-600 rounded px-2 py-1 text-sm text-gray-200"
-                                        value={selectedRefineTemplate}
-                                        onChange={(e) => {
-                                            const key = e.target.value;
-                                            setSelectedRefineTemplate(key);
-                                            const selectedTemplate = key ? refineTemplates[key as keyof typeof refineTemplates] : '';
-                                            if (selectedTemplate) {
-                                                setInput(selectedTemplate);
-                                            } else {
-                                                setInput('');
-                                            }
-                                        }}
-                                        disabled={isLoading || !currentDocument}
-                                    >
-                                        <option value="">Select refinement template…</option>
-                                        {Object.keys(refineTemplates).map((key) => (
-                                            <option key={key} value={key}>{key}</option>
-                                        ))}
-                                    </select>
-                                )}
-
-                                <div className="relative">
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center gap-1 rounded-md border border-gray-600 bg-popover px-3 py-1 text-xs text-gray-200 hover:bg-gray-700"
-                                        onClick={() => {
-                                            const dropdown = document.getElementById('domain-template-dropdown');
-                                            if (!dropdown) return;
-
-                                            const button = dropdown.previousElementSibling as HTMLElement | null;
-                                            dropdown.classList.toggle('hidden');
-
-                                            if (button) {
-                                                const buttonRect = button.getBoundingClientRect();
-                                                const viewportHeight = window.innerHeight;
-                                                const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                const spaceAbove = buttonRect.top;
-
-                                                if (spaceBelow < 300 && spaceAbove > 150) {
-                                                    dropdown.style.bottom = 'calc(100% + 5px)';
-                                                    dropdown.style.top = 'auto';
-                                                    dropdown.style.maxHeight = `${spaceAbove - 20}px`;
-                                                } else {
-                                                    dropdown.style.top = 'calc(100% + 5px)';
-                                                    dropdown.style.bottom = 'auto';
-                                                    dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                }
-                                            }
-                                        }}
-                                        title="Select a prompt template"
-                                    >
-                                        <span>Prompt Templates</span>
-                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                        </svg>
-                                    </button>
-                                    <div
-                                        id="domain-template-dropdown"
-                                        className="absolute right-0 z-50 mt-1 hidden w-64 rounded border border-gray-600 bg-popover shadow-lg"
-                                    >
-                                        <div className="p-1 border-b border-gray-600">
-                                            <select
-                                                className="w-full rounded border border-gray-600 bg-popover px-1 py-0.5 text-xs"
-                                                value={selectedCategory}
-                                                onChange={(e) => setSelectedCategory(e.target.value)}
-                                            >
-                                                {templateCategories.map((category) => (
-                                                    <option key={category} value={category}>
-                                                        {category}
-                                                    </option>
-                                                ))}
-                                            </select>
-                                        </div>
-                                        <div className="max-h-[180px] overflow-y-auto">
-                                            {filteredTemplates.map((template, index) => (
-                                                <button
-                                                    key={`${template.title}-${index}`}
-                                                    className="w-full truncate px-2 py-1 text-left text-xs hover:bg-gray-700"
-                                                    onClick={() => {
-                                                        setInput(template.content);
-                                                        document.getElementById('domain-template-dropdown')?.classList.add('hidden');
-                                                    }}
-                                                >
-                                                    {template.title}
-                                                </button>
-                                            ))}
-                                            {filteredTemplates.length === 0 && (
-                                                <div className="px-2 py-2 text-xs text-gray-500">No templates found for this category.</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {pathname === '/domain-builder' && (
-                                    <button
-                                        type="button"
-                                        className="inline-flex items-center gap-2 rounded-md bg-blue-700 px-3 py-1.5 text-sm text-gray-100 hover:bg-blue-600"
-                                            onClick={() => {
-                                                setDocRefine(true);
-                                                setInput((currentDocument !== '')
-                                                ? `I want to enhance the current domain
-
-Please help me:
-- Identify and formalize the more core concepts.
-- Capture extended domain boundaries, assumptions, and known variations.
-- Prepare the result for later use in ontology concepts definition, Process modelling and AKM modeling, data integration.
-- Change the Domain name and then a description of the domain if needed.
-Don't include explanations, next steps or examples at this stage.
 `
-                                                : `I want to scope and define the domain: [DOMAIN NAME]
+                                        // Let’s begin by reviewing the current domain definition. I’ll provide it in the next message unless you require a specific format.
+                                        //                                         `
+                                        :
+                                        `I want to scope and define the domain: [DOMAIN NAME]
 
 Please help me:
 - Identify and formalize the core concepts.
@@ -1441,15 +1287,171 @@ Please help me:
 - Prepare the result for later use in ontology concepts definition, Process modelling and AKM modeling, data integration.
 - Stating the Domain name and then a description of the domain.
 Don't include explanations, next steps or examples at this stage.
-`);
+`)
+                                }}
+                            >
+                                Define & Scope Domain
+                            </button>
+                        </div> */}
+                    <div className="flex items-center justify-between p-2 min-w-0">
+                        {/* button row above the chat */}
+                        <div className="flex items-center gap-2">
+                            <button
+                                type="button"
+                                onClick={handleAddMD}
+                                className={`p-2 flex items-center gap-2 hover:text-gray-300 ${mdContent ? 'text-green-500' : 'text-gray-500'}`}
+                                disabled={isLoading}
+                                title="Add a local file to be refined."
+                            >
+                                <FileText className="w-5 h-5" /> {statusMsg.includes('Loaded') ? (mdContent ? 'File Loaded' : 'Load a file') : 'Load a file'}
+                            </button>
+                            <input
+                                ref={mdFileInputRef}
+                                type="file"
+                                accept=".md, .txt, .markdown, .docx"
+                                style={{ display: 'none' }}
+                                className="hidden"
+                                onChange={handleMDFileSelect}
+                            />
+                            {currentDocument && (
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={docRefine && !currentDocument ? false : docRefine}
+                                        disabled={!currentDocument || isLoading}
+                                        onChange={() => {
+                                            if (!currentDocument) {
+                                                setDocRefine(true);
+                                                setInput('');
+                                            } else {
+                                                const newRefineState = !docRefine;
+                                                setDocRefine(newRefineState);
+                                                // setInput(newRefineState ? refinePrompt : '');
+                                            }
                                         }}
+                                        className="sr-only" // Hide default checkbox but keep it accessible
+                                    />
+                                    <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                        {docRefine && mdContent && (
+                                            <div className="h-2 w-2 bg-white rounded-full"></div>
+                                        )}
+                                    </div>
+                                    <span className="text-gray-500">{currentDocument ? "Refine document" : "No document in the left panel"}</span>
+                                </label>
+                            )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                            {/* Template selection */}
+                            {/* {currentDocument && docRefine &&
+                            <div className="flex items-center gap-2">
+                                <select
+                                    title="Select a style for the document"
+                                    className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
+                                    onChange={(e) => {
+                                        const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
+                                        if (selectedTemplate) {
+                                            setInput(selectedTemplate);
+                                            // setDocRefine(true);
+                                        }
+                                    }}
+                                    disabled={isLoading || !currentDocument}
+                                >
+                                    <option value="">Select style...</option>
+                                    {Object.keys(refineTemplates).map((key) => (
+                                        <option key={key} value={key}>{key}</option>
+                                    ))}
+                                </select>
+                            </div>
+                        } */}
+                            {/* Template dropdown for prompt templates */}
+                            <div className="flex items-center gap-2">
+                                <div className="relative">
+                                    <button
+                                        ref={templateButtonRef}
+                                        className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
+                                        onClick={(event) => {
+                                            const dropdown = templateDropdownRef.current;
+                                            const button = templateButtonRef.current;
+                                            if (!dropdown || !button) return;
+
+                                            setShowTemplateDropdown((prev) => {
+                                                const next = !prev;
+                                                if (next) {
+                                                    const buttonRect = button.getBoundingClientRect();
+                                                    const viewportHeight = window.innerHeight;
+                                                    const spaceBelow = viewportHeight - buttonRect.bottom;
+                                                    const spaceAbove = buttonRect.top;
+
+                                                    if (spaceBelow < 300 && spaceAbove > 150) {
+                                                        dropdown.style.bottom = 'calc(100% + 5px)';
+                                                        dropdown.style.top = 'auto';
+                                                        dropdown.style.maxHeight = `${spaceAbove - 20}px`;
+                                                    } else {
+                                                        dropdown.style.top = 'calc(100% + 5px)';
+                                                        dropdown.style.bottom = 'auto';
+                                                        dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
+                                                    }
+
+                                                    requestAnimationFrame(() => {
+                                                        const dropdownRect = dropdown.getBoundingClientRect();
+                                                        if (dropdownRect.top < 0) {
+                                                            dropdown.style.top = '5px';
+                                                            dropdown.style.bottom = 'auto';
+                                                        }
+                                                    });
+                                                }
+                                                return next;
+                                            });
+                                        }}
+                                        title="Select a template"
                                     >
-                                        Define & Scope Domain
+                                        <span>Prompt Templates</span>
+                                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                        </svg>
                                     </button>
-                                )}
+                                    <div
+                                        ref={templateDropdownRef}
+                                        id="template-dropdown"
+                                        className={`absolute right-0 z-50 mt-1 w-64 rounded border border-gray-600 bg-popover shadow-lg ${showTemplateDropdown ? '' : 'hidden'}`}
+                                    >
+                                        <div className="p-1 border-b border-gray-600">
+                                            <select
+                                                className="w-full bg-popover text-xs border border-gray-600 rounded px-1 py-0.5"
+                                                value={selectedCategory}
+                                                onChange={(e) => setSelectedCategory(e.target.value)}
+                                                disabled={docRefine || templateCategories.length <= 1}
+                                            >
+                                                {(templateCategories.length === 0 ? ['None'] : templateCategories).map((category) => (
+                                                    <option key={category} value={category}>
+                                                        {category}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="overflow-y-auto max-h-[180px]">
+                                            {filteredTemplates.map((template, index) => (
+                                                <button
+                                                    key={index}
+                                                    className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                    onClick={() => {
+                                                        setInput(template.content);
+                                                        setShowTemplateDropdown(false);
+                                                    }}
+                                                >
+                                                    {template.title}
+                                                </button>
+                                            ))}
+                                            {filteredTemplates.length === 0 && (
+                                                <div className="px-2 py-2 text-xs text-gray-500">No templates available.</div>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    <div className="flex items-center gap-2"></div>
 
                     {/* START FORM */}
                     <form onSubmit={handleSubmit} className="pt-1 px-2 bg-popover rounded-lg min-w-0 w-full">

@@ -657,66 +657,66 @@ const ModalPage = () => {
 
 
     return (
-        <div className="flex flex-col h-screen max-h-screen overflow-hidden border-[16px] border-orange-800/80 rounded-lg shadow-xl">
+        <div className="flex flex-col h-screen max-h-screen overflow-hidden mx-4 border-[1rem] border-l-orange-700 border-t-orange-700 border-r-orange-900/80 border-b-orange-900 border-gradient-to-br from-orange-900/20 via-gray-900/40 to-black/60 shadow-[0_25px_60px_-15px_rgba(249,115,22,0.45)]">
             {/* Larger green indicator bar at the top */}
             {/* <div className="h-2.5 w-full bg-gradient-to-r from-green-700 to-green-500"></div> */}
 
             {/* Compact header with minimal height */}
             <div className="flex justify-between items-center py-1 px-2 border-b border-gray-700 bg-gray-800/90">
-                <span className="font-bold text-orange-500/60">Edit mode</span>
-                <span className="font-medium font-bold text-orange-400/60">AI Chat Assistant</span>
-                <Link href="/ai-chat" className="p-1 text-orange-400 hover:text-orange-200">
-                    <X className="w-4 h-4" />
-                </Link>
+            <span className="font-bold text-orange-500/60">Edit mode</span>
+            <span className="font-medium font-bold text-orange-400/60">AI Chat Assistant</span>
+            <Link href="/ai-chat" className="p-1 text-orange-400 hover:text-orange-200">
+                <X className="w-4 h-4" />
+            </Link>
             </div>
 
             {/* Main content area that takes remaining height */}
             <div className="flex-1 overflow-hidden bg-gray-900/60">
-                <ThreePanelLayout
-                    moduleOperations={modelSelector}
-                    leftPanelContent={leftPanelContent}
-                    middlePanelContent={middlePanelContent}
-                    rightPanelContent={rightPanelContent}
-                    showLeftPanel={showLeftPanel}
-                    setShowLeftPanel={setShowLeftPanel}
-                    showRightPanel={showRightPanel}
-                    setShowRightPanel={setShowRightPanel}
-                    className="h-full min-w-0 bg-background text-gray-100"
-                >
-                    <></>
-                </ThreePanelLayout>
+            <ThreePanelLayout
+                moduleOperations={modelSelector}
+                leftPanelContent={leftPanelContent}
+                middlePanelContent={middlePanelContent}
+                rightPanelContent={rightPanelContent}
+                showLeftPanel={showLeftPanel}
+                setShowLeftPanel={setShowLeftPanel}
+                showRightPanel={showRightPanel}
+                setShowRightPanel={setShowRightPanel}
+                className="h-full min-w-0 bg-background text-gray-100"
+            >
+                <></>
+            </ThreePanelLayout>
             </div>
 
             {/* Library and Guide modals remain unchanged */}
             {isLibraryOpen && (
-                <Modal
-                    isOpen={isLibraryOpen}
-                    onClose={() => { setIsLibraryOpen(false); setIsLibraryLoading(false); }}
-                >
-                    <div className="mb-4 flex justify-between items-center">
-                        <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                        <div className="flex space-x-2">
-                            <button onClick={handleImportLibrary} className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded">
-                                Import
-                            </button>
-                            <button onClick={handleExportLibrary} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded" disabled={!documentsState || documentsState.length === 0}>
-                                Export
-                            </button>
-                            <input type="file" ref={fileInputRef} onChange={handleFileSelection} accept=".json" style={{ display: 'none' }} />
-                        </div>
-                    </div>
-                    <div className="text-sm text-gray-400 max-h-[70vh] overflow-auto">
-                        {isLibraryLoading ? (
-                            <div className="p-4 text-center">Loading document library...</div>
-                        ) : (
-                            <MarkdownLibrary onSelect={handleDocumentSelect} onShowInLeftPanel={handleShowInLeftPanel} onSetCurrentDocument={setCurrentDocument} hideExportLibraryButton={false} />
-                        )}
-                    </div>
-                </Modal>
+            <Modal
+                isOpen={isLibraryOpen}
+                onClose={() => { setIsLibraryOpen(false); setIsLibraryLoading(false); }}
+            >
+                <div className="mb-4 flex justify-between items-center">
+                <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
+                <div className="flex space-x-2">
+                    <button onClick={handleImportLibrary} className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded">
+                    Import
+                    </button>
+                    <button onClick={handleExportLibrary} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded" disabled={!documentsState || documentsState.length === 0}>
+                    Export
+                    </button>
+                    <input type="file" ref={fileInputRef} onChange={handleFileSelection} accept=".json" style={{ display: 'none' }} />
+                </div>
+                </div>
+                <div className="text-sm text-gray-400 max-h-[70vh] overflow-auto">
+                {isLibraryLoading ? (
+                    <div className="p-4 text-center">Loading document library...</div>
+                ) : (
+                    <MarkdownLibrary onSelect={handleDocumentSelect} onShowInLeftPanel={handleShowInLeftPanel} onSetCurrentDocument={setCurrentDocument} hideExportLibraryButton={false} />
+                )}
+                </div>
+            </Modal>
             )}
 
             <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
-                <GettingStartedGuide />
+            <GettingStartedGuide />
             </Modal>
         </div>
     );

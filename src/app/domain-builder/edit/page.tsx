@@ -7,7 +7,7 @@ import { X } from 'lucide-react';
 
 import { RootState } from '@/store';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
-import DocumentPanel from '@/components/ai-chat/DocumentPanel';
+import DocumentPanel from '@/components/domain-builder/DocumentPanel';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 
@@ -162,6 +162,7 @@ const DomainEditPage = () => {
                                 currentDocumentContent={currentDocument}
                                 markdownPreviewContent={previewContent}
                                 startInEditMode
+                                showDocumentList={false}
                             />
                         </div>
                     </div>
