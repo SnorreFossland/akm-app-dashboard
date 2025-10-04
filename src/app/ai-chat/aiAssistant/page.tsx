@@ -1,7 +1,7 @@
 'use client';
 import { useRef, useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
-import { useDispatch, useStore } from 'react-redux';
+import { useDispatch, useStore, useSelector } from 'react-redux';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 import mermaid from 'mermaid';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
@@ -22,7 +22,7 @@ const MarkdownLibrary = dynamic(() => import('@/components/ai-chat/MarkdownLibra
     loading: () => <div className="p-4 text-center text-sm">Loading document library...</div>
 });
 
-import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
+import { saveMarkdownDocument, setCurrentDocument, MarkdownDocument } from '@/features/model-universe/modelSlice';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
@@ -91,9 +91,14 @@ const ModalPage = () => {
     const [isLibraryLoading, setIsLibraryLoading] = useState(false);
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
-    const [currentDocument, setCurrentDocument] = useState<string>('');
+    const [docType, setDocType] = useState('Markdown');
+    const currentDocument = useSelector((state: RootState) => state.modelUniverse.phData.currentDocument);
     const mdFileInputRef = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleSetCurrentDocument = (content: string) => {
+        dispatch(setCurrentDocument(content));
+    };
 
     // Panel visibility state and response state
     const [showLeftPanel, setShowLeftPanel] = useState(false);
@@ -164,6 +169,18 @@ const ModalPage = () => {
 
     // no-op kept for ChatComponent API compatibility
     const setCurrentMessages = (messages: any[]) => { /* noop - Redux handles messages */ };
+
+    const normalizeDocumentType = (type?: string) => {
+        if (!type) return 'Markdown';
+        const trimmed = type.trim();
+        if (!trimmed) return 'Markdown';
+
+        // Handle hyphenated types: "project-plan" -> "Project-Plan"
+        return trimmed
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join('-');
+    };
 
     useEffect(() => {
         const checkIsMobile = () => {
@@ -245,32 +262,72 @@ const ModalPage = () => {
         }
     }, [mdPreview, docName]);
 
-    // save currentDocument to localStorage whenever it changes
+    // Extract document name and type from currentDocument when it changes
     useEffect(() => {
-        if (currentDocument) {
-            try { localStorage.setItem('currentDocument', currentDocument); } catch { }
+        if (!currentDocument) {
+            setDocName('');
+            setDocType('Markdown');
+            return;
         }
-    }, [currentDocument]);
 
-    // load currentDocument from localStorage on mount
+        // Try to find matching document in library to get name and type
+        const matchingDoc = documentsState?.find(doc => doc.content === currentDocument);
+
+        if (matchingDoc) {
+            console.log('Found matching doc:', matchingDoc.name, 'type:', matchingDoc.type); // Debug log
+            setDocName(matchingDoc.name);
+            setDocType(normalizeDocumentType(matchingDoc.type));
+        } else {
+            console.log('No matching doc found in library. Current doc length:', currentDocument?.length); // Debug log
+            // Extract name from first line if no match found
+            const firstLine = currentDocument.split('\n')[0] || '';
+            const cleanName = firstLine.replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, ' ').trim();
+            if (cleanName && cleanName !== docName) {
+                setDocName(cleanName);
+            }
+            // Always default to Markdown type if no document found in library
+            setDocType('Markdown');
+        }
+    }, [currentDocument, documentsState]); // Removed docName and docType from dependencies to avoid loops
+
+    // Seed Redux from localStorage on mount
     useEffect(() => {
         try {
             const stored = localStorage.getItem('currentDocument');
-            if (stored) setCurrentDocument(stored);
-        } catch { }
-    }, []);
+            if (stored && stored !== currentDocument) {
+                dispatch(setCurrentDocument(stored));
+            }
+        } catch { /* ignore */ }
+    }, [dispatch]);
 
-    // listen for storage changes (other tabs / custom events)
+    // Persist updates for refreshes and other tabs
+    useEffect(() => {
+        try {
+            if (currentDocument) {
+                localStorage.setItem('currentDocument', currentDocument);
+            } else {
+                localStorage.removeItem('currentDocument');
+            }
+        } catch { /* ignore */ }
+    }, [currentDocument]);
+
+    // Mirror external updates into Redux (other tabs / legacy emitters)
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'currentDocument' && e.newValue !== null && e.newValue !== currentDocument) {
-                setCurrentDocument(e.newValue);
+            if (e.key === 'currentDocument') {
+                const newValue = e.newValue ?? '';
+                if (newValue !== currentDocument) {
+                    dispatch(setCurrentDocument(newValue));
+                }
             }
         };
         const handleCustomStorageChange = (e: Event) => {
             const customEvent = e as CustomEvent;
-            if (customEvent?.detail?.key === 'currentDocument' && customEvent.detail.newValue !== currentDocument) {
-                setCurrentDocument(customEvent.detail.newValue);
+            if (customEvent?.detail?.key === 'currentDocument') {
+                const newValue = customEvent.detail?.newValue ?? '';
+                if (newValue !== currentDocument) {
+                    dispatch(setCurrentDocument(newValue));
+                }
             }
         };
         window.addEventListener('storage', handleStorageChange);
@@ -279,9 +336,9 @@ const ModalPage = () => {
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('localStorageChange', handleCustomStorageChange);
         };
-    }, [currentDocument]);
+    }, [currentDocument, dispatch]);
 
-    const handleShowInLeftPanel = (content: string, name: string) => {
+    const handleShowInLeftPanel = (content: string, name: string, _doc?: MarkdownDocument) => {
         setMdContent(content);
         setDocName(name);
     };
@@ -294,9 +351,20 @@ const ModalPage = () => {
         setTimeout(() => setIsLibraryLoading(false), 300);
     };
 
-    const handleDocumentSelect = (content: string, name: string) => {
+    const handleDocumentSelect = (content: string, name: string, _doc?: MarkdownDocument) => {
         setMdContent(content);
         setDocName(name);
+        setIsEditing(false);
+        setIsLibraryOpen(false);
+        setIsLibraryLoading(false);
+    };
+
+    const handleApplyCurrentDocument = (content: string, name?: string, doc?: MarkdownDocument) => {
+        handleSetCurrentDocument(content);
+        if (name) {
+            setDocName(name);
+        }
+        setDocType(normalizeDocumentType(doc?.type));
         setIsEditing(false);
         setIsLibraryOpen(false);
         setIsLibraryLoading(false);
@@ -366,16 +434,36 @@ const ModalPage = () => {
                 key: 'current-content',
                 label: 'Current Content',
                 content: (
-                    <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        {currentDocument ? (
-                            <div className="p-2 bg-gray-800 rounded">
-                                <MarkdownPreview mdPreview={currentDocument || 'No definition available'} />
+                    <div className="flex flex-col h-full">
+                        {/* Header with name and type - smaller text */}
+                        <div className="flex items-center justify-between mb-2 px-2 py-0.5 border-b border-gray-700">
+                            <div className="text-[10px] text-gray-400">
+                                {docName && docType ? (
+                                    <span>
+                                        <span className="text-gray-300 font-medium">{docName}</span>
+                                        <span className="mx-1.5">•</span>
+                                        <span className="text-gray-500">{docType}</span>
+                                    </span>
+                                ) : currentDocument ? (
+                                    <span className="text-gray-500">Current Document</span>
+                                ) : (
+                                    <span className="text-gray-500">No document loaded</span>
+                                )}
                             </div>
-                        ) : (
-                            <div className="p-2 bg-gray-800 rounded">
-                                <div className="text-sm text-gray-400">No domain found</div>
-                            </div>
-                        )}
+                        </div>
+
+                        {/* Content area */}
+                        <div className="flex-1 space-y-4 px-2 overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+                            {currentDocument ? (
+                                <div className="p-2 bg-gray-800 rounded">
+                                    <MarkdownPreview mdPreview={currentDocument || 'No definition available'} />
+                                </div>
+                            ) : (
+                                <div className="p-2 bg-gray-800 rounded">
+                                    <div className="text-sm text-gray-400">No document available</div>
+                                </div>
+                            )}
+                        </div>
                     </div>
                 )
             },
@@ -394,7 +482,7 @@ const ModalPage = () => {
             },
         ],
         defaultTab: 'current-content'
-    }), [currentDocument, mdContent, isLibraryOpen]);
+    }), [currentDocument, mdContent, isLibraryOpen, docName, docType]);
 
     const middlePanelContent = useMemo(() => ({
         tabs: [
@@ -410,7 +498,7 @@ const ModalPage = () => {
                                 selectedModel={selectedModel}
                                 setSelectedModel={setSelectedModel}
                                 currentDocument={currentDocument}
-                                setCurrentDocument={setCurrentDocument}
+                                setCurrentDocument={handleSetCurrentDocument}
                                 onResponseChange={handleResponseChange}
                                 onViewInMarkdown={handleViewInMarkdown}
                                 showLeftPanel={showLeftPanel}
@@ -466,6 +554,8 @@ const ModalPage = () => {
                         panelType='right'
                         currentDocumentContent={currentDocument}
                         markdownPreviewContent={mdPreview}
+                        documentName={docName}
+                        documentType={docType}
                     />
                 )
             }
@@ -663,60 +753,66 @@ const ModalPage = () => {
 
             {/* Compact header with minimal height */}
             <div className="flex justify-between items-center py-1 px-2 border-b border-gray-700 bg-gray-800/90">
-            <span className="font-bold text-orange-500/60">Edit mode</span>
-            <span className="font-medium font-bold text-orange-400/60">AI Chat Assistant</span>
-            <Link href="/ai-chat" className="p-1 text-orange-400 hover:text-orange-200">
-                <X className="w-4 h-4" />
-            </Link>
+                <span className="font-bold text-orange-500/60">Edit mode</span>
+                <span className="font-medium font-bold text-orange-400/60">AI Chat Assistant</span>
+                <Link href="/ai-chat" className="p-1 text-orange-400 hover:text-orange-200">
+                    <X className="w-4 h-4" />
+                </Link>
             </div>
 
             {/* Main content area that takes remaining height */}
             <div className="flex-1 overflow-hidden bg-gray-900/60">
-            <ThreePanelLayout
-                moduleOperations={modelSelector}
-                leftPanelContent={leftPanelContent}
-                middlePanelContent={middlePanelContent}
-                rightPanelContent={rightPanelContent}
-                showLeftPanel={showLeftPanel}
-                setShowLeftPanel={setShowLeftPanel}
-                showRightPanel={showRightPanel}
-                setShowRightPanel={setShowRightPanel}
-                className="h-full min-w-0 bg-background text-gray-100"
-            >
-                <></>
-            </ThreePanelLayout>
+                <ThreePanelLayout
+                    moduleOperations={modelSelector}
+                    leftPanelContent={leftPanelContent}
+                    middlePanelContent={middlePanelContent}
+                    rightPanelContent={rightPanelContent}
+                    showLeftPanel={showLeftPanel}
+                    setShowLeftPanel={setShowLeftPanel}
+                    showRightPanel={showRightPanel}
+                    setShowRightPanel={setShowRightPanel}
+                    className="h-full min-w-0 bg-background text-gray-100"
+                >
+                    <></>
+                </ThreePanelLayout>
             </div>
 
             {/* Library and Guide modals remain unchanged */}
             {isLibraryOpen && (
-            <Modal
-                isOpen={isLibraryOpen}
-                onClose={() => { setIsLibraryOpen(false); setIsLibraryLoading(false); }}
-            >
-                <div className="mb-4 flex justify-between items-center">
-                <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                <div className="flex space-x-2">
-                    <button onClick={handleImportLibrary} className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded">
-                    Import
-                    </button>
-                    <button onClick={handleExportLibrary} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded" disabled={!documentsState || documentsState.length === 0}>
-                    Export
-                    </button>
-                    <input type="file" ref={fileInputRef} onChange={handleFileSelection} accept=".json" style={{ display: 'none' }} />
-                </div>
-                </div>
-                <div className="text-sm text-gray-400 max-h-[70vh] overflow-auto">
-                {isLibraryLoading ? (
-                    <div className="p-4 text-center">Loading document library...</div>
-                ) : (
-                    <MarkdownLibrary onSelect={handleDocumentSelect} onShowInLeftPanel={handleShowInLeftPanel} onSetCurrentDocument={setCurrentDocument} hideExportLibraryButton={false} />
-                )}
-                </div>
-            </Modal>
+                <Modal
+                    isOpen={isLibraryOpen}
+                    onClose={() => { setIsLibraryOpen(false); setIsLibraryLoading(false); }}
+                >
+                    <div className="mb-4 flex justify-between items-center">
+                        <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
+                        <div className="flex space-x-2">
+                            <button onClick={handleImportLibrary} className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded">
+                                Import
+                            </button>
+                            <button onClick={handleExportLibrary} className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded" disabled={!documentsState || documentsState.length === 0}>
+                                Export
+                            </button>
+                            <input type="file" ref={fileInputRef} onChange={handleFileSelection} accept=".json" style={{ display: 'none' }} />
+                        </div>
+                    </div>
+                    <div className="text-sm text-gray-400 max-h-[70vh] overflow-auto">
+                        {isLibraryLoading ? (
+                            <div className="p-4 text-center">Loading document library...</div>
+                        ) : (
+                            <MarkdownLibrary
+                                onSelect={handleDocumentSelect}
+                                onShowInLeftPanel={handleShowInLeftPanel}
+                                onSetCurrentDocument={(content, name, doc) => handleApplyCurrentDocument(content, name, doc)}
+                                currentDocument={currentDocument}
+                                hideExportLibraryButton={false}
+                            />
+                        )}
+                    </div>
+                </Modal>
             )}
 
             <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
-            <GettingStartedGuide />
+                <GettingStartedGuide />
             </Modal>
         </div>
     );

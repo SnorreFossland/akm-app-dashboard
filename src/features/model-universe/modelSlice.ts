@@ -46,6 +46,7 @@ export interface DataType {
     metis: Metis,
     domain: DomainData,
     documents: MarkdownDocument[], // Add documents here
+    currentDocument: string,
   },
   phFocus: {
     focusModel: {
@@ -175,7 +176,8 @@ export const initialState: DataType = {
       additionalContext: '',
       ontology: { name: '', description: '', concepts: [], relationships: [] },
     },
-    documents: [] // Add documents to initial state
+    documents: [], // Add documents to initial state
+    currentDocument: '',
   },
   phFocus: {
     focusModel: { id: '', name: '' },
@@ -290,7 +292,10 @@ const modelSlice = createSlice({
         const { presentation, ...rest } = incomingPhData.domain.ontology;
         incomingPhData.domain.ontology = { ...rest };
       }
-      state.phData = incomingPhData;
+      state.phData = {
+        ...incomingPhData,
+        currentDocument: incomingPhData.currentDocument || '',
+      };
       state.phFocus = { ...action.payload.phFocus };
       state.phUser = { ...action.payload.phUser };
       state.phSource = action.payload.phSource;
@@ -512,17 +517,42 @@ const modelSlice = createSlice({
         state.phData.documents = [];
       }
 
-      // Check if document with same name exists
-      const existingIndex = state.phData.documents.findIndex(
-        doc => doc.name === action.payload.name
+      const normalizeType = (type?: string) => {
+        if (!type) return 'markdown';
+        const trimmed = type.trim();
+        return trimmed === '' ? 'markdown' : trimmed;
+      };
+
+      const updatedDoc: MarkdownDocument = {
+        ...action.payload,
+        type: normalizeType(action.payload.type),
+      };
+
+      let existingIndex = state.phData.documents.findIndex(
+        (doc) => doc.id === updatedDoc.id
       );
 
+      if (existingIndex === -1) {
+        existingIndex = state.phData.documents.findIndex(
+          (doc) => doc.name === updatedDoc.name
+        );
+      }
+
       if (existingIndex >= 0) {
-        // Update existing document
-        state.phData.documents[existingIndex] = action.payload;
+        // Preserve original createdAt if the payload omitted it
+        const existingDoc = state.phData.documents[existingIndex];
+        state.phData.documents[existingIndex] = {
+          ...existingDoc,
+          ...updatedDoc,
+          createdAt: updatedDoc.createdAt || existingDoc.createdAt,
+          updatedAt: updatedDoc.updatedAt || new Date().toISOString(),
+        };
       } else {
-        // Add new document
-        state.phData.documents.push(action.payload);
+        state.phData.documents.push({
+          ...updatedDoc,
+          createdAt: updatedDoc.createdAt || new Date().toISOString(),
+          updatedAt: updatedDoc.updatedAt || new Date().toISOString(),
+        });
       }
     },
     deleteMarkdownDocument: (state, action: PayloadAction<string>) => {
@@ -532,6 +562,9 @@ const modelSlice = createSlice({
         return;
       }
       state.phData.documents = state.phData.documents.filter(doc => doc.id !== action.payload);
+    },
+    setCurrentDocument: (state, action: PayloadAction<string>) => {
+      state.phData.currentDocument = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -576,6 +609,7 @@ export const {
   // Add the new document actions
   saveMarkdownDocument,
   deleteMarkdownDocument,
+  setCurrentDocument,
 } = modelSlice.actions;
 
 export default modelSlice.reducer;

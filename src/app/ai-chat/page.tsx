@@ -8,7 +8,8 @@ import { faComments } from '@fortawesome/free-solid-svg-icons';
 import { RootState } from '@/store';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
-import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import { saveMarkdownDocument, setCurrentDocument, updateProjectInfo, MarkdownDocument } from '@/features/model-universe/modelSlice';
+import extractDomainNameAndDescription from '@/components/ai-chat/docExtraction';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
@@ -24,6 +25,7 @@ import {
     deleteConversation,
     startNewConversation
 } from '@/features/chat/chatSlice';
+import DocumentTemplateSelector, { DocumentTemplate } from '@/components/ai-chat/DocumentTemplateSelector';
 
 export interface ChatComponentProps {
     onResponseChange: (response: string) => void;
@@ -51,6 +53,8 @@ const AIChatPage = () => {
     const data = useSelector((state: RootState) => state.modelUniverse);
     const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
     const documents = useSelector((state: RootState) => data.phData.documents);
+    const focusProject = useSelector((state: RootState) => state.modelUniverse.phFocus.focusProj);
+    const currentDocument = useSelector((state: RootState) => state.modelUniverse.phData.currentDocument);
     const domain = data?.phData?.domain;
 
     const [currentModel, setCurrentModel] = useState<any | null>(null);
@@ -71,6 +75,7 @@ const AIChatPage = () => {
     const [mdContent, setMdContent] = useState<string>('')
     const [selectedModel, setSelectedModel] = useState('gpt-5-mini'); // Default model
     const [showGuideModal, setShowGuideModal] = useState(false);
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
     const [showLeftPanel, setShowLeftPanel] = useState(false);
     const [showRightPanel, setShowRightPanel] = useState(false);
@@ -80,9 +85,35 @@ const AIChatPage = () => {
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
     const [docName, setDocName] = useState('');
-    const [currentDocument, setCurrentDocument] = useState<string>('');
+    const [docType, setDocType] = useState('Markdown');
     const mdFileInputRef = useRef<HTMLInputElement>(null)
     const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const handleSetCurrentDocument = (content: string) => {
+        dispatch(setCurrentDocument(content));
+    };
+
+    const summariseContent = (content: string) => {
+        const { description } = extractDomainNameAndDescription(content || '');
+        const fallback = content ? content.replace(/\s+/g, ' ').trim().slice(0, 200) : '';
+        return description?.trim() ? description.trim() : fallback;
+    };
+
+    const updateProjectFromDocument = (content: string, name: string, doc?: MarkdownDocument) => {
+        if (!content) {
+            return;
+        }
+
+        const summary = summariseContent(content);
+        const projectId = doc?.id || `project-${Date.now()}`;
+        const projectName = name?.trim() ? name : 'Project Document';
+
+        dispatch(updateProjectInfo({
+            id: projectId,
+            name: projectName,
+            description: summary || 'No summary available.',
+        }));
+    };
 
     // Update conversation handlers to use Redux actions
     const handleSelectConversation = (conversation: any) => {
@@ -180,83 +211,111 @@ const AIChatPage = () => {
     // Remove the useEffect that was trying to use setConversations (it doesn't exist)
     // The conversations are now loaded from Redux state automatically
 
-    // Add useEffect to save currentDocument to localStorage whenever it changes
+    // Load currentDocument from localStorage on mount and prime Redux state
     useEffect(() => {
-        console.log('currentDocument changed:', currentDocument?.substring(0, 100) || 'empty');
+        const storedCurrentDocument = localStorage.getItem('currentDocument');
+        if (storedCurrentDocument && storedCurrentDocument !== currentDocument) {
+            dispatch(setCurrentDocument(storedCurrentDocument));
+        }
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (focusProject?.id || focusProject?.description) {
+            const matchingDoc = documents?.find((doc) => doc.id === focusProject.id);
+            if (matchingDoc) {
+                setMdContent(matchingDoc.content);
+                setDocName(matchingDoc.name);
+                setDocType(normalizeDocumentType(matchingDoc.type));
+            } else if (focusProject.description) {
+                const fallbackContent = focusProject.description;
+                setMdContent(fallbackContent);
+                if (focusProject.name) {
+                    setDocName(focusProject.name);
+                }
+            }
+        }
+    }, [focusProject, documents]);
+
+    // Persist currentDocument so refreshes and other contexts can reuse it
+    useEffect(() => {
         if (currentDocument) {
             localStorage.setItem('currentDocument', currentDocument);
-            console.log('Saved current document to localStorage');
+        } else {
+            localStorage.removeItem('currentDocument');
         }
     }, [currentDocument]);
 
-    // Load currentDocument from localStorage on mount
-    useEffect(() => {
-        const storedCurrentDocument = localStorage.getItem('currentDocument');
-        if (storedCurrentDocument) {
-            try {
-                setCurrentDocument(storedCurrentDocument);
-                console.log('Loaded current document from localStorage');
-            } catch (error) {
-                console.error('Error loading current document:', error);
-            }
-        }
-    }, []);
-
-    // Add this new useEffect to listen for localStorage changes
+    // Keep Redux in sync with storage changes (other tabs or legacy emitters)
     useEffect(() => {
         const handleStorageChange = (e: StorageEvent) => {
-            // Only react to changes to the 'currentDocument' key
-            if (e.key === 'currentDocument' && e.newValue !== null) {
-                console.log('localStorage currentDocument changed externally:', e.newValue?.substring(0, 100) || 'empty');
-                // Only update if the new value is different from current state
-                if (e.newValue !== currentDocument) {
-                    setCurrentDocument(e.newValue);
-                    console.log('Updated currentDocument from localStorage change');
+            if (e.key === 'currentDocument') {
+                const newValue = e.newValue ?? '';
+                if (newValue !== currentDocument) {
+                    dispatch(setCurrentDocument(newValue));
                 }
             }
         };
 
-        // Listen for storage events (fired when localStorage changes in other tabs/windows)
-        window.addEventListener('storage', handleStorageChange);
-
-        // Also listen for custom events within the same tab
         const handleCustomStorageChange = (e: Event) => {
             const customEvent = e as CustomEvent;
-            if (customEvent.detail.key === 'currentDocument' && customEvent.detail.newValue !== null) {
-                console.log('Custom storage event for currentDocument:', customEvent.detail.newValue?.substring(0, 100) || 'empty');
-                if (customEvent.detail.newValue !== currentDocument) {
-                    setCurrentDocument(customEvent.detail.newValue);
-                    console.log('Updated currentDocument from custom storage event');
+            if (customEvent.detail?.key === 'currentDocument') {
+                const newValue = customEvent.detail?.newValue ?? '';
+                if (newValue !== currentDocument) {
+                    dispatch(setCurrentDocument(newValue));
                 }
             }
         };
 
+        window.addEventListener('storage', handleStorageChange);
         window.addEventListener('localStorageChange', handleCustomStorageChange);
 
-        // Cleanup event listeners
         return () => {
             window.removeEventListener('storage', handleStorageChange);
             window.removeEventListener('localStorageChange', handleCustomStorageChange);
         };
-    }, [currentDocument]);
+    }, [currentDocument, dispatch]);
 
     // const handleShowRightPanel = () => {
     //     if (rightPanelToggleRef.current) {
     //         rightPanelToggleRef.current();
     //     }
     // };
-    const handleShowInLeftPanel = (content: string, name: string) => {
+    const normalizeDocumentType = (type?: string) => {
+        if (!type) return 'Markdown';
+        const trimmed = type.trim();
+        if (!trimmed) return 'Markdown';
+
+        // Handle hyphenated types: "project-plan" -> "Project-Plan"
+        return trimmed
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join('-');
+    };
+
+    const handleShowInLeftPanel = (content: string, name: string, doc?: MarkdownDocument) => {
         setMdContent(content);
         setDocName(name);
+        updateProjectFromDocument(content, name, doc);
         console.log("Selected document from library:", { content, name });
     };
 
-    const handleDocumentSelect = (content: string, name: string) => {
+    const handleDocumentSelect = (content: string, name: string, doc?: MarkdownDocument) => {
         setMdContent(content);
         setDocName(name);
         setIsEditing(false);
         setIsLibraryOpen(false); // Close the library modal after selection
+        updateProjectFromDocument(content, name, doc);
         console.log("Selected document from library:", { content, name });
+    };
+
+    const handleApplyCurrentDocument = (content: string, name?: string, doc?: MarkdownDocument) => {
+        handleSetCurrentDocument(content);
+        if (name) {
+            setDocName(name);
+        }
+        setDocType(normalizeDocumentType(doc?.type));
+        setIsEditing(false);
+        setIsLibraryOpen(false);
     };
 
     const handleAddMD = () => {
@@ -402,6 +461,8 @@ const AIChatPage = () => {
                         setIsLibraryOpen={setIsLibraryOpen}
                         isLibraryOpen={isLibraryOpen}
                         panelType='left'
+                        showDocumentList
+                        onNewDocument={() => setShowTemplateSelector(true)}
                     />
                 )
             },
@@ -417,16 +478,19 @@ const AIChatPage = () => {
                 label: 'Current Document',
                 content: (
                     <div className="flex flex-col bg-background rounded-lg h-[calc(100vh-9rem)] overflow-hidden">
-                        {/* Fill available height with DocumentPanel using flex-grow */}
                         <div className="flex-grow overflow-hidden">
                             <DocumentPanel
                                 mdContent={currentDocument}
-                                setMdContent={setCurrentDocument}
+                                setMdContent={handleSetCurrentDocument}
                                 setIsLibraryOpen={setIsLibraryOpen}
                                 isLibraryOpen={isLibraryOpen}
                                 panelType='middle'
                                 currentDocumentContent={currentDocument}
                                 markdownPreviewContent={mdPreview}
+                                documentName={docName}
+                                documentType={docType}
+                                onSelect={(content, name, doc) => handleApplyCurrentDocument(content, name, doc)}
+                                onNewDocument={() => setShowTemplateSelector(true)}
                             />
                         </div>
                     </div>
@@ -435,7 +499,7 @@ const AIChatPage = () => {
         ],
         defaultTab: 'current'
     };
-    // Define right panel content with the new props
+    // Define right panel content
     const rightPanelContent = {
         tabs: [
             {
@@ -448,8 +512,11 @@ const AIChatPage = () => {
                         setIsLibraryOpen={setIsLibraryOpen}
                         isLibraryOpen={isLibraryOpen}
                         panelType='right'
-                        currentDocumentContent={currentDocument} // Pass Current Document content
-                        markdownPreviewContent={mdPreview} // Pass Markdown Preview content
+                        currentDocumentContent={currentDocument}
+                        markdownPreviewContent={mdPreview}
+                        documentName={docName}
+                        documentType={docType}
+                        onNewDocument={() => setShowTemplateSelector(true)}
                     />
                 )
             }
@@ -490,16 +557,46 @@ const AIChatPage = () => {
         {
             label: 'AI Assistant',
             href: '/ai-chat/aiAssistant',
-            icon: <FontAwesomeIcon icon={faComments} className="w-5 h-5" />, 
+            icon: <FontAwesomeIcon icon={faComments} className="w-5 h-5" />,
             className: 'text-blue-300 ring-blue-900/50',
         },
         {
             label: 'Edit Document',
             href: '/ai-chat/edit',
-            icon: <Edit className="w-5 h-5" />, 
+            icon: <Edit className="w-5 h-5" />,
             className: 'text-emerald-300 ring-emerald-900/50',
         },
     ];
+
+    const handleTemplateSelect = (template: DocumentTemplate) => {
+        // Clear old content first
+        setMdContent('');
+        setMdPreview('');
+
+        // Set new template content and metadata using template name and type
+        setMdContent(template.content);
+        setDocName(template.name);  // Use template name
+        setDocType(normalizeDocumentType(template.type));  // Use template type
+
+        // Update Redux current document
+        dispatch(setCurrentDocument(template.content));
+        // Save the template as a document to make it available across pages
+        const templateDoc: MarkdownDocument = {
+            id: `template-${Date.now()}`,
+            name: template.name,
+            type: template.type,
+            content: template.content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        dispatch(saveMarkdownDocument(templateDoc));
+
+        // Update project info in Redux
+        updateProjectFromDocument(template.content, template.name, templateDoc);
+
+        setShowTemplateSelector(false);
+    };
 
     return (
         <div className="flex-1 flex-col h-screen">
@@ -522,6 +619,14 @@ const AIChatPage = () => {
 
             {/* Floating "Open AI Assistant" button - Centered with chat icon */}
             <FloatingActionButtons actions={floatingActions} className="bottom-2" />
+
+            {/* Template Selector Modal */}
+            {showTemplateSelector && (
+                <DocumentTemplateSelector
+                    onSelect={handleTemplateSelect}
+                    onClose={() => setShowTemplateSelector(false)}
+                />
+            )}
 
             {/* Library Modal */}
             {isLibraryOpen && (
@@ -569,7 +674,8 @@ const AIChatPage = () => {
                             <MarkdownLibrary
                                 onSelect={handleDocumentSelect}
                                 onShowInLeftPanel={handleShowInLeftPanel}
-                                onSetCurrentDocument={setCurrentDocument}  // Add this line
+                                onSetCurrentDocument={(content, name, doc) => handleApplyCurrentDocument(content, name, doc)}
+                                currentDocument={currentDocument}
                                 hideExportLibraryButton={false}
                             />
                         </div>

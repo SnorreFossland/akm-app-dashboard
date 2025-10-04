@@ -6,7 +6,7 @@ import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import extractDomainNameAndDescription from '@/components/ai-chat/docExtraction';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import { setDomainData, saveMarkdownDocument, setCurrentDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import DiffModal from '@/components/ai-chat/DiffModal';
 
 interface DocumentPanelProps {
@@ -61,7 +61,7 @@ export default function DocumentPanel({
     const [isEditing, setIsEditing] = useState(startInEditMode);
     const [editContent, setEditContent] = useState(mdContent || '');
     // Determine if the document list should be shown (fallback to true if prop is undefined)
-    const effectiveShowDocumentList = typeof showDocumentList === 'boolean' ? showDocumentList : true;
+    const effectiveShowDocumentList = typeof showDocumentList === 'boolean' ? showDocumentList : false;
     const [isDocumentListVisible, setIsDocumentListVisible] = useState(effectiveShowDocumentList);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
@@ -215,7 +215,6 @@ export default function DocumentPanel({
             presentation: contentToSave,
             prompt: '',
         }
-            additionalContext: '',
         console.log('141 DomainBuilderPage dispatching domain data:', domain);
         dispatch(setDomainData({ ...domain }));
         // } else if (pathname === '/ai-chat') {
@@ -274,20 +273,26 @@ export default function DocumentPanel({
         console.log('About to update parent with content:', contentToSave?.substring(0, 100));
         setMdContent(contentToSave);
 
-        // Also update localStorage and dispatch custom event for same-tab updates
-        localStorage.setItem('currentDocument', contentToSave);
-
-        // Dispatch custom event to notify other components in the same tab
-        window.dispatchEvent(new CustomEvent('localStorageChange', {
-            detail: {
-                key: 'currentDocument',
-                newValue: contentToSave,
-                oldValue: localStorage.getItem('currentDocument')
-            }
-        }));
-
         // Also call the prop callback for parent components
         onSaveToLibrary(contentToSave);
+
+        // Persist for legacy listeners and cross-tab sync
+        try {
+            const previousValue = localStorage.getItem('currentDocument');
+            localStorage.setItem('currentDocument', contentToSave);
+            window.dispatchEvent(new CustomEvent('localStorageChange', {
+                detail: {
+                    key: 'currentDocument',
+                    newValue: contentToSave,
+                    oldValue: previousValue,
+                }
+            }));
+        } catch (error) {
+            console.warn('Unable to sync currentDocument to localStorage', error);
+        }
+
+        // Sync the document into Redux so other views can access it
+        dispatch(setCurrentDocument(contentToSave));
 
         // Show confirmation
         setStatusMsg('Saved to library');

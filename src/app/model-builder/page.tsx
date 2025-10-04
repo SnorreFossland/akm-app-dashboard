@@ -31,6 +31,7 @@ export default function ModelBuilderPage() {
   const domain = useSelector((state: { modelUniverse: any }) => data.phData.domain);
   const ontology = useSelector((state: { modelUniverse: any }) => data.phData.domain?.ontology);
   const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
+  const focusProject = useSelector((state: RootState) => state.modelUniverse.phFocus.focusProj);
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
@@ -39,6 +40,8 @@ export default function ModelBuilderPage() {
 
   const [mdContent, setMdContent] = useState('');
   const [mdPreview, setMdPreview] = useState('Nothing to preview yet!');
+  const [projectDocId, setProjectDocId] = useState<string | null>(null);
+  const [projectContent, setProjectContent] = useState('');
   const [modelContent, setModelContent] = useState<any>('');
   const [modelPreview, setModelPreview] = useState('');
   const [currentMessages, setCurrentMessages] = useState<any[]>([]);
@@ -87,9 +90,48 @@ export default function ModelBuilderPage() {
     setShowRightPanel(true);
   };
 
+  useEffect(() => {
+    if (!focusProject) return;
+
+    if (focusProject.id) {
+      const matchingDoc = documents?.find((doc) => doc.id === focusProject.id);
+      if (matchingDoc) {
+        setProjectDocId(matchingDoc.id);
+        setProjectContent(matchingDoc.content || '');
+        return;
+      }
+    }
+
+    if (focusProject.description) {
+      setProjectDocId(null);
+      setProjectContent(focusProject.description);
+    }
+  }, [focusProject, documents]);
+
   // Left panel
   const leftPanelContent = {
     tabs: [
+      {
+        key: 'project',
+        label: 'Project Document',
+        content: (
+          <DocumentPanel
+            mdContent={projectContent}
+            setMdContent={setProjectContent}
+            setIsLibraryOpen={setIsLibraryOpen}
+            isLibraryOpen={isLibraryOpen}
+            panelType='left'
+            showDocumentList={false}
+            documentId={projectDocId || undefined}
+            onSelect={(content, _name, doc) => {
+              setProjectContent(content);
+              if (doc?.id) {
+                setProjectDocId(doc.id);
+              }
+            }}
+          />
+        )
+      },
       {
         key: 'current-domain',
         label: 'Current Domain',
@@ -109,25 +151,25 @@ export default function ModelBuilderPage() {
           </div>
         )
       },
-      {
-        key: 'ontology',
-        label: 'Current Ontology',
-        content: (
-          <div className="grid gap-4">
-            {ontology ? (
-              <OntologyCard domainData={domain} ontologyData={ontology} />
-            ) : (
-              <div className="text-center py-8">
-                <Network className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-                <p className="text-gray-400">No ontologies defined yet</p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Use the Ontology Builder to create your first ontology
-                </p>
-              </div>
-            )}
-          </div>
-        )
-      },
+      // {
+      //   key: 'ontology',
+      //   label: 'Current Ontology',
+      //   content: (
+      //     <div className="grid gap-4">
+      //       {ontology ? (
+      //         <OntologyCard domainData={domain} ontologyData={ontology} />
+      //       ) : (
+      //         <div className="text-center py-8">
+      //           <Network className="w-12 h-12 text-gray-500 mx-auto mb-4" />
+      //           <p className="text-gray-400">No ontologies defined yet</p>
+      //           <p className="text-sm text-gray-500 mt-2">
+      //             Use the Ontology Builder to create your first ontology
+      //           </p>
+      //         </div>
+      //       )}
+      //     </div>
+      //   )
+      // },
       {
         key: 'model',
         label: 'Model',

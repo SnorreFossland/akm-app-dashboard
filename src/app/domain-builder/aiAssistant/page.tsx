@@ -15,6 +15,15 @@ import Guide from '@/components/domain-builder/Guide';
 import ChatComponent from '@/components/domain-builder/ChatComponent';
 import { FileOperations } from '@/components/FileOperations';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
+// If MarkdownDocument is a type, define it locally here:
+export type MarkdownDocument = {
+    id?: string;
+    name: string;
+    type: string;
+    content: string;
+    createdAt?: string;
+    updatedAt?: string;
+};
 
 const MarkdownLibrary = dynamic(
     () => import('@/components/ai-chat/MarkdownLibrary'),
@@ -89,7 +98,7 @@ const DomainAssistantPage = () => {
         window.setTimeout(() => setIsLibraryLoading(false), 300);
     };
 
-    const handleDocumentSelect = (content: string, name: string) => {
+    const handleDocumentSelect = (content: string, name: string, _doc?: MarkdownDocument) => {
         setMdContent(content);
         setDocName(name);
         setIsLibraryOpen(false);
@@ -141,7 +150,7 @@ const DomainAssistantPage = () => {
         e.target.value = '';
     };
 
-    const handleShowInLeftPanel = (content: string, name: string) => {
+    const handleShowInLeftPanel = (content: string, name: string, _doc?: MarkdownDocument) => {
         setMdContent(content);
         setDocName(name);
     };
@@ -316,7 +325,13 @@ const DomainAssistantPage = () => {
                         {isLibraryLoading ? (
                             <div className="p-4 text-center">Loading document library...</div>
                         ) : (
-                            <MarkdownLibrary onSelect={handleDocumentSelect} onShowInLeftPanel={handleShowInLeftPanel} onSetCurrentDocument={setCurrentDocument} hideExportLibraryButton={false} />
+                            <MarkdownLibrary
+                                onSelect={handleDocumentSelect}
+                                onShowInLeftPanel={handleShowInLeftPanel}
+                                onSetCurrentDocument={(content, _name, _doc) => setCurrentDocument(content)}
+                                currentDocument={currentDocument}
+                                hideExportLibraryButton={false}
+                            />
                         )}
                     </div>
                 </Modal>

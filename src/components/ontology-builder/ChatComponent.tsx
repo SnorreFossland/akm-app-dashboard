@@ -17,8 +17,9 @@ interface OntologyRelship { name: string; nameFrom: string; nameTo: string; desc
 interface OntologyData { name: string; description: string; presentation?: string; concepts: OntologyConcept[]; relationships: OntologyRelship[] }
 type Ontology = OntologyData;
 
+// Add a prop to accept external context (e.g., projectContent from parent)
 interface ChatComponentProps {
-    mdContent: string;
+    mdContent?: string; // External context to inject (e.g., project plan or domain description)
     setMdContent: (content: string) => void;
     setSuggestedOntologyData: React.Dispatch<React.SetStateAction<Ontology | null>>;
     onImplementSuggestedOntology: () => void;
@@ -29,9 +30,9 @@ interface ChatComponentProps {
 export default function ChatComponent({ mdContent, setMdContent, startupGuide, guide, setSuggestedOntologyData, onImplementSuggestedOntology }: ChatComponentProps) {
     const [prompt, setPrompt] = useState<string>('Create an ontology for based on the Current Domain described in the "Existing Context".'); // Initial prompt
     const [model, setModel] = useState<string>('gpt-5-mini');
-    
+
     const [isLoading, setIsLoading] = useState(false);
-    
+
     const [context, setContext] = useState<string>('');
     const [maxTokens, setMaxTokens] = useState<number>(800);
     const [temperature, setTemperature] = useState<number>(0.5);
@@ -41,7 +42,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
     const [building, setBuilding] = useState<boolean>(false);
     const [buildError, setBuildError] = useState<string | null>(null);
     const [messages, setMessages] = useState<Array<{ role: 'user' | 'assistant'; content: string }>>([]);
-    
+
     const containerRef = useRef<HTMLDivElement>(null);
     const responsePanelRef = useRef<HTMLDivElement>(null);
     const buttonAccent = useMemo(() => 'px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap', []);
@@ -216,7 +217,7 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
             </div>
         );
     };
-    
+
     async function handleOntologyBuilderFromResult(text: string) {
         // if (!text || !setSuggestedOntologyData) return;
         setBuilding(true);

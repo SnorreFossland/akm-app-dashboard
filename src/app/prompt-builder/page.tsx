@@ -11,7 +11,7 @@ import PromptBuilder from "@/components/prompt-builder/PromptBuilder";
 import PromptComponent from "@/components/prompt-builder/PromptComponent";
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import { saveMarkdownDocument } from "@/features/model-universe/modelSlice"; // Updated import
+import { saveMarkdownDocument, MarkdownDocument } from "@/features/model-universe/modelSlice"; // Updated import
 import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
 import TemplatesPanel from '@/components/ai-chat/PromptRefinementPanel';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
@@ -184,7 +184,7 @@ export default function VercelAiPage() {
     e.target.value = ''; // Reset the file input
   };
 
-  const handleSelectFromLibrary = (content: string, name: string) => {
+  const handleSelectFromLibrary = (content: string, name: string, _doc?: MarkdownDocument) => {
     setMdContent(content);
     setDocName(name);
     setIsEditing(false);

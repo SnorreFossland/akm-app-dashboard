@@ -1,12 +1,12 @@
 'use client';
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { usePathname, useRouter } from 'next/navigation';
 import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
-import extractDomainNameAndDescription from '@/components/ai-chat/docExtraction';
-import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import extractDomainNameAndDescription from './docExtraction';
+import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye, Plus } from 'lucide-react';
+import { setDomainData, saveMarkdownDocument, setCurrentDocument, updateProjectInfo, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
 import DiffModal from './DiffModal';
 
 interface DocumentPanelProps {
@@ -21,7 +21,7 @@ interface DocumentPanelProps {
     isLibraryOpen?: boolean;
     documentId?: string;
     panelType?: 'left' | 'right' | 'middle';
-    onSelect?: (content: string, name: string) => void;
+    onSelect?: (content: string, name: string, docMeta?: MarkdownDocument) => void;
     // Add these new props for diff comparison
     currentDocumentContent?: string; // Content from Current Document tab
     markdownPreviewContent?: string; // Content from Markdown Preview (AI response)
@@ -31,6 +31,9 @@ interface DocumentPanelProps {
     showSaveButton?: boolean;
     showApplyButton?: boolean;
     showDocumentList?: boolean;
+    documentName?: string;
+    documentType?: string;
+    onNewDocument?: () => void;
 }
 
 export default function DocumentPanel({
@@ -54,6 +57,9 @@ export default function DocumentPanel({
     showSaveButton = true,
     showApplyButton = true,
     showDocumentList,
+    documentName,
+    documentType,
+    onNewDocument,
 }: DocumentPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
@@ -113,13 +119,29 @@ export default function DocumentPanel({
     }, [editContent]);
 
     // Handle document selection from the list
-    const handleDocumentSelect = (doc: any) => {
+    const handleDocumentSelect = (doc: MarkdownDocument) => {
+        console.log('116 Document selected:', doc);
+        if (!doc.content) doc.content = 'No content in this document.';
         setMdContent(doc.content);
+        console.log('118 After setMdContent - current mdContent:', doc.content?.substring(0, 100) || 'empty');
         setEditContent(doc.content);
         if (showDocumentList) {
             setIsDocumentListVisible(false);
         }
-        onSelect(doc.content, doc.name);
+
+        if (panelType === 'left') {
+            const { description } = extractDomainNameAndDescription(doc.content || '');
+            const fallbackSummary = ((doc.content || '').replace(/\s+/g, ' ').trim().slice(0, 200)) || 'No summary available.';
+            const summary = description?.trim() ? description.trim() : fallbackSummary;
+
+            dispatch(updateProjectInfo({
+                id: doc.id,
+                name: doc.name,
+                description: summary,
+            }));
+        }
+
+        onSelect(doc.content, doc.name, doc);
     };
 
     // Add this function with your other handler functions
@@ -161,26 +183,6 @@ export default function DocumentPanel({
     const handleEdit = () => {
         setIsEditing(true);
         onEdit();
-    };
-
-    const handleSaveToDomain = (content: string, index: number) => {
-        // Extract domain name and description
-        const { name, description } = extractDomainNameAndDescription(content);
-
-        if (!name || name.trim() === '') {
-            setStatusMsg('Error: Document must have a title (first line starting with #)');
-            setTimeout(() => setStatusMsg(''), 5000);
-            return;
-        }
-
-        // Dispatch action to save domain data
-        const domainData = {
-            name,
-            description,
-            presentation: content,
-            prompt: '',
-        };
-        dispatch(setDomainData(domainData));
     };
 
     const handleSaveToLibrary = () => {
@@ -235,37 +237,78 @@ export default function DocumentPanel({
         // Extract name and description using helper (kept as ES import)
         const { name: finalFirstLine, description: finalSecondLine } = extractDomainNameAndDescription(contentToSave);
 
-        // console.log('133 DocumentPanel handleSaveToLibrary - first:', finalFirstLine, 'second:', finalSecondLine, 'pathname:', pathname);
-        if (!finalFirstLine || finalFirstLine.trim().includes('Domain')) {
-            const domain = {
-                name: finalFirstLine,
-                description: finalSecondLine,
-                presentation: contentToSave,
-                prompt: '',
-                additionalContext: '',
+        console.log('133 DocumentPanel handleSaveToLibrary - first:', finalFirstLine, 'second:', finalSecondLine, 'pathname:', pathname);
+
+        const nowIso = new Date().toISOString();
+        const baseName = (finalFirstLine || '').trim();
+        let documentName = baseName !== '' ? baseName : `Document ${nowIso.slice(0, 16)}`;
+        const normalizedType = (documentType || 'markdown').toString().trim() || 'markdown';
+
+        let idToUse = documentId || Date.now().toString();
+        let createdAt = nowIso;
+
+        const existingById = documentId ? documents?.find((doc) => doc.id === documentId) : undefined;
+        if (existingById && existingById.createdAt) {
+            createdAt = typeof existingById.createdAt === 'string' ? existingById.createdAt : existingById.createdAt.toString();
+        }
+
+        const existingByName = documents?.find((doc) => doc.name === documentName);
+        if (existingByName && existingByName.id !== idToUse) {
+            const replace = window.confirm(
+                `A document named "${documentName}" already exists.\n\n` +
+                `Click "OK" to replace the existing document.\n` +
+                `Click "Cancel" to save as a new document with a timestamp.`
+            );
+
+            if (replace) {
+                idToUse = existingByName.id;
+                if (existingByName.createdAt) {
+                    createdAt = typeof existingByName.createdAt === 'string' ? existingByName.createdAt : existingByName.createdAt.toString();
+                }
+            } else {
+                const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
+                documentName = `${documentName} (${timestamp})`;
+                idToUse = Date.now().toString();
+                createdAt = nowIso;
             }
-            console.log('141 DomainBuilderPage dispatching domain data:', domain);
-            dispatch(setDomainData({ ...domain }));
-        } else {
+        }
 
-            // Also update localStorage and dispatch custom event for same-tab updates
+        dispatch(saveMarkdownDocument({
+            id: idToUse,
+            name: documentName,
+            type: normalizedType,
+            content: contentToSave,
+            createdAt,
+            updatedAt: nowIso,
+        }));
+
+        // Update the currentDocument state in the parent component
+        console.log('About to update parent with content:', contentToSave?.substring(0, 100));
+        setMdContent(contentToSave);
+
+        // Also call the prop callback for parent components
+        onSaveToLibrary(contentToSave);
+
+        // Persist for legacy listeners and cross-tab sync
+        try {
+            const previousValue = localStorage.getItem('currentDocument');
             localStorage.setItem('currentDocument', contentToSave);
-
-            // Dispatch custom event to notify other components in the same tab
             window.dispatchEvent(new CustomEvent('localStorageChange', {
                 detail: {
                     key: 'currentDocument',
                     newValue: contentToSave,
-                    oldValue: localStorage.getItem('currentDocument')
+                    oldValue: previousValue,
                 }
             }));
-
-            // Also call the prop callback for parent components
-            onSaveToLibrary(contentToSave);
-
-            // Show confirmation
-            setStatusMsg('Saved to library');
+        } catch (error) {
+            console.warn('Unable to sync currentDocument to localStorage', error);
         }
+
+        // Sync the current document into Redux so all views stay aligned
+        dispatch(setCurrentDocument(contentToSave));
+
+        // Show confirmation
+        setStatusMsg('Saved to library');
         setTimeout(() => setStatusMsg(''), 3000);
 
         // Close diff modal if it was open
@@ -286,11 +329,11 @@ export default function DocumentPanel({
         setPendingSaveContent('');
     };
 
-    const handleSave = () => {
+    const handleSaveCurrentDocument = () => {
         dispatch(saveMarkdownDocument({
             id: documentId || Date.now().toString(),
             name: documentId ? 'Updated Document' : 'Document ' + Date.now(),
-            type: 'markdown',
+            type: documentType || 'markdown',
             content: editContent,
             createdAt: new Date().toISOString(),
             updatedAt: new Date().toISOString() // Add updatedAt for clarity
@@ -298,35 +341,6 @@ export default function DocumentPanel({
         onSave(editContent);
         setIsEditing(false);
     };
-
-    // const handleSaveDomain = (content: string, index: number) => {
-    //     // Extract domain name and description
-
-    //            const { name: finalFirstLine, description: finalSecondLine } = extractDomainNameAndDescription(contentToSave);
-
-    //     const { name, description } = extractDomainNameAndDescription(content);
-
-    //     if (!name || name.trim() === '') {
-    //         setStatusMsg('Error: Document must have a title (first line starting with #)');
-    //         setTimeout(() => setStatusMsg(''), 5000);
-    //         return;
-    //     }
-
-    //     // Dispatch action to save domain data
-    //     dispatch(setDomainData({
-    //         id: Date.now().toString(),
-    //         name,
-    //         description,
-    //         createdAt: new Date().toISOString()
-    //     }));
-
-    //     setStatusMsg(`Saved domain: ${name}`);
-    //     setCopiedIndex(index);
-    //     setTimeout(() => {
-    //         setStatusMsg('');
-    //         setCopiedIndex(null);
-    //     }, 5000);
-    // }
 
     const handleCopyMessage = (content: string, index: number) => {
         navigator.clipboard.writeText(content)
@@ -440,7 +454,29 @@ export default function DocumentPanel({
         return result;
     }
 
-    const allowDocumentList = panelType === 'middle' && effectiveShowDocumentList;
+    const allowDocumentList = effectiveShowDocumentList && (panelType === 'middle' || panelType === 'left');
+
+    const panelLabel = useMemo(() => {
+        const formatType = (value?: string) => {
+            if (!value) return undefined;
+            const trimmed = value.trim();
+            if (!trimmed) return undefined;
+            return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+        };
+
+        // For middle and right panels, show document name and type if available
+        if ((panelType === 'middle' || panelType === 'right') && (documentName || documentType)) {
+            const parts = [
+                documentName || 'Untitled',
+                formatType(documentType)
+            ].filter(Boolean);
+            return parts.length > 0 ? parts.join(' • ') : (panelType === 'middle' ? 'Current Document' : 'Markdown Preview');
+        }
+
+        // For left panel or when no name/type
+        const baseLabel = (panelType === 'left' ? 'Current text' : (panelType === 'middle' ? 'Current Document' : 'Markdown Preview'));
+        return baseLabel;
+    }, [panelType, documentName, documentType]);
 
     return (
         <div className="p-2 flex h-full">
@@ -449,9 +485,18 @@ export default function DocumentPanel({
                 <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b border-gray-600">
                         <h3 className="text-sm font-medium text-gray-300">Documents</h3>
+                        {onNewDocument && (
+                            <button
+                                onClick={onNewDocument}
+                                className="text-green-400 hover:text-green-300 hover:bg-gray-700 p-1 rounded"
+                                title="New document from template"
+                            >
+                                <Plus className="h-5 w-5" />
+                            </button>
+                        )}
                         <button
                             onClick={() => setIsLibraryOpen(true)}
-                            className="ms-auto me-4 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
+                            className="text-gray-400 hover:text-blue-400 hover:bg-gray-700 p-1 rounded"
                             title="Open library modal"
                         >
                             <Library className="h-4 w-4" />
@@ -467,7 +512,16 @@ export default function DocumentPanel({
                     <div className="flex-1 overflow-y-auto p-2">
                         {documents?.length === 0 ? (
                             <div className="text-gray-400 text-sm p-4 text-center">
-                                No documents in library
+                                <p className="mb-3">No documents in library</p>
+                                {onNewDocument && (
+                                    <button
+                                        onClick={onNewDocument}
+                                        className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-500 text-white px-3 py-2 rounded text-sm"
+                                    >
+                                        <Plus className="h-4 w-4" />
+                                        <span>Create New Document</span>
+                                    </button>
+                                )}
                             </div>
                         ) : (
                             <div className="space-y-1">
@@ -500,8 +554,18 @@ export default function DocumentPanel({
                                 <ChevronRight className="h-4 w-4" />
                             </button>
                         )}
+                        {/* Add New Document button for all panels */}
+                        {onNewDocument && (
+                            <button
+                                onClick={onNewDocument}
+                                className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
+                                title="New document from template"
+                            >
+                                <Plus className="h-4 w-4" />
+                            </button>
+                        )}
                         <div className="text-sm text-gray-400">
-                            {(panelType === 'left' ? 'Current text' : (panelType === 'middle' ? 'Current' : 'Markdown Preview'))}
+                            {panelLabel}
                         </div>
                     </div>
                     <div className="flex gap-2">
@@ -563,19 +627,19 @@ export default function DocumentPanel({
                                 </button>
                             </>
                         ) : (panelType === 'middle') ? (
-
                             <>
-                                <button
-                                    onClick={() => handleSaveToDomain(message.content, 1)}
-                                    className="ms-2 text-xs text-gray-400 hover:text-gray-200"
-                                >
-                                    {copiedIndex === 1 ? 'Saved!' : 'Save Domain'}
-                                </button>
                                 <button
                                     onClick={() => handleCopyMessage(message.content, 1)}
                                     className="ms-2 text-xs text-gray-400 hover:text-gray-200"
                                 >
                                     {copiedIndex === 1 ? 'Copied!' : 'Copy'}
+                                </button>
+                                <button
+                                    onClick={handleSaveToLibrary}
+                                    className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
+                                    title="Save to library"
+                                >
+                                    <BookmarkPlus className="h-4 w-4" />
                                 </button>
                             </>
                         ) : (

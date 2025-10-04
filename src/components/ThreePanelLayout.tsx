@@ -74,15 +74,63 @@ export function ThreePanelLayout({
         return () => window.removeEventListener('resize', checkScreenSize);
     }, []);
 
-    const [activeLeftTab, setActiveLeftTab] = useState(
-        leftPanelContent?.defaultTab || leftPanelContent?.tabs[0]?.key || 'document'
+    // helper to pick a safe default tab key
+    const getDefaultTabKey = (panel: any, fallback = 'guide') => {
+        if (!panel) return fallback;
+        if (typeof panel.defaultTab === 'string' && panel.defaultTab.length > 0) return panel.defaultTab;
+        if (Array.isArray(panel.tabs) && panel.tabs.length > 0) {
+            return (panel.tabs[0] && typeof panel.tabs[0].key === 'string') ? panel.tabs[0].key : fallback;
+        }
+        return fallback;
+    };
+
+    // Use safe defaults instead of directly indexing tabs[0]
+    const [activeLeftTab, setActiveLeftTab] = useState<string>(
+        getDefaultTabKey(leftPanelContent, 'left')
     );
-    const [activeMiddleTab, setActiveMiddleTab] = useState(
-        middlePanelContent?.defaultTab || middlePanelContent?.tabs[0]?.key || 'guide'
+    const [activeMiddleTab, setActiveMiddleTab] = useState<string>(
+        getDefaultTabKey(middlePanelContent, 'guide')
     );
-    const [activeRightTab, setActiveRightTab] = useState(
-        rightPanelContent?.defaultTab || rightPanelContent?.tabs[0]?.key || 'document'
+    const [activeRightTab, setActiveRightTab] = useState<string>(
+        getDefaultTabKey(rightPanelContent, 'preview')
     );
+
+    // Helper to check if panel is a tabs object
+    const isPanelTabs = (panel: any): boolean => {
+        return panel && typeof panel === 'object' && Array.isArray(panel.tabs);
+    };
+
+    // Helper to render panel content (tabs or plain JSX)
+    const renderPanelContent = (panel: any, activeKey: string) => {
+        if (!panel) return null;
+        // If plain JSX (React.ReactNode), render directly
+        if (React.isValidElement(panel)) return panel;
+        // If tabs object, render Tabs component
+        if (isPanelTabs(panel)) {
+            return (
+                <Tabs value={activeKey} onValueChange={(v) => {
+                    // Set active tab based on which panel this is
+                    // (caller will wire setActiveLeftTab/Middle/Right)
+                }} className="h-full flex flex-col">
+                    <TabsList className="grid w-full pt-0 z-10" style={{ gridTemplateColumns: `repeat(${panel.tabs.length}, 1fr)` }}>
+                        {panel.tabs.map((tab: any) => (
+                            <TabsTrigger key={tab.key} value={tab.key} className="text-[12px] py-1">
+                                {tab.label}
+                            </TabsTrigger>
+                        ))}
+                    </TabsList>
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        {panel.tabs.map((tab: any) => (
+                            <TabsContent key={tab.key} value={tab.key} className="h-full">
+                                {tab.content}
+                            </TabsContent>
+                        ))}
+                    </div>
+                </Tabs>
+            );
+        }
+        return null;
+    };
 
     const [mdContent, setMdContent] = useState<string>('');
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -182,6 +230,14 @@ export function ThreePanelLayout({
     const finalLeftPanelContent = leftPanelContent || defaultLeftPanelContent;
     const finalMiddlePanelContent = middlePanelContent || defaultMiddlePanelContent;
     const finalRightPanelContent = rightPanelContent || defaultRightPanelContent;
+
+    // Helper to find active tab content safely
+    const getActiveTabContent = (panel: any, activeKey: string) => {
+        if (!panel) return null;
+        const tabs = Array.isArray(panel.tabs) ? panel.tabs : [];
+        const found = tabs.find((t: any) => t.key === activeKey) || tabs[0] || null;
+        return found ? found.content : null;
+    };
 
     if (isMobile) {
         return (
@@ -291,19 +347,28 @@ export function ThreePanelLayout({
                                     <ChevronLeft className="h-4 w-4" />
                                 </button>
                             </div>
-                            <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="flex flex-col flex-1 overflow-hidden">
-                                <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
-                                    {finalLeftPanelContent.tabs.map((tab) => (
-                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
-                                    ))}
-                                </TabsList>
-                                {finalLeftPanelContent.tabs.map((tab) => (
-                                    // add min-w-0 so left tab content doesn't force layout
-                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 max-h-full min-w-0">
-                                        {tab.content}
-                                    </TabsContent>
-                                ))}
-                            </Tabs>
+                            <div className="h-full flex flex-col">
+                                {React.isValidElement(finalLeftPanelContent) ? (
+                                    finalLeftPanelContent
+                                ) : isPanelTabs(finalLeftPanelContent) ? (
+                                    <Tabs value={activeLeftTab} onValueChange={setActiveLeftTab} className="h-full flex flex-col">
+                                        <TabsList className="grid w-full pt-0 z-10" style={{ gridTemplateColumns: `repeat(${finalLeftPanelContent.tabs.length}, 1fr)` }}>
+                                            {finalLeftPanelContent.tabs.map((tab: any) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-[12px] py-1">
+                                                    {tab.label}
+                                                </TabsTrigger>
+                                            ))}
+                                        </TabsList>
+                                        <div className="flex-1 min-h-0 overflow-hidden">
+                                            {finalLeftPanelContent.tabs.map((tab: any) => (
+                                                <TabsContent key={tab.key} value={tab.key} className="h-full">
+                                                    {tab.content}
+                                                </TabsContent>
+                                            ))}
+                                        </div>
+                                    </Tabs>
+                                ) : null}
+                            </div>
                         </div>
                     )}
 
@@ -342,22 +407,26 @@ export function ThreePanelLayout({
                                     className="flex flex-col flex-1 overflow-hidden"
                                 >
                                     <TabsList className="grid grid-cols-4 w-full pt-0 z-10">
-                                        {finalMiddlePanelContent.tabs.map((tab) => (
-                                            <TabsTrigger key={tab.key} value={tab.key} className="text-xs">
-                                                {tab.label}
-                                            </TabsTrigger>
-                                        ))}
+                                        {Array.isArray(finalMiddlePanelContent?.tabs) && finalMiddlePanelContent.tabs.length > 0
+                                            ? finalMiddlePanelContent.tabs.map((tab: any) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-[12px] py-1">
+                                                    {tab.label}
+                                                </TabsTrigger>
+                                            ))
+                                            : null
+                                        }
                                     </TabsList>
-                                    {finalMiddlePanelContent.tabs.map((tab) => (
-                                        // ensure tab pane can shrink and scroll horizontally/vertically
-                                        <TabsContent
-                                            key={tab.key}
-                                            value={tab.key}
-                                            className="flex-1 overflow-auto m-0 p-0 min-w-0"
-                                        >
-                                            {tab.content}
-                                        </TabsContent>
-                                    ))}
+
+                                    <div className="h-full">
+                                        {Array.isArray(finalMiddlePanelContent?.tabs) && finalMiddlePanelContent.tabs.length > 0
+                                            ? finalMiddlePanelContent.tabs.map((tab: any) => (
+                                                <TabsContent key={tab.key} value={tab.key} className="h-full">
+                                                    {tab.content}
+                                                </TabsContent>
+                                            ))
+                                            : null
+                                        }
+                                    </div>
                                 </Tabs>
                             </div>
                         ) : (
@@ -383,24 +452,33 @@ export function ThreePanelLayout({
                                     <ChevronRight className="h-4 w-4" />
                                 </button>
                             </div>
-                            <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="flex flex-col flex-1 overflow-hidden">
-                                <TabsList className="grid grid-cols-3 w-full pt-3 z-20">
-                                    {finalRightPanelContent.tabs.map((tab) => (
-                                        <TabsTrigger key={tab.key} value={tab.key} className="text-xs">{tab.label}</TabsTrigger>
-                                    ))}
-                                </TabsList>
-                                {finalRightPanelContent.tabs.map((tab) => (
-                                    // make sure right content can shrink without pushing header
-                                    <TabsContent key={tab.key} value={tab.key} className="flex-1 overflow-auto m-0 p-0 min-w-0">
-                                        {tab.content}
-                                    </TabsContent>
-                                ))}
-                            </Tabs>
+                            <div className="h-full flex flex-col">
+                                {React.isValidElement(finalRightPanelContent) ? (
+                                    finalRightPanelContent
+                                ) : isPanelTabs(finalRightPanelContent) ? (
+                                    <Tabs value={activeRightTab} onValueChange={setActiveRightTab} className="h-full flex flex-col">
+                                        <TabsList className="grid w-full pt-0 z-10" style={{ gridTemplateColumns: `repeat(${finalRightPanelContent.tabs.length}, 1fr)` }}>
+                                            {finalRightPanelContent.tabs.map((tab: any) => (
+                                                <TabsTrigger key={tab.key} value={tab.key} className="text-[12px] py-1">
+                                                    {tab.label}
+                                                </TabsTrigger>
+                                            ))}
+                                        </TabsList>
+                                        <div className="flex-1 min-h-0 overflow-hidden">
+                                            {finalRightPanelContent.tabs.map((tab: any) => (
+                                                <TabsContent key={tab.key} value={tab.key} className="h-full">
+                                                    {tab.content}
+                                                </TabsContent>
+                                            ))}
+                                        </div>
+                                    </Tabs>
+                                ) : null}
+                            </div>
                         </div>
                     )}
-                </div>
-            </div>
-        </div>
+                </div >
+            </div >
+        </div >
     );
 }
 

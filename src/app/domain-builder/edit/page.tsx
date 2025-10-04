@@ -179,13 +179,13 @@ const DomainEditPage = () => {
                 label: 'Preview',
                 content: (
                     <div className="h-[calc(100vh-9rem)] overflow-auto px-2 py-2">
-                        <MarkdownPreview mdPreview={currentDocument || 'Nothing to preview yet!'} />
+                        <MarkdownPreview mdPreview={previewContent || 'Nothing to preview yet!'} />
                     </div>
                 ),
             },
         ],
         defaultTab: 'preview',
-    }), [currentDocument]);
+    }), [domain]);
 
     return (
         <div className="flex flex-col h-screen max-h-screen overflow-hidden border-[16px] border-blue-800/80 rounded-lg shadow-xl">

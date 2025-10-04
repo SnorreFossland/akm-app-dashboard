@@ -10,7 +10,8 @@ import { Card, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
-import { saveMarkdownDocument, setDomainData } from '@/features/model-universe/modelSlice';
+import { saveMarkdownDocument, setDomainData, MarkdownDocument } from '@/features/model-universe/modelSlice';
+import { setCurrentDocument, updateProjectInfo } from '@/features/model-universe/modelSlice';
 import { setMessages } from '@/features/domainChat/domainChatSlice';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 // import DomainBuilder from "@/components/domain-builder/DomainBuilder";
@@ -53,10 +54,13 @@ export default function DomainBuilderPage() {
   const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
   const documents = useSelector((state: RootState) => data.phData.documents);
   const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
+  const focusProj = useSelector((state: RootState) => state.modelUniverse.phFocus.focusProj);
+
 
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
-
+  // const [docName, setDocName] = useState('');
+  const [docType, setDocType] = useState('Markdown');
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
@@ -139,6 +143,26 @@ export default function DomainBuilderPage() {
     }
   }, [domainData]);
 
+  useEffect(() => {
+    if (!focusProj) return;
+
+    if (focusProj.id) {
+      const matchingDoc = documents?.find((doc) => doc.id === focusProj.id);
+      if (matchingDoc) {
+        setMdContent(matchingDoc.content || '');
+        setDocName(matchingDoc.name || 'Project Document');
+        return;
+      }
+    }
+
+    if (focusProj.description) {
+      setMdContent(focusProj.description);
+      if (focusProj.name) {
+        setDocName(focusProj.name);
+      }
+    }
+  }, [focusProj, documents]);
+
   // Add this new useEffect to listen for localStorage changes
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -176,6 +200,31 @@ export default function DomainBuilderPage() {
       window.removeEventListener('localStorageChange', handleCustomStorageChange);
     };
   }, [currentDocument]);
+
+      useEffect(() => {
+          if (focusProj?.id || focusProj?.description) {
+              const matchingDoc = documents?.find((doc) => doc.id === focusProj.id);
+              if (matchingDoc) {
+                  setMdContent(matchingDoc.content);
+                  setDocName(matchingDoc.name);
+                  setDocType(normalizeDocumentType(matchingDoc.type));
+              } else if (focusProj.description) {
+                  const fallbackContent = focusProj.description;
+                  setMdContent(fallbackContent);
+                  if (focusProj.name) {
+                      setDocName(focusProj.name);
+                  }
+              }
+          }
+      }, [focusProj, documents]);
+
+
+  const normalizeDocumentType = (type?: string) => {
+    if (!type) return 'Markdown';
+    const trimmed = type.trim();
+    if (!trimmed) return 'Markdown';
+    return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
+  };
 
   // Function to dispatch form field changes
   const handleSaveDomainData = () => {
@@ -288,7 +337,7 @@ export default function DomainBuilderPage() {
     e.target.value = ''; // Reset the file input
   };
 
-  const handleSelectFromLibrary = (content: string, name: string) => {
+  const handleSelectFromLibrary = (content: string, name: string, _doc?: MarkdownDocument) => {
     setMdContent(content);
     setDocName(name);
     setIsEditing(false);
@@ -332,43 +381,50 @@ export default function DomainBuilderPage() {
     );
   };
 
-  const leftPanelContent = {
-    tabs: [
-      // {
-      //   key: 'current-domain',
-      //   label: 'Current Domain',
-      //   content: (
-      //     <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-      //       {currentDocument ? (
-      //         <div className="p-2 bg-gray-800 rounded">
-      //           <MarkdownPreview
-      //             mdPreview={currentDocument || 'No definition available'}
-      //           />
-      //         </div>
-      //       ) : (
-      //         <div className="p-2 bg-gray-800 rounded">
-      //           <div className="text-sm text-gray-400">No domain found</div>
-      //         </div>
-      //       )}
-      //     </div>
-      //   )
-      // },
-      {
-        key: 'context',
-        label: 'Additional Context',
-        content: (
-          <DocumentPanel
-            mdContent={mdContent}
-            setMdContent={setMdContent}
-            setIsLibraryOpen={setIsLibraryOpen}
-            isLibraryOpen={isLibraryOpen}
-            panelType='left'
-          />
-        )
-      },
-    ],
-    defaultTab: 'context'
-  };
+    // Define left panel content
+    const leftPanelContent = {
+        tabs: [
+        {
+          key: 'projects',
+          label: 'Projects',
+          content: (
+            <DocumentPanel
+              mdContent={mdContent}
+              setMdContent={setMdContent}
+              setIsLibraryOpen={setIsLibraryOpen}
+              isLibraryOpen={isLibraryOpen}
+              panelType='left'
+              showDocumentList
+              onSelect={(content, name) => {
+                setMdContent(content);
+                if (name) {
+                  setDocName(name);
+                }
+              }}
+            />
+          )
+        },
+            // {
+            //     key: 'current-content',
+            //     label: 'Current Domain',
+            //     content: (
+            //         <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+            //             {domainData?.presentation ? (
+            //                 <div className="p-2 bg-gray-800 rounded">
+            //                     <MarkdownPreview mdPreview={domainData.presentation} />
+            //                 </div>
+            //             ) : (
+            //                 <div className="p-2 bg-gray-800 rounded">
+            //                     <div className="text-sm text-gray-400">No domain found</div>
+            //                 </div>
+            //             )}
+            //         </div>
+            //     )
+            // },
+
+        ],
+        defaultTab: 'current-content'
+    };
   // Middle Panel Content
   const middlePanelContent = {
     tabs: [
@@ -561,7 +617,7 @@ export default function DomainBuilderPage() {
 
 
       {/* Domain editor modal - only mounted when explicitly opened */}
-      {showEditorModal && (
+      {/* {showEditorModal && (
         <DomainEditorModal
           isOpen={true}
           onClose={() => setShowEditorModal(false)}
@@ -575,7 +631,7 @@ export default function DomainBuilderPage() {
           setShowRightPanel={setShowRightPanel}
           className="h-full min-w-0 bg-background text-gray-100"
         />
-      )}
+      )} */}
 
       {/* Modals */}
       <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>

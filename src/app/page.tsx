@@ -17,7 +17,7 @@ import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 
 import { ThreePanelLayout } from "@/components/ThreePanelLayout";
 import { ObjectCard } from '@/components/object-card';
-import { Model, saveMarkdownDocument, deleteMarkdownDocument } from '@/features/model-universe/modelSlice';
+import { Model, saveMarkdownDocument, deleteMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice';
 
 export default function Home() {
   const data = useSelector((state: RootState) => state.modelUniverse);
@@ -233,7 +233,7 @@ export default function Home() {
     e.target.value = ''; // Reset the file input
   };
 
-  const handleSelectFromLibrary = (content: string, name: string) => {
+  const handleSelectFromLibrary = (content: string, name: string, _doc?: MarkdownDocument) => {
     setMdContent(content);
     setDocName(name);
     setIsEditing(false);
@@ -751,4 +751,3 @@ export default function Home() {
     </>
   );
 }
-

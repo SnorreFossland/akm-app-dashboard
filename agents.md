@@ -1,11 +1,12 @@
 # Agents Guide
 
-This document explains how “agents” are structured and used in this app, and how to build new ones quickly and safely.
+This document explains how "agents" are structured and used in this app, and how to build new ones quickly and safely.
 
 ## Overview
 - Purpose: Task-focused UIs that orchestrate LLMs to produce structured artifacts (domain writeups, ontologies, model views, IR/TV specs, prompts) with shared chat tooling.
 - Primary agents:
-  - Ontology Builder: Creates and evolves ontologies from domain context and chat.
+  - **Ontology Builder** (`/ontology-builder`): Simplified agent with Domain Description + Project Plan tabs (left), Current Ontology chat (middle), and ontology preview (right). Floating "Open AI Assistant" button navigates to full-featured agent.
+  - **Ontology Builder AI Assistant** (`/ontology-builder/aiAssistant`): Full-featured agent with Current Domain, Current Ontology, Add. Context tabs (left), AI Ontology Chat (middle), and Suggested Ontology with graph controls (right). Supports multi-select, filters, graph modals, and selection sets.
   - Domain Builder: Curates domain name/description/presentation and supporting docs.
   - Modelview Builder: Produces schema-constrained model views from prompts and context.
   - IRTV Builder: Builds IR/TV structures similarly via the genmodel endpoint.
@@ -23,8 +24,30 @@ This document explains how “agents” are structured and used in this app, and
 - Shared panels & controls:
   - `src/components/ai-chat/DocumentPanel.tsx`: edit/attach Markdown context.
   - `src/components/FileOperations.tsx`: load/save files and library integration.
-  - `src/components/ThreePanelLayout.tsx`: left/middle/right layout used across agents.
+  - `src/components/ThreePanelLayout.tsx`: left/middle/right layout used across agents. Supports both tab objects (`{ tabs: [...], defaultTab: '...' }`) and plain JSX (React.ReactNode) for panels.
 - Prompts & guardrails (ontology): `src/app/ontology-builder/prompts.ts` defines system prompt, behavior guidelines, and user prompt scaffolding used by the genmodel calls.
+
+## Ontology Builder Agents
+
+### Simplified Agent (`/ontology-builder`)
+- **Purpose:** Quick access to domain description editing and project plan management with basic ontology chat.
+- **Left panel:** Two tabs — "Domain Description" (edits `domain.presentation` in Redux) and "Project Plan" (Redux-backed `project-plan` document via `saveMarkdownDocument`).
+- **Middle panel:** Plain JSX for "Current Ontology" chat (no tabs). Uses `ChatComponent` with `projectContent` as context.
+- **Right panel:** Plain JSX for ontology preview via `OntologyCard`.
+- **Floating buttons:**
+  - "Open AI Assistant" → navigates to `/ontology-builder/aiAssistant` (full-featured agent).
+  - "Edit Document" → opens left panel (user clicks Project Plan tab).
+- **State management:** Local state for `projectDocId`/`projectContent`, Redux for domain and documents.
+
+### Full-Featured Agent (`/ontology-builder/aiAssistant`)
+- **Purpose:** Advanced ontology building with graph visualization, multi-select, filters, and selection sets.
+- **Left panel:** Three tabs — "Current Domain", "Current Ontology" (with graph modal), "Add. Context" (DocumentPanel).
+- **Middle panel:** Multiple tabs — "Current Ontology", "AIOB_old", "AIOC tmp" (experimental).
+- **Right panel:** "Suggested Ontology" tab with graph controls (single/multi-select, filter to selection, open graph modal, save/load/export/import selection sets).
+- **Graph modals:** Left and right panels can open full-screen graph modals with zoom/pan, lasso selection, and detail views.
+- **Selection sets:** Persist concept/relationship selections to localStorage, export/import as JSON.
+- **Floating buttons:** "Open AI Assistant" (modal), "Edit Document" (opens left panel + switches to Project tab).
+- **State management:** Complex state for graph selections, filters, multi-select, saved sets, and modal visibility.
 
 ## Key Endpoints
 - Gateway text generation: `POST /api/vercel-ai/generate`
@@ -49,6 +72,7 @@ This document explains how “agents” are structured and used in this app, and
 ## State & Data Flow
 - Agents keep local UI state (prompt, temperature, tokens, progress) and may persist outputs into the Redux model-universe slice when appropriate (e.g., saving suggested ontology to library).
 - Example: Ontology builder holds `suggestedOntologyData`, validates uniqueness, then dispatches to store for persistence and preview.
+- **Project Plan persistence:** Both ontology agents use `saveMarkdownDocument(doc)` to create/update the Redux-backed `project-plan` document. The document is found/created on mount via `documents.find(d => d.type === 'project-plan')`.
 
 ## Adding a New Agent
 1) Create a route:
@@ -86,12 +110,12 @@ This document explains how “agents” are structured and used in this app, and
 - Keep prompts short, specific, and scoped; move background into the Document Panel.
 - Start with free-form generation to explore ideas, then switch to `/api/genmodel` once the target structure is clear.
 - Log payloads and map model ids carefully; mismatch can cause provider errors.
+- **ThreePanelLayout flexibility:** Pass either `{ tabs: [...], defaultTab: '...' }` for tabbed panels, or plain JSX (React.ReactNode) for single-content panels. The layout component auto-detects and renders accordingly.
 
 ## Do
 - use Next.js where possible
 - use redux toolkit for state management with useLocalStore
 - use shadcn for layout components
-
 
 ## Glossary
 - Agent: A focused UI + prompt + endpoint orchestration for a specific artifact.
@@ -99,4 +123,5 @@ This document explains how “agents” are structured and used in this app, and
 - Genmodel: Schema-constrained structured generation endpoint (`/api/genmodel`).
 - Context: User-managed Markdown content injected into prompts.
 - Presentation: Human-readable markdown summary stored alongside structured output.
+- Selection sets: Named collections of graph selections (concepts/relationships) persisted to localStorage for reuse.
 
