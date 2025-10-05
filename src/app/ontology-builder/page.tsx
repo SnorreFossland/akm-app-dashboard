@@ -566,7 +566,7 @@ export default function OntologyBuilderPage() {
         <button
           aria-label="Open AI Assistant"
           title="Open AI Ontology Chat Editor"
-          onClick={() => router.push('/ontology-builder/aiAssistant')}
+          onClick={() => router.push('/ai-chat?mode=chat&sub=advanced')}
           className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:scale-105"
         >
           <FontAwesomeIcon icon={faRobot} className="w-5 h-5" />

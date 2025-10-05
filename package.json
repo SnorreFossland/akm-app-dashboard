@@ -10,7 +10,9 @@
     "start": "PORT=3001 next start",
     "gen:deck": "node --experimental-modules scripts/generateDeck.js",
     "lint": "next lint",
-    "test": "jest"
+    "test": "jest",
+    "test:migration": "echo 'Run through TESTING_CHECKLIST.md manually' && open TESTING_CHECKLIST.md",
+    "cleanup:migration": "bash DELETE_OLD_FILES.sh"
   },
   "dependencies": {
     "@ai-sdk/deepseek": "^0.2.16",

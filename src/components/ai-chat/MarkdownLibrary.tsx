@@ -288,10 +288,10 @@ const MarkdownLibrary = ({
 
                   {/* Expanded Content - Shows when document is clicked */}
                   {expandedDocId === doc.id && (
-                <div
-                  ref={expandedContentRef}
-                  className="border-t border-gray-600 bg-gray-800"
-                >
+                    <div
+                      ref={expandedContentRef}
+                      className="border-t border-gray-600 bg-gray-800"
+                    >
                       <div className="p-3">
                         <div className="bg-gray-900 rounded p-3 mb-3 max-h-60 overflow-y-auto">
                           <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono">
@@ -299,23 +299,23 @@ const MarkdownLibrary = ({
                           </pre>
                         </div>
                         <div className="flex justify-between items-center">
-                        <div className="text-xs text-gray-400 space-x-2">
-                          <span>• {doc.content.length} characters</span>
-                          <span>• {displayType}</span>
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={(e) => beginEditMetadata(doc, e)}
-                            disabled={editingDocId === doc.id}
-                            className={`flex items-center gap-1 text-xs px-3 py-1 rounded ${editingDocId === doc.id ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
-                          >
-                            {editingDocId === doc.id ? 'Editing…' : 'Edit details'}
-                          </button>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onSelect(doc.content, doc.name, doc);
-                            }}
+                          <div className="text-xs text-gray-400 space-x-2">
+                            <span>• {doc.content.length} characters</span>
+                            <span>• {displayType}</span>
+                          </div>
+                          <div className="flex gap-2">
+                            <button
+                              onClick={(e) => beginEditMetadata(doc, e)}
+                              disabled={editingDocId === doc.id}
+                              className={`flex items-center gap-1 text-xs px-3 py-1 rounded ${editingDocId === doc.id ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
+                            >
+                              {editingDocId === doc.id ? 'Editing…' : 'Edit details'}
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onSelect(doc.content, doc.name, doc);
+                              }}
                               className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
                             >
                               {/* <Eye className="h-3 w-3" /> */}
@@ -340,61 +340,61 @@ const MarkdownLibrary = ({
                               className="flex items-center gap-1 text-xs bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 rounded"
                             >
                               Save as domain
-                          </button>
+                            </button>
+                          </div>
                         </div>
+                        {editingDocId === doc.id && (
+                          <div className="mt-3 space-y-3 rounded-md border border-gray-600 bg-gray-900/70 p-3">
+                            <div className="grid gap-2 md:grid-cols-2">
+                              <label className="text-xs text-gray-300 flex flex-col gap-1">
+                                <span>Document name</span>
+                                <input
+                                  value={editName}
+                                  onChange={(event) => {
+                                    setEditName(event.target.value);
+                                    if (metadataError) setMetadataError(null);
+                                  }}
+                                  className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                  placeholder="Enter document name"
+                                />
+                              </label>
+                              <label className="text-xs text-gray-300 flex flex-col gap-1">
+                                <span>Document type</span>
+                                <input
+                                  value={editType}
+                                  onChange={(event) => {
+                                    setEditType(event.target.value);
+                                    if (metadataError) setMetadataError(null);
+                                  }}
+                                  className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                  placeholder="e.g. Markdown"
+                                />
+                              </label>
+                            </div>
+                            {metadataError && (
+                              <div className="text-xs text-red-400">{metadataError}</div>
+                            )}
+                            <div className="flex gap-2">
+                              <button
+                                onClick={(event) => saveMetadata(doc, event)}
+                                className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                              >
+                                Save
+                              </button>
+                              <button
+                                onClick={cancelEditMetadata}
+                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
+                              >
+                                Cancel
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      {editingDocId === doc.id && (
-                        <div className="mt-3 space-y-3 rounded-md border border-gray-600 bg-gray-900/70 p-3">
-                          <div className="grid gap-2 md:grid-cols-2">
-                            <label className="text-xs text-gray-300 flex flex-col gap-1">
-                              <span>Document name</span>
-                              <input
-                                value={editName}
-                                onChange={(event) => {
-                                  setEditName(event.target.value);
-                                  if (metadataError) setMetadataError(null);
-                                }}
-                                className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                                placeholder="Enter document name"
-                              />
-                            </label>
-                            <label className="text-xs text-gray-300 flex flex-col gap-1">
-                              <span>Document type</span>
-                              <input
-                                value={editType}
-                                onChange={(event) => {
-                                  setEditType(event.target.value);
-                                  if (metadataError) setMetadataError(null);
-                                }}
-                                className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                                placeholder="e.g. Markdown"
-                              />
-                            </label>
-                          </div>
-                          {metadataError && (
-                            <div className="text-xs text-red-400">{metadataError}</div>
-                          )}
-                          <div className="flex gap-2">
-                            <button
-                              onClick={(event) => saveMetadata(doc, event)}
-                              className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                            >
-                              Save
-                            </button>
-                            <button
-                              onClick={cancelEditMetadata}
-                              className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                )}
-              </div>
-            )
+                  )}
+                </div>
+              )
             })}
           </div>
         )}

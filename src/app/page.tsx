@@ -408,6 +408,11 @@ export default function Home() {
 
   return (
     <>
+      {/* {showFileOperations && ( */}
+      <div className="mb-2 pb-2 border-b border-gray-700">
+        <FileOperations />
+      </div>
+      {/* )} */}
       <ThreePanelLayout
         moduleOperations={<FileOperations />}
         leftPanelContent={leftPanelContent}

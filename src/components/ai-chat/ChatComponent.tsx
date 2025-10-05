@@ -346,8 +346,8 @@ Do not use its contents as contextual input for other questions--I want it impro
             const fallbackTimer = setTimeout(scrollToBottom, 300);
             return () => clearTimeout(fallbackTimer);
         }
-        setCurrentMessages(messages);
-    }, [messages, isLoading]); // removed isStreaming and streamedContent
+        // Remove the setCurrentMessages call - messages are managed by Redux
+    }, [messages, isLoading]); // removed isStreaming and streamedContent and setCurrentMessages
 
     // Also add a separate useEffect specifically for streaming updates to ensure frequent scrolling
     useEffect(() => {
@@ -376,7 +376,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         if (lastAssistant) {
             onResponseChange(lastAssistant.content);
         }
-        setCurrentMessages(messages);
+        // Remove the setCurrentMessages call - messages are managed by Redux
     }, [messages, onResponseChange]);
 
     useEffect(() => {
@@ -420,9 +420,9 @@ Do not use its contents as contextual input for other questions--I want it impro
 
             if (!dropdown || !button) return;
 
-                                                        if (!dropdown.contains(event.target as Node) && !button.contains(event.target as Node)) {
-                                                            setShowTemplateDropdown(false);
-                                                        }
+            if (!dropdown.contains(event.target as Node) && !button.contains(event.target as Node)) {
+                setShowTemplateDropdown(false);
+            }
         };
 
         const handleEsc = (event: KeyboardEvent) => {
@@ -443,10 +443,10 @@ Do not use its contents as contextual input for other questions--I want it impro
     // Load saved model preference from localStorage on component mount
     useEffect(() => {
         const savedModel = localStorage.getItem('aiDashboard_selectedModel');
-        if (savedModel && savedModel !== selectedModel) {
+        if (savedModel && savedModel !== selectedModel && setSelectedModel) {
             setSelectedModel(savedModel);
         }
-    }, []);
+    }, [selectedModel, setSelectedModel]);
 
     // Load saved temperature preference from localStorage
     useEffect(() => {
@@ -1298,14 +1298,14 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                 {filteredTemplates.map((template, index) => (
                                                     <button
                                                         key={index}
-                                                    className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
-                                                    onClick={() => {
-                                                        setSelectedReportTemplate(template.title);
-                                                        setInput(template.content);
-                                                        setShowTemplateDropdown(false);
-                                                    }}
-                                                >
-                                                    {template.title}
+                                                        className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
+                                                        onClick={() => {
+                                                            setSelectedReportTemplate(template.title);
+                                                            setInput(template.content);
+                                                            setShowTemplateDropdown(false);
+                                                        }}
+                                                    >
+                                                        {template.title}
                                                     </button>
                                                 ))}
                                             </div>

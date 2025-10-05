@@ -2,7 +2,7 @@ import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { fetchModelDataFromGitHub, saveModelDataToGitHub } from './modelAPI';
 
 // Define a specific type for the domain data
-interface DomainData {
+export interface DomainData {
   name: string;
   description: string;
   presentation: string;

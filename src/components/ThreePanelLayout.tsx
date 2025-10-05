@@ -38,6 +38,7 @@ export interface ThreePanelLayoutProps {
     setShowRightPanel: (v: boolean) => void;
     className?: string;
     children?: React.ReactNode;
+    middlePanelHeader?: React.ReactNode; // Add this prop
 }
 
 export function ThreePanelLayout({
@@ -52,6 +53,7 @@ export function ThreePanelLayout({
     setShowLeftPanel,
     showRightPanel = true,
     setShowRightPanel,
+    middlePanelHeader, // Add this
 }: ThreePanelLayoutProps) {
     const MIN_PANEL_WIDTH = 150;
     const MIN_MIDDLE_WIDTH = 180;
@@ -239,6 +241,12 @@ export function ThreePanelLayout({
         return found ? found.content : null;
     };
 
+    // Add debug logging
+    console.log('ThreePanelLayout render:', {
+        hasMiddlePanelHeader: !!middlePanelHeader,
+        middlePanelHeaderType: typeof middlePanelHeader,
+    });
+
     if (isMobile) {
         return (
             <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
@@ -388,13 +396,13 @@ export function ThreePanelLayout({
                     >
                         {showAppHeader && (
                             // Wrap header to ensure it can shrink; prevents header children from forcing page width
-                            <div className="min-w-0 w-full">
+                            <div className="min-w-0 w-full ">
                                 <AppHeader
                                     showLeftPanel={showLeftPanel}
                                     showRightPanel={showRightPanel}
                                     onToggleLeftPanel={handleToggleLeftPanel}
                                     onToggleRightPanel={handleToggleRightPanel}
-                                    moduleOperations={moduleOperations}
+                                    moduleOperations={middlePanelHeader || moduleOperations}
                                 />
                             </div>
                         )}

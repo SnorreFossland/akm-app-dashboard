@@ -1,7 +1,8 @@
 'use client';
-import React from 'react';
+import React, { useMemo } from 'react';
+import { X } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { diffLines, Change } from 'diff';
-import { X, Save, ArrowLeft } from 'lucide-react';
 
 interface DiffModalProps {
     isOpen: boolean;
@@ -20,133 +21,112 @@ export default function DiffModal({
     newContent,
     title
 }: DiffModalProps) {
+    const diff = useMemo(() => {
+        return diffLines(oldContent || '', newContent || '');
+    }, [oldContent, newContent]);
+
     if (!isOpen) return null;
-
-    const diff = diffLines(oldContent || '', newContent || '');
-
-    const renderDiffLine = (change: Change, index: number) => {
-        let className = 'font-mono text-sm px-3 py-1';
-        let prefix = ' ';
-
-        if (change.added) {
-            className += ' bg-green-900/40 text-green-200 border-l-2 border-green-500';
-            prefix = '+';
-        } else if (change.removed) {
-            className += ' bg-red-900/40 text-red-200 border-l-2 border-red-500';
-            prefix = '-';
-        } else {
-            className += ' text-gray-300';
-        }
-
-        return (
-            <div key={index} className={`${className} block w-full`} style={{ display: 'table', tableLayout: 'fixed', width: '100%' }}>
-                <div style={{ display: 'table-cell', width: '20px', verticalAlign: 'top' }}>
-                    <span className="text-gray-500 select-none">{prefix}</span>
-                </div>
-                <div style={{
-                    display: 'table-cell',
-                    width: 'calc(100% - 20px)',
-                    verticalAlign: 'top',
-                    wordBreak: 'break-all',
-                    overflowWrap: 'anywhere',
-                    whiteSpace: 'pre-wrap'
-                }}>
-                    <span
-                        className="font-mono text-sm leading-relaxed"
-                        style={{
-                            wordBreak: 'break-all',
-                            overflowWrap: 'anywhere',
-                            whiteSpace: 'pre-wrap',
-                            display: 'block',
-                            width: '100%',
-                            maxWidth: '100%'
-                        }}
-                    >
-                        {change.value}
-                    </span>
-                </div>
-            </div>
-        );
-    };
 
     const addedLines = diff.filter(change => change.added).reduce((acc, change) => acc + (change.count || 0), 0);
     const removedLines = diff.filter(change => change.removed).reduce((acc, change) => acc + (change.count || 0), 0);
 
     return (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-2">
-            <div className="relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700 w-full max-w-[95vw] h-full max-h-[95vh] flex flex-col">
-                {/* Header */}
-                <div className="flex justify-between items-center p-4 border-b border-gray-700 bg-gray-800">
-                    <div className="flex flex-col"
+        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
+            <div className="relative bg-popover rounded-lg w-full max-w-6xl max-h-[90vh] flex flex-col">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700">
+                    <div>
+                        <h2 className="text-xl font-semibold text-gray-100">
+                            Review Changes: {title}
+                        </h2>
+                        <div className="text-sm text-gray-400 mt-1">
+                            <span className="text-green-400">+{addedLines} added</span>
+                            {' / '}
+                            <span className="text-red-400">-{removedLines} removed</span>
+                        </div>
+                    </div>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-white"
+                        aria-label="Close diff modal"
                     >
-                        <h3 className="text-xl font-bold text-white">Save Changes to Library</h3>
-                        <p className="text-sm text-gray-400 mt-1">
-                            Document: <span className="text-blue-400">{title}</span>
-                        </p>
-                        <div className="flex gap-4 mt-2 text-xs">
-                            <span className="text-green-400">+{addedLines} additions</span>
-                            <span className="text-red-400">-{removedLines} deletions</span>
-                        </div>
-                    </div>
-                    <div className="flex gap-2">
-                        <button
-                            onClick={onClose}
-                            className="px-3 py-1.5 bg-gray-600 hover:bg-gray-500 text-white rounded flex items-center gap-2"
-                        >
-                            <ArrowLeft className="h-4 w-4" />
-                            Cancel
-                        </button>
-                        <button
-                            onClick={onConfirm}
-                            className="px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white rounded flex items-center gap-2"
-                        >
-                            <Save className="h-4 w-4" />
-                            Save to Library
-                        </button>
-                    </div>
+                        <X className="h-6 w-6" />
+                    </button>
                 </div>
 
-                {/* Diff Content */}
-                <div className="flex-1 bg-gray-950 overflow-hidden" style={{ minWidth: 0, maxWidth: '100%' }}>
-                    <div className="h-full overflow-auto p-4" style={{ minWidth: 0, maxWidth: '100%' }}>
-                        <div
-                            className="bg-gray-900 rounded border border-gray-700 overflow-hidden"
-                            style={{
-                                minWidth: 0,
-                                maxWidth: '100%',
-                                width: '100%',
-                                tableLayout: 'fixed'
-                            }}
-                        >
-                            {diff.length === 0 ? (
-                                <div className="p-4 text-center text-gray-400">
-                                    No changes detected
-                                </div>
-                            ) : (
-                                <div style={{ width: '100%', maxWidth: '100%', overflow: 'hidden' }}>
-                                    {diff.map((change, index) => renderDiffLine(change, index))}
-                                </div>
-                            )}
-                        </div>
-                    </div>
+                <div className="flex-1 overflow-auto px-2 py-4 bg-gray-950">
+                    {diff.map((change: Change, index: number) => {
+                        // Skip rendering unchanged lines if there are too many (show only context)
+                        if (!change.added && !change.removed) {
+                            const lines = change.value.split('\n');
+                            // Show first 3 and last 3 lines of unchanged blocks, collapse the rest
+                            if (lines.length > 8) {
+                                const firstLines = lines.slice(0, 3);
+                                const lastLines = lines.slice(-3);
+                                return (
+                                    <div key={index}>
+                                        {firstLines.map((line, i) => (
+                                            <div key={`first-${i}`} className="px-4 py-0.5 text-gray-500 font-mono text-sm">
+                                                <span className="inline-block w-8 text-gray-600 select-none">  </span>
+                                                {line}
+                                            </div>
+                                        ))}
+                                        <div className="px-4 py-2 text-gray-600 text-sm italic border-l-2 border-gray-700 ml-8">
+                                            ... {lines.length - 6} unchanged lines ...
+                                        </div>
+                                        {lastLines.map((line, i) => (
+                                            <div key={`last-${i}`} className="px-4 py-0.5 text-gray-500 font-mono text-sm">
+                                                <span className="inline-block w-8 text-gray-600 select-none">  </span>
+                                                {line}
+                                            </div>
+                                        ))}
+                                    </div>
+                                );
+                            }
+                        }
+
+                        const bgColor = change.added
+                            ? 'bg-green-900/30 border-l-4 border-green-600'
+                            : change.removed
+                                ? 'bg-red-900/30 border-l-4 border-red-600'
+                                : '';
+
+                        const textColor = change.added
+                            ? 'text-green-200'
+                            : change.removed
+                                ? 'text-red-200'
+                                : 'text-gray-500';
+
+                        const prefix = change.added ? '+ ' : change.removed ? '- ' : '  ';
+                        const prefixColor = change.added ? 'text-green-400' : change.removed ? 'text-red-400' : 'text-gray-600';
+
+                        return change.value.split('\n').map((line, lineIndex) => (
+                            <div
+                                key={`${index}-${lineIndex}`}
+                                className={`${bgColor} ${textColor} px-4 py-0.5 font-mono text-sm whitespace-pre-wrap break-all`}
+                            >
+                                <span className={`inline-block w-8 ${prefixColor} select-none font-bold`}>
+                                    {prefix}
+                                </span>
+                                {line}
+                            </div>
+                        ));
+                    })}
                 </div>
 
-                {/* Legend */}
-                <div className="p-3 border-t border-gray-700 bg-gray-800">
-                    <div className="flex gap-6 text-xs text-gray-400">
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-green-900/40 border-l-2 border-green-500"></div>
-                            <span>Added lines</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-red-900/40 border-l-2 border-red-500"></div>
-                            <span>Removed lines</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                            <div className="w-3 h-3 bg-gray-700"></div>
-                            <span>Unchanged lines</span>
-                        </div>
-                    </div>
+                <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-gray-700">
+                    <Button
+                        onClick={onClose}
+                        variant="outline"
+                        className="border-gray-600 hover:bg-gray-700"
+                    >
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={onConfirm}
+                        className="bg-green-600 hover:bg-green-700 text-white"
+                    >
+                        Confirm & Save
+                    </Button>
                 </div>
             </div>
         </div>

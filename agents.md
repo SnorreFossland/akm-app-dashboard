@@ -11,7 +11,10 @@ This document explains how "agents" are structured and used in this app, and how
   - Modelview Builder: Produces schema-constrained model views from prompts and context.
   - IRTV Builder: Builds IR/TV structures similarly via the genmodel endpoint.
   - Prompt Builder: Iterates on reusable prompts/templates.
-  - AI Chat (shared): Generic chat with model selection, streaming, document context.
+  - **AI Chat** (`/ai-chat`): Multi-mode interface with three modes:
+    - **View Mode**: Document viewing and library management with preview and metadata.
+    - **Chat Mode**: AI chat with General (basic) and Advanced (multi-model, experiments) sub-modes.
+    - **Edit Mode**: Focused document editing with live preview and metadata controls.
 
 ## Architecture
 - UI layer (pages): Each agent has its own Next.js route under `src/app/<agent>/page.tsx` to assemble panels, wire state, and mount the agent component(s).
@@ -48,6 +51,68 @@ This document explains how "agents" are structured and used in this app, and how
 - **Selection sets:** Persist concept/relationship selections to localStorage, export/import as JSON.
 - **Floating buttons:** "Open AI Assistant" (modal), "Edit Document" (opens left panel + switches to Project tab).
 - **State management:** Complex state for graph selections, filters, multi-select, saved sets, and modal visibility.
+
+## AI Chat Agent (Multi-Mode)
+
+### Architecture
+- **Single-page multi-mode design:** One route (`/ai-chat`) with three modes controlled by state and URL params.
+- **Mode switching:** Uses `useAIChatMode` hook to manage mode state, sync with URL (`?mode=view|chat|edit&sub=general|advanced`), and persist to localStorage.
+- **Mode-specific layouts:** Each mode configures left/middle/right panels differently via `ThreePanelLayout`.
+- **Legacy support:** Old URLs (`/ai-chat/aiAssistant`, `/ai-chat/edit`) redirect to new mode system.
+- **Layout structure:** 
+  - Uses `ThreePanelLayout` component with `middlePanelHeader` prop for mode controls
+  - `ModeHeader` component rendered in middle panel between hide panel buttons
+  - `FileOperations` component at top of page above all panels
+
+### View Mode (`/ai-chat?mode=view`)
+- **Purpose:** Browse, preview, and manage document library.
+- **Left panel:** Tabs — "Domain", "Library" (document list with search/filter).
+- **Middle panel:** Plain JSX — Current document preview with metadata display and quick actions (Edit, Chat, Delete).
+- **Right panel:** Tabs — "Preview" (unsaved edits from other modes), "Document Info" (metadata, stats).
+- **Navigation:** Click document in library to view in middle panel, action buttons to switch modes.
+
+### Chat Mode (`/ai-chat?mode=chat`)
+- **Purpose:** AI-powered chat with document context.
+- **Sub-modes:** Toggle between "General" and "Advanced" via `ChatSubModeToggle`.
+
+#### General Sub-Mode (`?mode=chat&sub=general`)
+- **Left panel:** Tabs — "Domain", "Context Docs", "History".
+- **Middle panel:** Tabs — "AI Chat", "Current Document".
+- **Right panel:** Tabs — "Preview", "Library".
+
+#### Advanced Sub-Mode (`?mode=chat&sub=advanced`)
+- **Left panel:** Tabs — "Domain", "Current Ontology", "Context Docs", "Additional Context".
+- **Middle panel:** Tabs — "AI Chat", "Multi-Model Compare", "Experiments".
+- **Right panel:** Tabs — "Suggestions", "Analysis", "Tools".
+
+### Edit Mode (`/ai-chat?mode=edit`)
+- **Purpose:** Focused document editing with live preview.
+- **Left panel:** Tabs — "Domain", "Context Docs".
+- **Middle panel:** Plain JSX — Document metadata header (name/type inputs) + TextareaAutosize for direct editing.
+- **Right panel:** Plain JSX — Live preview with character count and save-to-library button.
+- **Header styling:** Orange border to indicate focused edit session.
+- **State management:** Local state for `documentName`, `documentType`, `previewContent`, and `currentDocument`.
+- **Live preview:** Updates in real-time as you type using local state in `EditModeMiddlePanel`.
+- **DiffModal:** Shows line-by-line diff before saving to library, with added lines (green), removed lines (red), and unchanged lines (gray).
+
+### Mode Components
+- **ModeHeader:** Mode switcher, ChatSubModeToggle, and close button - rendered in `middlePanelHeader` of `ThreePanelLayout`
+- **ModeSwitcher:** Three-button toggle (View/Chat/Edit) with icons
+- **ChatSubModeToggle:** Two-button toggle (General/Advanced) for chat mode
+- **useAIChatMode hook:** Manages mode state, URL sync, localStorage persistence
+- **DiffModal:** Shows git-style diff view with line-by-line changes, used when saving documents to library from edit mode.
+
+### State Management
+- **Shared state:** `contextContent`, `currentDocument`, `documents`, `domain` (Redux).
+- **Mode-specific state:** View mode (selected doc), Chat mode (messages), Edit mode (name/type/preview).
+- **Persistence:** Mode and sub-mode saved to localStorage, restored on mount.
+
+### Migration Notes
+- Old three-page structure consolidated into single page
+- Mode switching happens instantly without page reload
+- State persists across mode changes
+- URL params enable bookmarking specific modes
+- Redirect pages maintain backward compatibility
 
 ## Key Endpoints
 - Gateway text generation: `POST /api/vercel-ai/generate`

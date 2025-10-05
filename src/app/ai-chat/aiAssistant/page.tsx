@@ -819,3 +819,19 @@ const ModalPage = () => {
 };
 
 export default ModalPage;
+
+// Legacy redirect page for /ai-chat/aiAssistant
+// Redirects to new multi-mode page with advanced chat sub-mode
+export function AIAssistantRedirect() {
+    const router = useRouter();
+
+    useEffect(() => {
+        router.replace('/ai-chat?mode=chat&sub=advanced');
+    }, [router]);
+
+    return (
+        <div className="flex items-center justify-center h-screen">
+            <div className="text-gray-400">Redirecting to AI Chat (Advanced)...</div>
+        </div>
+    );
+}

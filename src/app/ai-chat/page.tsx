@@ -1,692 +1,436 @@
 'use client';
-import { useRef, useState, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
-import mermaid from 'mermaid';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faComments } from '@fortawesome/free-solid-svg-icons';
-import { RootState } from '@/store';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import ChatComponent from '@/components/ai-chat/ChatComponent';
-import { saveMarkdownDocument, setCurrentDocument, updateProjectInfo, MarkdownDocument } from '@/features/model-universe/modelSlice';
-import extractDomainNameAndDescription from '@/components/ai-chat/docExtraction';
-import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
-import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import DocumentPanel from '@/components/ai-chat/DocumentPanel';
-import ConversationsPanel from '@/components/ai-chat/ConversationsPanel';
-import GettingStartedGuide from '@/components/ai-chat/GettingStartedGuide';
-import Guide from '@/components/ai-chat/Guide';
-import { ThreePanelLayout } from '@/components/ThreePanelLayout';
-import { FloatingActionButtons } from '@/components/FloatingActionButtons';
-import { FileOperations } from "@/components/FileOperations";
-import {
-    saveConversation,
-    loadConversation,
-    deleteConversation,
-    startNewConversation
-} from '@/features/chat/chatSlice';
-import DocumentTemplateSelector, { DocumentTemplate } from '@/components/ai-chat/DocumentTemplateSelector';
 
-export interface ChatComponentProps {
-    onResponseChange: (response: string) => void;
-    onViewInMarkdown: (response: string) => void;
-    setShowLeftPanel: (show: boolean) => void;
-    setShowRightPanel?: (show: boolean) => void; // Add this new prop
-    error?: string;
-    chatInput?: string;
-    input: string;
-    setInput: (input: string) => void;
-    setMdContent: (message: string) => void;
-    mdContent: string;
-    onAddMD?: () => void;
-    currentDocument?: string;
-    mdPreview: string;
-    setMdPreview: (preview: string) => void;
-    setCurrentMessages: (messages: any[]) => void;
-    gettingStartedGuide: React.ReactNode;
-    selectedModel: string;
-    setSelectedModel: (model: string) => void;
-}
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { X } from 'lucide-react';
+
+import { RootState } from '@/store';
+import { FileOperations } from '@/components/FileOperations';
+import { ThreePanelLayout } from '@/components/ThreePanelLayout';
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
+import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
+import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import { ModeHeader } from '@/components/ai-chat/ModeHeader';
+import { ViewModeContent } from '@/components/ai-chat/modes/ViewModeContent';
+import { ChatModeContent } from '@/components/ai-chat/modes/ChatModeContent';
+import { EditModeContent } from '@/components/ai-chat/modes/EditModeContent';
+import { setCurrentDocument, MarkdownDocument, saveMarkdownDocument } from '@/features/model-universe/modelSlice';
+import { documentTemplates } from '@/components/ai-chat/DocumentTemplateSelector';
+import { useAIChatMode } from '@/hooks/useAIChatMode';
+import { MODE_CONFIGS } from '@/types/aiChatModes';
+import DiffModal from '@/components/ai-chat/DiffModal';
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
-    const data = useSelector((state: RootState) => state.modelUniverse);
-    const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
-    const documents = useSelector((state: RootState) => data.phData.documents);
-    const focusProject = useSelector((state: RootState) => state.modelUniverse.phFocus.focusProj);
+    const { mode, chatSubMode, switchMode, switchChatSubMode } = useAIChatMode();
+
+    const domain = useSelector((state: RootState) => state.modelUniverse?.phData?.domain);
+    const documents = useSelector((state: RootState) => state.modelUniverse?.phData?.documents);
     const currentDocument = useSelector((state: RootState) => state.modelUniverse.phData.currentDocument);
-    const domain = data?.phData?.domain;
 
-    const [currentModel, setCurrentModel] = useState<any | null>(null);
-    const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
+    // Shared state across all modes
+    const [contextContent, setContextContent] = useState('');
+    const [additionalContext, setAdditionalContext] = useState('');
 
-    const [currentModelview, setCurrentModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(null);
-    const [focusModelLocal, setFocusModelLocal] = useState<{ id: string; name: string } | null>(null);
-    const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
-    const [isMobile, setIsMobile] = useState(false);
-    // Get chat data from Redux
-    const messages = useSelector((state: RootState) => state.chat.currentMessages);
-    const conversations = useSelector((state: RootState) => state.chat.conversations);
-    const activeConversationId = useSelector((state: RootState) => state.chat.activeConversationId);
+    // View mode state
+    const [selectedDocument, setSelectedDocument] = useState<MarkdownDocument | undefined>();
 
-    const [input, setInput] = useState<string>("");
-    const [chatInput, setChatInput] = useState('');
-    const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
-    const [mdContent, setMdContent] = useState<string>('')
-    const [selectedModel, setSelectedModel] = useState('gpt-5-mini'); // Default model
-    const [showGuideModal, setShowGuideModal] = useState(false);
-    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+    // Edit mode state
+    const [documentName, setDocumentName] = useState('');
+    const [documentType, setDocumentType] = useState('markdown');
+    const [previewContent, setPreviewContent] = useState('');
+    const [originalContent, setOriginalContent] = useState(''); // Add this to track original content
 
-    const [showLeftPanel, setShowLeftPanel] = useState(false);
-    const [showRightPanel, setShowRightPanel] = useState(false);
-    const [lastResponse, setLastResponse] = useState<string>("");
-
-    // replace your single openLibraryButtonRef with two refs:
+    // Library modal state
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-    const [isEditing, setIsEditing] = useState(false); // State to manage editing mode
-    const [docName, setDocName] = useState('');
-    const [docType, setDocType] = useState('Markdown');
-    const mdFileInputRef = useRef<HTMLInputElement>(null)
-    const fileInputRef = useRef<HTMLInputElement>(null);
+    const [libraryTarget, setLibraryTarget] = useState<'context' | 'document' | null>(null);
 
-    const handleSetCurrentDocument = (content: string) => {
-        dispatch(setCurrentDocument(content));
-    };
+    // Panel visibility state
+    const [showLeftPanel, setShowLeftPanel] = useState(true);
+    const [showRightPanel, setShowRightPanel] = useState(true);
 
-    const summariseContent = (content: string) => {
-        const { description } = extractDomainNameAndDescription(content || '');
-        const fallback = content ? content.replace(/\s+/g, ' ').trim().slice(0, 200) : '';
-        return description?.trim() ? description.trim() : fallback;
-    };
+    // Diff modal state
+    const [showDiffModal, setShowDiffModal] = useState(false);
+    const [pendingSave, setPendingSave] = useState<{
+        doc: MarkdownDocument;
+        oldContent: string;
+    } | null>(null);
 
-    const updateProjectFromDocument = (content: string, name: string, doc?: MarkdownDocument) => {
-        if (!content) {
-            return;
-        }
+    const previousDocumentRef = useRef('');
 
-        const summary = summariseContent(content);
-        const projectId = doc?.id || `project-${Date.now()}`;
-        const projectName = name?.trim() ? name : 'Project Document';
-
-        dispatch(updateProjectInfo({
-            id: projectId,
-            name: projectName,
-            description: summary || 'No summary available.',
-        }));
-    };
-
-    // Update conversation handlers to use Redux actions
-    const handleSelectConversation = (conversation: any) => {
-        if (conversation) {
-            dispatch(loadConversation(conversation.id));
-        } else {
-            dispatch(startNewConversation());
-        }
-        console.log('Selected conversation:', conversation);
-    };
-
-    const handleDeleteConversation = (id: string) => {
-        dispatch(deleteConversation(id));
-    };
-
-    const handleSaveCurrentConversation = () => {
-        console.log('Current messages to save:', messages);
-
-        // Don't allow saving if no messages
-        if (!messages || messages.length === 0) {
-            alert("No messages to save. Please have a conversation first.");
-            return;
-        }
-
-        // Save using Redux action (title will be auto-generated)
-        dispatch(saveConversation({}));
-    };
-
+    // Initialize from localStorage
     useEffect(() => {
-        const foundModel = data?.phData?.metis?.models.find(model => model.id === data.phFocus?.focusModel?.id) || null;
-        setCurrentModel(foundModel);
-        setCurMetamodel((data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]).find(metamodel => metamodel.id === foundModel?.metamodelRef) || null);
-    }, [data]);
+        if (typeof window === 'undefined') return;
 
-    const handleStartNewConversation = () => {
-        dispatch(startNewConversation());
-    };
+        const storedContext = localStorage.getItem('aiChat_context');
+        const storedAdditionalContext = localStorage.getItem('aiChat_additionalContext');
+        const storedDocument = localStorage.getItem('currentDocument');
 
-    // Update setCurrentMessages to just be a no-op since we're using Redux
-    const setCurrentMessages = (messages: any[]) => {
-        // This is now handled by Redux, so we don't need to do anything here
-        // The messages prop in ChatComponent will come from Redux selector
-    };
+        if (storedContext) setContextContent(storedContext);
+        if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
 
-    useEffect(() => {
-        const checkIsMobile = () => {
-            setIsMobile(window.innerWidth < 768); // Set mobile breakpoint at 768px
-        };
+        if (storedDocument) {
+            dispatch(setCurrentDocument(storedDocument));
+            setPreviewContent(storedDocument);
+            previousDocumentRef.current = storedDocument;
 
-        checkIsMobile();
-        window.addEventListener('resize', checkIsMobile);
-        return () => window.removeEventListener('resize', checkIsMobile);
-    }, []);
-    // Initialize mermaid when 
-    // component mounts
-    useEffect(() => {
-        mermaid.initialize({
-            theme: 'dark',
-            securityLevel: 'loose'
-        });
-        mermaid.contentLoaded();
-        mermaid.initialize({
-            startOnLoad: true,
-            theme: 'dark',
-            flowchart: { curve: 'linear' },
-            sequence: { showSequenceNumbers: true },
-            themeVariables: {
-                primaryColor: '#1e3a8a',
-                edgeLabelBackground: '#334155',
-                edgeLabelBorder: '#1e3a8a',
-            }
-        });
-    }, []);
-
-    useEffect(() => {
-        if (mdPreview && mdPreview.includes('mermaid') && !isEditing) {
-            setTimeout(() => {
-                mermaid.run();
-            }, 0);
-        }
-    }, [mdPreview, isEditing]); // Add 'isEditing' to the dependency array
-
-    useEffect(() => {
-        // Only update the document name if it's currently empty and we have markdown content
-        if (!docName && mdPreview) {
-            const firstLine = mdPreview.split('\n')[0] || '';
-            // Get the first line and clean it up
-            const cleanName = firstLine.replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, '_').trim();
-            if (cleanName) {
-                setDocName(cleanName);
-            }
-        }
-    }, [mdPreview, docName]);
-
-    // Remove the useEffect that was trying to use setConversations (it doesn't exist)
-    // The conversations are now loaded from Redux state automatically
-
-    // Load currentDocument from localStorage on mount and prime Redux state
-    useEffect(() => {
-        const storedCurrentDocument = localStorage.getItem('currentDocument');
-        if (storedCurrentDocument && storedCurrentDocument !== currentDocument) {
-            dispatch(setCurrentDocument(storedCurrentDocument));
-        }
-    }, [dispatch]);
-
-    useEffect(() => {
-        if (focusProject?.id || focusProject?.description) {
-            const matchingDoc = documents?.find((doc) => doc.id === focusProject.id);
+            // Try to find matching document for edit mode
+            const matchingDoc = documents?.find(doc => doc.content === storedDocument);
             if (matchingDoc) {
-                setMdContent(matchingDoc.content);
-                setDocName(matchingDoc.name);
-                setDocType(normalizeDocumentType(matchingDoc.type));
-            } else if (focusProject.description) {
-                const fallbackContent = focusProject.description;
-                setMdContent(fallbackContent);
-                if (focusProject.name) {
-                    setDocName(focusProject.name);
-                }
+                setDocumentName(matchingDoc.name);
+                setDocumentType(matchingDoc.type || 'markdown');
+                setSelectedDocument(matchingDoc);
             }
         }
-    }, [focusProject, documents]);
+    }, [dispatch, documents]);
 
-    // Persist currentDocument so refreshes and other contexts can reuse it
+    // Persist context to localStorage
     useEffect(() => {
-        if (currentDocument) {
+        if (typeof window === 'undefined') return;
+        localStorage.setItem('aiChat_context', contextContent);
+    }, [contextContent]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        localStorage.setItem('aiChat_additionalContext', additionalContext);
+    }, [additionalContext]);
+
+    // Persist current document changes
+    useEffect(() => {
+        const oldValue = previousDocumentRef.current;
+        if (oldValue === currentDocument) return;
+
+        previousDocumentRef.current = currentDocument;
+
+        if (typeof window !== 'undefined') {
             localStorage.setItem('currentDocument', currentDocument);
-        } else {
-            localStorage.removeItem('currentDocument');
+            window.dispatchEvent(new CustomEvent('localStorageChange', {
+                detail: { key: 'currentDocument', newValue: currentDocument, oldValue },
+            }));
         }
     }, [currentDocument]);
 
-    // Keep Redux in sync with storage changes (other tabs or legacy emitters)
-    useEffect(() => {
-        const handleStorageChange = (e: StorageEvent) => {
-            if (e.key === 'currentDocument') {
-                const newValue = e.newValue ?? '';
-                if (newValue !== currentDocument) {
-                    dispatch(setCurrentDocument(newValue));
-                }
-            }
-        };
+    const handleSetCurrentDocument = useCallback((content: string) => {
+        dispatch(setCurrentDocument(content));
+    }, [dispatch]);
 
-        const handleCustomStorageChange = (e: Event) => {
-            const customEvent = e as CustomEvent;
-            if (customEvent.detail?.key === 'currentDocument') {
-                const newValue = customEvent.detail?.newValue ?? '';
-                if (newValue !== currentDocument) {
-                    dispatch(setCurrentDocument(newValue));
-                }
-            }
-        };
+    const openLibraryFor = useCallback((target: 'context' | 'document') => {
+        setLibraryTarget(target);
+        setIsLibraryOpen(true);
+    }, []);
 
-        window.addEventListener('storage', handleStorageChange);
-        window.addEventListener('localStorageChange', handleCustomStorageChange);
-
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-            window.removeEventListener('localStorageChange', handleCustomStorageChange);
-        };
-    }, [currentDocument, dispatch]);
-
-    // const handleShowRightPanel = () => {
-    //     if (rightPanelToggleRef.current) {
-    //         rightPanelToggleRef.current();
-    //     }
-    // };
-    const normalizeDocumentType = (type?: string) => {
-        if (!type) return 'Markdown';
-        const trimmed = type.trim();
-        if (!trimmed) return 'Markdown';
-
-        // Handle hyphenated types: "project-plan" -> "Project-Plan"
-        return trimmed
-            .split('-')
-            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-            .join('-');
-    };
-
-    const handleShowInLeftPanel = (content: string, name: string, doc?: MarkdownDocument) => {
-        setMdContent(content);
-        setDocName(name);
-        updateProjectFromDocument(content, name, doc);
-        console.log("Selected document from library:", { content, name });
-    };
-
-    const handleDocumentSelect = (content: string, name: string, doc?: MarkdownDocument) => {
-        setMdContent(content);
-        setDocName(name);
-        setIsEditing(false);
-        setIsLibraryOpen(false); // Close the library modal after selection
-        updateProjectFromDocument(content, name, doc);
-        console.log("Selected document from library:", { content, name });
-    };
-
-    const handleApplyCurrentDocument = (content: string, name?: string, doc?: MarkdownDocument) => {
-        handleSetCurrentDocument(content);
-        if (name) {
-            setDocName(name);
-        }
-        setDocType(normalizeDocumentType(doc?.type));
-        setIsEditing(false);
+    const closeLibrary = useCallback(() => {
         setIsLibraryOpen(false);
-    };
+        setLibraryTarget(null);
+    }, []);
 
-    const handleAddMD = () => {
-        mdFileInputRef.current?.click()
-    }
-
-    const handleExportLibrary = () => {
-        if (documents.length === 0) return;
-
-        // Create a JSON file from the documents
-        const dataStr = JSON.stringify(documents, null, 2);
-        const dataUri = `data:application/json;charset=utf-8,${encodeURIComponent(dataStr)}`;
-
-        // Create and trigger a download link
-        const exportFileName = `aichat-doc-library-${new Date().toISOString().split('T')[0]}.json`;
-        const linkElement = document.createElement('a');
-        linkElement.setAttribute('href', dataUri);
-        linkElement.setAttribute('download', exportFileName);
-        linkElement.click();
-    };
-
-    const handleImportLibrary = () => {
-        fileInputRef.current?.click();
-    };
-
-    const handleFileSelection = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const file = e.target.files?.[0];
-        if (!file) return;
-
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            try {
-                const importedDocuments = JSON.parse(event.target?.result as string);
-
-                // Validate the imported data structure
-                if (Array.isArray(importedDocuments) && importedDocuments.every(doc =>
-                    typeof doc === 'object' && doc !== null &&
-                    'id' in doc && 'name' in doc && 'content' in doc)) {
-
-                    // Import each document to Redux
-                    importedDocuments.forEach(doc => {
-                        dispatch(saveMarkdownDocument({
-                            id: doc.id || Date.now().toString(),
-                            name: doc.name,
-                            type: 'markdown',
-                            content: doc.content,
-                            createdAt: doc.createdAt || new Date().toISOString(),
-                            updatedAt: doc.updatedAt || new Date().toISOString()
-                        }));
-                    });
-
-                    alert(`Successfully imported ${importedDocuments.length} documents`);
-                } else {
-                    alert('Invalid file format. Import failed.');
-                }
-            } catch (error) {
-                console.error('Error importing library:', error);
-                alert('Failed to import library. Invalid JSON format.');
+    const handleLibrarySelect = useCallback((content: string, name?: string, doc?: MarkdownDocument) => {
+        if (libraryTarget === 'context') {
+            setContextContent(content);
+        } else if (libraryTarget === 'document') {
+            dispatch(setCurrentDocument(content));
+            if (doc) {
+                setSelectedDocument(doc);
+                setDocumentName(doc.name);
+                setDocumentType(doc.type || 'markdown');
             }
-        };
-
-        reader.readAsText(file);
-        e.target.value = ''; // Reset the file input
-    };
-
-    const handleResponseChange = (response: string) => { setLastResponse(response) };
-
-    const handleViewInMarkdown = (response: string) => {
-        const cleanResponse = (response: string) => {
-            const cleaned = response.replace(/^(Sure|I'd be happy to help|Here's|Certainly|Absolutely|Of course|I can help with that|Let me|Okay|Alright|I'll|Yes|No problem|Got it)[,.!]?\s+/i, '');
-            const cleaned2 = cleaned.replace(/\s+(Let me know if you need any more help|Hope that helps|If you have any questions, feel free to ask|Is there anything else you'd like to know\?|Does that answer your question\?|Do you need any clarification\?|Feel free to ask if you have more questions|Hope this helps|Let me know if you need anything else)[,.!]?\s*$/i, '');
-            return cleaned2;
-        };
-        const cleanedResponse = cleanResponse(response);
-        setMdPreview(cleanedResponse);
-    };
-
-    // Simple Modal component
-    const Modal = ({ isOpen, onClose, children }: { isOpen: boolean, onClose: () => void, children: React.ReactNode }) => {
-        if (!isOpen) return null;
-
-        return (
-            <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4">
-                <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto">
-                    <button
-                        onClick={onClose}
-                        className="absolute right-4 top-4 text-gray-400 hover:text-white"
-                    >
-                        <X className="h-6 w-6" />
-                    </button>
-                    <div className="p-6">
-                        {children}
-                    </div>
-                </div>
-            </div>
-        );
-    };
-
-
-    const handleModelChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-        const selectedModel = data.phData.metis.models.find(model => model.name === event.target.value);
-        setCurrentModel(selectedModel || null);
-        setFocusModelLocal(selectedModel || null);
-        setFocusModelview(selectedModel?.modelviews[0] || null);
-        if (selectedModel) {
-            // Removed dispatch call for setFocusModel as it is not defined; local state is already updated.
         }
-        // if (selectedModel) {
-        //   setCurrentModelview(selectedModel.modelviews[0]);
-        // }
-    };
+        closeLibrary();
+    }, [closeLibrary, libraryTarget, dispatch]);
 
-    const handleModelviewChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
-    };
+    // View mode handlers
+    const handleSelectDocument = useCallback((doc: MarkdownDocument) => {
+        setSelectedDocument(doc);
+        dispatch(setCurrentDocument(doc.content));
+        setDocumentName(doc.name);
+        setDocumentType(doc.type || 'markdown');
+        setOriginalContent(doc.content); // Store original content when selecting
+    }, [dispatch]);
 
-    // Define left panel content
-    const leftPanelContent = {
-        tabs: [
-            {
-                key: 'current-content',
-                label: 'Current Domain',
-                content: (
-                    <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-                        {domain?.presentation ? (
-                            <div className="p-2 bg-gray-800 rounded">
-                                <MarkdownPreview mdPreview={domain.presentation} />
-                            </div>
-                        ) : (
-                            <div className="p-2 bg-gray-800 rounded">
-                                <div className="text-sm text-gray-400">No domain found</div>
-                            </div>
-                        )}
-                    </div>
-                )
-            },
-            {
-                key: 'projects',
-                label: 'Projects',
-                content: (
-                    <DocumentPanel
-                        mdContent={mdContent}
-                        setMdContent={setMdContent}
-                        setIsLibraryOpen={setIsLibraryOpen}
-                        isLibraryOpen={isLibraryOpen}
-                        panelType='left'
-                        showDocumentList
-                        onNewDocument={() => setShowTemplateSelector(true)}
-                    />
-                )
-            },
-        ],
-        defaultTab: 'current-content'
-    };
+    const handleEditDocument = useCallback(() => {
+        if (selectedDocument) {
+            setDocumentName(selectedDocument.name);
+            setDocumentType(selectedDocument.type || 'markdown');
+            setPreviewContent(selectedDocument.content);
+            dispatch(setCurrentDocument(selectedDocument.content)); // Ensure currentDocument is set
+            setOriginalContent(selectedDocument.content); // Store original content when entering edit mode
+        }
+        switchMode('edit');
+    }, [selectedDocument, switchMode, dispatch]);
 
-    // Define middle panel content
-    const middlePanelContent = {
-        tabs: [
-            {
-                key: 'current',
-                label: 'Current Document',
-                content: (
-                    <div className="flex flex-col bg-background rounded-lg h-[calc(100vh-9rem)] overflow-hidden">
-                        <div className="flex-grow overflow-hidden">
-                            <DocumentPanel
-                                mdContent={currentDocument}
-                                setMdContent={handleSetCurrentDocument}
-                                setIsLibraryOpen={setIsLibraryOpen}
-                                isLibraryOpen={isLibraryOpen}
-                                panelType='middle'
-                                currentDocumentContent={currentDocument}
-                                markdownPreviewContent={mdPreview}
-                                documentName={docName}
-                                documentType={docType}
-                                onSelect={(content, name, doc) => handleApplyCurrentDocument(content, name, doc)}
-                                onNewDocument={() => setShowTemplateSelector(true)}
-                            />
-                        </div>
-                    </div>
-                )
-            },
-        ],
-        defaultTab: 'current'
-    };
-    // Define right panel content
-    const rightPanelContent = {
-        tabs: [
-            {
-                key: 'reports',
-                label: 'Reports',
-                content: (
-                    <DocumentPanel
-                        mdContent={mdPreview}
-                        setMdContent={setMdPreview}
-                        setIsLibraryOpen={setIsLibraryOpen}
-                        isLibraryOpen={isLibraryOpen}
-                        panelType='right'
-                        currentDocumentContent={currentDocument}
-                        markdownPreviewContent={mdPreview}
-                        documentName={docName}
-                        documentType={docType}
-                        onNewDocument={() => setShowTemplateSelector(true)}
-                    />
-                )
+    const handleChatWithDocument = useCallback(() => {
+        if (selectedDocument) {
+            setContextContent(selectedDocument.content);
+        }
+        switchMode('chat');
+    }, [selectedDocument, switchMode]);
+
+    const handleDeleteDocument = useCallback(() => {
+        if (!selectedDocument) return;
+
+        const confirmed = window.confirm(`Delete "${selectedDocument.name}"?`);
+        if (confirmed) {
+            // TODO: Implement delete in Redux
+            console.log('Delete document:', selectedDocument.id);
+        }
+    }, [selectedDocument]);
+
+    // Edit mode save handler
+    const handleSaveToLibrary = useCallback(() => {
+        const contentToSave = currentDocument; // Use currentDocument which has the live edits
+
+        // Find the document we're editing by matching the original content
+        const existingDoc = documents?.find(doc =>
+            doc.content === originalContent || doc.name === documentName
+        );
+
+        let newDoc: MarkdownDocument;
+        let oldContent = originalContent || ''; // Use the stored original content
+
+        if (existingDoc) {
+            // Updating existing document - keep the same ID and name
+            newDoc = {
+                id: existingDoc.id, // Keep the same ID to update in place
+                name: existingDoc.name, // Keep the original name, don't add timestamp
+                type: existingDoc.type || documentType,
+                content: contentToSave,
+                createdAt: existingDoc.createdAt,
+                updatedAt: new Date().toISOString(),
+            };
+
+            // Use the existing document's content as old content if we don't have originalContent
+            if (!oldContent) {
+                oldContent = existingDoc.content;
             }
-        ],
-        defaultTab: 'reports'
-    };
+        } else {
+            // Creating new document only if no existing document found
+            newDoc = {
+                id: Date.now().toString(),
+                name: documentName || 'Untitled Document',
+                type: documentType,
+                content: contentToSave,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            };
+            // For new documents, oldContent remains empty or the originalContent
+        }
 
-    const modelSelector = (false) ? (
-        <div className="flex justify-between bg-gray-800 text-xs">
-            <div className="px-1">
-                <span className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</span>
-                <span className="text-gray-300">{metis?.name}</span>
-            </div>
-            <div className="px-1">
-                <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
-                <select id="model-select" className="ps-2 inline-block bg-gray-900 text-gray-400 inline-block" onChange={handleModelChange} value={currentModel?.name}>
-                    {metis?.models.map((model: { name: string }) => (
-                        <option key={model.name} value={model.name}>{model.name}</option>
-                    ))}
-                </select>
-            </div>
-            <div className="px-1 me-auto">
-                {/* <label htmlFor="model-view-select" className="me-2 font-bold text-gray-400 inline-block"></label> */}
-                <span className="text-gray-400">{curMetamodel?.name || "Default"}</span>
-            </div>
-            <h3 className="flex ms-1 pl-1 font-bold text-gray-400 inline-block">No.ofObj:<span className="px-1 inline-block bg-gray-900 w-full"> {currentModel?.objects?.length}</span></h3>
-        </div>
-    ) : (
-        <div className="flex justify-between bg-gray-800 text-xs">
-            <div className="px-1">
-                <label htmlFor="metamodel-select" className="ms-1 font-bold text-gray-400 inline-block">Document:</label>
-                <span className="text-gray-300">{(documents as any)?.[0]?.name}</span>
-            </div>
-        </div>
-    )
+        // Show diff modal
+        setPendingSave({ doc: newDoc, oldContent });
+        setShowDiffModal(true);
+    }, [documentName, documentType, currentDocument, documents, originalContent]);
 
-    const floatingActions = [
-        {
-            label: 'AI Assistant',
-            href: '/ai-chat/aiAssistant',
-            icon: <FontAwesomeIcon icon={faComments} className="w-5 h-5" />,
-            className: 'text-blue-300 ring-blue-900/50',
-        },
-        {
-            label: 'Edit Document',
-            href: '/ai-chat/edit',
-            icon: <Edit className="w-5 h-5" />,
-            className: 'text-emerald-300 ring-emerald-900/50',
-        },
-    ];
+    const handleConfirmSave = useCallback(() => {
+        if (pendingSave) {
+            dispatch(saveMarkdownDocument(pendingSave.doc));
+            setShowDiffModal(false);
+            setPendingSave(null);
+            switchMode('view');
+        }
+    }, [pendingSave, dispatch, switchMode]);
 
-    const handleTemplateSelect = (template: DocumentTemplate) => {
-        // Clear old content first
-        setMdContent('');
-        setMdPreview('');
+    const handleCancelSave = useCallback(() => {
+        setShowDiffModal(false);
+        setPendingSave(null);
+    }, []);
 
-        // Set new template content and metadata using template name and type
-        setMdContent(template.content);
-        setDocName(template.name);  // Use template name
-        setDocType(normalizeDocumentType(template.type));  // Use template type
-
-        // Update Redux current document
-        dispatch(setCurrentDocument(template.content));
-        // Save the template as a document to make it available across pages
-        const templateDoc: MarkdownDocument = {
-            id: `template-${Date.now()}`,
-            name: template.name,
-            type: template.type,
-            content: template.content,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
+    // Get panel configurations based on current mode
+    const panelConfigs = useMemo(() => {
+        // Shared left panel for edit mode
+        const editLeftPanel = {
+            tabs: [
+                {
+                    key: 'domain',
+                    label: 'Domain',
+                    content: (
+                        <div className="h-full overflow-auto px-2 py-2">
+                            {domain?.presentation ? (
+                                <MarkdownPreview mdPreview={domain.presentation} variant="compact" />
+                            ) : (
+                                <div className="text-sm text-gray-400">No domain presentation available.</div>
+                            )}
+                        </div>
+                    ),
+                },
+                {
+                    key: 'context',
+                    label: 'Context Docs',
+                    content: (
+                        <DocumentPanel
+                            mdContent={contextContent}
+                            setMdContent={setContextContent}
+                            setIsLibraryOpen={(open) => {
+                                if (open) openLibraryFor('context');
+                                else closeLibrary();
+                            }}
+                            isLibraryOpen={isLibraryOpen && libraryTarget === 'context'}
+                            panelType="left"
+                        />
+                    ),
+                },
+            ],
+            defaultTab: domain?.presentation ? 'domain' : 'context',
         };
 
-        dispatch(saveMarkdownDocument(templateDoc));
+        switch (mode) {
+            case 'view':
+                return ViewModeContent({
+                    domain,
+                    currentDocument,
+                    selectedDocument,
+                    onSelectDocument: handleSelectDocument,
+                    onEditDocument: handleEditDocument,
+                    onChatWithDocument: handleChatWithDocument,
+                    onDeleteDocument: handleDeleteDocument,
+                    previewContent, // Pass preview content to view mode
+                });
 
-        // Update project info in Redux
-        updateProjectFromDocument(template.content, template.name, templateDoc);
+            case 'chat':
+                return ChatModeContent({
+                    subMode: chatSubMode,
+                    domain,
+                    contextContent,
+                    setContextContent,
+                    additionalContext,
+                    setAdditionalContext,
+                    currentDocument,
+                    previewContent,
+                    isLibraryOpen,
+                    libraryTarget,
+                    openLibraryFor,
+                    closeLibrary,
+                    handleSetCurrentDocument,
+                });
 
-        setShowTemplateSelector(false);
-    };
+            case 'edit':
+                const editPanels = EditModeContent({
+                    documentName,
+                    setDocumentName,
+                    documentType,
+                    setDocumentType,
+                    currentDocument,
+                    handleSetCurrentDocument,
+                    isLibraryOpen,
+                    libraryTarget,
+                    openLibraryFor,
+                    closeLibrary,
+                    previewContent,
+                    setPreviewContent,
+                    onSaveToLibrary: handleSaveToLibrary,
+                });
+
+                return {
+                    leftPanelContent: editLeftPanel,
+                    middlePanelContent: editPanels.middlePanel,
+                    rightPanelContent: editPanels.rightPanel,
+                };
+
+            default:
+                return {
+                    leftPanelContent: editLeftPanel,
+                    middlePanelContent: <div>Unknown mode</div>,
+                    rightPanelContent: <div>Unknown mode</div>,
+                };
+        }
+    }, [
+        mode,
+        chatSubMode,
+        domain,
+        currentDocument,  // Make sure this is included
+        selectedDocument,
+        contextContent,
+        additionalContext,
+        previewContent,
+        documentName,
+        documentType,
+        isLibraryOpen,
+        libraryTarget,
+        handleSelectDocument,
+        handleEditDocument,
+        handleChatWithDocument,
+        handleDeleteDocument,
+        handleSetCurrentDocument,
+        handleSaveToLibrary,
+        openLibraryFor,
+        closeLibrary,
+    ]);
+
+    const modeConfig = MODE_CONFIGS[mode];
+    const containerClassName = modeConfig.showBorder
+        ? `flex flex-col h-screen max-h-screen overflow-hidden border-[16px] ${modeConfig.borderColor} rounded-lg shadow-xl`
+        : 'flex flex-col h-screen max-h-screen overflow-hidden';
+
+    // Debug: Log what we're passing to ThreePanelLayout
+    const modeHeaderComponent = (
+        <ModeHeader
+            mode={mode}
+            chatSubMode={chatSubMode}
+            onModeChange={switchMode}
+            onChatSubModeChange={switchChatSubMode}
+            showFileOperations={true}
+        />
+    );
 
     return (
-        <div className="flex-1 flex-col h-screen">
-            <div className="w-full border-b-2 border-gray-600">
+        <div className={containerClassName}>
+            {/* {showFileOperations && ( */}
+            <div className="mb-2 pb-2 border-b border-gray-700">
                 <FileOperations />
             </div>
-            <ThreePanelLayout
-                moduleOperations={modelSelector}
-                leftPanelContent={leftPanelContent}
-                middlePanelContent={middlePanelContent}
-                rightPanelContent={rightPanelContent}
-                showLeftPanel={showLeftPanel}
-                setShowLeftPanel={setShowLeftPanel}
-                showRightPanel={showRightPanel}
-                setShowRightPanel={setShowRightPanel}
-                className="h-[calc(100vh-2.5rem)] min-w-0 bg-background text-gray-100"
-            >
-                <></>
-            </ThreePanelLayout>
-
-            {/* Floating "Open AI Assistant" button - Centered with chat icon */}
-            <FloatingActionButtons actions={floatingActions} className="bottom-2" />
-
-            {/* Template Selector Modal */}
-            {showTemplateSelector && (
-                <DocumentTemplateSelector
-                    onSelect={handleTemplateSelect}
-                    onClose={() => setShowTemplateSelector(false)}
-                />
-            )}
-
-            {/* Library Modal */}
-            {isLibraryOpen && (
-                <div
-                    className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
-                    onClick={() => setIsLibraryOpen(false)}
+            {/* )} */}
+            <div className="flex-1 overflow-hidden bg-gray-900/60">
+                <ThreePanelLayout
+                    leftPanelContent={panelConfigs.leftPanelContent}
+                    middlePanelContent={
+                        (panelConfigs.middlePanelContent && 'tabs' in panelConfigs.middlePanelContent)
+                            ? panelConfigs.middlePanelContent
+                            : { tabs: [{ key: 'current', label: 'Current Document', content: panelConfigs.middlePanelContent as React.ReactElement }], defaultTab: 'current' }
+                    }
+                    rightPanelContent={
+                        (panelConfigs.rightPanelContent && 'tabs' in panelConfigs.rightPanelContent)
+                            ? panelConfigs.rightPanelContent
+                            : { tabs: [{ key: 'preview', label: 'Preview', content: panelConfigs.rightPanelContent as React.ReactElement }], defaultTab: 'preview' }
+                    }
+                    showLeftPanel={showLeftPanel}
+                    setShowLeftPanel={setShowLeftPanel}
+                    showRightPanel={showRightPanel}
+                    setShowRightPanel={setShowRightPanel}
+                    className="h-full min-w-0 bg-background text-gray-100"
+                    middlePanelHeader={modeHeaderComponent}
                 >
-                    <div
-                        className="bg-background rounded-lg p-4 w-[80%] max-w-4xl max-h-[90vh] overflow-auto"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-                            <div className="flex space-x-2">
-                                <button
-                                    onClick={handleImportLibrary}
-                                    className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                                >
-                                    <span>Import Documents from File</span>
-                                </button>
-                                <button
-                                    onClick={handleExportLibrary}
-                                    className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                                    disabled={documents?.length === 0}
-                                >
-                                    Save Documents to File
-                                </button>
-                                <input
-                                    type="file"
-                                    ref={fileInputRef}
-                                    onChange={handleFileSelection}
-                                    accept=".json"
-                                    style={{ display: 'none' }}
-                                />
+                    <></>
+                </ThreePanelLayout>
+            </div>
 
-                                <button
-                                    onClick={() => setIsLibraryOpen(false)}
-                                    className="text-xs bg-gray-600 hover:bg-gray-500 text-white px-2 rounded"
-                                >
-                                    X
-                                </button>
-                            </div>
-                        </div>
-                        <div className="text-sm text-gray-400 mb-2 max-h-[80vh] overflow-auto">
+            <DiffModal
+                isOpen={showDiffModal}
+                onClose={handleCancelSave}
+                onConfirm={handleConfirmSave}
+                oldContent={pendingSave?.oldContent || ''}
+                newContent={pendingSave?.doc.content || ''}
+                title="Save Changes to Library"
+            />
+
+            {isLibraryOpen && (
+                <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4" onClick={closeLibrary}>
+                    <div className="relative bg-popover rounded-lg w-full max-w-4xl max-h-[90vh] overflow-auto" onClick={(e) => e.stopPropagation()}>
+                        <button onClick={closeLibrary} className="absolute right-4 top-4 text-gray-400 hover:text-white" aria-label="Close library">
+                            <X className="h-6 w-6" />
+                        </button>
+                        <div className="p-6">
                             <MarkdownLibrary
-                                onSelect={handleDocumentSelect}
-                                onShowInLeftPanel={handleShowInLeftPanel}
-                                onSetCurrentDocument={(content, name, doc) => handleApplyCurrentDocument(content, name, doc)}
-                                currentDocument={currentDocument}
+                                onSelect={handleLibrarySelect}
                                 hideExportLibraryButton={false}
+                                onSetCurrentDocument={(content, name, doc) => {
+                                    if (doc) handleSelectDocument(doc);
+                                    else handleSetCurrentDocument(content);
+                                }}
+                                currentDocument={currentDocument}
                             />
                         </div>
                     </div>
                 </div>
             )}
-
-            {/* Guide Modal */}
-            <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
-                <GettingStartedGuide />
-            </Modal>
         </div>
     );
 };
