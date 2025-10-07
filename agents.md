@@ -9,7 +9,7 @@ This document explains how "agents" are structured and used in this app, and how
     - **View Mode**: Document viewing and library management with preview and metadata.
     - **Edit Mode**: Focused document editing with live preview and metadata controls.
     - **Chat Mode**: AI chat with General (basic) and Advanced (multi-model, experiments) sub-modes.
-  - **Domain Builder**: Curates domain name/description/presentation.
+  - **Domain Builder** (`/domain-builder`): Domain name/description/presentation curation with header controls for editing and AI assistance.
   - **Model Builder**: Builds Model structures based on a Metamodel similarly via the genmodel endpoint.
   - **Modelview Builder**: Produces schema-constrained model views of the model objects and relships from prompts and context.
   - **Ontology Builder** (`/ontology-builder`): Full-featured agent with Current Domain, Current Ontology, Add. Context tabs (left), AI Ontology Chat (middle), and Suggested Ontology with graph controls (right). Supports multi-select, filters, graph modals, and selection sets.
@@ -29,6 +29,85 @@ This document explains how "agents" are structured and used in this app, and how
   - `src/components/ThreePanelLayout.tsx`: left/middle/right layout used across agents. Supports both tab objects (`{ tabs: [...], defaultTab: '...' }`) and plain JSX (React.ReactNode) for panels.
 - Prompts & guardrails (ontology): `src/app/ontology-builder/prompts.ts` defines system prompt, behavior guidelines, and user prompt scaffolding used by the genmodel calls.
 
+## Domain Builder Agent
+
+### Architecture
+- **Single-page design:** One route (`/domain-builder`) with three-panel layout.
+- **Header controls:** Edit Document and AI Assistant buttons in AppHeader via `middlePanelHeader` prop (matches AI Chat pattern).
+- **Mode system:** Three modes - Normal (view), Edit Domain, AI Assistant.
+- **Layout structure:**
+  - Uses `ThreePanelLayout` component with `middlePanelHeader` prop for action buttons
+  - `DomainBuilderHeader` component rendered in middle panel header
+  - `FileOperations` component at top of page above all panels
+  - DiffModal for save confirmations
+
+### Panel Modes
+
+#### Normal Mode (Default)
+- **Left panel:** "Projects" tab - DocumentPanel with document list
+- **Middle panel:** "Current Domain" tab (default) - Shows domain presentation, "Current Model Suite" tab - Shows UniverseComponent
+- **Right panel:** "Preview" tab - DocumentPanel for markdown preview from AI Assistant
+
+#### Edit Domain Mode
+- **Left panel:** Same as Normal mode
+- **Middle panel:** "Edit Domain" tab (default) - Form with name, description, presentation textarea; "Preview" tab - Live preview of markdown; "Current Model Suite" tab
+- **Right panel:** "Live Preview" - Shows document header (name, type), Save to Library button, rendered markdown preview, character count
+
+#### AI Assistant Mode
+- **Left panel:** Same as Normal mode
+- **Middle panel:** "AI Domain Builder" tab (default) - ChatComponent for domain generation; "Current Domain" tab; "Current Model Suite" tab
+- **Right panel:** Same as Normal mode
+
+### Header Controls
+- **Edit Document button** (Blue, Edit icon):
+  - Toggles Edit Domain mode on/off
+  - Active state: lighter blue (`bg-blue-500`)
+  - Shows textarea editor for domain name, description, and presentation
+  - Right panel shows live preview with Save to Library button
+- **AI Assistant button** (Purple, Sparkles icon):
+  - Toggles AI Assistant mode on/off
+  - Active state: lighter purple (`bg-purple-500`)
+  - Shows ChatComponent in middle panel for AI-powered domain generation
+  - Uses domain-specific ChatComponent with model selection
+
+### Save Workflow (Edit Mode)
+1. User edits domain name, description, or presentation in middle panel
+2. Changes auto-save to Redux `domain` state via `handleFieldChange`
+3. Live preview updates in right panel in real-time
+4. User clicks "Save to Library" button in right panel preview
+5. System creates/updates MarkdownDocument with type 'domain'
+6. DiffModal shows before/after comparison
+7. User confirms or cancels save
+8. On confirm, document saved to Redux documents array via `saveMarkdownDocument`
+
+### State Management
+- **Redux state:** `domain` object with `name`, `description`, `presentation` fields; `documents` array for library
+- **Local state:** 
+  - `showDomainEditor` - toggles Edit Domain mode
+  - `showAIAssistant` - toggles AI Assistant mode
+  - `showDiffModal` - controls diff modal visibility
+  - `pendingSave` - holds document data pending save confirmation
+- **Persistence:** Domain changes auto-save to Redux on edit; library documents persist via Redux
+
+### Visual Design
+- **Button styles:** Match AI Chat pattern (`bg-blue-600`, `bg-purple-600`)
+- **Active states:** Lighter shades (`bg-blue-500`, `bg-purple-500`)
+- **Button sizing:** `px-3 py-1.5 text-sm`
+- **Icons:** `h-4 w-4` Lucide icons (Edit, Sparkles)
+- **Hover effects:** Lighter shade on hover
+- **Mode exclusivity:** Edit and AI Assistant modes are mutually exclusive
+
+### Components
+- **DomainBuilderHeader:** Header with Edit Document and AI Assistant toggle buttons, panel visibility hints
+- **ChatComponent (domain-specific):** Handles AI-powered domain generation with model selection
+- **DiffModal:** Shows line-by-line diff before saving to library
+
+### Migration Notes
+- **Old pattern:** Floating buttons at bottom-right (z-index: 40) - REMOVED
+- **New pattern:** Header buttons in `middlePanelHeader` with mode system - CURRENT
+- **Breaking change:** No visual change for users, but complete code restructure
+- **Rationale:** Consistency with AI Chat, no z-index conflicts, better accessibility, mode-based workflow
+
 ## Ontology Builder Agents
 
 ### Simplified Agent (`/ontology-builder`)
@@ -36,10 +115,11 @@ This document explains how "agents" are structured and used in this app, and how
 - **Left panel:** Two tabs — "Domain Description" (edits `domain.presentation` in Redux) and "Project Plan" (Redux-backed `project-plan` document via `saveMarkdownDocument`).
 - **Middle panel:** Plain JSX for "Current Ontology" chat (no tabs). Uses `ChatComponent` with `projectContent` as context.
 - **Right panel:** Plain JSX for ontology preview via `OntologyCard`.
-- **Floating buttons:**
+- **Floating buttons:** ⚠️ **PLANNED MIGRATION** - Same pattern as Domain Builder
   - "Open AI Assistant" → navigates to `/ontology-builder/aiAssistant` (full-featured agent).
   - "Edit Document" → opens left panel (user clicks Project Plan tab).
 - **State management:** Local state for `projectDocId`/`projectContent`, Redux for domain and documents.
+- **Future:** Will migrate to header pattern like Domain Builder and AI Chat.
 
 ### Full-Featured Agent (`/ontology-builder/aiAssistant`)
 - **Purpose:** Advanced ontology building with graph visualization, multi-select, filters, and selection sets.
@@ -48,8 +128,9 @@ This document explains how "agents" are structured and used in this app, and how
 - **Right panel:** "Suggested Ontology" tab with graph controls (single/multi-select, filter to selection, open graph modal, save/load/export/import selection sets).
 - **Graph modals:** Left and right panels can open full-screen graph modals with zoom/pan, lasso selection, and detail views.
 - **Selection sets:** Persist concept/relationship selections to localStorage, export/import as JSON.
-- **Floating buttons:** "Open AI Assistant" (modal), "Edit Document" (opens left panel + switches to Project tab).
+- **Floating buttons:** ⚠️ **PLANNED MIGRATION** - "Open AI Assistant" (modal), "Edit Document" (opens left panel + switches to Project tab).
 - **State management:** Complex state for graph selections, filters, multi-select, saved sets, and modal visibility.
+- **Future:** Will migrate to header pattern like Domain Builder and AI Chat.
 
 ## AI Chat Agent (Multi-Mode)
 
@@ -231,4 +312,5 @@ This document explains how "agents" are structured and used in this app, and how
 - **Default tab initialization:** Use lazy state initialization for active tabs: `useState(() => panelContent.defaultTab || panelContent.tabs[0]?.key)`.
 - **Mode switching:** Use URL params for bookmarkable states, localStorage for persistence, both managed by `useAIChatMode` hook.
 - **Focus project workflow:** Set focus project in View mode library, access in Edit mode left panel for quick reference while editing other documents.
+- **Header pattern migration:** When adding action buttons to agents, use `middlePanelHeader` prop instead of floating buttons for consistency and accessibility.
 

@@ -29,6 +29,9 @@ import { FileOperations } from '@/components/FileOperations';
 import UniverseComponent from '@/features/model-universe/components/UniverseComponent';
 import { labelRect } from 'mermaid/dist/rendering-util/rendering-elements/shapes/labelRect.js';
 import DomainEditorModal from "@/components/DomainEditorModal";
+import { DomainBuilderHeader } from '@/components/domain-builder/DomainBuilderHeader';
+import DiffModal from '@/components/ai-chat/DiffModal';
+import { useAIChatMode } from '@/hooks/useAIChatMode';
 
 type Model = any;
 
@@ -50,12 +53,18 @@ export interface ChatComponentProps {
 
 export default function DomainBuilderPage() {
   const dispatch = useDispatch();
+  const { mode, chatSubMode, switchMode, switchChatSubMode } = useAIChatMode();
   const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
   const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
   const documents = useSelector((state: RootState) => data.phData.documents);
   const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
   const focusProj = useSelector((state: RootState) => state.modelUniverse.phFocus.focusProj);
 
+  // Edit mode state
+  const [documentName, setDocumentName] = useState('');
+  const [documentType, setDocumentType] = useState('markdown');
+  const [previewContent, setPreviewContent] = useState('');
+  const [originalContent, setOriginalContent] = useState(''); // Add this to track original content
 
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
@@ -74,7 +83,10 @@ export default function DomainBuilderPage() {
     | 'gpt-5-mini'
   >('gpt-5-mini'); // Default model
 
-
+  const handleCancelSave = useCallback(() => {
+    setShowDiffModal(false);
+    setPendingSave(null);
+  }, []);
 
   // Add clear chat function
   const handleClearChat = () => {
@@ -102,18 +114,19 @@ export default function DomainBuilderPage() {
     console.log('Chat and preview cleared after saving to library:', content.substring(0, 50) + '...');
   };
 
-  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const selectedModelName = e.target.value;
-    const model = metis?.models ? metis.models.find((m: { name: string }) => m.name === selectedModelName) : null;
-    setCurrentModel(model);
-  };
-
   const [activeLeftTab, setActiveLeftTab] = useState<'document' | 'library'>('document');
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showEditorModal, setShowEditorModal] = useState(false);
+  const [showAIAssistant, setShowAIAssistant] = useState(false); // Add new state for AI Assistant mode
+  const [showDomainEditor, setShowDomainEditor] = useState(false);
+  const [showDiffModal, setShowDiffModal] = useState(false);
+  const [pendingSave, setPendingSave] = useState<{
+    doc: MarkdownDocument;
+    oldContent: string;
+  } | null>(null);
 
   const [lastResponse, setLastResponse] = useState<string>('');
   const [activeTab, setActiveTab] = useState("chat");
@@ -201,22 +214,52 @@ export default function DomainBuilderPage() {
     };
   }, [currentDocument]);
 
-      useEffect(() => {
-          if (focusProj?.id || focusProj?.description) {
-              const matchingDoc = documents?.find((doc) => doc.id === focusProj.id);
-              if (matchingDoc) {
-                  setMdContent(matchingDoc.content);
-                  setDocName(matchingDoc.name);
-                  setDocType(normalizeDocumentType(matchingDoc.type));
-              } else if (focusProj.description) {
-                  const fallbackContent = focusProj.description;
-                  setMdContent(fallbackContent);
-                  if (focusProj.name) {
-                      setDocName(focusProj.name);
-                  }
-              }
-          }
-      }, [focusProj, documents]);
+  useEffect(() => {
+    if (focusProj?.id || focusProj?.description) {
+      const matchingDoc = documents?.find((doc) => doc.id === focusProj.id);
+      if (matchingDoc) {
+        setMdContent(matchingDoc.content);
+        setDocName(matchingDoc.name);
+        setDocType(normalizeDocumentType(matchingDoc.type));
+      } else if (focusProj.description) {
+        const fallbackContent = focusProj.description;
+        setMdContent(fallbackContent);
+        if (focusProj.name) {
+          setDocName(focusProj.name);
+        }
+      }
+    }
+  }, [focusProj, documents]);
+
+  const handleConfirmSave = useCallback(() => {
+    if (!pendingSave) {
+      console.error('No pending save data');
+      return;
+    }
+
+    console.group('💾 Domain Save Confirmation');
+    console.log('Document:', pendingSave.doc);
+
+    // Save to library
+    dispatch(saveMarkdownDocument(pendingSave.doc));
+
+    // Update local state
+    setCurrentDocument(pendingSave.doc.content);
+    setDomainPresentation(pendingSave.doc.content);
+
+    // Clear modal state
+    setShowDiffModal(false);
+    setPendingSave(null);
+
+    console.log('✅ Domain saved to library');
+    console.groupEnd();
+  }, [pendingSave, dispatch]);
+
+  const handleModelChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const selectedModelName = e.target.value;
+    const model = metis?.models ? metis.models.find((m: { name: string }) => m.name === selectedModelName) : null;
+    setCurrentModel(model);
+  };
 
 
   const normalizeDocumentType = (type?: string) => {
@@ -347,6 +390,51 @@ export default function DomainBuilderPage() {
     console.log("Selected document from library:", { content, name });
   };
 
+  // Edit mode save handler
+  const handleSaveToLibrary = useCallback(() => {
+    const contentToSave = currentDocument; // Use currentDocument which has the live edits
+
+    // Find the document we're editing by matching the original content
+    const existingDoc = documents?.find(doc =>
+      doc.content === originalContent || doc.name === documentName
+    );
+
+    let newDoc: MarkdownDocument;
+    let oldContent = originalContent || ''; // Use the stored original content
+
+    if (existingDoc) {
+      // Updating existing document - keep the same ID and name
+      newDoc = {
+        id: existingDoc.id, // Keep the same ID to update in place
+        name: existingDoc.name, // Keep the original name, don't add timestamp
+        type: existingDoc.type || documentType,
+        content: contentToSave,
+        createdAt: existingDoc.createdAt,
+        updatedAt: new Date().toISOString(),
+      };
+
+      // Use the existing document's content as old content if we don't have originalContent
+      if (!oldContent) {
+        oldContent = existingDoc.content;
+      }
+    } else {
+      // Creating new document only if no existing document found
+      newDoc = {
+        id: Date.now().toString(),
+        name: documentName || 'Untitled Document',
+        type: documentType,
+        content: contentToSave,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+      // For new documents, oldContent remains empty or the originalContent
+    }
+
+    // Show diff modal
+    setPendingSave({ doc: newDoc, oldContent });
+    setShowDiffModal(true);
+  }, [documentName, documentType, currentDocument, documents, originalContent]);
+
   const handleResponseChange = (response: string) => { setLastResponse(response) };
 
   const handleViewInMarkdown = (response: string) => {
@@ -381,61 +469,43 @@ export default function DomainBuilderPage() {
     );
   };
 
-    // Define left panel content
-    const leftPanelContent = {
-        tabs: [
-        {
-          key: 'projects',
-          label: 'Projects',
-          content: (
-            <DocumentPanel
-              mdContent={mdContent}
-              setMdContent={setMdContent}
-              setIsLibraryOpen={setIsLibraryOpen}
-              isLibraryOpen={isLibraryOpen}
-              panelType='left'
-              showDocumentList
-              onSelect={(content, name) => {
-                setMdContent(content);
-                if (name) {
-                  setDocName(name);
-                }
-              }}
-            />
-          )
-        },
-            // {
-            //     key: 'current-content',
-            //     label: 'Current Domain',
-            //     content: (
-            //         <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            //             {domainData?.presentation ? (
-            //                 <div className="p-2 bg-gray-800 rounded">
-            //                     <MarkdownPreview mdPreview={domainData.presentation} />
-            //                 </div>
-            //             ) : (
-            //                 <div className="p-2 bg-gray-800 rounded">
-            //                     <div className="text-sm text-gray-400">No domain found</div>
-            //                 </div>
-            //             )}
-            //         </div>
-            //     )
-            // },
-
-        ],
-        defaultTab: 'current-content'
-    };
-  // Middle Panel Content
-  const middlePanelContent = {
+  // Define left panel content
+  const leftPanelContent = {
     tabs: [
       {
-        key: 'domain',
-        label: 'Current Domain',
+        key: 'projects',
+        label: 'Projects',
+        content: (
+          <DocumentPanel
+            mdContent={mdContent}
+            setMdContent={setMdContent}
+            setIsLibraryOpen={setIsLibraryOpen}
+            isLibraryOpen={isLibraryOpen}
+            panelType='left'
+            showDocumentList
+            onSelect={(content, name) => {
+              setMdContent(content);
+              if (name) {
+                setDocName(name);
+              }
+            }}
+          />
+        )
+      },
+    ],
+    defaultTab: 'projects'
+  };
+  // Middle Panel Content
+  const middlePanelContent = showDomainEditor ? {
+    tabs: [
+      {
+        key: 'domain-editor',
+        label: 'Edit Domain',
         content: (
           <div className="bg-background rounded-lg p-4 h-full overflow-auto">
             <div className="flex flex-col space-y-4 mb-4">
-              {/* <div>
-                <label className="block text-sm font-medium text-gray-300">Name</label>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Domain Name</label>
                 <input
                   type="text"
                   value={domainName}
@@ -445,7 +515,7 @@ export default function DomainBuilderPage() {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-300">Description</label>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Description</label>
                 <textarea
                   value={domainDescription}
                   onChange={(e) => handleFieldChange('description', e.target.value)}
@@ -453,15 +523,48 @@ export default function DomainBuilderPage() {
                   placeholder="Enter domain description"
                   rows={3}
                 />
-              </div> */}
-                <div>
-                <label className="block text-sm font-medium text-gray-300 mb-1">Domain Presentation</label>
-                <div className="p-2 bg-gray-800 rounded min-h-[120px]">
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">Domain Presentation (Markdown)</label>
+                <textarea
+                  value={domainPresentation}
+                  onChange={(e) => handleFieldChange('presentation', e.target.value)}
+                  className="mt-1 block w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:border-blue-500 focus:ring-blue-500 sm:text-sm font-mono"
+                  placeholder="Enter domain presentation in markdown format"
+                  rows={15}
+                />
+              </div>
+              <div className="flex gap-2">
+                <button
+                  onClick={handleSaveDomainData}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded text-sm font-medium transition-colors"
+                >
+                  Save Changes
+                </button>
+                <button
+                  onClick={() => setShowDomainEditor(false)}
+                  className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded text-sm font-medium transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      },
+      {
+        key: 'preview',
+        label: 'Preview',
+        content: (
+          <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+            <div className="flex flex-col space-y-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Live Preview</label>
+                <div className="p-4 bg-gray-800 rounded min-h-[400px] border border-gray-700">
                   <MarkdownPreview mdPreview={domainPresentation || 'No presentation available.'} />
                 </div>
-                </div>
+              </div>
             </div>
-
           </div>
         )
       },
@@ -475,16 +578,13 @@ export default function DomainBuilderPage() {
         )
       }
     ],
-    defaultTab: 'domain'
-  };
-  // Full middle panel (for the modal) — includes AI Domain Builder as a tab
-  const middlePanelContentModal = {
+    defaultTab: 'domain-editor'
+  } : showAIAssistant ? {
     tabs: [
       {
-        key: 'domain-builder',
+        key: 'ai-assistant',
         label: 'AI Domain Builder',
-        // Only create/render the ChatComponent when the editor modal is open
-        content: showEditorModal ? (
+        content: (
           <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
             <ChatComponent
               input={input}
@@ -507,20 +607,118 @@ export default function DomainBuilderPage() {
               guide={<Guide />}
             />
           </div>
-        ) : (
-          // lightweight placeholder avoids creating the heavy component before modal is opened
-          <div className="p-4 text-sm text-gray-400">
-            Open the editor to use the AI Domain Builder
+        )
+      },
+      {
+        key: 'domain',
+        label: 'Current Domain',
+        content: (
+          <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+            <div className="flex flex-col space-y-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Domain Presentation</label>
+                <div className="p-2 bg-gray-800 rounded min-h-[120px]">
+                  <MarkdownPreview mdPreview={domainPresentation || 'No presentation available.'} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      },
+      {
+        key: 'suite',
+        label: 'Current Model Suite',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
+            <UniverseComponent />
           </div>
         )
       }
     ],
-    defaultTab: 'domain-builder'
+    defaultTab: 'ai-assistant'
+  } : {
+    tabs: [
+      {
+        key: 'domain',
+        label: 'Current Domain',
+        content: (
+          <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+            <div className="flex flex-col space-y-4 mb-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">Domain Presentation</label>
+                <div className="p-2 bg-gray-800 rounded min-h-[120px]">
+                  <MarkdownPreview mdPreview={domainPresentation || 'No presentation available.'} />
+                </div>
+              </div>
+            </div>
+          </div>
+        )
+      },
+      {
+        key: 'suite',
+        label: 'Current Model Suite',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
+            <UniverseComponent />
+          </div>
+        )
+      }
+    ],
+    defaultTab: 'domain'
   };
 
+  // Remove middlePanelContentModal - no longer needed
 
   // Define right panel content with the new props
-  const rightPanelContent = {
+  const rightPanelContent = showDomainEditor ? {
+    tabs: [
+      {
+        key: 'preview',
+        label: 'Live Preview',
+        content: (
+          <div className="h-full flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50 flex-shrink-0">
+              <div className="flex flex-col gap-1 min-w-0 flex-1">
+                <h3 className="text-base font-semibold text-gray-200 truncate">
+                  {domainName || 'Domain Presentation'}
+                </h3>
+                <span className="text-xs text-gray-400">domain</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/30 flex-shrink-0">
+              <button
+                onClick={handleSaveToLibrary}
+                className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded"
+                title="Save domain to library"
+              >
+                <BookmarkPlus className="h-3 w-3" />
+                Save to Library
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto px-4 py-4">
+              {domainPresentation ? (
+                <MarkdownPreview mdPreview={domainPresentation} variant="default" />
+              ) : (
+                <div className="text-center text-gray-400 p-8">
+                  <p className="text-sm">No domain presentation</p>
+                  <p className="text-xs mt-2">Edit the domain to see preview</p>
+                </div>
+              )}
+            </div>
+
+            <div className="px-4 py-2 border-t border-gray-700 bg-gray-800/30 flex-shrink-0">
+              <span className="text-xs text-gray-400">
+                {domainPresentation?.length || 0} characters
+              </span>
+            </div>
+          </div>
+        )
+      }
+    ],
+    defaultTab: 'preview'
+  } : {
     tabs: [
       {
         key: 'preview',
@@ -532,9 +730,9 @@ export default function DomainBuilderPage() {
             setIsLibraryOpen={setIsLibraryOpen}
             isLibraryOpen={isLibraryOpen}
             panelType='right'
-            currentDocumentContent={currentDocument} // Pass Current Document content
-            markdownPreviewContent={mdPreview} // Pass Markdown Preview content
-            onSaveToLibrary={handleSaveToLibraryAndClearChat} // Add the callback to clear chat
+            currentDocumentContent={currentDocument}
+            markdownPreviewContent={mdPreview}
+            onSaveToLibrary={handleSaveToLibraryAndClearChat}
           />
         )
       }
@@ -577,13 +775,13 @@ export default function DomainBuilderPage() {
     {
       label: 'AI Assistant',
       href: '/domain-builder/aiAssistant',
-      icon: <FontAwesomeIcon icon={faRobot} className="w-5 h-5" />, 
+      icon: <FontAwesomeIcon icon={faRobot} className="w-5 h-5" />,
       className: 'text-blue-300 ring-blue-900/50'
     },
     {
       label: 'Edit Document',
       href: '/domain-builder/edit',
-      icon: <Edit className="w-5 h-5" />, 
+      icon: <Edit className="w-5 h-5" />,
       className: 'text-emerald-300 ring-emerald-900/50'
     }
   ] as const;
@@ -595,99 +793,84 @@ export default function DomainBuilderPage() {
   // const findLeftTabContent = (key: string) => leftPanelContent.tabs.find((t: any) => t.key === key)?.content || null;
   // const findMiddleTabContent = (key: string) => middlePanelContentInline.tabs.find((t: any) => t.key === key)?.content || null;
 
+  const handleEditDocument = useCallback(() => {
+    // Toggle domain editor mode
+    setShowDomainEditor(!showDomainEditor);
+    // Turn off AI Assistant if it's on
+    if (showAIAssistant) {
+      setShowAIAssistant(false);
+    }
+    console.log('Edit Document: Toggling domain editor');
+  }, [showDomainEditor, showAIAssistant]);
+
+  const handleOpenAIAssistant = useCallback(() => {
+    // Toggle AI Assistant mode instead of opening modal
+    setShowAIAssistant(!showAIAssistant);
+    // Turn off domain editor if it's on
+    if (showDomainEditor) {
+      setShowDomainEditor(false);
+    }
+    console.log('AI Assistant: Toggling chat mode');
+  }, [showAIAssistant, showDomainEditor]);
+
+  const handleViewMode = useCallback(() => {
+    // Turn off both modes to return to normal view
+    setShowDomainEditor(false);
+    setShowAIAssistant(false);
+    console.log('View Mode: Returning to normal view');
+  }, []);
+
+  // Create header component with AI Assistant active state
+  const domainBuilderHeader = (
+    <DomainBuilderHeader
+      onEditDocument={handleEditDocument}
+      onOpenAIAssistant={handleOpenAIAssistant}
+      onViewMode={handleViewMode}
+      showLeftPanel={showLeftPanel}
+      showRightPanel={showRightPanel}
+      isAIAssistantActive={showAIAssistant}
+      isEditDocumentActive={showDomainEditor}
+    />
+  );
+
   return (
-    <div className="flex-1 flex-row h-screen">
-      <div className="w-full border-b-2 border-gray-600">
+    <div className="flex flex-col h-screen max-h-screen overflow-hidden">
+      <div className="mb-2 pb-2 border-b border-gray-700">
         <FileOperations />
       </div>
-
-      <ThreePanelLayout
-        moduleOperations={modelSelector}
-        leftPanelContent={leftPanelContent}
-        middlePanelContent={middlePanelContent}
-        rightPanelContent={rightPanelContent}
-        showLeftPanel={showLeftPanel}
-        setShowLeftPanel={setShowLeftPanel}
-        showRightPanel={showRightPanel}
-        setShowRightPanel={setShowRightPanel}
-        className="h-full min-w-0 bg-background text-gray-100"
-      >
-        <></>
-      </ThreePanelLayout>
-
-
-      {/* Domain editor modal - only mounted when explicitly opened */}
-      {/* {showEditorModal && (
-        <DomainEditorModal
-          isOpen={true}
-          onClose={() => setShowEditorModal(false)}
-          moduleOperations={modelSelector}
+      <div className="flex-1 overflow-hidden bg-gray-900/60">
+        <ThreePanelLayout
           leftPanelContent={leftPanelContent}
-          middlePanelContent={middlePanelContentModal} // <-- use only builder tab in modal
+          middlePanelContent={middlePanelContent}
           rightPanelContent={rightPanelContent}
           showLeftPanel={showLeftPanel}
           setShowLeftPanel={setShowLeftPanel}
           showRightPanel={showRightPanel}
           setShowRightPanel={setShowRightPanel}
           className="h-full min-w-0 bg-background text-gray-100"
+          middlePanelHeader={domainBuilderHeader}
         />
-      )} */}
+      </div>
 
-      {/* Modals */}
-      <Modal isOpen={showGuideModal} onClose={() => setShowGuideModal(false)}>
-        <GettingStartedGuide />
-      </Modal>
+      {/* DiffModal for domain save */}
+      <DiffModal
+        isOpen={showDiffModal}
+        onClose={handleCancelSave}
+        onConfirm={handleConfirmSave}
+        oldContent={pendingSave?.oldContent || ''}
+        newContent={pendingSave?.doc.content || ''}
+        title="Save Domain to Library"
+      />
+
+      {/* Library Modal */}
       {isLibraryOpen && (
-        <div
-          className="fixed inset-0 bg-black/70 flex items-center justify-center btn-xs z-50"
-          onClick={() => setIsLibraryOpen(false)}
-        >
-          <div
-            className="bg-background rounded-lg p-4 w-[600px]"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xl font-bold text-blue-400">Document Library</h3>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleExportLibrary}
-                  className="text-xs bg-green-700 hover:bg-green-600 text-white px-3 py-1 rounded"
-                  disabled={documents?.length === 0}
-                >
-                  Export Library
-                </button>
-                <input
-                  type="file"
-                  ref={fileInputRef}
-                  onChange={handleFileSelection}
-                  accept=".json"
-                  style={{ display: 'none' }}
-                />
-                <button
-                  onClick={handleImportLibrary}
-                  className="text-xs bg-purple-600 hover:bg-purple-500 text-white px-3 py-1 rounded"
-                >
-                  <span>Import Library</span>
-                </button>
-                <button
-                  onClick={() => setIsLibraryOpen(false)}
-                  className="text-xs bg-red-600 hover:bg-red-500 text-white px-3 py-1 rounded"
-                >
-                  Close
-                </button>
-              </div>
-            </div>
-            <div className="text-sm text-gray-400 mb-2  max-h-[80vh] overflow-auto">
-              <MarkdownLibrary
-                onSelect={handleSelectFromLibrary}
-                hideExportLibraryButton={true}
-              />
-            </div>
-          </div>
-        </div>
+        <Modal isOpen={isLibraryOpen} onClose={() => setIsLibraryOpen(false)}>
+          <MarkdownLibrary
+            onSelect={handleSelectFromLibrary}
+            hideExportLibraryButton={false}
+          />
+        </Modal>
       )}
-
-      <FloatingActionButtons actions={floatingActions} />
     </div>
   );
 }
