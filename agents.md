@@ -190,6 +190,10 @@ This document explains how "agents" are structured and used in this app, and how
 - Empty/odd responses:
   - Inspect network tab/logs and the normalization logic in chat components.
   - Reduce temperature and/or simplify prompts and context.
+- **Tabs not showing default content on page load/reload:**
+  - Fixed: `ThreePanelLayout` now uses `useEffect` hooks to initialize active tab state from `defaultTab` prop when panel content changes.
+  - This ensures tabs display their default content immediately without requiring user clicks.
+  - The fix automatically syncs active tabs when navigating between modes or reloading pages.
 
 ## Tips
 - Keep prompts short, specific, and scoped; move background into the Document Panel.

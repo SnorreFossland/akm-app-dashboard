@@ -61,6 +61,34 @@ export function ModalThreePanelLayout({
     const [activeMiddleTab, setActiveMiddleTab] = useState(finalMiddle?.defaultTab || finalMiddle?.tabs?.[0]?.key || "guide");
     const [activeRightTab, setActiveRightTab] = useState(finalRight?.defaultTab || finalRight?.tabs?.[0]?.key || "help");
 
+    // Initialize active tabs from defaultTab when panel content changes
+    useEffect(() => {
+        if (finalLeft && typeof finalLeft === 'object' && 'tabs' in finalLeft) {
+            const defaultKey = finalLeft.defaultTab || (finalLeft.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveLeftTab(defaultKey);
+            }
+        }
+    }, [finalLeft]);
+
+    useEffect(() => {
+        if (finalMiddle && typeof finalMiddle === 'object' && 'tabs' in finalMiddle) {
+            const defaultKey = finalMiddle.defaultTab || (finalMiddle.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveMiddleTab(defaultKey);
+            }
+        }
+    }, [finalMiddle]);
+
+    useEffect(() => {
+        if (finalRight && typeof finalRight === 'object' && 'tabs' in finalRight) {
+            const defaultKey = finalRight.defaultTab || (finalRight.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveRightTab(defaultKey);
+            }
+        }
+    }, [finalRight]);
+
     useEffect(() => {
         setLocalShowLeft(!!showLeftPanel);
     }, [showLeftPanel]);

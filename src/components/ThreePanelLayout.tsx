@@ -137,6 +137,34 @@ export function ThreePanelLayout({
         }
     }, [rightPanelContent]);
 
+    // Initialize active tabs from defaultTab when panel content changes
+    useEffect(() => {
+        if (leftPanelContent && typeof leftPanelContent === 'object' && 'tabs' in leftPanelContent) {
+            const defaultKey = leftPanelContent.defaultTab || (leftPanelContent.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveLeftTab(defaultKey);
+            }
+        }
+    }, [leftPanelContent]);
+
+    useEffect(() => {
+        if (middlePanelContent && typeof middlePanelContent === 'object' && 'tabs' in middlePanelContent) {
+            const defaultKey = middlePanelContent.defaultTab || (middlePanelContent.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveMiddleTab(defaultKey);
+            }
+        }
+    }, [middlePanelContent]);
+
+    useEffect(() => {
+        if (rightPanelContent && typeof rightPanelContent === 'object' && 'tabs' in rightPanelContent) {
+            const defaultKey = rightPanelContent.defaultTab || (rightPanelContent.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveRightTab(defaultKey);
+            }
+        }
+    }, [rightPanelContent]);
+
     // Helper to check if panel is a tabs object
     const isPanelTabs = (panel: any): boolean => {
         return panel && typeof panel === 'object' && Array.isArray(panel.tabs);
