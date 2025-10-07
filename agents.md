@@ -7,8 +7,8 @@ This document explains how "agents" are structured and used in this app, and how
 - Primary agents:
   - **AI Chat** (`/ai-chat`): Multi-mode interface with three modes:
     - **View Mode**: Document viewing and library management with preview and metadata.
-    - **Chat Mode**: AI chat with General (basic) and Advanced (multi-model, experiments) sub-modes.
     - **Edit Mode**: Focused document editing with live preview and metadata controls.
+    - **Chat Mode**: AI chat with General (basic) and Advanced (multi-model, experiments) sub-modes.
   - **Domain Builder**: Curates domain name/description/presentation.
   - **Model Builder**: Builds Model structures based on a Metamodel similarly via the genmodel endpoint.
   - **Modelview Builder**: Produces schema-constrained model views of the model objects and relships from prompts and context.
@@ -57,29 +57,31 @@ This document explains how "agents" are structured and used in this app, and how
 - **Single-page multi-mode design:** One route (`/ai-chat`) with three modes controlled by state and URL params.
 - **Mode switching:** Uses `useAIChatMode` hook to manage mode state, sync with URL (`?mode=view|chat|edit&sub=general|advanced`), and persist to localStorage.
 - **Mode-specific layouts:** Each mode configures left/middle/right panels differently via `ThreePanelLayout`.
-- **Legacy support:** Old URLs (`/ai-chat/aiAssistant`, `/ai-chat/edit`) redirect to new mode system.
 - **Layout structure:** 
   - Uses `ThreePanelLayout` component with `middlePanelHeader` prop for mode controls
-  - `ModeHeader` component rendered in middle panel between hide panel buttons
+  - `ModeHeader` component rendered in middle panel header with mode switcher
   - `FileOperations` component at top of page above all panels
+  - Default tab initialization via lazy state initialization in `ThreePanelLayout`
 
 ### View Mode (`/ai-chat?mode=view`)
 - **Purpose:** Browse, preview, and manage document library.
-- **Left panel:** Tabs — "Domain", "Library" (document list with search/filter).
+- **Left panel:** Tabs — "Domain", "Focus Project" (shows Redux focusProject document), "Library" (document list with search/filter). Default tab: "Library".
 - **Middle panel:** Tab — "Current Document" showing the document preview with metadata display (name, type) and quick actions (Edit, Chat, Delete).
 - **Right panel:** Tab — "Document Info" displaying current document metadata (name, type, created/updated dates) and statistics (characters, words, lines).
 - **Navigation:** Click document in library to view in middle panel, action buttons to switch modes.
 - **Current document display:** Shows name and type from selected document metadata, or "Current Document" / "Markdown" as fallback when viewing unsaved content.
+- **Focus Project:** Displayed in left panel "Focus Project" tab. Set via "Focus" button in MarkdownLibrary. Stored in Redux as `focusProject` (contains id, name). Full document fetched by matching `focusProject.id` with documents array.
 
 ### Chat Mode (`/ai-chat?mode=chat`)
 - **Purpose:** AI-powered chat with document context.
-- **Sub-modes:** Toggle between "General" and "Advanced" via `ChatSubModeToggle`.
+- **Sub-modes:** General and Advanced (toggle currently hidden in UI, controlled via URL param `?sub=general|advanced`).
 - **Context controls:** Checkboxes for "Include Domain" (auto-inject domain presentation) and "Refine document" (current document refinement mode).
 
 #### General Sub-Mode (`?mode=chat&sub=general`)
-- **Left panel:** Tabs — "Domain", "Context Docs", "History".
-- **Middle panel:** Tabs — "AI Chat", "Current Document" (displays name/type from page-level state).
-- **Right panel:** Tabs — "Preview" (shows AI response with name/type from Current Document metadata), "Library".
+- **Left panel:** Tabs — "Domain" (default), "Current Document". Default tab: "Domain".
+- **Middle panel:** Single tab — "AI Chat" (no tab bar, plain JSX).
+- **Right panel:** Tabs — "Preview" (default), "Library". Default tab: "Preview".
+- **Tab initialization:** All three panels have their defaultTab content visible on page load without requiring clicks (fixed via lazy state initialization).
 - **Preview panel features:**
   - Displays document name and type at top (synchronized with Current Document tab metadata)
   - Name/type are passed from page-level `documentName`/`documentType` state
@@ -98,12 +100,13 @@ This document explains how "agents" are structured and used in this app, and how
 
 #### Advanced Sub-Mode (`?mode=chat&sub=advanced`)
 - **Left panel:** Tabs — "Domain", "Current Ontology", "Context Docs", "Additional Context".
-- **Middle panel:** Tabs — "AI Chat", "Multi-Model Compare", "Experiments".
+- **Middle panel:** Single tab — "AI Chat".
 - **Right panel:** Tabs — "Suggestions", "Analysis", "Tools".
+- **Note:** Full implementation pending. Currently accessible via URL param but UI incomplete.
 
 ### Edit Mode (`/ai-chat?mode=edit`)
 - **Purpose:** Focused document editing with live preview.
-- **Left panel:** Tabs — "Domain", "Context Docs" (default: "Domain").
+- **Left panel:** Tabs — "Domain", "Focus Project", "Context Docs". Default tab: prioritizes "Focus Project" if set, otherwise "Domain".
 - **Middle panel:** Plain JSX — Document metadata header (name/type dropdown) + TextareaAutosize for direct editing. Auto-populates document name from first line of content if empty.
 - **Right panel:** Plain JSX — Live preview showing current document name and type at top, character count, and save-to-library button.
 - **Header styling:** Orange border to indicate focused edit session.
@@ -116,23 +119,34 @@ This document explains how "agents" are structured and used in this app, and how
 - **DiffModal:** Shows line-by-line diff before saving to library, with added lines (green), removed lines (red), and unchanged lines (gray).
 
 ### Mode Components
-- **ModeHeader:** Mode switcher, ChatSubModeToggle, and close button - rendered in `middlePanelHeader` of `ThreePanelLayout`
-- **ModeSwitcher:** Three-button toggle (View/Chat/Edit) with icons
-- **ChatSubModeToggle:** Two-button toggle (General/Advanced) for chat mode
-- **useAIChatMode hook:** Manages mode state, URL sync, localStorage persistence
+- **ModeHeader:** Mode switcher rendered in `middlePanelHeader` of `ThreePanelLayout`. Contains `ModeSwitcher` component.
+- **ModeSwitcher:** Three-button toggle (View/Chat/Edit) with icons and active state styling (blue background for selected mode).
+- **ChatSubModeToggle:** Two-button toggle (General/Advanced) for chat mode — **currently hidden in UI** but functionality intact via URL params.
+- **useAIChatMode hook:** Manages mode state, URL sync (`?mode=...&sub=...`), localStorage persistence.
 - **DiffModal:** Shows git-style diff view with line-by-line changes, used when saving documents to library from edit mode.
 
-### State Management
-- **Shared state:** `contextContent`, `currentDocument`, `documents`, `domain`, `metis/models` (Redux).
-- **Mode-specific state:** View mode (selected doc), Chat mode (messages), Edit mode (name/type/preview).
-- **Persistence:** Mode and sub-mode saved to localStorage, restored on mount.
+### Focus Project Feature
+- **Purpose:** Pin a project document for easy access across all modes.
+- **Setting focus project:** Click "Focus" button (orange) in MarkdownLibrary on any document.
+- **Storage:** Saved to Redux `focusProject` state with `{ id, name, type, createdAt, updatedAt }`.
+- **Display:** 
+  - Left panel "Focus Project" tab in View/Edit modes
+  - Shows full document content by fetching from documents array using `focusProject.id`
+  - Three states: project content shown, project not found, no project set
+- **Default tab behavior:** When focus project is set, left panel defaults to "Focus Project" tab instead of "Domain".
 
-### Migration Notes
-- Old three-page structure consolidated into single page
-- Mode switching happens instantly without page reload
-- State persists across mode changes
-- URL params enable bookmarking specific modes
-- Redirect pages maintain backward compatibility
+### State Management
+- **Shared state:** `contextContent`, `currentDocument`, `documents`, `domain`, `focusProject`, `ontology` (Redux).
+- **Mode-specific state:** View mode (selected doc, projectDocument), Chat mode (messages, preview), Edit mode (name/type/preview, originalContent).
+- **Persistence:** Mode and sub-mode saved to localStorage, restored on mount.
+- **Focus project sync:** `useEffect` watches `focusProject` and `documents`, updates local `projectDocument` state when either changes.
+
+### Legacy URL Support
+- **Old URLs removed:** `/ai-chat/aiAssistant` and `/ai-chat/edit` redirect pages have been **deleted** (breaking change).
+- **Migration:** Users must update bookmarks to use new URL structure:
+  - `/ai-chat/aiAssistant` → `/ai-chat?mode=chat&sub=general`
+  - `/ai-chat/edit` → `/ai-chat?mode=edit`
+- **Rationale:** Cleaner codebase, single source of truth, URL params enable flexible state management.
 
 ## Key Endpoints
 - Gateway text generation: `POST /api/vercel-ai/generate`
@@ -190,23 +204,31 @@ This document explains how "agents" are structured and used in this app, and how
 - Empty/odd responses:
   - Inspect network tab/logs and the normalization logic in chat components.
   - Reduce temperature and/or simplify prompts and context.
+- **Tabs not showing default content:**
+  - Check that `defaultTab` values in panel configs match actual tab `key` values exactly.
+  - Verify `ThreePanelLayout` initializes `activeTab` state from `defaultTab` on mount using lazy initialization: `useState(() => defaultTab || firstTab.key)`.
+  - Ensure `useEffect` in `ThreePanelLayout` updates active tabs when panel content/defaultTab changes.
+  - Common fix: Use function-based state initialization instead of plain value: `useState(() => panelContent.defaultTab)`.
+- **Invalid markdown tags (e.g. `<rowid>`):**
+  - Sanitize markdown content before rendering with `MarkdownPreview`.
+  - Use whitelist of valid HTML tags, escape invalid tags: `<rowid>` → `&lt;rowid&gt;`.
+  - Implemented in `MarkdownPreview.tsx` via `sanitizeMarkdown()` function.
+- **Focus project not displaying:**
+  - Verify `focusProject` exists in Redux state with valid `id` field.
+  - Check that matching document exists in `documents` array.
+  - Ensure `useEffect` dependency array includes both `focusProject` and `documents`.
+  - Confirm `projectDocument` state is being set correctly.
+- **React hooks violations:**
+  - Never call hooks inside `useMemo` or other hooks.
+  - Move `useSelector` calls to parent component and pass as props.
+  - Example: `ChatModeContent` receives `ontology` as prop instead of calling `useSelector` internally.
 
 ## Tips
 - Keep prompts short, specific, and scoped; move background into the Document Panel.
 - Start with free-form generation to explore ideas, then switch to `/api/genmodel` once the target structure is clear.
 - Log payloads and map model ids carefully; mismatch can cause provider errors.
 - **ThreePanelLayout flexibility:** Pass either `{ tabs: [...], defaultTab: '...' }` for tabbed panels, or plain JSX (React.ReactNode) for single-content panels. The layout component auto-detects and renders accordingly.
-
-## Do
-- use Next.js where possible
-- use redux toolkit for state management with useLocalStore
-- use shadcn for layout components
-
-## Glossary
-- Agent: A focused UI + prompt + endpoint orchestration for a specific artifact.
-- Gateway: Provider-agnostic text generation endpoint (`/api/vercel-ai/generate`).
-- Genmodel: Schema-constrained structured generation endpoint (`/api/genmodel`).
-- Context: User-managed Markdown content injected into prompts.
-- Presentation: Human-readable markdown summary stored alongside structured output.
-- Selection sets: Named collections of graph selections (concepts/relationships) persisted to localStorage for reuse.
+- **Default tab initialization:** Use lazy state initialization for active tabs: `useState(() => panelContent.defaultTab || panelContent.tabs[0]?.key)`.
+- **Mode switching:** Use URL params for bookmarkable states, localStorage for persistence, both managed by `useAIChatMode` hook.
+- **Focus project workflow:** Set focus project in View mode library, access in Edit mode left panel for quick reference while editing other documents.
 
