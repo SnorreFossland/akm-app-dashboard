@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useIsMobile } from '@/hooks/use-mobile';
 
+const debug = false;
 export interface PanelTab {
     key: string;
     label: React.ReactNode;
@@ -96,6 +97,27 @@ export function ThreePanelLayout({
     const [activeRightTab, setActiveRightTab] = useState<string>(
         getDefaultTabKey(rightPanelContent, 'preview')
     );
+
+    // Inside the component, ensure activeTab is initialized from defaultTab:
+    const [leftActiveTab, setLeftActiveTab] = useState<string>('');
+    const [rightActiveTab, setRightActiveTab] = useState<string>('');
+
+    // Initialize active tabs from defaultTab on mount or when content changes
+    useEffect(() => {
+        if (leftPanelContent && typeof leftPanelContent === 'object' && 'tabs' in leftPanelContent) {
+            if (leftPanelContent.defaultTab && leftActiveTab === '') {
+                setLeftActiveTab(leftPanelContent.defaultTab);
+            }
+        }
+    }, [leftPanelContent, leftActiveTab]);
+
+    useEffect(() => {
+        if (rightPanelContent && typeof rightPanelContent === 'object' && 'tabs' in rightPanelContent) {
+            if (rightPanelContent.defaultTab && rightActiveTab === '') {
+                setRightActiveTab(rightPanelContent.defaultTab);
+            }
+        }
+    }, [rightPanelContent, rightActiveTab]);
 
     // Helper to check if panel is a tabs object
     const isPanelTabs = (panel: any): boolean => {
@@ -220,13 +242,13 @@ export function ThreePanelLayout({
             { key: 'guide', label: 'Getting Started', content: <GettingStartedGuide /> },
             { key: 'document', label: 'Document', content: <DocumentPanel mdContent={mdContent} setMdContent={setMdContent} setIsLibraryOpen={setIsLibraryOpen} isLibraryOpen={isLibraryOpen} panelType="middle" /> }
         ],
-        defaultTab: 'guide'
+        defaultTab: 'document'
     };
     const defaultRightPanelContent = {
         tabs: [
-            { key: 'help', label: 'Help', content: <div className="p-4"><div className="space-y-4"><div className="bg-gray-700/50 p-4 rounded-lg"><h3 className="text-lg font-semibold text-white mb-2"> Tips</h3></div></div></div> }
+            { key: 'preview', label: 'Preview', content: <div className="p-4"><div className="space-y-4"><div className="bg-gray-700/50 p-4 rounded-lg"><h3 className="text-lg font-semibold text-white mb-2"> Preview</h3></div></div></div> }
         ],
-        defaultTab: 'help'
+        defaultTab: 'preview'
     };
 
     const finalLeftPanelContent = leftPanelContent || defaultLeftPanelContent;
@@ -242,7 +264,7 @@ export function ThreePanelLayout({
     };
 
     // Add debug logging
-    console.log('ThreePanelLayout render:', {
+    if (debug) console.log('ThreePanelLayout render:', {
         hasMiddlePanelHeader: !!middlePanelHeader,
         middlePanelHeaderType: typeof middlePanelHeader,
     });

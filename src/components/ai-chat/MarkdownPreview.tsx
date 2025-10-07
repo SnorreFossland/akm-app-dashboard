@@ -13,6 +13,25 @@ interface MarkdownPreviewProps {
     variant?: 'default' | 'compact';
 }
 
+// Sanitize markdown content to prevent invalid HTML tags
+function sanitizeMarkdown(content: string): string {
+    if (!content) return '';
+
+    // Remove or escape common problematic patterns
+    return content
+        // Remove XML/HTML-like tags that aren't valid HTML (like <rowid>)
+        .replace(/<([a-z][a-z0-9]*)\b[^>]*>/gi, (match, tagName) => {
+            // List of valid HTML tags we want to keep
+            const validTags = ['a', 'abbr', 'b', 'blockquote', 'br', 'code', 'dd', 'del', 'div', 'dl', 'dt', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'ins', 'kbd', 'li', 'ol', 'p', 'pre', 'span', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul'];
+
+            if (!validTags.includes(tagName.toLowerCase())) {
+                // Escape invalid tags
+                return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+            }
+            return match;
+        });
+}
+
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 'default' }) => {
     // existing re-init on markdown change
     useLayoutEffect(() => {
@@ -43,21 +62,23 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 
     const variantClasses =
         variant === 'compact'
             ? [
-                  'condensed-prose',
-                  'prose-base leading-[1.35] tracking-normal',
-                  'p-2 max-w-full',
-                  '[&_p]:mt-[0.4rem] [&_p]:mb-[0.4rem] [&_p]:text-[16px] [&_p]:leading-[1.42]',
-                  '[&_li]:mt-[0.3rem] [&_li]:mb-[0.3rem] [&_li]:text-[16px] [&_li]:leading-[1.4]',
-                  '[&_ul]:ml-3 [&_ol]:ml-3',
-                  '[&_h1]:text-2xl [&_h1]:mt-[0.2rem] [&_h1]:mb-[0.1rem]',
-                  '[&_h2]:text-xl [&_h2]:mt-[0.2rem] [&_h2]:mb-[0.1rem]',
-                  '[&_h3]:text-lg [&_h3]:mt-[0.1rem] [&_h3]:mb-[0.1rem]',
-                  '[&_table]:text-[16px] [&_table]:leading-[1.38] [&_table]:my-[0.2rem]',
-                  '[&_th]:px-3.5 [&_th]:py-[0.4rem] [&_td]:px-3.5 [&_td]:py-[0.35rem]',
-                  '[&_code]:text-[14px] [&_code]:leading-[1.3]',
-                  '[&_blockquote]:text-[16px] [&_blockquote]:py-[0.5rem] [&_blockquote]:pl-4.5'
-              ].join(' ')
+                'condensed-prose',
+                'prose-base leading-[1.35] tracking-normal',
+                'p-2 max-w-full',
+                '[&_p]:mt-[0.4rem] [&_p]:mb-[0.4rem] [&_p]:text-[16px] [&_p]:leading-[1.42]',
+                '[&_li]:mt-[0.3rem] [&_li]:mb-[0.3rem] [&_li]:text-[16px] [&_li]:leading-[1.4]',
+                '[&_ul]:ml-3 [&_ol]:ml-3',
+                '[&_h1]:text-2xl [&_h1]:mt-[0.2rem] [&_h1]:mb-[0.1rem]',
+                '[&_h2]:text-xl [&_h2]:mt-[0.2rem] [&_h2]:mb-[0.1rem]',
+                '[&_h3]:text-lg [&_h3]:mt-[0.1rem] [&_h3]:mb-[0.1rem]',
+                '[&_table]:text-[16px] [&_table]:leading-[1.38] [&_table]:my-[0.2rem]',
+                '[&_th]:px-3.5 [&_th]:py-[0.4rem] [&_td]:px-3.5 [&_td]:py-[0.35rem]',
+                '[&_code]:text-[14px] [&_code]:leading-[1.3]',
+                '[&_blockquote]:text-[16px] [&_blockquote]:py-[0.5rem] [&_blockquote]:pl-4.5'
+            ].join(' ')
             : 'condensed-prose p-4 max-w-[600px] mx-auto leading-tight';
+
+    const sanitizedContent = sanitizeMarkdown(mdPreview);
 
     return (
         <div className={`${baseClasses} ${variantClasses}`}>
@@ -93,7 +114,7 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 
                     }
                 }}
             >
-                {cleanedMdPreview}
+                {sanitizedContent}
             </ReactMarkdown>
         </div>
     );

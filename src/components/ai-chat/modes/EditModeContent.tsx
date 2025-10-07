@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { DocumentMetadataHeader } from '@/components/ai-chat/DocumentMetadataHeader';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import { Button } from '@/components/ui/button';
 import TextareaAutosize from 'react-textarea-autosize';
 
@@ -20,97 +21,188 @@ interface EditModeContentProps {
     previewContent: string;
     setPreviewContent: (content: string) => void;
     onSaveToLibrary: () => void;
+    domain?: { presentation?: string } | null;
+    contextContent?: string;
+    setContextContent?: (content: string) => void;
 }
 
-export const EditModeMiddlePanel = ({
+function EditModeLeftPanel({
+    domain,
+    contextContent,
+    setContextContent,
+    isLibraryOpen,
+    libraryTarget,
+    openLibraryFor,
+    closeLibrary,
+}: {
+    domain?: { presentation?: string } | null;
+    contextContent?: string;
+    setContextContent?: (content: string) => void;
+    isLibraryOpen: boolean;
+    libraryTarget: 'context' | 'document' | null;
+    openLibraryFor: (target: 'context' | 'document') => void;
+    closeLibrary: () => void;
+}) {
+    return {
+        tabs: [
+            {
+                key: 'domain',
+                label: 'Domain',
+                content: (
+                    <div className="h-full overflow-auto px-2 py-2">
+                        {domain?.presentation ? (
+                            <MarkdownPreview mdPreview={domain.presentation} variant="compact" />
+                        ) : (
+                            <div className="text-sm text-gray-400">No domain presentation available.</div>
+                        )}
+                    </div>
+                ),
+            },
+            {
+                key: 'context',
+                label: 'Context Docs',
+                content: (
+                    <DocumentPanel
+                        mdContent={contextContent || ''}
+                        setMdContent={setContextContent || (() => { })}
+                        setIsLibraryOpen={(open) => {
+                            if (open) openLibraryFor('context');
+                            else closeLibrary();
+                        }}
+                        isLibraryOpen={isLibraryOpen && libraryTarget === 'context'}
+                        panelType="left"
+                    />
+                ),
+            },
+        ],
+        defaultTab: domain?.presentation ? 'domain' : 'context',
+    };
+}
+
+function EditModeMiddlePanel({
     documentName,
     setDocumentName,
     documentType,
     setDocumentType,
     currentDocument,
     handleSetCurrentDocument,
-}: Omit<EditModeContentProps, 'onSaveToLibrary' | 'isLibraryOpen' | 'libraryTarget' | 'openLibraryFor' | 'closeLibrary' | 'previewContent' | 'setPreviewContent'>) => {
-    const [localContent, setLocalContent] = useState(currentDocument);
-
-    useEffect(() => {
-        setLocalContent(currentDocument);
-    }, [currentDocument]);
-
-    const handleContentChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-        const newContent = e.target.value;
-        setLocalContent(newContent);
-        handleSetCurrentDocument(newContent);
-    };
-
+}: {
+    documentName: string;
+    setDocumentName: (name: string) => void;
+    documentType: string;
+    setDocumentType: (type: string) => void;
+    currentDocument: string;
+    handleSetCurrentDocument: (content: string) => void;
+}) {
     return (
-        <div className="flex flex-col bg-background rounded-lg h-full overflow-hidden">
+        <div className="h-full flex flex-col overflow-hidden border-l-4 border-r-4 border-orange-600">
+            {/* Document Metadata Header */}
             <DocumentMetadataHeader
                 documentName={documentName}
                 setDocumentName={setDocumentName}
                 documentType={documentType}
                 setDocumentType={setDocumentType}
-                currentDocument={localContent}
+                currentDocument={currentDocument}
             />
-            <div className="flex-grow overflow-hidden p-4">
+
+            {/* Editable textarea */}
+            <div className="flex-1 overflow-hidden">
                 <TextareaAutosize
-                    value={localContent}
-                    onChange={handleContentChange}
-                    className="w-full h-full bg-gray-900 text-gray-100 p-4 rounded border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
-                    placeholder="Start typing your document..."
+                    value={currentDocument || ''}
+                    onChange={(e) => handleSetCurrentDocument(e.target.value)}
+                    className="w-full h-full p-4 bg-gray-900 text-gray-200 resize-none focus:outline-none font-mono text-sm"
+                    placeholder="Start typing your document here..."
                     minRows={10}
                 />
             </div>
         </div>
     );
-};
+}
 
 EditModeMiddlePanel.displayName = 'EditModeMiddlePanel';
 
-export const EditModeRightPanel = ({
-    currentDocument,
+function EditModeRightPanel({
+    documentName,
+    documentType,
+    previewContent,
     onSaveToLibrary,
 }: {
-    currentDocument: string;
+    documentName: string;
+    documentType: string;
+    previewContent: string;
     onSaveToLibrary: () => void;
-}) => {
-    const [displayContent, setDisplayContent] = useState(currentDocument);
-
-    useEffect(() => {
-        setDisplayContent(currentDocument);
-    }, [currentDocument]);
+}) {
+    const displayContent = previewContent || '';
 
     return (
-        <div className="flex flex-col h-full bg-background overflow-hidden">
-            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-gray-800/50">
-                <h3 className="text-sm font-semibold text-gray-300">
-                    Live Preview ({displayContent.length} chars)
-                </h3>
-                <Button
-                    onClick={onSaveToLibrary}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700 text-white"
-                >
-                    Save to Library
-                </Button>
+        <div className="h-full flex flex-col overflow-hidden border-l-4 border-orange-600">
+            {/* Document Header with Name and Type */}
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">
+                <div className="flex flex-col gap-1">
+                    <h3 className="text-base font-semibold text-gray-200">
+                        {documentName || 'Untitled Document'}
+                    </h3>
+                    <span className="text-xs text-gray-400">
+                        {documentType || 'Markdown'}
+                    </span>
+                </div>
             </div>
-            <div className="flex-1 overflow-auto px-4 py-4">
-                <MarkdownPreview
-                    mdPreview={displayContent}
-                    variant="default"
-                />
+
+            {/* Character count and save button */}
+            <div className="border-b border-gray-700">
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-800/30">
+                    <span className="text-xs text-gray-400">
+                        {displayContent.length} characters
+                    </span>
+                    <button
+                        onClick={onSaveToLibrary}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 hover:bg-green-500 text-white rounded transition-colors"
+                    >
+                        Save to Library
+                    </button>
+                </div>
+            </div>
+
+            {/* Preview content - key prop forces re-render when content changes */}
+            <div key={displayContent.length} className="flex-1 overflow-auto px-4 py-4">
+                <MarkdownPreview mdPreview={displayContent} variant="default" />
             </div>
         </div>
     );
-};
+}
 
 EditModeRightPanel.displayName = 'EditModeRightPanel';
 
-export function EditModeContent(props: EditModeContentProps) {
+export function EditModeContent(params: EditModeContentProps) {
+    const editLeftPanel = EditModeLeftPanel({
+        domain: params.domain,
+        contextContent: params.contextContent,
+        setContextContent: params.setContextContent,
+        isLibraryOpen: params.isLibraryOpen,
+        libraryTarget: params.libraryTarget,
+        openLibraryFor: params.openLibraryFor,
+        closeLibrary: params.closeLibrary,
+    });
+
     return {
-        middlePanel: <EditModeMiddlePanel {...props} />,
-        rightPanel: <EditModeRightPanel
-            currentDocument={props.currentDocument}
-            onSaveToLibrary={props.onSaveToLibrary}
-        />,
+        leftPanel: editLeftPanel,
+        middlePanel: (
+            <EditModeMiddlePanel
+                documentName={params.documentName}
+                setDocumentName={params.setDocumentName}
+                documentType={params.documentType}
+                setDocumentType={params.setDocumentType}
+                currentDocument={params.currentDocument}
+                handleSetCurrentDocument={params.handleSetCurrentDocument}
+            />
+        ),
+        rightPanel: (
+            <EditModeRightPanel
+                documentName={params.documentName}
+                documentType={params.documentType}
+                previewContent={params.currentDocument}
+                onSaveToLibrary={params.onSaveToLibrary}
+            />
+        ),
     };
 }

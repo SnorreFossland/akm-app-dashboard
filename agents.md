@@ -5,16 +5,15 @@ This document explains how "agents" are structured and used in this app, and how
 ## Overview
 - Purpose: Task-focused UIs that orchestrate LLMs to produce structured artifacts (domain writeups, ontologies, model views, IR/TV specs, prompts) with shared chat tooling.
 - Primary agents:
-  - **Ontology Builder** (`/ontology-builder`): Simplified agent with Domain Description + Project Plan tabs (left), Current Ontology chat (middle), and ontology preview (right). Floating "Open AI Assistant" button navigates to full-featured agent.
-  - **Ontology Builder AI Assistant** (`/ontology-builder/aiAssistant`): Full-featured agent with Current Domain, Current Ontology, Add. Context tabs (left), AI Ontology Chat (middle), and Suggested Ontology with graph controls (right). Supports multi-select, filters, graph modals, and selection sets.
-  - Domain Builder: Curates domain name/description/presentation and supporting docs.
-  - Modelview Builder: Produces schema-constrained model views from prompts and context.
-  - IRTV Builder: Builds IR/TV structures similarly via the genmodel endpoint.
-  - Prompt Builder: Iterates on reusable prompts/templates.
   - **AI Chat** (`/ai-chat`): Multi-mode interface with three modes:
     - **View Mode**: Document viewing and library management with preview and metadata.
     - **Chat Mode**: AI chat with General (basic) and Advanced (multi-model, experiments) sub-modes.
     - **Edit Mode**: Focused document editing with live preview and metadata controls.
+  - **Domain Builder**: Curates domain name/description/presentation.
+  - **Model Builder**: Builds Model structures based on a Metamodel similarly via the genmodel endpoint.
+  - **Modelview Builder**: Produces schema-constrained model views of the model objects and relships from prompts and context.
+  - **Ontology Builder** (`/ontology-builder`): Full-featured agent with Current Domain, Current Ontology, Add. Context tabs (left), AI Ontology Chat (middle), and Suggested Ontology with graph controls (right). Supports multi-select, filters, graph modals, and selection sets.
+  - Prompt Builder: Iterates on reusable prompts/templates.
 
 ## Architecture
 - UI layer (pages): Each agent has its own Next.js route under `src/app/<agent>/page.tsx` to assemble panels, wire state, and mount the agent component(s).
@@ -67,18 +66,35 @@ This document explains how "agents" are structured and used in this app, and how
 ### View Mode (`/ai-chat?mode=view`)
 - **Purpose:** Browse, preview, and manage document library.
 - **Left panel:** Tabs — "Domain", "Library" (document list with search/filter).
-- **Middle panel:** Plain JSX — Current document preview with metadata display and quick actions (Edit, Chat, Delete).
-- **Right panel:** Tabs — "Preview" (unsaved edits from other modes), "Document Info" (metadata, stats).
+- **Middle panel:** Tab — "Current Document" showing the document preview with metadata display (name, type) and quick actions (Edit, Chat, Delete).
+- **Right panel:** Tab — "Document Info" displaying current document metadata (name, type, created/updated dates) and statistics (characters, words, lines).
 - **Navigation:** Click document in library to view in middle panel, action buttons to switch modes.
+- **Current document display:** Shows name and type from selected document metadata, or "Current Document" / "Markdown" as fallback when viewing unsaved content.
 
 ### Chat Mode (`/ai-chat?mode=chat`)
 - **Purpose:** AI-powered chat with document context.
 - **Sub-modes:** Toggle between "General" and "Advanced" via `ChatSubModeToggle`.
+- **Context controls:** Checkboxes for "Include Domain" (auto-inject domain presentation) and "Refine document" (current document refinement mode).
 
 #### General Sub-Mode (`?mode=chat&sub=general`)
 - **Left panel:** Tabs — "Domain", "Context Docs", "History".
-- **Middle panel:** Tabs — "AI Chat", "Current Document".
-- **Right panel:** Tabs — "Preview", "Library".
+- **Middle panel:** Tabs — "AI Chat", "Current Document" (displays name/type from page-level state).
+- **Right panel:** Tabs — "Preview" (shows AI response with name/type from Current Document metadata), "Library".
+- **Preview panel features:**
+  - Displays document name and type at top (synchronized with Current Document tab metadata)
+  - Name/type are passed from page-level `documentName`/`documentType` state
+  - When "Save to Library" is clicked, saves with the current name/type values
+  - Edit button to modify preview content
+  - Clear button to remove preview
+  - Save to Library button with DiffModal confirmation
+- **Save workflow:** 
+  1. User edits name/type in Current Document tab metadata header
+  2. Changes update page-level `documentName`/`documentType` state
+  3. Preview panel displays these same values
+  4. "Save to Library" creates document with current name/type
+  5. DiffModal shows confirmation
+  6. After save, switches to View Mode and selects the saved document
+- **Context injection:** Domain presentation automatically included when "Include Domain" is checked (default: true).
 
 #### Advanced Sub-Mode (`?mode=chat&sub=advanced`)
 - **Left panel:** Tabs — "Domain", "Current Ontology", "Context Docs", "Additional Context".
@@ -87,12 +103,16 @@ This document explains how "agents" are structured and used in this app, and how
 
 ### Edit Mode (`/ai-chat?mode=edit`)
 - **Purpose:** Focused document editing with live preview.
-- **Left panel:** Tabs — "Domain", "Context Docs".
-- **Middle panel:** Plain JSX — Document metadata header (name/type inputs) + TextareaAutosize for direct editing.
-- **Right panel:** Plain JSX — Live preview with character count and save-to-library button.
+- **Left panel:** Tabs — "Domain", "Context Docs" (default: "Domain").
+- **Middle panel:** Plain JSX — Document metadata header (name/type dropdown) + TextareaAutosize for direct editing. Auto-populates document name from first line of content if empty.
+- **Right panel:** Plain JSX — Live preview showing current document name and type at top, character count, and save-to-library button.
 - **Header styling:** Orange border to indicate focused edit session.
 - **State management:** Local state for `documentName`, `documentType`, `previewContent`, and `currentDocument`.
 - **Live preview:** Updates in real-time as you type using local state in `EditModeMiddlePanel`.
+- **Live preview display:** Right panel shows the name and type from the middle panel's metadata inputs, reflecting the current document being edited.
+- **Document name auto-fill:** When `documentName` is empty, automatically extracts and uses the first line of `currentDocument` (strips markdown heading markers).
+- **Document type selector:** Dropdown with predefined types (markdown, project-plan, roadmap, domain, prompt, specification, requirements).
+- **Save functionality:** When "Save to Library" is clicked, the `handleSaveToLibrary` function in `page.tsx` creates a `MarkdownDocument` object using the current `documentName`, `documentType`, and `currentDocument` content, then shows the DiffModal for confirmation before saving to Redux store.
 - **DiffModal:** Shows line-by-line diff before saving to library, with added lines (green), removed lines (red), and unchanged lines (gray).
 
 ### Mode Components
@@ -103,7 +123,7 @@ This document explains how "agents" are structured and used in this app, and how
 - **DiffModal:** Shows git-style diff view with line-by-line changes, used when saving documents to library from edit mode.
 
 ### State Management
-- **Shared state:** `contextContent`, `currentDocument`, `documents`, `domain` (Redux).
+- **Shared state:** `contextContent`, `currentDocument`, `documents`, `domain`, `metis/models` (Redux).
 - **Mode-specific state:** View mode (selected doc), Chat mode (messages), Edit mode (name/type/preview).
 - **Persistence:** Mode and sub-mode saved to localStorage, restored on mount.
 

@@ -1,56 +1,78 @@
 'use client';
 
-import { documentTemplates } from '@/components/ai-chat/DocumentTemplateSelector';
+import React, { useEffect } from 'react';
 
 interface DocumentMetadataHeaderProps {
     documentName: string;
     setDocumentName: (name: string) => void;
     documentType: string;
     setDocumentType: (type: string) => void;
-    currentDocument?: string;
+    currentDocument: string;
 }
+
+// Document type options - shared with MarkdownLibrary
+const documentTypeOptions = [
+    'markdown',
+    'project-plan',
+    'roadmap',
+    'domain',
+    'prompt',
+    'specification',
+    'requirements',
+];
 
 export function DocumentMetadataHeader({
     documentName,
     setDocumentName,
     documentType,
     setDocumentType,
-    currentDocument = '',
+    currentDocument,
 }: DocumentMetadataHeaderProps) {
-    const getPlaceholder = () => {
+    // Auto-populate document name from first line if empty
+    useEffect(() => {
         if (!documentName && currentDocument) {
-            const firstLine = currentDocument.split('\n')[0] || '';
-            const cleanName = firstLine.replace(/^[#\-*>`_]+\s*/, '').replace(/[^a-zA-Z0-9 ]/g, ' ').trim();
-            return cleanName || 'Enter document name...';
+            const firstLine = currentDocument.split('\n')[0].trim();
+            // Remove markdown heading markers (# ## ### etc)
+            const extractedName = firstLine.replace(/^#+\s*/, '').trim();
+            if (extractedName) {
+                setDocumentName(extractedName);
+            }
         }
-        return 'Enter document name...';
-    };
+    }, [currentDocument, documentName, setDocumentName]);
 
     return (
-        <div className="flex gap-4 px-4 py-3 border-b border-gray-700 bg-gray-800/50">
-            <div className="flex-1">
-                <label className="block text-[10px] text-gray-400 mb-1">Document Name</label>
-                <input
-                    type="text"
-                    value={documentName}
-                    onChange={(e) => setDocumentName(e.target.value)}
-                    placeholder={getPlaceholder()}
-                    className="w-full px-3 py-1.5 text-sm bg-gray-900 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
-                />
+        <div className="flex flex-col gap-2 px-4 py-3 border-b border-gray-700 bg-gray-800/50">
+            {/* Name and Type on same line */}
+            <div className="flex items-center gap-3">
+                <div className="flex-1 min-w-0">
+                    <label className="block text-xs text-gray-400 mb-1">Document Name</label>
+                    <input
+                        type="text"
+                        value={documentName}
+                        onChange={(e) => setDocumentName(e.target.value)}
+                        className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
+                        placeholder="Document name (auto-filled from first line)"
+                    />
+                </div>
+                <div className="w-48">
+                    <label className="block text-xs text-gray-400 mb-1">Type</label>
+                    <select
+                        value={documentType}
+                        onChange={(e) => setDocumentType(e.target.value)}
+                        className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
+                    >
+                        {documentTypeOptions.map((type) => (
+                            <option key={type} value={type}>
+                                {type.charAt(0).toUpperCase() + type.slice(1)}
+                            </option>
+                        ))}
+                    </select>
+                </div>
             </div>
-            <div className="w-52">
-                <label className="block text-[10px] text-gray-400 mb-1">Document Type</label>
-                <select
-                    value={documentType}
-                    onChange={(e) => setDocumentType(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm bg-gray-900 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
-                >
-                    {documentTemplates.map((template) => (
-                        <option key={template.type} value={template.type}>
-                            {template.name}
-                        </option>
-                    ))}
-                </select>
+
+            {/* Character count */}
+            <div className="text-xs text-gray-400">
+                {currentDocument?.length || 0} characters
             </div>
         </div>
     );

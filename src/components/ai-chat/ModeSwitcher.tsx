@@ -9,27 +9,23 @@ interface ModeSwitcherProps {
     className?: string;
 }
 
-const modeButtons: Array<{ mode: AIChatMode; label: string; icon: typeof Eye }> = [
-    { mode: 'view', label: 'View', icon: Eye },
-    { mode: 'chat', label: 'Chat', icon: MessageSquare },
-    { mode: 'edit', label: 'Edit', icon: Edit },
-];
-
 export function ModeSwitcher({ mode, onModeChange, className = '' }: ModeSwitcherProps) {
+    const modes: Array<{ value: AIChatMode; label: string; icon: React.ComponentType<{ className?: string }> }> = [
+        { value: 'view', label: 'View', icon: Eye },
+        { value: 'edit', label: 'Edit', icon: Edit },
+        { value: 'chat', label: 'Chat', icon: MessageSquare },
+    ];
+
     return (
         <div className={`flex items-center gap-1 bg-gray-800/50 rounded-md p-1 ${className}`}>
-            {modeButtons.map(({ mode: buttonMode, label, icon: Icon }) => (
+            {modes.map(({ value: buttonMode, label, icon: Icon }) => (
                 <button
                     key={buttonMode}
                     onClick={() => onModeChange(buttonMode)}
-                    className={`
-            flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors
-            ${mode === buttonMode
-                            ? 'bg-blue-600 text-white shadow-sm'
-                            : 'text-gray-300 hover:text-white hover:bg-gray-700/50'
-                        }
-          `}
-                    aria-label={`Switch to ${label} mode`}
+                    className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${mode === buttonMode
+                            ? 'bg-blue-600 text-white'
+                            : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                        }`}
                     aria-pressed={mode === buttonMode}
                 >
                     <Icon className="w-4 h-4" />

@@ -69,6 +69,9 @@ export interface ChatComponentProps {
     setIsMobile?: (isMobile: boolean) => void; // Add this line to the destructuring
     gettingStartedGuide: React.ReactNode;
     guide?: React.ReactNode;
+    includeDomainContext?: boolean;
+    setIncludeDomainContext?: (include: boolean) => void;
+    onSavePreviewToLibrary?: () => void; // Add callback for saving preview
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -108,12 +111,17 @@ export default function ChatComponent({
     setCurrentMessages,
     gettingStartedGuide,
     guide,
-    isMobile = false, // Default to false if not provided
-    setIsMobile
+    isMobile = false,
+    setIsMobile,
+    includeDomainContext = false,
+    setIncludeDomainContext,
+    onSavePreviewToLibrary
 }: ChatComponentProps) {
     const dispatch = useDispatch();
 
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
+    const domain = useSelector((state: RootState) => state.modelUniverse?.phData?.domain);
+
     // Get messages from Redux instead of local state
     const messages = useSelector((state: RootState) => state.chat?.currentMessages ?? []); // safer
     const [isLoading, setIsLoading] = useState(false);
@@ -146,6 +154,13 @@ export default function ChatComponent({
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
+
+    // Debug: Log pathname to check
+    useEffect(() => {
+        console.log('Current pathname:', pathname);
+        console.log('Should show controls:', pathname.startsWith('/ai-chat'));
+    }, [pathname]);
+
     // Add right after your state definitions
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
     const [selectedCategory, setSelectedCategory] = useState<string>('Personal');
@@ -293,8 +308,6 @@ Do not use its contents as contextual input for other questions--I want it impro
 
         // This runs once after mount to set initial size
         if (containerRef.current) {
-            const containerHeight = containerRef.current.offsetHeight;
-            // Set initial top panel to fill most of the container (minus space for input)
             const initialTopHeight = Math.floor(containerHeight * 0.5);
             setTopHeight(initialTopHeight);
         }
@@ -640,9 +653,14 @@ Do not use its contents as contextual input for other questions--I want it impro
             let finalPromptText = promptText;
 
             // Add context section with more explicit formatting
-            if (mdContent?.trim() || currentDocument?.trim()) {
+            if (mdContent?.trim() || currentDocument?.trim() || (includeDomainContext && domain?.presentation)) {
                 // Add a distinctive marker that stands out to the AI
                 finalPromptText += '\n\n=== DOMAIN AND CONTEXT INFORMATION ===\n';
+
+                // Add domain presentation if checkbox is checked
+                if (includeDomainContext && domain?.presentation) {
+                    finalPromptText += `\n## DOMAIN PRESENTATION:\n${domain.presentation}\n\n`;
+                }
 
                 // Add current document if it exists with clear domain marker
                 if (currentDocument?.trim()) {
@@ -762,7 +780,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         } finally {
             retryInProgress.current = false;
         }
-    }, [selectedModel, dispatch, systemPrompt, mdContent, currentDocument]);
+    }, [selectedModel, dispatch, systemPrompt, mdContent, currentDocument, docRefine, includeDomainContext, domain]);
 
     // Update handleSubmit to use Redux actions
     const handleSubmit = async (e: React.FormEvent) => {
@@ -805,6 +823,23 @@ Do not use its contents as contextual input for other questions--I want it impro
                 console.error('Failed to copy text: ', err);
             });
     };
+
+    // Add handler to save message to library
+    const handleSaveToLibrary = useCallback((content: string) => {
+        const timestamp = new Date().toISOString().split('T')[0];
+        const newDocument = {
+            id: `ai-response-${Date.now()}`,
+            name: `AI Response ${timestamp}`,
+            type: 'ai-response',
+            content: content,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+        };
+
+        dispatch(saveMarkdownDocument(newDocument));
+        setStatusMsg(`Saved to library as "${newDocument.name}"`);
+        setTimeout(() => setStatusMsg(''), 3000);
+    }, [dispatch]);
 
     // Add this function for the thinking animation
     const ThinkingAnimation = () => {
@@ -872,6 +907,15 @@ Do not use its contents as contextual input for other questions--I want it impro
     const handleSystemPromptClick = () => {
         setIsSystemPromptOpen(true);
     };
+
+    // Debug logging for props on mount
+    useEffect(() => {
+        console.log('ChatComponent mounted with props:', {
+            includeDomainContext,
+            hasSetIncludeDomainContext: !!setIncludeDomainContext,
+            domainPresentation: domain?.presentation?.substring(0, 50)
+        });
+    }, [includeDomainContext, setIncludeDomainContext, domain]);
 
     return (
         <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
@@ -991,22 +1035,14 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                 {message.role === 'assistant' && (
                                                     <>
                                                         {/* Add Save to Library button */}
-                                                        {/* <button
-                                                        title="Save to Library"
-                                                        onClick={() => handleSaveToLibrary(message.content)}
-                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex items-center gap-1`}
-                                                    >
-
-                                                        <BookmarkPlus className="h-4 w-4" />
-                                                    </button>
-
-                                                    <button
-                                                        title="Save to File"
-                                                        onClick={() => handleSaveToFile(message.content)}
-                                                        className={`text-xs ms-2 ${statusMsg === '' ? 'text-yellow-500 hover:text-yellow-300' : 'text-gray-400'} flex items-center gap-1`}
-                                                    >
-                                                        <Save className="h-4 w-4" />
-                                                    </button> */}
+                                                        <button
+                                                            onClick={() => handleSaveToLibrary(message.content)}
+                                                            className="ms-2 text-xs text-green-400 hover:text-green-200 flex items-center gap-1"
+                                                            title="Save to Library"
+                                                        >
+                                                            <BookmarkPlus className="h-4 w-4" />
+                                                            Save
+                                                        </button>
                                                         <button
                                                             onClick={() => handleCopyMessage(message.content, index)}
                                                             className="ms-2 text-xs text-gray-400 hover:text-gray-200"
@@ -1047,7 +1083,14 @@ Do not use its contents as contextual input for other questions--I want it impro
                                         <div className="flex items-center gap-2 mt-2 ml-auto rounded-md p-2">
                                             {message.role === 'assistant' && (
                                                 <>
-                                                    {/* Add Save to Library button */}
+                                                    <button
+                                                        onClick={() => handleSaveToLibrary(message.content)}
+                                                        className="ms-2 text-xs text-green-400 hover:text-green-200 flex items-center gap-1"
+                                                        title="Save to Library"
+                                                    >
+                                                        <BookmarkPlus className="h-4 w-4" />
+                                                        Save
+                                                    </button>
                                                     <button
                                                         onClick={() => handleCopyMessage(message.content, index)}
                                                         className="ms-2 text-xs text-gray-400 hover:text-gray-200"
@@ -1071,7 +1114,6 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
                                                         Show Preview
-                                                        {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                     </button>
                                                 </>
                                             )}
@@ -1157,11 +1199,11 @@ Do not use its contents as contextual input for other questions--I want it impro
             <div className="relative bottom-0 left-0 right-0 bg-popover pb-safe mt-1 rounded-lg z-10 mb-5">
                 {/* Input area always at the bottom */}
                 <div className={`${isMobile ? 'fixed bottom-5 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
-                    {pathname === '/ai-chat/aiAssistant' &&
+                    {pathname.startsWith('/ai-chat') && (
                         <div className="flex items-center justify-between p-2 min-w-0">
                             {/* button row above the chat */}
                             <div className="flex items-center gap-2">
-                                <button
+                                {/* <button
                                     type="button"
                                     onClick={handleAddMD}
                                     className={`p-2 flex items-center gap-2 hover:text-gray-300 ${mdContent ? 'text-green-500' : 'text-gray-500'}`}
@@ -1169,7 +1211,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     title="Add a local file to be refined."
                                 >
                                     <FileText className="w-5 h-5" /> {statusMsg.includes('Loaded') ? (mdContent ? 'File Loaded' : 'Load a file') : 'Load a file'}
-                                </button>
+                                </button> */}
                                 <input
                                     ref={mdFileInputRef}
                                     type="file"
@@ -1178,37 +1220,67 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     className="hidden"
                                     onChange={handleMDFileSelect}
                                 />
-                                {currentDocument && (
-                                    <label className="flex items-center gap-2 cursor-pointer">
-                                        <input
-                                            type="checkbox"
-                                            checked={docRefine && !currentDocument ? false : docRefine}
-                                            disabled={!currentDocument || isLoading}
-                                            onChange={() => {
-                                                if (!currentDocument) {
-                                                    setDocRefine(true);
-                                                    setInput('');
-                                                } else {
-                                                    const newRefineState = !docRefine;
-                                                    setDocRefine(newRefineState);
-                                                    // setInput(newRefineState ? refinePrompt : '');
-                                                }
-                                            }}
-                                            className="sr-only" // Hide default checkbox but keep it accessible
-                                        />
-                                        <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                                            {docRefine && mdContent && (
-                                                <div className="h-2 w-2 bg-white rounded-full"></div>
-                                            )}
-                                        </div>
-                                        <span className="text-gray-500">{currentDocument ? "Refine document" : "No document in the left panel"}</span>
-                                    </label>
-                                )}
+
+                                {/* Include Domain Context checkbox */}
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    Context: 
+                                    <input
+                                        type="checkbox"
+                                        checked={includeDomainContext}
+                                        disabled={isLoading || !setIncludeDomainContext}
+                                        onChange={(e) => {
+                                            console.log('Checkbox onChange event:', {
+                                                checked: e.target.checked,
+                                                currentValue: includeDomainContext,
+                                                hasSetFunction: !!setIncludeDomainContext
+                                            });
+                                            if (setIncludeDomainContext) {
+                                                const newValue = e.target.checked;
+                                                console.log('Calling setIncludeDomainContext with:', newValue);
+                                                setIncludeDomainContext(newValue);
+                                            } else {
+                                                console.error('setIncludeDomainContext is not defined! Props:', {
+                                                    includeDomainContext,
+                                                    hasSetFunction: !!setIncludeDomainContext
+                                                });
+                                            }
+                                        }}
+                                        className="sr-only"
+                                    />
+                                    <div className={`h-5 w-5 border ${includeDomainContext ? 'bg-green-500 border-green-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                        {includeDomainContext && (
+                                            <div className="h-2 w-2 bg-white rounded-full"></div>
+                                        )}
+                                    </div>
+                                    <span className={`text-gray-500 ${!setIncludeDomainContext ? 'opacity-50' : ''}`}>
+                                        Include Domain {!setIncludeDomainContext && '(not wired)'}
+                                    </span>
+                                </label>
+
+                                {/* Refine document checkbox */}
+                                <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        checked={docRefine}
+                                        disabled={!currentDocument || isLoading}
+                                        onChange={() => {
+                                            const newRefineState = !docRefine;
+                                            setDocRefine(newRefineState);
+                                        }}
+                                        className="sr-only"
+                                    />
+                                    <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                        {docRefine && currentDocument && (
+                                            <div className="h-2 w-2 bg-white rounded-full"></div>
+                                        )}
+                                    </div>
+                                    <span className="text-gray-500">{currentDocument ? "Refine current doc." : "No document"}</span>
+                                </label>
                             </div>
 
                             <div className="flex items-center gap-2">
                                 {/* Template selection */}
-                                {currentDocument && docRefine &&
+                                {currentDocument && docRefine && (
                                     <div className="flex items-center gap-2">
                                         <select
                                             title="Select a style for the document"
@@ -1217,7 +1289,6 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                 const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
                                                 if (selectedTemplate) {
                                                     setInput(selectedTemplate);
-                                                    // setDocRefine(true);
                                                 }
                                             }}
                                             disabled={isLoading || !currentDocument}
@@ -1228,7 +1299,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                             ))}
                                         </select>
                                     </div>
-                                }
+                                )}
                                 {/* Template dropdown for prompt templates */}
                                 <div className="flex items-center gap-2">
                                     <div className="relative">
@@ -1314,7 +1385,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 </div>
                             </div>
                         </div>
-                    }
+                    )}
                     {pathname === '/prompt-builder' &&
                         <div className="flex items-center justify-between p-2">
                             {/* button row above the chat */}
@@ -1379,134 +1450,117 @@ Don't include explanations, next steps or examples at this stage.
                     <div className="flex items-center gap-2"></div>
 
                     {/* START FORM */}
-                    {pathname !== '/ai-chat' &&
-                        <form onSubmit={handleSubmit} className="pt-1 px-2 pb-4 bg-popover rounded-lg min-w-0 w-full">
-                            {/* Add placeholder jump buttons */}
-                            {templatePlaceholders.length > 0 && (
-                                <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                                    <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                                    {templatePlaceholders.map((placeholder, idx) => (
-                                        <button
-                                            key={idx}
-                                            type="button" // Add this to prevent form submission
-                                            onClick={() => selectTemplatePlaceholder(idx)}
-                                            className={buttonAccent}
-                                        >
-                                            {placeholder.text.length > 50
-                                                ? `${placeholder.text.substring(0, 49)}...`
-                                                : placeholder.text}
-                                        </button>
-                                    ))}
-                                </div>
-                            )}
-                            <TextareaAutosize
-                                ref={textareaRef}
-                                value={input || ''}
-                                onChange={(e) => setInput(e.target.value)}
-                                onKeyDown={(e) => {
-                                    console.log('Key pressed:', e.key, 'shiftKey:', e.shiftKey); // Add this
-                                    if (e.key === 'Enter' && !e.shiftKey) {
-                                        // console.log('Enter pressed without shift - should submit'); // Add this
-                                        const now = Date.now();
-                                        // Use a custom property on the event target to track the last Enter key time
-                                        const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                                        if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                            e.preventDefault();
-                                            // If two returns occur within 2 seconds, submit the form
-                                            handleSubmit(e);
-                                            textarea.lastEnterTime = 0;
-                                        } else {
-                                            // Set the last enter time and allow the default new line insertion
-                                            textarea.lastEnterTime = now;
-                                        }
-                                    }
-
-                                    // Add tab key navigation for placeholders
-                                    if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                                        e.preventDefault(); // Prevent default tab behavior
-
-                                        // Get current cursor position
-                                        const cursorPos = e.currentTarget.selectionStart;
-
-                                        // Find the next placeholder after cursor position
-                                        let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-
-                                        // If no next placeholder, loop back to the first one
-                                        if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                            nextPlaceholder = templatePlaceholders[0];
-                                        }
-
-                                        if (nextPlaceholder) {
-                                            selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                                        }
-                                    }
-                                }}
-                                placeholder="Ask anything …"
-                                className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                minRows={6}
-                                maxRows={12}
-                                disabled={isLoading}
-                            />
-                            <div className="flex justify-between">
-                                <div className="flex items-center gap-2"></div>
-                                <div className="flex items-center text-foreground gap-1">
-                                    <ModelSelector
-                                        selectedModel={selectedModel as "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini" | "dummy"}
-                                        onModelChange={(newModel) => {
-                                            setSelectedModel(newModel);
-                                            // Persist selected model to localStorage
-                                            localStorage.setItem('aiDashboard_selectedModel', newModel);
-                                        }}
-                                    />
-                                    <TemperatureSelector />
-                                    <div className="flex items-center gap-1 text-xs">
-                                        <span className="text-gray-400">Max tokens:</span>
-                                        <input
-                                            type="number"
-                                            min={1}
-                                            step={1}
-                                            value={maxTokens}
-                                            onChange={(e) => {
-                                                const v = parseInt(e.target.value, 10);
-                                                if (Number.isNaN(v)) {
-                                                    setMaxTokens('');
-                                                    localStorage.removeItem('aiDashboard_max_tokens');
-                                                } else {
-                                                    setMaxTokens(v);
-                                                    localStorage.setItem('aiDashboard_max_tokens', String(v));
-                                                }
-                                            }}
-                                            className="w-20 bg-popover border border-gray-600 rounded text-xs py-0 px-1"
-                                            placeholder="auto"
-                                            title="Max completion tokens for gateway models"
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* now include the send‐button here */}
-                                <div className="flex justify-between px-2 ">
+                    <form onSubmit={handleSubmit} className="pt-1 px-2 pb-4 bg-popover rounded-lg min-w-0 w-full">
+                        {/* Add placeholder jump buttons */}
+                        {templatePlaceholders.length > 0 && (
+                            <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                                <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                                {templatePlaceholders.map((placeholder, idx) => (
                                     <button
-                                        type="submit"
-                                        className="flex items-center bg-gray-800 rounded-full px-2 mb-3 text-blue-300 hover:text-blue-800"
-                                        disabled={isLoading || !input?.trim()}
-                                        title="Send your question"
-                                    >Send
-                                        <svg
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                            strokeWidth={2}
-                                            className="w-8 h-8"
-                                        >
-                                            <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-
-                                        </svg>
+                                        key={idx}
+                                        type="button"
+                                        onClick={() => selectTemplatePlaceholder(idx)}
+                                        className={buttonAccent}
+                                    >
+                                        {placeholder.text.length > 50
+                                            ? `${placeholder.text.substring(0, 49)}...`
+                                            : placeholder.text}
                                     </button>
+                                ))}
+                            </div>
+                        )}
+                        <TextareaAutosize
+                            ref={textareaRef}
+                            value={input || ''}
+                            onChange={(e) => setInput(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    const now = Date.now();
+                                    const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                    if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                        e.preventDefault();
+                                        handleSubmit(e);
+                                        textarea.lastEnterTime = 0;
+                                    } else {
+                                        textarea.lastEnterTime = now;
+                                    }
+                                }
+
+                                if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                    e.preventDefault();
+                                    const cursorPos = e.currentTarget.selectionStart;
+                                    let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+                                    if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                        nextPlaceholder = templatePlaceholders[0];
+                                    }
+                                    if (nextPlaceholder) {
+                                        selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                    }
+                                }
+                            }}
+                            placeholder="Ask anything …"
+                            className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            minRows={6}
+                            maxRows={12}
+                            disabled={isLoading}
+                        />
+                        <div className="flex justify-between">
+                            <div className="flex items-center gap-2"></div>
+                            <div className="flex items-center text-foreground gap-1">
+                                <ModelSelector
+                                    selectedModel={selectedModel as "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini" | "dummy"}
+                                    onModelChange={(newModel) => {
+                                        setSelectedModel(newModel);
+                                        localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                    }}
+                                />
+                                <TemperatureSelector />
+                                <div className="flex items-center gap-1 text-xs">
+                                    <span className="text-gray-400">Max tokens:</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        step={1}
+                                        value={maxTokens}
+                                        onChange={(e) => {
+                                            const v = parseInt(e.target.value, 10);
+                                            if (Number.isNaN(v)) {
+                                                setMaxTokens('');
+                                                localStorage.removeItem('aiDashboard_max_tokens');
+                                            } else {
+                                                setMaxTokens(v);
+                                                localStorage.setItem('aiDashboard_max_tokens', String(v));
+                                            }
+                                        }}
+                                        className="w-20 bg-popover border border-gray-600 rounded text-xs py-0 px-1"
+                                        placeholder="auto"
+                                        title="Max completion tokens for gateway models"
+                                    />
                                 </div>
                             </div>
-                        </form>
-                    }
+
+                            <div className="flex justify-between px-2">
+                                <button
+                                    type="submit"
+                                    className="flex items-center bg-gray-800 rounded-full px-2 mb-3 text-blue-300 hover:text-blue-800"
+                                    disabled={isLoading || !input?.trim()}
+                                    title="Send your question"
+                                >
+                                    Send
+                                    <svg
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        strokeWidth={2}
+                                        className="w-8 h-8"
+                                    >
+                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                    </svg>
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div >

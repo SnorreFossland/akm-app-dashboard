@@ -5,62 +5,120 @@ import { AdvancedChatPanels } from './AdvancedChatPanels';
 import type { ChatSubMode } from '@/types/aiChatModes';
 import type { DomainData } from '@/features/model-universe/modelSlice';
 
-interface ChatModeContentProps {
-  subMode: ChatSubMode;
-  domain: DomainData | null;
-  contextContent: string;
-  setContextContent: (content: string) => void;
-  additionalContext: string;
-  setAdditionalContext: (content: string) => void;
-  currentDocument: string;
-  previewContent: string;
-  isLibraryOpen: boolean;
-  libraryTarget: 'context' | 'document' | null;
-  openLibraryFor: (target: 'context' | 'document') => void;
-  closeLibrary: () => void;
-  handleSetCurrentDocument: (content: string) => void;
+interface ChatModeContentParams {
+    subMode: 'general' | 'advanced';
+    domain: DomainData | null;
+    ontology: any; // Add ontology prop
+    contextContent: string;
+    setContextContent: (content: string) => void;
+    additionalContext?: string;
+    setAdditionalContext?: (content: string) => void;
+    currentDocument: string;
+    previewContent?: string;
+    isLibraryOpen: boolean;
+    libraryTarget: 'context' | 'document' | null;
+    openLibraryFor: (target: 'context' | 'document') => void;
+    closeLibrary: () => void;
+    handleSetCurrentDocument?: (content: string) => void;
+    chatInput: string;
+    setChatInput: (input: string) => void;
+    chatSelectedModel: string;
+    setChatSelectedModel: (model: string) => void;
+    chatMdPreview: string;
+    setChatMdPreview: (preview: string) => void;
+    chatShowLeftPanel: boolean;
+    setChatShowLeftPanel: (show: boolean) => void;
+    chatShowRightPanel: boolean;
+    setChatShowRightPanel: (show: boolean) => void;
+    chatMessages: any[];
+    setChatMessages: (messages: any[]) => void;
+    includeDomainContext: boolean;
+    setIncludeDomainContext: (include: boolean) => void;
+    documentName?: string;
+    documentType?: string;
+    onSavePreviewToLibrary?: (content: string, name?: string, type?: string) => void;
 }
 
-export function ChatModeContent({
-  subMode,
-  domain,
-  contextContent,
-  setContextContent,
-  additionalContext,
-  setAdditionalContext,
-  currentDocument,
-  previewContent,
-  isLibraryOpen,
-  libraryTarget,
-  openLibraryFor,
-  closeLibrary,
-  handleSetCurrentDocument,
-}: ChatModeContentProps) {
-  if (subMode === 'general') {
-    return GeneralChatPanels({
-      domain,
-      contextContent,
-      setContextContent,
-      currentDocument,
-      previewContent,
-      isLibraryOpen,
-      libraryTarget,
-      openLibraryFor,
-      closeLibrary,
-      handleSetCurrentDocument,
+export function ChatModeContent(params: ChatModeContentParams) {
+    console.log('📝 ChatModeContent called with:', {
+        hasDocumentName: !!params.documentName,
+        documentName: params.documentName,
+        documentType: params.documentType,
+        subMode: params.subMode
     });
-  }
 
-  return AdvancedChatPanels({
-    domain,
-    contextContent,
-    setContextContent,
-    additionalContext,
-    setAdditionalContext,
-    currentDocument,
-    isLibraryOpen,
-    libraryTarget,
-    openLibraryFor,
-    closeLibrary,
-  });
+    // Get panels for both sub-modes
+    const generalPanels = GeneralChatPanels({
+        domain: params.domain,
+        contextContent: params.contextContent,
+        setContextContent: params.setContextContent,
+        currentDocument: params.currentDocument,
+        previewContent: params.previewContent ?? '',
+        isLibraryOpen: params.isLibraryOpen,
+        libraryTarget: params.libraryTarget,
+        openLibraryFor: params.openLibraryFor,
+        closeLibrary: params.closeLibrary,
+        handleSetCurrentDocument: params.handleSetCurrentDocument ?? (() => { }),
+        chatInput: params.chatInput,
+        setChatInput: params.setChatInput,
+        chatSelectedModel: params.chatSelectedModel,
+        setChatSelectedModel: params.setChatSelectedModel,
+        chatMdPreview: params.chatMdPreview,
+        setChatMdPreview: params.setChatMdPreview,
+        chatShowLeftPanel: params.chatShowLeftPanel,
+        setChatShowLeftPanel: params.setChatShowLeftPanel,
+        chatShowRightPanel: params.chatShowRightPanel,
+        setChatShowRightPanel: params.setChatShowRightPanel,
+        chatMessages: params.chatMessages,
+        setChatMessages: params.setChatMessages,
+        includeDomainContext: params.includeDomainContext,
+        setIncludeDomainContext: params.setIncludeDomainContext,
+        documentName: params.documentName,
+        documentType: params.documentType,
+        onSavePreviewToLibrary: params.onSavePreviewToLibrary,
+    });
+
+    const advancedPanels = AdvancedChatPanels({
+        domain: params.domain,
+        contextContent: params.contextContent,
+        setContextContent: params.setContextContent,
+        additionalContext: params.additionalContext ?? '',
+        setAdditionalContext: params.setAdditionalContext ?? (() => { }),
+        currentDocument: params.currentDocument,
+        isLibraryOpen: params.isLibraryOpen,
+        libraryTarget: params.libraryTarget,
+        openLibraryFor: params.openLibraryFor,
+        closeLibrary: params.closeLibrary,
+        chatInput: params.chatInput,
+        setChatInput: params.setChatInput,
+        chatSelectedModel: params.chatSelectedModel,
+        setChatSelectedModel: params.setChatSelectedModel,
+        chatMdPreview: params.chatMdPreview,
+        setChatMdPreview: params.setChatMdPreview,
+        chatShowLeftPanel: params.chatShowLeftPanel,
+        setChatShowLeftPanel: params.setChatShowLeftPanel,
+        chatShowRightPanel: params.chatShowRightPanel,
+        setChatShowRightPanel: params.setChatShowRightPanel,
+        chatMessages: params.chatMessages,
+        setChatMessages: params.setChatMessages,
+        includeDomainContext: params.includeDomainContext,
+        setIncludeDomainContext: params.setIncludeDomainContext,
+    });
+
+    // Return combined structure with tabs for both sub-modes
+    return {
+        leftPanelContent: params.subMode === 'general'
+            ? generalPanels.leftPanelContent
+            : advancedPanels.leftPanelContent,
+
+        middlePanelContent: {
+            tabs: params.subMode === 'general'
+                ? generalPanels.middlePanelContent.tabs
+                : advancedPanels.middlePanelContent.tabs,
+        },
+
+        rightPanelContent: params.subMode === 'general'
+            ? generalPanels.rightPanelContent
+            : advancedPanels.rightPanelContent,
+    };
 }

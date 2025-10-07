@@ -27,6 +27,8 @@ const AIChatPage = () => {
     const domain = useSelector((state: RootState) => state.modelUniverse?.phData?.domain);
     const documents = useSelector((state: RootState) => state.modelUniverse?.phData?.documents);
     const currentDocument = useSelector((state: RootState) => state.modelUniverse.phData.currentDocument);
+    const focusProject = useSelector((state: RootState) => state.modelUniverse?.phData?.focusProject);
+    const ontology = useSelector((state: RootState) => state.modelUniverse?.phData?.ontology);
 
     // Shared state across all modes
     const [contextContent, setContextContent] = useState('');
@@ -34,6 +36,7 @@ const AIChatPage = () => {
 
     // View mode state
     const [selectedDocument, setSelectedDocument] = useState<MarkdownDocument | undefined>();
+    const [projectDocument, setProjectDocument] = useState<MarkdownDocument | null>(null);
 
     // Edit mode state
     const [documentName, setDocumentName] = useState('');
@@ -58,7 +61,7 @@ const AIChatPage = () => {
 
     const previousDocumentRef = useRef('');
 
-    // Initialize from localStorage
+    // Initialize from localStorage - ONLY RUN ONCE ON MOUNT
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -75,6 +78,7 @@ const AIChatPage = () => {
             previousDocumentRef.current = storedDocument;
 
             // Try to find matching document for edit mode
+            // Only do this on initial mount, not when documents change
             const matchingDoc = documents?.find(doc => doc.content === storedDocument);
             if (matchingDoc) {
                 setDocumentName(matchingDoc.name);
@@ -82,7 +86,14 @@ const AIChatPage = () => {
                 setSelectedDocument(matchingDoc);
             }
         }
-    }, [dispatch, documents]);
+    }, [dispatch]); // <-- Removed 'documents' from dependencies
+
+    useEffect(() => {
+        if (focusProject) {
+            const matchingDoc = documents?.find(doc => doc.id === focusProject.id);
+            setProjectDocument(matchingDoc || null);
+        }
+    }, [focusProject, documents]);
 
     // Persist context to localStorage
     useEffect(() => {
@@ -221,11 +232,76 @@ const AIChatPage = () => {
     }, [documentName, documentType, currentDocument, documents, originalContent]);
 
     const handleConfirmSave = useCallback(() => {
-        if (pendingSave) {
+        if (!pendingSave) {
+            console.error('No pending save data');
+            return;
+        }
+
+        console.group('💾 Save Confirmation Flow');
+        console.log('1. Pending save document:', {
+            id: pendingSave.doc.id,
+            name: pendingSave.doc.name,
+            type: pendingSave.doc.type,
+            contentLength: pendingSave.doc.content.length,
+        });
+
+        try {
+            // Step 1: Save to library
+            console.log('2. Dispatching saveMarkdownDocument with:', {
+                name: pendingSave.doc.name,
+                type: pendingSave.doc.type,
+            });
             dispatch(saveMarkdownDocument(pendingSave.doc));
+            console.log('   ✓ saveMarkdownDocument dispatched');
+
+            // Step 2: Set as current document
+            console.log('3. Dispatching setCurrentDocument...');
+            dispatch(setCurrentDocument(pendingSave.doc.content));
+            console.log('   ✓ setCurrentDocument dispatched');
+
+            // Step 3: Update local state - CRITICAL: Set selectedDocument for View Mode
+            console.log('4. Updating local state...');
+            setSelectedDocument(pendingSave.doc);
+            setDocumentName(pendingSave.doc.name);
+            setDocumentType(pendingSave.doc.type || 'markdown');
+            setOriginalContent(pendingSave.doc.content);
+            setPreviewContent(pendingSave.doc.content);
+            console.log('   ✓ Local state updated - selectedDocument set to:', pendingSave.doc.name);
+
+            // Step 4: Persist to localStorage
+            console.log('5. Persisting to localStorage...');
+            if (typeof window !== 'undefined') {
+                const previousValue = localStorage.getItem('currentDocument');
+                localStorage.setItem('currentDocument', pendingSave.doc.content);
+                window.dispatchEvent(new CustomEvent('localStorageChange', {
+                    detail: {
+                        key: 'currentDocument',
+                        newValue: pendingSave.doc.content,
+                        oldValue: previousValue,
+                    }
+                }));
+                console.log('   ✓ localStorage updated');
+            }
+
+            // Step 5: Clear modal state
+            console.log('6. Clearing modal state...');
             setShowDiffModal(false);
             setPendingSave(null);
+            console.log('   ✓ Modal state cleared');
+
+            // Step 6: Switch to view mode - selectedDocument should now be available
+            console.log('7. Switching to view mode with selectedDocument:', {
+                id: pendingSave.doc.id,
+                name: pendingSave.doc.name
+            });
             switchMode('view');
+            console.log('   ✓ Switched to view mode');
+
+            console.log('✅ Save complete! Document saved with name:', pendingSave.doc.name, 'and type:', pendingSave.doc.type);
+            console.groupEnd();
+        } catch (error) {
+            console.error('❌ Error during save:', error);
+            console.groupEnd();
         }
     }, [pendingSave, dispatch, switchMode]);
 
@@ -233,6 +309,77 @@ const AIChatPage = () => {
         setShowDiffModal(false);
         setPendingSave(null);
     }, []);
+
+    // Chat mode state (shared across both General and Advanced)
+    const [chatInput, setChatInput] = useState('');
+    const [chatSelectedModel, setChatSelectedModel] = useState('gpt-5-mini');
+    const [chatMdPreview, setChatMdPreview] = useState('');
+    const [chatShowLeftPanel, setChatShowLeftPanel] = useState(true);
+    const [chatShowRightPanel, setChatShowRightPanel] = useState(true);
+    const [chatMessages, setChatMessages] = useState<any[]>([]);
+    const [includeDomainContext, setIncludeDomainContext] = useState(true); // New state for domain context
+
+    // Handler for saving preview from chat mode
+    const handleSavePreviewToLibrary = useCallback((content: string, name?: string, type?: string) => {
+        if (!content) return;
+
+        console.log('💾 Saving preview to library:', { name, type, contentLength: content.length });
+
+        const timestamp = new Date().toISOString().split('T')[0];
+        const documentName = name || `AI Response ${timestamp}`;
+        const documentType = type || 'ai-response';
+
+        // Check if a document with the same name already exists
+        const existingDoc = documents?.find(doc => doc.name === documentName);
+
+        let newDoc: MarkdownDocument;
+        let oldContent = '';
+
+        if (existingDoc) {
+            // Updating existing document - keep the same ID
+            console.log('📝 Updating existing document:', existingDoc.name);
+            newDoc = {
+                id: existingDoc.id,
+                name: documentName,
+                type: documentType,
+                content: content,
+                createdAt: existingDoc.createdAt,
+                updatedAt: new Date().toISOString()
+            };
+            oldContent = existingDoc.content;
+        } else {
+            // Creating new document
+            console.log('✨ Creating new document:', documentName);
+            newDoc = {
+                id: `doc-${Date.now()}`,
+                name: documentName,
+                type: documentType,
+                content: content,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+        }
+
+        // Show diff modal
+        setPendingSave({ doc: newDoc, oldContent });
+        setShowDiffModal(true);
+    }, [documents]);
+
+    // Debug: Log chat state changes
+    useEffect(() => {
+        console.log('Chat input changed:', chatInput);
+    }, [chatInput]);
+
+    // Track selectedDocument changes with stack trace
+    useEffect(() => {
+        console.group('🔄 selectedDocument changed to:', {
+            id: selectedDocument?.id,
+            name: selectedDocument?.name,
+            type: selectedDocument?.type
+        });
+        console.trace('Stack trace:');
+        console.groupEnd();
+    }, [selectedDocument]);
 
     // Get panel configurations based on current mode
     const panelConfigs = useMemo(() => {
@@ -248,6 +395,38 @@ const AIChatPage = () => {
                                 <MarkdownPreview mdPreview={domain.presentation} variant="compact" />
                             ) : (
                                 <div className="text-sm text-gray-400">No domain presentation available.</div>
+                            )}
+                        </div>
+                    ),
+                },
+                {
+                    key: 'projects',
+                    label: 'Focus Project',
+                    content: (
+                        <div className="h-full flex flex-col overflow-hidden">
+                            {projectDocument ? (
+                                <>
+                                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50 flex-shrink-0">
+                                        <div className="flex flex-col gap-1 min-w-0">
+                                            <h3 className="text-sm font-semibold text-gray-200 truncate">
+                                                {projectDocument.name}
+                                            </h3>
+                                            <span className="text-xs text-gray-400">
+                                                {projectDocument.type || 'Project'}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <div className="flex-1 overflow-auto px-4 py-4">
+                                        <MarkdownPreview mdPreview={projectDocument.content} variant="compact" />
+                                    </div>
+                                </>
+                            ) : (
+                                <div className="h-full flex items-center justify-center px-4 py-4">
+                                    <div className="text-center text-gray-400">
+                                        <p className="text-sm">No focus project set</p>
+                                        <p className="text-xs mt-2">Click "Focus" on a project in the Library to set it</p>
+                                    </div>
+                                </div>
                             )}
                         </div>
                     ),
@@ -269,11 +448,17 @@ const AIChatPage = () => {
                     ),
                 },
             ],
-            defaultTab: domain?.presentation ? 'domain' : 'context',
+            defaultTab: focusProject ? 'projects' : (domain?.presentation ? 'domain' : 'context'),
         };
 
         switch (mode) {
             case 'view':
+                console.log('🔍 Rendering View Mode with:', {
+                    hasCurrentDocument: !!currentDocument,
+                    hasSelectedDocument: !!selectedDocument,
+                    selectedDocName: selectedDocument?.name,
+                    currentDocLength: currentDocument?.length
+                });
                 return ViewModeContent({
                     domain,
                     currentDocument,
@@ -282,13 +467,20 @@ const AIChatPage = () => {
                     onEditDocument: handleEditDocument,
                     onChatWithDocument: handleChatWithDocument,
                     onDeleteDocument: handleDeleteDocument,
-                    previewContent, // Pass preview content to view mode
+                    previewContent,
+                    projectDocument,
                 });
 
             case 'chat':
+                console.log('💬 Rendering Chat Mode with:', {
+                    documentName,
+                    documentType,
+                    subMode: chatSubMode
+                });
                 return ChatModeContent({
                     subMode: chatSubMode,
                     domain,
+                    ontology, // Pass ontology as prop
                     contextContent,
                     setContextContent,
                     additionalContext,
@@ -300,6 +492,24 @@ const AIChatPage = () => {
                     openLibraryFor,
                     closeLibrary,
                     handleSetCurrentDocument,
+                    // Pass chat state
+                    chatInput,
+                    setChatInput,
+                    chatSelectedModel,
+                    setChatSelectedModel,
+                    chatMdPreview,
+                    setChatMdPreview,
+                    chatShowLeftPanel,
+                    setChatShowLeftPanel,
+                    chatShowRightPanel,
+                    setChatShowRightPanel,
+                    chatMessages,
+                    setChatMessages,
+                    includeDomainContext,
+                    setIncludeDomainContext,
+                    documentName,
+                    documentType,
+                    onSavePreviewToLibrary: handleSavePreviewToLibrary,
                 });
 
             case 'edit':
@@ -314,7 +524,7 @@ const AIChatPage = () => {
                     libraryTarget,
                     openLibraryFor,
                     closeLibrary,
-                    previewContent,
+                    previewContent: currentDocument, // Pass currentDocument for live preview
                     setPreviewContent,
                     onSaveToLibrary: handleSaveToLibrary,
                 });
@@ -336,7 +546,7 @@ const AIChatPage = () => {
         mode,
         chatSubMode,
         domain,
-        currentDocument,  // Make sure this is included
+        currentDocument,
         selectedDocument,
         contextContent,
         additionalContext,
@@ -345,6 +555,7 @@ const AIChatPage = () => {
         documentType,
         isLibraryOpen,
         libraryTarget,
+        focusProject, // Add to dependencies
         handleSelectDocument,
         handleEditDocument,
         handleChatWithDocument,
@@ -353,6 +564,22 @@ const AIChatPage = () => {
         handleSaveToLibrary,
         openLibraryFor,
         closeLibrary,
+        // Add chat state to dependencies
+        chatInput,
+        setChatInput,
+        chatSelectedModel,
+        setChatSelectedModel,
+        chatMdPreview,
+        setChatMdPreview,
+        chatShowLeftPanel,
+        setChatShowLeftPanel,
+        chatShowRightPanel,
+        setChatShowRightPanel,
+        chatMessages,
+        setChatMessages,
+        includeDomainContext,
+        setIncludeDomainContext,
+        handleSavePreviewToLibrary, // Add to dependencies
     ]);
 
     const modeConfig = MODE_CONFIGS[mode];
@@ -380,11 +607,15 @@ const AIChatPage = () => {
             {/* )} */}
             <div className="flex-1 overflow-hidden bg-gray-900/60">
                 <ThreePanelLayout
-                    leftPanelContent={panelConfigs.leftPanelContent}
+                    leftPanelContent={
+                        panelConfigs.leftPanelContent && typeof panelConfigs.leftPanelContent === 'object' && 'tabs' in panelConfigs.leftPanelContent
+                            ? panelConfigs.leftPanelContent
+                            : { tabs: [{ key: 'domain', label: 'Domain', content: panelConfigs.leftPanelContent as React.ReactElement }], defaultTab: 'domain' }
+                    }
                     middlePanelContent={
-                        (panelConfigs.middlePanelContent && 'tabs' in panelConfigs.middlePanelContent)
+                        panelConfigs.middlePanelContent && typeof panelConfigs.middlePanelContent === 'object' && 'tabs' in panelConfigs.middlePanelContent
                             ? panelConfigs.middlePanelContent
-                            : { tabs: [{ key: 'current', label: 'Current Document', content: panelConfigs.middlePanelContent as React.ReactElement }], defaultTab: 'current' }
+                            : undefined
                     }
                     rightPanelContent={
                         (panelConfigs.rightPanelContent && 'tabs' in panelConfigs.rightPanelContent)
@@ -398,7 +629,10 @@ const AIChatPage = () => {
                     className="h-full min-w-0 bg-background text-gray-100"
                     middlePanelHeader={modeHeaderComponent}
                 >
-                    <></>
+                    {/* Render middle panel if it's plain JSX */}
+                    {panelConfigs.middlePanelContent && !(typeof panelConfigs.middlePanelContent === 'object' && 'tabs' in panelConfigs.middlePanelContent)
+                        ? <div className="h-full">{panelConfigs.middlePanelContent}</div>
+                        : null}
                 </ThreePanelLayout>
             </div>
 

@@ -1,9 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDocument } from '@/features/model-universe/modelSlice';
+import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDocument, updateProjectInfo } from '@/features/model-universe/modelSlice';
 import extractDomainNameAndDescription from './docExtraction';
-import { ChevronDown, ChevronRight, Eye } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, Search, X } from 'lucide-react';
 
 interface MarkdownLibraryProps {
   onSelect: (content: string, name: string, docMeta?: MarkdownDocument) => void;
@@ -23,7 +23,8 @@ const MarkdownLibrary = ({
   const dispatch = useDispatch();
   const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents) as MarkdownDocument[];
   const [searchTerm, setSearchTerm] = useState('');
-  const [expandedDocId, setExpandedDocId] = useState<string | null>(null); // Track which document is expanded
+  const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+  const [showImportDialog, setShowImportDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const expandedContentRef = useRef<HTMLDivElement>(null);
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
@@ -31,6 +32,17 @@ const MarkdownLibrary = ({
   const [editType, setEditType] = useState('');
   const [metadataMessage, setMetadataMessage] = useState<string | null>(null);
   const [metadataError, setMetadataError] = useState<string | null>(null);
+
+  // Document type options
+  const documentTypeOptions = [
+    'markdown',
+    'project-plan',
+    'roadmap',
+    'domain',
+    'prompt',
+    'specification',
+    'requirements',
+  ];
 
   const filteredDocuments = documents?.filter(doc =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -157,6 +169,14 @@ const MarkdownLibrary = ({
     }));
   };
 
+  const handleSetFocusProject = (doc: MarkdownDocument, e: React.MouseEvent) => {
+    e.stopPropagation();
+    dispatch(updateProjectInfo({
+      id: doc.id,
+      name: doc.name,
+    }));
+  };
+
   const beginEditMetadata = (doc: MarkdownDocument, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingDocId(doc.id);
@@ -201,7 +221,7 @@ const MarkdownLibrary = ({
   };
 
   return (
-    <div className="flex flex-col gap-4 w-full h-full p-4 bg-gray-800 rounded-lg">
+    <div className="flex flex-col gap-2 w-full h-full p-2 bg-background rounded-lg overflow-hidden">
       <input
         type="file"
         ref={fileInputRef}
@@ -210,21 +230,67 @@ const MarkdownLibrary = ({
         style={{ display: 'none' }}
       />
 
-      <div className="bg-gray-700 rounded">
-        <div className="flex items-center justify-between gap-2 p-1">
-          <div className="ps-2 text-xs">Import from local file </div>
-          <button
-            onClick={handleImportFile}
-            className="bg-blue-700 hover:bg-blue-600 text-white px-3 py-2 rounded whitespace-nowrap"
-          >
-            Import File
-          </button>
+      {/* Top row: Search bar and Import button */}
+      <div className="flex items-center gap-2 flex-shrink-0">
+        {/* Search input */}
+        <div className="flex-1 relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Search documents..."
+            className="w-full pl-9 pr-9 py-2 text-sm bg-gray-700 border border-gray-600 rounded text-gray-200 placeholder-gray-400 focus:border-blue-500 focus:outline-none"
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm('')}
+              className="absolute right-2 top-1/2 -translate-y-1/2 p-1 text-gray-400 hover:text-gray-200 rounded"
+              title="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
         </div>
 
-        {metadataMessage && (
-          <div className="text-xs text-green-400 text-center px-2 py-1">{metadataMessage}</div>
-        )}
+        {/* Import icon button */}
+        <button
+          onClick={() => setShowImportDialog(!showImportDialog)}
+          className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors flex-shrink-0"
+          title="Import from file"
+        >
+          <Upload className="h-4 w-4" />
+        </button>
+      </div>
 
+      {/* Import dialog - shown when icon clicked */}
+      {showImportDialog && (
+        <div className="flex items-center justify-between px-3 py-2 bg-gray-700/50 rounded border border-gray-600/50 animate-in fade-in slide-in-from-top-2 duration-200 flex-shrink-0">
+          <span className="text-xs text-gray-400">Import from local file</span>
+          <div className="flex gap-2">
+            <button
+              onClick={handleImportFile}
+              className="text-xs bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded transition-colors"
+            >
+              Import
+            </button>
+            <button
+              onClick={() => setShowImportDialog(false)}
+              className="text-xs bg-gray-600 hover:bg-gray-500 text-white px-3 py-1.5 rounded transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {metadataMessage && (
+        <div className="text-xs text-green-400 text-center px-2 py-1 bg-green-900/20 rounded flex-shrink-0">
+          {metadataMessage}
+        </div>
+      )}
+
+      <div className="bg-gray-700 rounded flex-1 overflow-hidden flex flex-col">
         {!filteredDocuments && <div className="text-gray-400 text-center p-4">No documents found.</div>}
 
         {filteredDocuments?.length === 0 ? (
@@ -234,168 +300,173 @@ const MarkdownLibrary = ({
             {searchTerm ? 'No documents match your search' : 'No documents saved yet'}
           </div>
         ) : (
-          <div className="grid grid-cols-1 gap-3">
-            {filteredDocuments?.map((doc, index) => {
-              const rawType = (doc.type || 'markdown').toString();
-              const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
-              return (
-                <div key={doc.id} className="bg-gray-700 rounded-lg transition-colors">
-                  {/* Document Header - Clickable to expand/collapse */}
-                  <div
-                    onClick={(e) => handleDocumentClick(doc.id, e)}
-                    className="p-3 cursor-pointer hover:bg-gray-600 transition-colors rounded-lg"
-                  >
-                    <div className="flex justify-between items-center mb-2">
-                      <div className="flex items-center gap-2">
-                        {expandedDocId === doc.id ? (
-                          <ChevronDown className="h-4 w-4 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="h-4 w-4 text-gray-400" />
-                        )}
-                        <div className="flex items-center gap-2">
-                          <h4 className="font-medium text-lg text-blue-300">{doc.name}</h4>
-                          <span className="px-2 py-0.5 text-[0.65rem] uppercase tracking-wide rounded-full bg-blue-900/40 text-blue-200 border border-blue-800/60">
-                            {displayType}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-400">
-                          {new Date(doc.createdAt).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 ms-auto">
-                      <p className="text-sm text-gray-300 line-clamp-2">
-                        {doc.content.substring(0, 150)}...
-                      </p>
-                      <div className="flex justify-end items-center gap-2 ms-auto">
-                        <button
-                          onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
-                          className="text-xs bg-green-800 hover:bg-green-700 text-white px-2 py-1 rounded"
-                        >
-                          Save to File
-                        </button>
-                        <button
-                          onClick={(e) => handleDelete(doc.id, e)}
-                          className="text-xs bg-red-800 hover:bg-red-700 text-white px-2 py-1 rounded"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Expanded Content - Shows when document is clicked */}
-                  {expandedDocId === doc.id && (
+          <div className="overflow-y-auto flex-1">
+            <div className="grid grid-cols-1 gap-1 p-2">
+              {filteredDocuments?.map((doc, index) => {
+                const rawType = (doc.type || 'markdown').toString();
+                const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+                return (
+                  <div key={doc.id} className="bg-gray-700 rounded transition-colors">
+                    {/* Document Header - Clickable to expand/collapse */}
                     <div
-                      ref={expandedContentRef}
-                      className="border-t border-gray-600 bg-gray-800"
+                      onClick={(e) => handleDocumentClick(doc.id, e)}
+                      className="px-3 py-2 cursor-pointer hover:bg-gray-600 transition-colors rounded"
                     >
-                      <div className="p-3">
-                        <div className="bg-gray-900 rounded p-3 mb-3 max-h-60 overflow-y-auto">
-                          <pre className="whitespace-pre-wrap text-sm text-gray-200 font-mono">
-                            {doc.content}
-                          </pre>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <div className="text-xs text-gray-400 space-x-2">
-                            <span>• {doc.content.length} characters</span>
-                            <span>• {displayType}</span>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={(e) => beginEditMetadata(doc, e)}
-                              disabled={editingDocId === doc.id}
-                              className={`flex items-center gap-1 text-xs px-3 py-1 rounded ${editingDocId === doc.id ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
-                            >
-                              {editingDocId === doc.id ? 'Editing…' : 'Edit details'}
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                onSelect(doc.content, doc.name, doc);
-                              }}
-                              className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
-                            >
-                              {/* <Eye className="h-3 w-3" /> */}
-                              Add as context
-                            </button>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                if (onSetCurrentDocument) {
-                                  onSetCurrentDocument(doc.content, doc.name, doc);
-                                } else {
-                                  onSelect(doc.content, doc.name, doc);
-                                }
-                              }}
-                              className="flex items-center gap-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                            >
-                              {/* <Eye className="h-3 w-3" /> */}
-                              Add as current Document
-                            </button>
-                            <button
-                              onClick={(e) => handleSaveAsDomain(doc.content, doc.name, e)}
-                              className="flex items-center gap-1 text-xs bg-purple-700 hover:bg-purple-600 text-white px-3 py-1 rounded"
-                            >
-                              Save as domain
-                            </button>
+                      <div className="flex justify-between items-center">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          {expandedDocId === doc.id ? (
+                            <ChevronDown className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          ) : (
+                            <ChevronRight className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
+                          )}
+                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                            <h4 className="text-xs text-gray-300 truncate">{doc.name}</h4>
+                            <span className="px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide rounded-full bg-blue-900/40 text-blue-200 border border-blue-800/60 flex-shrink-0">
+                              {displayType}
+                            </span>
                           </div>
                         </div>
-                        {editingDocId === doc.id && (
-                          <div className="mt-3 space-y-3 rounded-md border border-gray-600 bg-gray-900/70 p-3">
-                            <div className="grid gap-2 md:grid-cols-2">
-                              <label className="text-xs text-gray-300 flex flex-col gap-1">
-                                <span>Document name</span>
-                                <input
-                                  value={editName}
-                                  onChange={(event) => {
-                                    setEditName(event.target.value);
-                                    if (metadataError) setMetadataError(null);
-                                  }}
-                                  className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                                  placeholder="Enter document name"
-                                />
-                              </label>
-                              <label className="text-xs text-gray-300 flex flex-col gap-1">
-                                <span>Document type</span>
-                                <input
-                                  value={editType}
-                                  onChange={(event) => {
-                                    setEditType(event.target.value);
-                                    if (metadataError) setMetadataError(null);
-                                  }}
-                                  className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                                  placeholder="e.g. Markdown"
-                                />
-                              </label>
-                            </div>
-                            {metadataError && (
-                              <div className="text-xs text-red-400">{metadataError}</div>
-                            )}
-                            <div className="flex gap-2">
-                              <button
-                                onClick={(event) => saveMetadata(doc, event)}
-                                className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
-                              >
-                                Save
-                              </button>
-                              <button
-                                onClick={cancelEditMetadata}
-                                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        )}
+                        <div className="flex items-center gap-1.5 flex-shrink-0 ml-2">
+                          <span className="text-[0.65rem] text-gray-400">
+                            {new Date(doc.createdAt).toLocaleDateString()}
+                          </span>
+                          <button
+                            onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
+                            className="text-[0.65rem] bg-green-800 hover:bg-green-700 text-white px-1.5 py-0.5 rounded"
+                          >
+                            Export
+                          </button>
+                          <button
+                            onClick={(e) => handleDelete(doc.id, e)}
+                            className="text-[0.65rem] bg-red-800 hover:bg-red-700 text-white px-1.5 py-0.5 rounded"
+                          >
+                            Delete
+                          </button>
+                        </div>
                       </div>
                     </div>
-                  )}
-                </div>
-              )
-            })}
+
+                    {/* Expanded Content - Shows when document is clicked */}
+                    {expandedDocId === doc.id && (
+                      <div
+                        ref={expandedContentRef}
+                        className="border-t border-gray-600 bg-gray-800"
+                      >
+                        <div className="p-2">
+                          <button
+                            onClick={(e) => beginEditMetadata(doc, e)}
+                            disabled={editingDocId === doc.id}
+                            className={`flex w-full items-center gap-1 text-[0.65rem] px-2 py-1 rounded ${editingDocId === doc.id ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
+                          >
+                            {editingDocId === doc.id ? 'Editing…' : 'Edit Name and Type'}
+                          </button>
+                          {editingDocId === doc.id && (
+                            <div className="mt-3 space-y-3 rounded-md border border-gray-600 bg-gray-900/70 p-3">
+                              <div className="grid gap-2 md:grid-cols-2">
+                                <label className="text-xs text-gray-300 flex flex-col gap-1">
+                                  <span>Document name</span>
+                                  <input
+                                    value={editName}
+                                    onChange={(event) => {
+                                      setEditName(event.target.value);
+                                      if (metadataError) setMetadataError(null);
+                                    }}
+                                    className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    placeholder="Enter document name"
+                                  />
+                                </label>
+                                <label className="text-xs text-gray-300 flex flex-col gap-1">
+                                  <span>Document type</span>
+                                  <select
+                                    value={editType}
+                                    onChange={(event) => {
+                                      setEditType(event.target.value);
+                                      if (metadataError) setMetadataError(null);
+                                    }}
+                                    className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                  >
+                                    {documentTypeOptions.map((type) => (
+                                      <option key={type} value={type}>
+                                        {type.charAt(0).toUpperCase() + type.slice(1)}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </label>
+                              </div>
+                              {metadataError && (
+                                <div className="text-xs text-red-400">{metadataError}</div>
+                              )}
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={(event) => saveMetadata(doc, event)}
+                                  className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={cancelEditMetadata}
+                                  className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                          <div className="bg-gray-900 rounded p-2 mb-2 max-h-60 overflow-y-auto">
+                            <pre className="whitespace-pre-wrap text-xs text-gray-200 font-mono">
+                              {doc.content}
+                            </pre>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <div className="text-[0.65rem] text-gray-400 space-x-2">
+                              <span>• {doc.content.length} chars</span>
+                              <span>• {displayType}</span>
+                            </div>
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  onSelect(doc.content, doc.name, doc);
+                                }}
+                                className="flex items-center gap-1 text-[0.65rem] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                              >
+                                Set as Additional Context
+                              </button>
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  if (onSetCurrentDocument) {
+                                    onSetCurrentDocument(doc.content, doc.name, doc);
+                                  } else {
+                                    onSelect(doc.content, doc.name, doc);
+                                  }
+                                }}
+                                className="flex items-center gap-1 text-[0.65rem] bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded"
+                              >
+                                Set as Current
+                              </button>
+                              <button
+                                onClick={(e) => handleSetFocusProject(doc, e)}
+                                className="flex items-center gap-1 text-[0.65rem] bg-orange-700 hover:bg-orange-600 text-white px-2 py-1 rounded"
+                                title="Set as focus project"
+                              >
+                                Set as Focus Project
+                              </button>
+                              <button
+                                onClick={(e) => handleSaveAsDomain(doc.content, doc.name, e)}
+                                className="flex items-center gap-1 text-[0.65rem] bg-purple-700 hover:bg-purple-600 text-white px-2 py-1 rounded"
+                              >
+                                Set as Domain Definition
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
           </div>
         )}
       </div>
