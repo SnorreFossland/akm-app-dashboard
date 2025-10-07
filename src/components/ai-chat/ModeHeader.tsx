@@ -22,37 +22,26 @@ export function ModeHeader({
     onChatSubModeChange,
     showFileOperations = false,
 }: ModeHeaderProps) {
-    const config = MODE_CONFIGS[mode];
-
-    console.log('ModeHeader render:', { mode, showFileOperations });
-
     return (
-        <div className="flex flex-col w-full">
-            <div className="flex items-center justify-center gap-4 w-full">
-                <div className="flex items-center gap-3 flex-shrink-0">
-                    <ModeSwitcher mode={mode} onModeChange={onModeChange} />
-                    {mode === 'chat' && (
-                        <ChatSubModeToggle
-                            subMode={chatSubMode}
-                            onSubModeChange={onChatSubModeChange}
-                        />
-                    )}
-                </div>
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/50">
+            <div className="flex items-center gap-2">
+                {/* Hide left panel toggle button */}
+            </div>
 
-                <div className="flex items-center gap-2 flex-shrink-0">
-                    {mode === 'edit' && (
-                        <span className="text-xs uppercase tracking-wide text-orange-300/70">
-                            {config.description}
-                        </span>
-                    )}
-                    {/* <Link
-                        href="/"
-                        className="p-1 text-gray-400 hover:text-gray-200 transition-colors"
-                        aria-label="Close and return home"
-                    >
-                        <X className="w-4 h-4" />
-                    </Link> */}
-                </div>
+            <div className="flex items-center gap-2">
+                <ModeSwitcher currentMode={mode} onModeChange={onModeChange} />
+
+                {/* HIDE ChatSubModeToggle - Comment out or remove this block */}
+                {/* {mode === 'chat' && (
+                    <ChatSubModeToggle
+                        currentSubMode={chatSubMode}
+                        onSubModeChange={onChatSubModeChange}
+                    />
+                )} */}
+            </div>
+
+            <div className="flex items-center gap-2">
+                {/* Hide right panel toggle button */}
             </div>
         </div>
     );

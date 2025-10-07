@@ -27,8 +27,9 @@ const AIChatPage = () => {
     const domain = useSelector((state: RootState) => state.modelUniverse?.phData?.domain);
     const documents = useSelector((state: RootState) => state.modelUniverse?.phData?.documents);
     const currentDocument = useSelector((state: RootState) => state.modelUniverse.phData.currentDocument);
-    const focusProject = useSelector((state: RootState) => state.modelUniverse?.phData?.focusProject);
-    const ontology = useSelector((state: RootState) => state.modelUniverse?.phData?.ontology);
+    const focusProject = useSelector((state: RootState) => state.modelUniverse?.phFocus?.focusProj);
+    const [projectDocument, setProjectDocument] = useState<MarkdownDocument | null>(null);
+    const ontology = useSelector((state: RootState) => state.modelUniverse?.phData?.domain.ontology);
 
     // Shared state across all modes
     const [contextContent, setContextContent] = useState('');
@@ -36,7 +37,16 @@ const AIChatPage = () => {
 
     // View mode state
     const [selectedDocument, setSelectedDocument] = useState<MarkdownDocument | undefined>();
-    const [projectDocument, setProjectDocument] = useState<MarkdownDocument | null>(null);
+
+    // Add useEffect to sync projectDocument with focusProject
+    useEffect(() => {
+        if (focusProject) {
+            const matchingDoc = documents?.find(doc => doc.id === focusProject.id);
+            setProjectDocument(matchingDoc || null);
+        } else {
+            setProjectDocument(null);
+        }
+    }, [focusProject, documents]);
 
     // Edit mode state
     const [documentName, setDocumentName] = useState('');
@@ -92,6 +102,8 @@ const AIChatPage = () => {
         if (focusProject) {
             const matchingDoc = documents?.find(doc => doc.id === focusProject.id);
             setProjectDocument(matchingDoc || null);
+        } else {
+            setProjectDocument(null);
         }
     }, [focusProject, documents]);
 
@@ -417,9 +429,20 @@ const AIChatPage = () => {
                                         </div>
                                     </div>
                                     <div className="flex-1 overflow-auto px-4 py-4">
-                                        <MarkdownPreview mdPreview={projectDocument.content} variant="compact" />
+                                        {projectDocument.content ? (
+                                            <MarkdownPreview mdPreview={projectDocument.content} variant="compact" />
+                                        ) : (
+                                            <div className="text-sm text-gray-400">Loading content...</div>
+                                        )}
                                     </div>
                                 </>
+                            ) : focusProject ? (
+                                <div className="h-full flex items-center justify-center px-4 py-4">
+                                    <div className="text-center text-gray-400">
+                                        <p className="text-sm">Project not found in library</p>
+                                        <p className="text-xs mt-2">ID: {focusProject.id}</p>
+                                    </div>
+                                </div>
                             ) : (
                                 <div className="h-full flex items-center justify-center px-4 py-4">
                                     <div className="text-center text-gray-400">
@@ -448,7 +471,7 @@ const AIChatPage = () => {
                     ),
                 },
             ],
-            defaultTab: focusProject ? 'projects' : (domain?.presentation ? 'domain' : 'context'),
+            defaultTab: projectDocument ? 'projects' : (domain?.presentation ? 'domain' : 'context'),
         };
 
         switch (mode) {
@@ -555,7 +578,8 @@ const AIChatPage = () => {
         documentType,
         isLibraryOpen,
         libraryTarget,
-        focusProject, // Add to dependencies
+        focusProject,
+        projectDocument, // Add projectDocument to dependencies
         handleSelectDocument,
         handleEditDocument,
         handleChatWithDocument,

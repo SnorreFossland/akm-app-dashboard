@@ -54,7 +54,7 @@ export function ThreePanelLayout({
     setShowLeftPanel,
     showRightPanel = true,
     setShowRightPanel,
-    middlePanelHeader, // Add this
+    middlePanelHeader,
 }: ThreePanelLayoutProps) {
     const MIN_PANEL_WIDTH = 150;
     const MIN_MIDDLE_WIDTH = 180;
@@ -87,37 +87,55 @@ export function ThreePanelLayout({
         return fallback;
     };
 
-    // Use safe defaults instead of directly indexing tabs[0]
-    const [activeLeftTab, setActiveLeftTab] = useState<string>(
-        getDefaultTabKey(leftPanelContent, 'left')
-    );
-    const [activeMiddleTab, setActiveMiddleTab] = useState<string>(
-        getDefaultTabKey(middlePanelContent, 'guide')
-    );
-    const [activeRightTab, setActiveRightTab] = useState<string>(
-        getDefaultTabKey(rightPanelContent, 'preview')
-    );
+    // Initialize active tabs from defaultTab - FIXED VERSION
+    const [activeLeftTab, setActiveLeftTab] = useState<string>(() => {
+        if (leftPanelContent && typeof leftPanelContent === 'object' && 'tabs' in leftPanelContent) {
+            return leftPanelContent.defaultTab || (leftPanelContent.tabs[0]?.key) || 'left';
+        }
+        return 'left';
+    });
 
-    // Inside the component, ensure activeTab is initialized from defaultTab:
-    const [leftActiveTab, setLeftActiveTab] = useState<string>('');
-    const [rightActiveTab, setRightActiveTab] = useState<string>('');
+    const [activeMiddleTab, setActiveMiddleTab] = useState<string>(() => {
+        if (middlePanelContent && typeof middlePanelContent === 'object' && 'tabs' in middlePanelContent) {
+            return middlePanelContent.defaultTab || (middlePanelContent.tabs[0]?.key) || 'guide';
+        }
+        return 'guide';
+    });
 
-    // Initialize active tabs from defaultTab on mount or when content changes
+    const [activeRightTab, setActiveRightTab] = useState<string>(() => {
+        if (rightPanelContent && typeof rightPanelContent === 'object' && 'tabs' in rightPanelContent) {
+            return rightPanelContent.defaultTab || (rightPanelContent.tabs[0]?.key) || 'preview';
+        }
+        return 'preview';
+    });
+
+    // Update active tabs when panel content changes
     useEffect(() => {
         if (leftPanelContent && typeof leftPanelContent === 'object' && 'tabs' in leftPanelContent) {
-            if (leftPanelContent.defaultTab && leftActiveTab === '') {
-                setLeftActiveTab(leftPanelContent.defaultTab);
+            const defaultKey = leftPanelContent.defaultTab || (leftPanelContent.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveLeftTab(defaultKey);
             }
         }
-    }, [leftPanelContent, leftActiveTab]);
+    }, [leftPanelContent]);
+
+    useEffect(() => {
+        if (middlePanelContent && typeof middlePanelContent === 'object' && 'tabs' in middlePanelContent) {
+            const defaultKey = middlePanelContent.defaultTab || (middlePanelContent.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveMiddleTab(defaultKey);
+            }
+        }
+    }, [middlePanelContent]);
 
     useEffect(() => {
         if (rightPanelContent && typeof rightPanelContent === 'object' && 'tabs' in rightPanelContent) {
-            if (rightPanelContent.defaultTab && rightActiveTab === '') {
-                setRightActiveTab(rightPanelContent.defaultTab);
+            const defaultKey = rightPanelContent.defaultTab || (rightPanelContent.tabs[0]?.key);
+            if (defaultKey) {
+                setActiveRightTab(defaultKey);
             }
         }
-    }, [rightPanelContent, rightActiveTab]);
+    }, [rightPanelContent]);
 
     // Helper to check if panel is a tabs object
     const isPanelTabs = (panel: any): boolean => {

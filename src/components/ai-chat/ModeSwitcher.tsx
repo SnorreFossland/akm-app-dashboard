@@ -4,34 +4,43 @@ import { Eye, MessageSquare, Edit } from 'lucide-react';
 import type { AIChatMode } from '@/types/aiChatModes';
 
 interface ModeSwitcherProps {
-    mode: AIChatMode;
+    currentMode: AIChatMode;
     onModeChange: (mode: AIChatMode) => void;
-    className?: string;
 }
 
-export function ModeSwitcher({ mode, onModeChange, className = '' }: ModeSwitcherProps) {
-    const modes: Array<{ value: AIChatMode; label: string; icon: React.ComponentType<{ className?: string }> }> = [
-        { value: 'view', label: 'View', icon: Eye },
-        { value: 'edit', label: 'Edit', icon: Edit },
-        { value: 'chat', label: 'Chat', icon: MessageSquare },
-    ];
-
+export function ModeSwitcher({ currentMode, onModeChange }: ModeSwitcherProps) {
     return (
-        <div className={`flex items-center gap-1 bg-gray-800/50 rounded-md p-1 ${className}`}>
-            {modes.map(({ value: buttonMode, label, icon: Icon }) => (
-                <button
-                    key={buttonMode}
-                    onClick={() => onModeChange(buttonMode)}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${mode === buttonMode
-                            ? 'bg-blue-600 text-white'
-                            : 'text-gray-300 hover:text-white hover:bg-gray-700'
-                        }`}
-                    aria-pressed={mode === buttonMode}
-                >
-                    <Icon className="w-4 h-4" />
-                    <span>{label}</span>
-                </button>
-            ))}
+        <div className="flex gap-1 bg-gray-700/50 p-1 rounded">
+            <button
+                onClick={() => onModeChange('view')}
+                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${currentMode === 'view'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-600'
+                    }`}
+            >
+                <Eye className="h-4 w-4 inline mr-1" />
+                View
+            </button>
+            <button
+                onClick={() => onModeChange('edit')}
+                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${currentMode === 'edit'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-600'
+                    }`}
+            >
+                <Edit className="h-4 w-4 inline mr-1" />
+                Edit
+            </button>
+            <button
+                onClick={() => onModeChange('chat')}
+                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${currentMode === 'chat'
+                        ? 'bg-blue-600 text-white'
+                        : 'text-gray-300 hover:bg-gray-600'
+                    }`}
+            >
+                <MessageSquare className="h-4 w-4 inline mr-1" />
+                Chat
+            </button>
         </div>
     );
 }
