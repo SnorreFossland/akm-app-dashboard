@@ -31,12 +31,12 @@ export function ModeHeader({
             <div className="flex items-center justify-center gap-4 w-full">
                 <div className="flex items-center gap-3 flex-shrink-0">
                     <ModeSwitcher mode={mode} onModeChange={onModeChange} />
-                    {mode === 'chat' && (
+                    {/* {mode === 'chat' && (
                         <ChatSubModeToggle
                             subMode={chatSubMode}
                             onSubModeChange={onChatSubModeChange}
                         />
-                    )}
+                    )} */}
                 </div>
 
                 <div className="flex items-center gap-2 flex-shrink-0">

@@ -62,6 +62,7 @@ This document explains how "agents" are structured and used in this app, and how
   - Uses `ThreePanelLayout` component with `middlePanelHeader` prop for mode controls
   - `ModeHeader` component rendered in middle panel between hide panel buttons
   - `FileOperations` component at top of page above all panels
+  - **Default tab initialization:** `ThreePanelLayout` must initialize activeTab state from `defaultTab` prop on mount using `useEffect` to ensure tabs display content immediately without requiring user clicks.
 
 ### View Mode (`/ai-chat?mode=view`)
 - **Purpose:** Browse, preview, and manage document library.
@@ -77,9 +78,10 @@ This document explains how "agents" are structured and used in this app, and how
 - **Context controls:** Checkboxes for "Include Domain" (auto-inject domain presentation) and "Refine document" (current document refinement mode).
 
 #### General Sub-Mode (`?mode=chat&sub=general`)
-- **Left panel:** Tabs — "Domain", "Context Docs", "History".
-- **Middle panel:** Tabs — "AI Chat", "Current Document" (displays name/type from page-level state).
-- **Right panel:** Tabs — "Preview" (shows AI response with name/type from Current Document metadata), "Library".
+- **Left panel:** Tabs — "Domain" (default), "Current Document".
+- **Middle panel:** Tab — "AI Chat" (default, single tab).
+- **Right panel:** Tabs — "Preview" (default), "Library".
+- **Tab initialization:** All three panels must have their defaultTab content visible on page load/reload.
 - **Preview panel features:**
   - Displays document name and type at top (synchronized with Current Document tab metadata)
   - Name/type are passed from page-level `documentName`/`documentType` state
@@ -190,6 +192,11 @@ This document explains how "agents" are structured and used in this app, and how
 - Empty/odd responses:
   - Inspect network tab/logs and the normalization logic in chat components.
   - Reduce temperature and/or simplify prompts and context.
+- **Tabs not showing default content:**
+  - Check that `defaultTab` values in panel configs match actual tab `key` values exactly.
+  - Verify `ThreePanelLayout` initializes `activeTab` state from `defaultTab` on mount.
+  - Ensure `useEffect` in `ThreePanelLayout` runs when panel content/defaultTab changes.
+  - Common issue: `activeTab` state initialized to empty string instead of `defaultTab` value.
 
 ## Tips
 - Keep prompts short, specific, and scoped; move background into the Document Panel.

@@ -1,12 +1,12 @@
 'use client';
 
+import React, { useCallback, useEffect, useState } from 'react';
 import ChatComponent from '@/components/ai-chat/ChatComponent';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import type { DomainData } from '@/features/model-universe/modelSlice';
 import { BookmarkPlus, X, Check, Edit } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
 
 interface GeneralChatPanelsProps {
     domain: DomainData | null;
@@ -37,6 +37,155 @@ interface GeneralChatPanelsProps {
     documentName?: string;
     documentType?: string;
     onSavePreviewToLibrary?: (content: string, name?: string, type?: string) => void;
+}
+
+function PreviewPanel({
+    chatMdPreview,
+    setChatMdPreview,
+    onSavePreviewToLibrary,
+    documentName: parentDocumentName,
+    documentType: parentDocumentType,
+}: {
+    chatMdPreview: string;
+    setChatMdPreview: (preview: string) => void;
+    onSavePreviewToLibrary?: (content: string, name?: string, type?: string) => void;
+    documentName?: string;
+    documentType?: string;
+}) {
+    const [isEditingPreview, setIsEditingPreview] = useState(false);
+    const [previewEditContent, setPreviewEditContent] = useState('');
+
+    // Use parent name/type if provided
+    const displayName = parentDocumentName || 'AI Response';
+    const displayType = parentDocumentType || 'ai-response';
+
+    // Sync preview edit content when chatMdPreview changes
+    useEffect(() => {
+        if (!isEditingPreview) {
+            setPreviewEditContent(chatMdPreview || '');
+        }
+    }, [chatMdPreview, isEditingPreview]);
+
+    return (
+        <div className="h-full flex flex-col overflow-hidden">
+            {chatMdPreview ? (
+                <>
+                    {/* Document Header with Name and Type */}
+                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">
+                        <div className="flex flex-col gap-1 flex-1 min-w-0">
+                            <h3 className="text-base font-semibold text-gray-200 truncate">
+                                {displayName}
+                            </h3>
+                            <span className="text-xs text-gray-400">
+                                {displayType}
+                            </span>
+                        </div>
+                    </div>
+
+                    {/* Action Buttons Row */}
+                    <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/30">
+                        {isEditingPreview ? (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        setChatMdPreview(previewEditContent);
+                                        setIsEditingPreview(false);
+                                    }}
+                                    className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded"
+                                    title="Apply changes"
+                                >
+                                    <Check className="h-3 w-3" />
+                                    Apply
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setPreviewEditContent(chatMdPreview);
+                                        setIsEditingPreview(false);
+                                    }}
+                                    className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
+                                    title="Cancel editing"
+                                >
+                                    <X className="h-3 w-3" />
+                                    Cancel
+                                </button>
+                            </>
+                        ) : (
+                            <>
+                                <button
+                                    onClick={() => {
+                                        setPreviewEditContent(chatMdPreview);
+                                        setIsEditingPreview(true);
+                                    }}
+                                    className="flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded"
+                                    title="Edit preview"
+                                >
+                                    <Edit className="h-3 w-3" />
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => setChatMdPreview('')}
+                                    className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
+                                    title="Clear preview"
+                                >
+                                    <X className="h-3 w-3" />
+                                    Clear
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        console.group('🔵 Preview Save Button Clicked');
+                                        console.log('Current name/type:', {
+                                            displayName,
+                                            displayType,
+                                            parentDocumentName,
+                                            parentDocumentType,
+                                            contentLength: chatMdPreview?.length
+                                        });
+
+                                        if (onSavePreviewToLibrary && chatMdPreview) {
+                                            console.log('✅ Calling save with:', {
+                                                name: displayName,
+                                                type: displayType
+                                            });
+                                            onSavePreviewToLibrary(chatMdPreview, displayName, displayType);
+                                        } else {
+                                            console.error('❌ Cannot save');
+                                        }
+                                        console.groupEnd();
+                                    }}
+                                    className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded"
+                                    title="Save preview to library"
+                                >
+                                    <BookmarkPlus className="h-3 w-3" />
+                                    Save to Library
+                                </button>
+                            </>
+                        )}
+                    </div>
+
+                    {/* Content */}
+                    <div className="flex-1 overflow-auto px-4 py-4">
+                        {isEditingPreview ? (
+                            <textarea
+                                value={previewEditContent}
+                                onChange={(e) => setPreviewEditContent(e.target.value)}
+                                className="w-full h-full bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
+                                placeholder="Edit preview content..."
+                            />
+                        ) : (
+                            <MarkdownPreview mdPreview={chatMdPreview} variant="default" />
+                        )}
+                    </div>
+                </>
+            ) : (
+                <div className="h-full flex items-center justify-center px-4 py-4">
+                    <div className="text-center text-gray-400">
+                        <p className="text-sm">No preview available</p>
+                        <p className="text-xs mt-2">Click "Show Preview" on an AI response to view it here</p>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 }
 
 export function GeneralChatPanels(props: GeneralChatPanelsProps) {
@@ -94,55 +243,6 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                         </div>
                     ),
                 },
-                // {
-                //     key: 'context',
-                //     label: 'Context Docs',
-                //     content: (
-                //         <div className="h-full flex flex-col overflow-hidden">
-                //             {currentDocument && (
-                //                 <div className="border-b border-gray-700 pb-2 mb-2">
-                //                     <div className="text-xs font-semibold text-gray-400 px-2 mb-1">Current Document:</div>
-                //                     <div className="px-2 max-h-40 overflow-auto bg-gray-900/50 rounded p-2">
-                //                         <MarkdownPreview mdPreview={currentDocument} variant="compact" />
-                //                     </div>
-                //                 </div>
-                //             )}
-                //             {/* <DocumentPanel
-                //                 mdContent={contextContent}
-                //                 setMdContent={setContextContent}
-                //                 setIsLibraryOpen={(open) => {
-                //                     if (open) openLibraryFor('context');
-                //                     else closeLibrary();
-                //                 }}
-                //                 isLibraryOpen={isLibraryOpen && libraryTarget === 'context'}
-                //                 panelType="left"
-                //             /> */}
-                //         </div>
-                //     ),
-                // },
-                {
-                    key: 'document',
-                    label: 'Current Document',
-                    content: (
-                        <div className="h-full overflow-auto px-4 py-4">
-                            <MarkdownPreview mdPreview={currentDocument} variant="default" />
-                        </div>
-                    ),
-                },
-                // {
-                //     key: 'history',
-                //     label: 'History',
-                //     content: (
-                //         <div className="h-full overflow-auto px-2 py-2">
-                //             <div className="text-sm text-gray-400">Chat history placeholder</div>
-                //         </div>
-                //     ),
-                // },
-            ],
-            defaultTab: 'domain',
-        },
-        middlePanelContent: {
-            tabs: [
                 {
                     key: 'document',
                     label: 'Current Document',
@@ -153,12 +253,17 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                             ) : (
                                 <div className="text-center text-gray-400 p-8">
                                     <p className="text-sm">No document selected</p>
-                                    <p className="text-xs mt-2">Select a document from the library to view it here</p>
+                                    <p className="text-xs mt-2">Select a document from the library</p>
                                 </div>
                             )}
                         </div>
                     ),
                 },
+            ],
+            defaultTab: 'domain',
+        },
+        middlePanelContent: {
+            tabs: [
                 {
                     key: 'chat',
                     label: 'AI Chat',
@@ -194,7 +299,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                     ),
                 },
             ],
-            defaultTab: 'document',
+            defaultTab: 'chat',
         },
         rightPanelContent: {
             tabs: [
@@ -205,9 +310,9 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                         <PreviewPanel
                             chatMdPreview={chatMdPreview}
                             setChatMdPreview={setChatMdPreview}
-                            onSavePreviewToLibrary={props.onSavePreviewToLibrary}
-                            documentName={props.documentName}
-                            documentType={props.documentType}
+                            onSavePreviewToLibrary={onSavePreviewToLibrary}
+                            documentName={documentName}
+                            documentType={documentType}
                         />
                     ),
                 },
@@ -229,162 +334,4 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
             defaultTab: 'preview',
         },
     };
-
-    // Extract preview panel into a separate component where hooks are allowed
-    function PreviewPanel({
-        chatMdPreview,
-        setChatMdPreview,
-        onSavePreviewToLibrary,
-        documentName: parentDocumentName,
-        documentType: parentDocumentType,
-    }: {
-        chatMdPreview: string;
-        setChatMdPreview: (preview: string) => void;
-        onSavePreviewToLibrary?: (content: string, name?: string, type?: string) => void;
-        documentName?: string;
-        documentType?: string;
-    }) {
-        const [isEditingPreview, setIsEditingPreview] = useState(false);
-        const [previewEditContent, setPreviewEditContent] = useState('');
-
-        // Use parent name/type if provided
-        const displayName = parentDocumentName || 'AI Response';
-        const displayType = parentDocumentType || 'ai-response';
-
-        console.log('🔷 PreviewPanel render:', {
-            hasParentDocumentName: !!parentDocumentName,
-            parentDocumentName,
-            parentDocumentType,
-            displayName,
-            displayType
-        });
-
-        // Sync preview edit content when chatMdPreview changes
-        useEffect(() => {
-            if (!isEditingPreview) {
-                setPreviewEditContent(chatMdPreview || '');
-            }
-        }, [chatMdPreview, isEditingPreview]);
-
-        return (
-            <div className="h-full flex flex-col overflow-hidden">
-                {chatMdPreview ? (
-                    <>
-                        {/* Document Header with Name and Type */}
-                        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">
-                            <div className="flex flex-col gap-1 flex-1 min-w-0">
-                                <h3 className="text-base font-semibold text-gray-200 truncate">
-                                    {displayName}
-                                </h3>
-                                <span className="text-xs text-gray-400">
-                                    {displayType}
-                                </span>
-                            </div>
-                        </div>
-
-                        {/* Action Buttons Row */}
-                        <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/30">
-                            {isEditingPreview ? (
-                                <>
-                                    <button
-                                        onClick={() => {
-                                            setChatMdPreview(previewEditContent);
-                                            setIsEditingPreview(false);
-                                        }}
-                                        className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded"
-                                        title="Apply changes"
-                                    >
-                                        <Check className="h-3 w-3" />
-                                        Apply
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            setPreviewEditContent(chatMdPreview);
-                                            setIsEditingPreview(false);
-                                        }}
-                                        className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
-                                        title="Cancel editing"
-                                    >
-                                        <X className="h-3 w-3" />
-                                        Cancel
-                                    </button>
-                                </>
-                            ) : (
-                                <>
-                                    <button
-                                        onClick={() => {
-                                            setPreviewEditContent(chatMdPreview);
-                                            setIsEditingPreview(true);
-                                        }}
-                                        className="flex items-center gap-1 px-3 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded"
-                                        title="Edit preview"
-                                    >
-                                        <Edit className="h-3 w-3" />
-                                        Edit
-                                    </button>
-                                    <button
-                                        onClick={() => setChatMdPreview('')}
-                                        className="flex items-center gap-1 px-3 py-1 text-xs bg-gray-600 hover:bg-gray-500 text-white rounded"
-                                        title="Clear preview"
-                                    >
-                                        <X className="h-3 w-3" />
-                                        Clear
-                                    </button>
-                                    <button
-                                        onClick={() => {
-                                            console.group('🔵 Preview Save Button Clicked');
-                                            console.log('Current name/type:', {
-                                                displayName,
-                                                displayType,
-                                                parentDocumentName,
-                                                parentDocumentType,
-                                                contentLength: chatMdPreview?.length
-                                            });
-
-                                            if (onSavePreviewToLibrary && chatMdPreview) {
-                                                console.log('✅ Calling save with:', {
-                                                    name: displayName,
-                                                    type: displayType
-                                                });
-                                                onSavePreviewToLibrary(chatMdPreview, displayName, displayType);
-                                            } else {
-                                                console.error('❌ Cannot save');
-                                            }
-                                            console.groupEnd();
-                                        }}
-                                        className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded"
-                                        title="Save preview to library"
-                                    >
-                                        <BookmarkPlus className="h-3 w-3" />
-                                        Save to Library
-                                    </button>
-                                </>
-                            )}
-                        </div>
-
-                        {/* Content */}
-                        <div className="flex-1 overflow-auto px-4 py-4">
-                            {isEditingPreview ? (
-                                <textarea
-                                    value={previewEditContent}
-                                    onChange={(e) => setPreviewEditContent(e.target.value)}
-                                    className="w-full h-full bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
-                                    placeholder="Edit preview content..."
-                                />
-                            ) : (
-                                <MarkdownPreview mdPreview={chatMdPreview} variant="default" />
-                            )}
-                        </div>
-                    </>
-                ) : (
-                    <div className="h-full flex items-center justify-center px-4 py-4">
-                        <div className="text-center text-gray-400">
-                            <p className="text-sm">No preview available</p>
-                            <p className="text-xs mt-2">Click "Show Preview" on an AI response to view it here</p>
-                        </div>
-                    </div>
-                )}
-            </div>
-        );
-    }
 }

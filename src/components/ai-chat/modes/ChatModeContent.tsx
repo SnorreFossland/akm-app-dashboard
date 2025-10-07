@@ -47,39 +47,43 @@ export function ChatModeContent(params: ChatModeContentParams) {
         subMode: params.subMode
     });
 
-    // Get panels for both sub-modes
-    const generalPanels = GeneralChatPanels({
-        domain: params.domain,
-        contextContent: params.contextContent,
-        setContextContent: params.setContextContent,
-        currentDocument: params.currentDocument,
-        previewContent: params.previewContent ?? '',
-        isLibraryOpen: params.isLibraryOpen,
-        libraryTarget: params.libraryTarget,
-        openLibraryFor: params.openLibraryFor,
-        closeLibrary: params.closeLibrary,
-        handleSetCurrentDocument: params.handleSetCurrentDocument ?? (() => { }),
-        chatInput: params.chatInput,
-        setChatInput: params.setChatInput,
-        chatSelectedModel: params.chatSelectedModel,
-        setChatSelectedModel: params.setChatSelectedModel,
-        chatMdPreview: params.chatMdPreview,
-        setChatMdPreview: params.setChatMdPreview,
-        chatShowLeftPanel: params.chatShowLeftPanel,
-        setChatShowLeftPanel: params.setChatShowLeftPanel,
-        chatShowRightPanel: params.chatShowRightPanel,
-        setChatShowRightPanel: params.setChatShowRightPanel,
-        chatMessages: params.chatMessages,
-        setChatMessages: params.setChatMessages,
-        includeDomainContext: params.includeDomainContext,
-        setIncludeDomainContext: params.setIncludeDomainContext,
-        documentName: params.documentName,
-        documentType: params.documentType,
-        onSavePreviewToLibrary: params.onSavePreviewToLibrary,
-    });
+    // Get panels based on sub-mode - no tabs, just the content
+    if (params.subMode === 'general') {
+        return GeneralChatPanels({
+            domain: params.domain,
+            contextContent: params.contextContent,
+            setContextContent: params.setContextContent,
+            currentDocument: params.currentDocument,
+            previewContent: params.previewContent ?? '',
+            isLibraryOpen: params.isLibraryOpen,
+            libraryTarget: params.libraryTarget,
+            openLibraryFor: params.openLibraryFor,
+            closeLibrary: params.closeLibrary,
+            handleSetCurrentDocument: params.handleSetCurrentDocument ?? (() => { }),
+            chatInput: params.chatInput,
+            setChatInput: params.setChatInput,
+            chatSelectedModel: params.chatSelectedModel,
+            setChatSelectedModel: params.setChatSelectedModel,
+            chatMdPreview: params.chatMdPreview,
+            setChatMdPreview: params.setChatMdPreview,
+            chatShowLeftPanel: params.chatShowLeftPanel,
+            setChatShowLeftPanel: params.setChatShowLeftPanel,
+            chatShowRightPanel: params.chatShowRightPanel,
+            setChatShowRightPanel: params.setChatShowRightPanel,
+            chatMessages: params.chatMessages,
+            setChatMessages: params.setChatMessages,
+            includeDomainContext: params.includeDomainContext,
+            setIncludeDomainContext: params.setIncludeDomainContext,
+            documentName: params.documentName,
+            documentType: params.documentType,
+            onSavePreviewToLibrary: params.onSavePreviewToLibrary,
+        });
+    }
 
-    const advancedPanels = AdvancedChatPanels({
+    // Advanced mode
+    return AdvancedChatPanels({
         domain: params.domain,
+        ontology: params.ontology,
         contextContent: params.contextContent,
         setContextContent: params.setContextContent,
         additionalContext: params.additionalContext ?? '',
@@ -104,21 +108,4 @@ export function ChatModeContent(params: ChatModeContentParams) {
         includeDomainContext: params.includeDomainContext,
         setIncludeDomainContext: params.setIncludeDomainContext,
     });
-
-    // Return combined structure with tabs for both sub-modes
-    return {
-        leftPanelContent: params.subMode === 'general'
-            ? generalPanels.leftPanelContent
-            : advancedPanels.leftPanelContent,
-
-        middlePanelContent: {
-            tabs: params.subMode === 'general'
-                ? generalPanels.middlePanelContent.tabs
-                : advancedPanels.middlePanelContent.tabs,
-        },
-
-        rightPanelContent: params.subMode === 'general'
-            ? generalPanels.rightPanelContent
-            : advancedPanels.rightPanelContent,
-    };
 }
