@@ -14,8 +14,8 @@ import { ModeHeader } from '@/components/ai-chat/ModeHeader';
 import { ViewModeContent } from '@/components/ai-chat/modes/ViewModeContent';
 import { ChatModeContent } from '@/components/ai-chat/modes/ChatModeContent';
 import { EditModeContent } from '@/components/ai-chat/modes/EditModeContent';
-import { setCurrentDocument, MarkdownDocument, saveMarkdownDocument } from '@/features/model-universe/modelSlice';
-import { documentTemplates } from '@/components/ai-chat/DocumentTemplateSelector';
+import { setCurrentDocument, MarkdownDocument, saveMarkdownDocument, updateProjectInfo } from '@/features/model-universe/modelSlice';
+import DocumentTemplateSelector, { DocumentTemplate } from '@/components/ai-chat/DocumentTemplateSelector';
 import { useAIChatMode } from '@/hooks/useAIChatMode';
 import { MODE_CONFIGS } from '@/types/aiChatModes';
 import DiffModal from '@/components/ai-chat/DiffModal';
@@ -34,6 +34,7 @@ const AIChatPage = () => {
     // Shared state across all modes
     const [contextContent, setContextContent] = useState('');
     const [additionalContext, setAdditionalContext] = useState('');
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
     // View mode state
     const [selectedDocument, setSelectedDocument] = useState<MarkdownDocument | undefined>();
@@ -147,6 +148,26 @@ const AIChatPage = () => {
         setLibraryTarget(null);
     }, []);
 
+    const normalizeDocumentType = useCallback((type?: string) => {
+        if (!type) return 'markdown';
+        const trimmed = type.trim().toLowerCase();
+        return trimmed || 'markdown';
+    }, []);
+
+    const updateProjectFromDocument = useCallback((doc: MarkdownDocument) => {
+        const summary = doc.content?.replace(/\s+/g, ' ').trim().slice(0, 200) || 'No summary available.';
+        dispatch(updateProjectInfo({
+            id: doc.id,
+            name: doc.name,
+            description: summary,
+        }));
+        setProjectDocument(doc);
+    }, [dispatch, setProjectDocument]);
+
+    const handleOpenTemplateSelector = useCallback(() => {
+        setShowTemplateSelector(true);
+    }, []);
+
     const handleLibrarySelect = useCallback((content: string, name?: string, doc?: MarkdownDocument) => {
         if (libraryTarget === 'context') {
             setContextContent(content);
@@ -211,11 +232,20 @@ const AIChatPage = () => {
         let oldContent = originalContent || ''; // Use the stored original content
 
         if (existingDoc) {
-            // Updating existing document - keep the same ID and name
+            const desiredName = (documentName || '').trim();
+            const desiredType = (documentType || '').trim();
+            const normalizedName = desiredName !== '' ? desiredName : existingDoc.name;
+            const normalizedType = desiredType !== '' ? desiredType : (existingDoc.type || 'markdown');
+
+            // Prevent accidental name collisions with a different document
+            const conflictingDoc = documents?.find(doc => doc.id !== existingDoc.id && doc.name === normalizedName);
+            const finalName = conflictingDoc ? `${normalizedName} (${new Date().toISOString().slice(0, 16).replace('T', ' ')})` : normalizedName;
+
+            // Updating existing document - keep the same ID, allow rename/type change
             newDoc = {
                 id: existingDoc.id, // Keep the same ID to update in place
-                name: existingDoc.name, // Keep the original name, don't add timestamp
-                type: existingDoc.type || documentType,
+                name: finalName,
+                type: normalizedType,
                 content: contentToSave,
                 createdAt: existingDoc.createdAt,
                 updatedAt: new Date().toISOString(),
@@ -331,18 +361,90 @@ const AIChatPage = () => {
     const [chatMessages, setChatMessages] = useState<any[]>([]);
     const [includeDomainContext, setIncludeDomainContext] = useState(true); // New state for domain context
 
+    const handleTemplateSelect = useCallback((template: DocumentTemplate) => {
+        const normalizedType = normalizeDocumentType(template.type);
+        const nowIso = new Date().toISOString();
+        const templateDoc: MarkdownDocument = {
+            id: `template-${Date.now()}`,
+            name: template.name,
+            type: normalizedType,
+            content: template.content,
+            createdAt: nowIso,
+            updatedAt: nowIso,
+        };
+
+        dispatch(saveMarkdownDocument(templateDoc));
+        dispatch(setCurrentDocument(template.content));
+
+        setSelectedDocument(templateDoc);
+        setDocumentName(template.name);
+        setDocumentType(normalizedType);
+        setPreviewContent(template.content);
+        setOriginalContent(template.content);
+        setChatMdPreview(template.content);
+
+        updateProjectFromDocument(templateDoc);
+        closeLibrary();
+        setShowTemplateSelector(false);
+    }, [
+        dispatch,
+        normalizeDocumentType,
+        updateProjectFromDocument,
+        setSelectedDocument,
+        setDocumentName,
+        setDocumentType,
+        setPreviewContent,
+        setOriginalContent,
+        setChatMdPreview,
+        closeLibrary,
+        setShowTemplateSelector,
+    ]);
+
     // Handler for saving preview from chat mode
-    const handleSavePreviewToLibrary = useCallback((content: string, name?: string, type?: string) => {
+    const handleSavePreviewToLibrary = useCallback((
+        content: string,
+        name?: string,
+        type?: string,
+        options?: { forceNew?: boolean }
+    ) => {
         if (!content) return;
 
-        console.log('💾 Saving preview to library:', { name, type, contentLength: content.length });
+        console.log('💾 Saving preview to library:', {
+            name,
+            type,
+            contentLength: content.length,
+            forceNew: options?.forceNew ?? false
+        });
 
         const timestamp = new Date().toISOString().split('T')[0];
-        const documentName = name || `AI Response ${timestamp}`;
+        const baseName = name?.trim() || `AI Response ${timestamp}`;
         const documentType = type || 'ai-response';
+        const forceNewDocument = options?.forceNew === true;
+
+        const ensureUniqueName = (desiredName: string) => {
+            if (!documents || documents.length === 0) return desiredName;
+
+            if (!documents.some(doc => doc.name === desiredName)) {
+                return desiredName;
+            }
+
+            let attempt = 2;
+            let candidate = `${desiredName} (${attempt})`;
+
+            while (documents.some(doc => doc.name === candidate)) {
+                attempt += 1;
+                candidate = `${desiredName} (${attempt})`;
+            }
+
+            return candidate;
+        };
+
+        const documentName = forceNewDocument ? ensureUniqueName(baseName) : baseName;
 
         // Check if a document with the same name already exists
-        const existingDoc = documents?.find(doc => doc.name === documentName);
+        const existingDoc = !forceNewDocument
+            ? documents?.find(doc => doc.name === documentName)
+            : undefined;
 
         let newDoc: MarkdownDocument;
         let oldContent = '';
@@ -418,15 +520,13 @@ const AIChatPage = () => {
                         <div className="h-full flex flex-col overflow-hidden">
                             {projectDocument ? (
                                 <>
-                                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50 flex-shrink-0">
-                                        <div className="flex flex-col gap-1 min-w-0">
-                                            <h3 className="text-sm font-semibold text-gray-200 truncate">
-                                                {projectDocument.name}
-                                            </h3>
-                                            <span className="text-xs text-gray-400">
-                                                {projectDocument.type || 'Project'}
-                                            </span>
-                                        </div>
+                                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-700 bg-gray-800/50">
+                                        <h3 className="text-base font-semibold text-gray-200 truncate">
+                                            {documentName || 'Untitled Document'}
+                                        </h3>
+                                        <span className="text-xs text-gray-400 whitespace-nowrap">
+                                            {documentType || 'Markdown'}
+                                        </span>
                                     </div>
                                     <div className="flex-1 overflow-auto px-4 py-4">
                                         {projectDocument.content ? (
@@ -492,6 +592,7 @@ const AIChatPage = () => {
                     onDeleteDocument: handleDeleteDocument,
                     previewContent,
                     projectDocument,
+                    onCreateDocumentFromTemplate: handleOpenTemplateSelector,
                 });
 
             case 'chat':
@@ -533,6 +634,7 @@ const AIChatPage = () => {
                     documentName,
                     documentType,
                     onSavePreviewToLibrary: handleSavePreviewToLibrary,
+                    onCreateDocumentFromTemplate: handleOpenTemplateSelector,
                 });
 
             case 'edit':
@@ -604,6 +706,7 @@ const AIChatPage = () => {
         includeDomainContext,
         setIncludeDomainContext,
         handleSavePreviewToLibrary, // Add to dependencies
+        handleOpenTemplateSelector,
     ]);
 
     const modeConfig = MODE_CONFIGS[mode];
@@ -684,10 +787,18 @@ const AIChatPage = () => {
                                     else handleSetCurrentDocument(content);
                                 }}
                                 currentDocument={currentDocument}
+                                onCreateFromTemplate={handleOpenTemplateSelector}
                             />
                         </div>
                     </div>
                 </div>
+            )}
+
+            {showTemplateSelector && (
+                <DocumentTemplateSelector
+                    onSelect={handleTemplateSelect}
+                    onClose={() => setShowTemplateSelector(false)}
+                />
             )}
         </div>
     );

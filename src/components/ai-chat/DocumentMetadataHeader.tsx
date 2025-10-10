@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 
 interface DocumentMetadataHeaderProps {
     documentName: string;
@@ -28,17 +28,20 @@ export function DocumentMetadataHeader({
     setDocumentType,
     currentDocument,
 }: DocumentMetadataHeaderProps) {
-    // Auto-populate document name from first line if empty
+    const [hasUserSetName, setHasUserSetName] = useState(Boolean(documentName));
+
+    // Auto-populate document name when empty and not set by user
     useEffect(() => {
+        if (hasUserSetName) return;
+
         if (!documentName && currentDocument) {
             const firstLine = currentDocument.split('\n')[0].trim();
-            // Remove markdown heading markers (# ## ### etc)
-            const extractedName = firstLine.replace(/^#+\s*/, '').trim();
-            if (extractedName) {
-                setDocumentName(extractedName);
+            const stripped = firstLine.replace(/^#+\s*/, '').trim();
+            if (stripped) {
+                setDocumentName(stripped);
             }
         }
-    }, [currentDocument, documentName, setDocumentName]);
+    }, [currentDocument, documentName, hasUserSetName, setDocumentName]);
 
     return (
         <div className="flex flex-col gap-2 px-4 py-3 border-b border-gray-700 bg-gray-800/50">
@@ -49,7 +52,10 @@ export function DocumentMetadataHeader({
                     <input
                         type="text"
                         value={documentName}
-                        onChange={(e) => setDocumentName(e.target.value)}
+                        onChange={(e) => {
+                            setHasUserSetName(true);
+                            setDocumentName(e.target.value);
+                        }}
                         className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
                         placeholder="Document name (auto-filled from first line)"
                     />

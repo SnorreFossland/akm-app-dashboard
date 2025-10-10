@@ -247,11 +247,22 @@ Do not use its contents as contextual input for other questions--I want it impro
         new Set(PROMPT_TEMPLATES.map(template => template.usage))
     ).sort(), "All"];
 
-    const filteredTemplates = selectedCategory === 'All'
+    const filteredTemplatesOrig = selectedCategory === 'All'
         ? PROMPT_TEMPLATES
-        : PROMPT_TEMPLATES.filter(template => template.usage === selectedCategory);
+        : PROMPT_TEMPLATES.filter(template => template.usage.includes(selectedCategory));
+
+    // If Context Include Domain remove all text in templates with text in square brackets
+    const filteredTemplates = filteredTemplatesOrig.map(template => {
+        return {
+            ...template,
+            content: template.content.replace(/\[[^\]]*\]/g, '')
+        };
+    });
+
     // Define templates for document refinement
     const refineTemplates = REFINE_TEMPLATES;
+
+
 
     // Define resetInactivityTimer BEFORE any useEffect that depends on it
     const resetInactivityTimer = useCallback(() => {
@@ -918,7 +929,7 @@ Do not use its contents as contextual input for other questions--I want it impro
     }, [includeDomainContext, setIncludeDomainContext, domain]);
 
     return (
-        <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative`}>
+        <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative border-l-4 border-r-4 border-orange-800/80`}>
             {/* Guide Sidebar and Main Chat Container - Side by Side */}
             <div className="flex-1 flex flex-col h-0 bg-secondary/40">
                 {/* Guide Sidebar */}
@@ -1386,10 +1397,9 @@ Do not use its contents as contextual input for other questions--I want it impro
                             </div>
                         </div>
                     )}
-                    {pathname === '/prompt-builder' &&
+                    {/* {pathname === '/prompt-builder' &&
                         <div className="flex items-center justify-between p-2">
-                            {/* button row above the chat */}
-                            {/* System Prompt Button */}
+
                             <div
                                 className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
                                 onClick={handleSystemPromptClick}
@@ -1412,8 +1422,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 </button>
                             </div>
                         </div>
-
-                    }
+                    } */}
                     {/* {pathname === '/domain-builder' &&
                         <div className="flex items-center justify-between p-2">
 

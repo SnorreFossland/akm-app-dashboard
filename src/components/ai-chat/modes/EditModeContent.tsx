@@ -1,11 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
 import { DocumentMetadataHeader } from '@/components/ai-chat/DocumentMetadataHeader';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
-import { Button } from '@/components/ui/button';
-import TextareaAutosize from 'react-textarea-autosize';
 
 interface EditModeContentProps {
     documentName: string;
@@ -95,7 +92,7 @@ function EditModeMiddlePanel({
     handleSetCurrentDocument: (content: string) => void;
 }) {
     return (
-        <div className="h-full flex flex-col overflow-hidden border-l-4 border-r-4 border-orange-600">
+        <div className="h-full flex flex-col overflow-hidden border-l-4 border-r-4 border-orange-600/80">
             {/* Document Metadata Header */}
             <DocumentMetadataHeader
                 documentName={documentName}
@@ -107,12 +104,12 @@ function EditModeMiddlePanel({
 
             {/* Editable textarea */}
             <div className="flex-1 overflow-hidden">
-                <TextareaAutosize
+                <textarea
                     value={currentDocument || ''}
                     onChange={(e) => handleSetCurrentDocument(e.target.value)}
                     className="w-full h-full p-4 bg-gray-900 text-gray-200 resize-none focus:outline-none font-mono text-sm"
                     placeholder="Start typing your document here..."
-                    minRows={10}
+                    spellCheck={false}
                 />
             </div>
         </div>
@@ -135,17 +132,15 @@ function EditModeRightPanel({
     const displayContent = previewContent || '';
 
     return (
-        <div className="h-full flex flex-col overflow-hidden border-l-4 border-orange-600">
+        <div className="h-full flex flex-col overflow-hidden">
             {/* Document Header with Name and Type */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">
-                <div className="flex flex-col gap-1">
-                    <h3 className="text-base font-semibold text-gray-200">
-                        {documentName || 'Untitled Document'}
-                    </h3>
-                    <span className="text-xs text-gray-400">
-                        {documentType || 'Markdown'}
-                    </span>
-                </div>
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-700 bg-gray-800/50">
+                <h3 className="text-base font-semibold text-gray-200 truncate">
+                    {documentName || 'Untitled Document'}
+                </h3>
+                <span className="text-xs text-gray-400 whitespace-nowrap">
+                    {documentType || 'Markdown'}
+                </span>
             </div>
 
             {/* Character count and save button */}

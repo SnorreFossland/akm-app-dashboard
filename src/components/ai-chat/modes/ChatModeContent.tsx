@@ -35,8 +35,9 @@ interface ChatModeContentParams {
     includeDomainContext: boolean;
     setIncludeDomainContext: (include: boolean) => void;
     documentName?: string;
-    documentType?: string;
-    onSavePreviewToLibrary?: (content: string, name?: string, type?: string) => void;
+   documentType?: string;
+    onSavePreviewToLibrary?: (content: string, name?: string, type?: string, options?: { forceNew?: boolean }) => void;
+    onCreateDocumentFromTemplate?: () => void;
 }
 
 export function ChatModeContent(params: ChatModeContentParams) {
@@ -76,6 +77,7 @@ export function ChatModeContent(params: ChatModeContentParams) {
         documentName: params.documentName,
         documentType: params.documentType,
         onSavePreviewToLibrary: params.onSavePreviewToLibrary,
+        onCreateDocumentFromTemplate: params.onCreateDocumentFromTemplate,
     });
 
     const advancedPanels = AdvancedChatPanels({
@@ -103,6 +105,10 @@ export function ChatModeContent(params: ChatModeContentParams) {
         setChatMessages: params.setChatMessages,
         includeDomainContext: params.includeDomainContext,
         setIncludeDomainContext: params.setIncludeDomainContext,
+        documentName: params.documentName,
+        documentType: params.documentType,
+        onSavePreviewToLibrary: params.onSavePreviewToLibrary,
+        onCreateDocumentFromTemplate: params.onCreateDocumentFromTemplate,
     });
 
     // Return combined structure with tabs for both sub-modes

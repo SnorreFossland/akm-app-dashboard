@@ -240,8 +240,9 @@ export default function DocumentPanel({
         console.log('133 DocumentPanel handleSaveToLibrary - first:', finalFirstLine, 'second:', finalSecondLine, 'pathname:', pathname);
 
         const nowIso = new Date().toISOString();
-        const baseName = (finalFirstLine || '').trim();
-        let documentName = baseName !== '' ? baseName : `Document ${nowIso.slice(0, 16)}`;
+        const providedName = (documentName || '').trim();
+        const derivedName = (finalFirstLine || '').trim();
+        let resolvedName = providedName !== '' ? providedName : (derivedName !== '' ? derivedName : `Document ${nowIso.slice(0, 16)}`);
         const normalizedType = (documentType || 'markdown').toString().trim() || 'markdown';
 
         let idToUse = documentId || Date.now().toString();
@@ -252,10 +253,10 @@ export default function DocumentPanel({
             createdAt = typeof existingById.createdAt === 'string' ? existingById.createdAt : existingById.createdAt.toString();
         }
 
-        const existingByName = documents?.find((doc) => doc.name === documentName);
+        const existingByName = documents?.find((doc) => doc.name === resolvedName);
         if (existingByName && existingByName.id !== idToUse) {
             const replace = window.confirm(
-                `A document named "${documentName}" already exists.\n\n` +
+                `A document named "${resolvedName}" already exists.\n\n` +
                 `Click "OK" to replace the existing document.\n` +
                 `Click "Cancel" to save as a new document with a timestamp.`
             );
@@ -267,7 +268,7 @@ export default function DocumentPanel({
                 }
             } else {
                 const timestamp = new Date().toISOString().slice(0, 16).replace('T', ' ');
-                documentName = `${documentName} (${timestamp})`;
+                resolvedName = `${resolvedName} (${timestamp})`;
                 idToUse = Date.now().toString();
                 createdAt = nowIso;
             }
@@ -275,7 +276,7 @@ export default function DocumentPanel({
 
         dispatch(saveMarkdownDocument({
             id: idToUse,
-            name: documentName,
+            name: resolvedName,
             type: normalizedType,
             content: contentToSave,
             createdAt,

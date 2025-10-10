@@ -35,6 +35,7 @@ import { setMessages } from '@/features/chat/chatSlice';
 import ModalThreePanelLayout from '@/components/ModalThreePanelLayout';
 import OntologyEditorModal from "@/components/OntologyEditorModal";
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
+import { OntologyBuilderHeader } from '@/components/ontology-builder/OntologyBuilderHeader';
 
 export interface ChatComponentProps {
   input: string;
@@ -153,6 +154,8 @@ export default function OntologyBuilderPage() {
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isAIAssistantActive, setIsAIAssistantActive] = useState(false);
   const [showGuideModal, setShowGuideModal] = useState(false);
   const [showEditorModal, setShowEditorModal] = useState(false);
   const [conceptName, setConceptName] = useState(data?.phData?.concept?.name || "");
@@ -438,7 +441,35 @@ export default function OntologyBuilderPage() {
   );
 
   // Left panel: direct tabs for Domain Description and Project Plan
-  const [activeLeftTab, setActiveLeftTab] = useState<'domain' | 'project'>('domain');
+  const [leftPanelDefaultTab, setLeftPanelDefaultTab] = useState<'domain' | 'project'>('domain');
+
+  const handleViewMode = useCallback(() => {
+    setIsEditMode(false);
+    setIsAIAssistantActive(false);
+    setLeftPanelDefaultTab('domain');
+  }, [setLeftPanelDefaultTab]);
+
+  const handleToggleEdit = useCallback(() => {
+    setIsAIAssistantActive(false);
+    setIsEditMode((prev) => {
+      const next = !prev;
+      if (next) {
+        setShowLeftPanel(true);
+        setLeftPanelDefaultTab('project');
+      } else {
+        setLeftPanelDefaultTab('domain');
+      }
+      return next;
+    });
+  }, [setLeftPanelDefaultTab, setShowLeftPanel]);
+
+  const handleOpenAIAssistant = useCallback(() => {
+    setIsEditMode(false);
+    setIsAIAssistantActive(true);
+    setLeftPanelDefaultTab('domain');
+    setShowLeftPanel(true);
+    router.push('/ai-chat?mode=chat&sub=advanced');
+  }, [router, setLeftPanelDefaultTab, setShowLeftPanel]);
   const leftPanelContent = {
     tabs: [
       {
@@ -510,7 +541,7 @@ export default function OntologyBuilderPage() {
       },
 
     ],
-    defaultTab: 'domain'
+    defaultTab: leftPanelDefaultTab
   };
 
   // Middle panel: only "Current Ontology" tab
@@ -557,34 +588,20 @@ export default function OntologyBuilderPage() {
         showRightPanel={showRightPanel}
         setShowRightPanel={setShowRightPanel}
         className="h-full min-w-0 bg-background text-gray-100"
+        middlePanelHeader={(
+          <OntologyBuilderHeader
+            onViewMode={handleViewMode}
+            onToggleEdit={handleToggleEdit}
+            onOpenAIAssistant={handleOpenAIAssistant}
+            showLeftPanel={showLeftPanel}
+            showRightPanel={showRightPanel}
+            isEditActive={isEditMode}
+            isAIAssistantActive={isAIAssistantActive}
+          />
+        )}
       >
         <></>
       </ThreePanelLayout>
-
-      {/* Floating buttons: Edit Document now opens left panel and switches to Project */}
-      <div className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 flex gap-3">
-        <button
-          aria-label="Open AI Assistant"
-          title="Open AI Ontology Chat Editor"
-          onClick={() => router.push('/ai-chat?mode=chat&sub=advanced')}
-          className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-500 hover:to-blue-500 text-white shadow-lg ring-1 ring-black/10 transition-all duration-200 hover:scale-105"
-        >
-          <FontAwesomeIcon icon={faRobot} className="w-5 h-5" />
-          <span className="text-sm font-semibold">Open AI Assistant</span>
-        </button>
-        <button
-          aria-label="Edit Document"
-          title="Edit Project Plan Document"
-          onClick={() => {
-            // Set active left tab to project (ThreePanelLayout will handle the tab switch)
-            setShowLeftPanel(true);
-          }}
-          className="inline-flex items-center justify-center gap-3 rounded-full px-4 py-2 bg-gray-800/90 hover:bg-gray-700 text-emerald-300 shadow-lg ring-1 ring-emerald-900/50 transition-all duration-200 hover:scale-105"
-        >
-          <Edit className="w-5 h-5" />
-          <span className="text-sm font-semibold">Edit Document</span>
-        </button>
-      </div>
     </div>
   );
 }

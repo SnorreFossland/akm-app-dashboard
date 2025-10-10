@@ -10,10 +10,10 @@ interface ModeSwitcherProps {
 
 export function ModeSwitcher({ currentMode, onModeChange }: ModeSwitcherProps) {
     return (
-        <div className="flex gap-1 bg-gray-700/50 p-1 rounded">
+        <div className="flex gap-1 bg-gray-700/50 p-0.5 rounded">
             <button
                 onClick={() => onModeChange('view')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${currentMode === 'view'
+                className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${currentMode === 'view'
                         ? 'bg-blue-600 text-white'
                         : 'text-gray-300 hover:bg-gray-600'
                     }`}
@@ -23,8 +23,8 @@ export function ModeSwitcher({ currentMode, onModeChange }: ModeSwitcherProps) {
             </button>
             <button
                 onClick={() => onModeChange('edit')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${currentMode === 'edit'
-                        ? 'bg-blue-600 text-white'
+                className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${currentMode === 'edit'
+                        ? 'bg-orange-600/80 text-white'
                         : 'text-gray-300 hover:bg-gray-600'
                     }`}
             >
@@ -33,8 +33,8 @@ export function ModeSwitcher({ currentMode, onModeChange }: ModeSwitcherProps) {
             </button>
             <button
                 onClick={() => onModeChange('chat')}
-                className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${currentMode === 'chat'
-                        ? 'bg-blue-600 text-white'
+                className={`px-2.5 py-1 rounded text-sm font-medium transition-colors ${currentMode === 'chat'
+                        ? 'bg-orange-800 text-white'
                         : 'text-gray-300 hover:bg-gray-600'
                     }`}
             >

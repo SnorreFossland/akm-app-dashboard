@@ -19,6 +19,7 @@ interface ViewModeContentProps {
     onDeleteDocument?: () => void;
     previewContent?: string;
     projectDocument?: MarkdownDocument | null;
+    onCreateDocumentFromTemplate?: () => void;
 }
 
 export function ViewModeContent({
@@ -31,6 +32,7 @@ export function ViewModeContent({
     onDeleteDocument,
     previewContent,
     projectDocument,
+    onCreateDocumentFromTemplate,
 }: ViewModeContentProps) {
     // Debug logging
     if (debug) console.log('ViewModeContent render:', {
@@ -108,6 +110,7 @@ export function ViewModeContent({
                                 if (doc) onSelectDocument(doc);
                             }}
                             currentDocument={currentDocument}
+                            onCreateFromTemplate={onCreateDocumentFromTemplate}
                         />
                     </div>
                 ),

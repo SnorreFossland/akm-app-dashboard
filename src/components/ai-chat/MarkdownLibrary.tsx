@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDocument, updateProjectInfo } from '@/features/model-universe/modelSlice';
 import extractDomainNameAndDescription from './docExtraction';
-import { ChevronDown, ChevronRight, Upload, Search, X } from 'lucide-react';
+import { ChevronDown, ChevronRight, Upload, Search, X, Plus } from 'lucide-react';
 
 interface MarkdownLibraryProps {
   onSelect: (content: string, name: string, docMeta?: MarkdownDocument) => void;
@@ -11,13 +11,15 @@ interface MarkdownLibraryProps {
   onShowInLeftPanel?: (content: string, name: string, docMeta?: MarkdownDocument) => void; // New prop for showing in left panel
   onSetCurrentDocument?: (content: string, name: string, docMeta?: MarkdownDocument) => void; // New prop for setting current document
   currentDocument?: string; // Add this missing prop
+  onCreateFromTemplate?: () => void;
 }
 const MarkdownLibrary = ({
   onSelect,
   hideExportLibraryButton,
   onShowInLeftPanel,
   onSetCurrentDocument, // Add this parameter
-  currentDocument
+  currentDocument,
+  onCreateFromTemplate,
 }: MarkdownLibraryProps) => {
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const dispatch = useDispatch();
@@ -30,6 +32,7 @@ const MarkdownLibrary = ({
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState('');
+  const [editContent, setEditContent] = useState('');
   const [metadataMessage, setMetadataMessage] = useState<string | null>(null);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
@@ -159,9 +162,11 @@ const MarkdownLibrary = ({
 
   const handleSaveAsDomain = (content: string, name: string, e: React.MouseEvent) => {
     e.stopPropagation();
-    const { name: domainName, description } = extractDomainNameAndDescription(content);
+    const trimmedDocName = name?.trim() || '';
+    const { name: extractedName, description } = extractDomainNameAndDescription(content);
+    const domainName = trimmedDocName || extractedName;
     dispatch(setDomainData({
-      name: domainName || name,
+      name: domainName,
       description: description || '',
       presentation: content,
       prompt: '',
@@ -182,6 +187,7 @@ const MarkdownLibrary = ({
     setEditingDocId(doc.id);
     setEditName(doc.name);
     setEditType(doc.type || 'markdown');
+    setEditContent(doc.content || '');
     setMetadataMessage(null);
     setMetadataError(null);
   };
@@ -206,6 +212,7 @@ const MarkdownLibrary = ({
       ...doc,
       name: trimmedName,
       type: normalizedType,
+      content: editContent,
       updatedAt: new Date().toISOString(),
     };
 
@@ -261,6 +268,16 @@ const MarkdownLibrary = ({
         >
           <Upload className="h-4 w-4" />
         </button>
+
+        {onCreateFromTemplate && (
+          <button
+            onClick={onCreateFromTemplate}
+            className="p-2 text-gray-400 hover:text-gray-200 hover:bg-gray-700 rounded transition-colors flex-shrink-0"
+            title="Create from template"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
       {/* Import dialog - shown when icon clicked */}
@@ -356,9 +373,29 @@ const MarkdownLibrary = ({
                           <button
                             onClick={(e) => beginEditMetadata(doc, e)}
                             disabled={editingDocId === doc.id}
-                            className={`flex w-full items-center gap-1 text-[0.65rem] px-2 py-1 rounded ${editingDocId === doc.id ? 'bg-gray-700 text-gray-400 cursor-not-allowed' : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
+                            className={`flex w-full items-center justify-between gap-1 text-[0.65rem] px-2 py-1 rounded 
+                              ${editingDocId === doc.id 
+                              ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
+                              : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
                           >
-                            {editingDocId === doc.id ? 'Editing…' : 'Edit Name and Type'}
+                            <span className="flex items-center gap-1">
+                              {editingDocId === doc.id 
+                              ? (
+                              <span>Editing…</span>
+                              ) : (
+                              <>
+                                <span>{doc.name}</span>
+                                {doc.type && (
+                                <span className="text-blue-300">({displayType})</span>
+                                )}
+                                <button
+                                  className="ms-auto px-2 py-1 text-xs bg-gray-700 rounded hover:bg-blue-900 transition-colors"
+                                >
+                                  Edit
+                                </button>
+                              </>
+                              )}
+                            </span>
                           </button>
                           {editingDocId === doc.id && (
                             <div className="mt-3 space-y-3 rounded-md border border-gray-600 bg-gray-900/70 p-3">
@@ -393,10 +430,19 @@ const MarkdownLibrary = ({
                                   </select>
                                 </label>
                               </div>
+                              <label className="text-xs text-gray-300 flex flex-col gap-1">
+                                <span>Document content</span>
+                                <textarea
+                                  value={editContent}
+                                  onChange={(event) => setEditContent(event.target.value)}
+                                  className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[160px]"
+                                  placeholder="Edit document content"
+                                />
+                              </label>
                               {metadataError && (
                                 <div className="text-xs text-red-400">{metadataError}</div>
                               )}
-                              <div className="flex gap-2">
+                              <div className="flex gap-2 flex-wrap">
                                 <button
                                   onClick={(event) => saveMetadata(doc, event)}
                                   className="text-xs bg-blue-700 hover:bg-blue-600 text-white px-3 py-1 rounded"
@@ -412,11 +458,13 @@ const MarkdownLibrary = ({
                               </div>
                             </div>
                           )}
-                          <div className="bg-gray-900 rounded p-2 mb-2 max-h-60 overflow-y-auto">
-                            <pre className="whitespace-pre-wrap text-xs text-gray-200 font-mono">
-                              {doc.content}
-                            </pre>
-                          </div>
+                          {editingDocId !== doc.id && (
+                            <div className="bg-gray-800 rounded p-2 mb-2 max-h-60 overflow-y-auto">
+                              <pre className="whitespace-pre-wrap text-xs text-gray-300 font-mono">
+                                {doc.content}
+                              </pre>
+                            </div>
+                          )}
                           <div className="flex justify-between items-center">
                             <div className="text-[0.65rem] text-gray-400 space-x-2">
                               <span>• {doc.content.length} chars</span>
@@ -430,7 +478,7 @@ const MarkdownLibrary = ({
                                 }}
                                 className="flex items-center gap-1 text-[0.65rem] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                               >
-                                Set as Additional Context
+                                Set Additional Context
                               </button>
                               <button
                                 onClick={(e) => {
@@ -450,13 +498,13 @@ const MarkdownLibrary = ({
                                 className="flex items-center gap-1 text-[0.65rem] bg-orange-700 hover:bg-orange-600 text-white px-2 py-1 rounded"
                                 title="Set as focus project"
                               >
-                                Set as Focus Project
+                                Set Project Plan
                               </button>
                               <button
                                 onClick={(e) => handleSaveAsDomain(doc.content, doc.name, e)}
                                 className="flex items-center gap-1 text-[0.65rem] bg-purple-700 hover:bg-purple-600 text-white px-2 py-1 rounded"
                               >
-                                Set as Domain Definition
+                                Set Domain Definition
                               </button>
                             </div>
                           </div>

@@ -61,8 +61,9 @@ export function ThreePanelLayout({
 
     // Use the same mobile detection as sidebar
     const isMobile = useIsMobile();
-    const [leftPanelWidth, setLeftPanelWidth] = useState(500);
-    const [rightPanelWidth, setRightPanelWidth] = useState(500);
+    const DEFAULT_PANEL_WIDTH = 320;
+    const [leftPanelWidth, setLeftPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+    const [rightPanelWidth, setRightPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
 
     // Remove duplicate mobile detection useEffect
     useEffect(() => {
@@ -71,6 +72,18 @@ export function ThreePanelLayout({
             const headerElement = document.querySelector('header') || document.querySelector('.app-header');
             const headerHeight = headerElement ? headerElement.offsetHeight : 200;
             document.documentElement.style.setProperty('--header-height', `${headerHeight}px`);
+
+            const availableWidth = window.innerWidth - MIN_MIDDLE_WIDTH - 16; // account for minimum middle width and gutters
+
+            setLeftPanelWidth((prev) => {
+                const maxLeft = Math.max(MIN_PANEL_WIDTH, availableWidth - rightPanelWidth);
+                return Math.min(Math.max(prev, MIN_PANEL_WIDTH), maxLeft);
+            });
+
+            setRightPanelWidth((prev) => {
+                const maxRight = Math.max(MIN_PANEL_WIDTH, availableWidth - leftPanelWidth);
+                return Math.min(Math.max(prev, MIN_PANEL_WIDTH), maxRight);
+            });
         };
         checkScreenSize();
         window.addEventListener('resize', checkScreenSize);

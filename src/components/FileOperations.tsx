@@ -23,11 +23,17 @@ interface FileOperationsProps {
 export function FileOperations({ className = "" }: FileOperationsProps) {
     const phSource = useAppSelector((state) => state.modelUniverse.phSource);
     const data = useAppSelector((state) => state.modelUniverse); 
-    const domain = data.phData.domain
+    const domain = data.phData.domain;
     const dispatch = useAppDispatch();
     const pathname = usePathname();
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const modelUniverse = domain.name || data.phSource;
+    const rawDomainName = typeof domain?.name === 'string' ? domain.name : '';
+    const cleanedDomainName = rawDomainName.trim();
+    const rawSource = data.phSource || '';
+    const displayUniverseName = rawSource && rawSource.trim().length > 0
+        ? rawSource.trim()
+        : cleanedDomainName;
+    const isTemplateSource = rawSource.includes('-Template');
     const currentMenuItemDescription = getCurrentMenuItemDescription(pathname);
     const [isMobile, setIsMobile] = useState(false);
 
@@ -116,16 +122,15 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                 <span className="text-gray-500  whitespace-nowrap flex-shrink-0">Universe:</span>
                 <input
                     type="text"
-                    value={(modelUniverse?.includes('-Template') ? (domain?.name ?? '') : (modelUniverse ?? ''))}
+                    value={displayUniverseName}
                     onChange={(e) => {
                         // If the current source is a template, update the domain name (so the shown value changes)
                         // and also keep phSource with the '-Template' suffix. For non-template sources, update phSource only.
-                        const isTemplate = modelUniverse?.includes('-Template');
                         const templateSuffix = '-Template';
                         const rawValue = (e.target.value || '');
                         const newValue = rawValue; // preserve user's input (we'll trim when storing source)
 
-                        if (isTemplate) {
+                        if (isTemplateSource) {
                             // Update domain.name so the displayed value reflects the edit
                             const domainName = newValue.replace(new RegExp(`${templateSuffix}$`), '').trim();
                             // setDomainData expects a full DomainData object; preserve other fields from current domain
@@ -145,7 +150,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                             dispatch(setSource(newValue.trimStart()));
                         }
                     }}
-                    className={`bg-gray-800 px-2 rounded text-white min-w-0 flex-1 ${modelUniverse?.includes('-Template') ? 'animate-pulse placeholder:text-orange-400' : ''}`}
+                    className={`bg-gray-800 px-2 rounded text-white min-w-0 flex-1 ${isTemplateSource ? 'animate-pulse placeholder:text-orange-400' : ''}`}
                     placeholder="Type your Universe/file name here"
                 />
                 {/* App quick-nav buttons */}
@@ -175,7 +180,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                         );
                     })}
                 </div>
-                <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {modelUniverse}.json</div>
+                <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {(displayUniverseName || 'untitled')}.json</div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
 
                     <input

@@ -26,7 +26,7 @@ export const MODE_CONFIGS: Record<AIChatMode, ModeConfig> = {
     edit: {
         title: 'Document Editor',
         description: 'Focused edit session',
-        showBorder: true,
-        borderColor: 'border-orange-800/80',
+        // showBorder: true,
+        // borderColor: 'border-orange-800/80',
     },
 };

@@ -46,9 +46,9 @@ Success criteria
 Define clear, measurable, and achievable indicators of success
 `
     },
-    { title: "Task List", category: "Task Management", usage: "Planning", content: "Create a task list for the topic described below or in the context." },
+    { title: "Task List", category: "Task Management / Plan", usage: "Planning", content: "Create a task list for the topic described below or in the context." },
     {
-        title: "Project Plan", category: "Planning", usage: "Planning", content:
+        title: "Project Plan", category: "Planning / Project Management / Business", usage: "Planning", content:
             `Make a project plan for a project within the domain/topic described in the context below.
 Include the following sections:
 1. Project Overview
@@ -370,7 +370,7 @@ Include:
     {
         title: "Budget Plan",
         category: "Finance",
-        usage: "Planning",
+        usage: "Planning / Personal",
         content: `Create a personal budget plan based on:
 1. Monthly income: [Insert income]
 2. Fixed expenses: [Insert major fixed expenses]
