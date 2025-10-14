@@ -1,5 +1,9 @@
 'use client';
 
+import { useMemo } from 'react';
+import { useSelector } from 'react-redux';
+import { RootState } from '@/store';
+import { DOMAIN_CATEGORIES } from '@/features/model-universe/modelSlice';
 import { DocumentMetadataHeader } from '@/components/ai-chat/DocumentMetadataHeader';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
@@ -24,7 +28,8 @@ interface EditModeContentProps {
     setContextContent?: (content: string) => void;
     // New: category state and setter
     documentCategory?: DomainCategory;
-    setDocumentCategory?: (c: DomainCategory) => void;
+    // Allow clearing the category (undefined) when user selects "None"
+    setDocumentCategory?: (c?: DomainCategory) => void;
 }
 
 function EditModeLeftPanel({
@@ -87,6 +92,9 @@ function EditModeMiddlePanel({
     setDocumentType,
     currentDocument,
     handleSetCurrentDocument,
+    // Add category props here so the header can render the selector
+    documentCategory,
+    setDocumentCategory,
 }: {
     documentName: string;
     setDocumentName: (name: string) => void;
@@ -94,6 +102,9 @@ function EditModeMiddlePanel({
     setDocumentType: (type: string) => void;
     currentDocument: string;
     handleSetCurrentDocument: (content: string) => void;
+    // New props for category
+    documentCategory?: DomainCategory;
+    setDocumentCategory?: (c?: DomainCategory) => void;
 }) {
     return (
         <div className="h-full flex flex-col overflow-hidden border-l-4 border-r-4 border-orange-600/80">
@@ -104,6 +115,9 @@ function EditModeMiddlePanel({
                 documentType={documentType}
                 setDocumentType={setDocumentType}
                 currentDocument={currentDocument}
+                // Pass category props down to the header so the dropdown is visible in the middle panel
+                documentCategory={documentCategory}
+                setDocumentCategory={setDocumentCategory}
             />
 
             {/* Editable textarea */}
@@ -135,9 +149,33 @@ function EditModeRightPanel({
     previewContent: string;
     onSaveToLibrary: () => void;
     documentCategory?: DomainCategory;
-    setDocumentCategory?: (c: DomainCategory) => void;
+    // Accept undefined so the "None" option can clear the category
+    setDocumentCategory?: (c?: DomainCategory) => void;
 }) {
     const displayContent = previewContent || '';
+
+    // Read categories from the slice (fallback to the runtime defaults exported from the slice)
+    const storeDomainCategories = useSelector((state: RootState) => state.modelUniverse.phData.domainCategories);
+    const categoryOptions = useMemo(() => {
+        const source = Array.isArray(storeDomainCategories) && storeDomainCategories.length > 0
+            ? storeDomainCategories
+            : DOMAIN_CATEGORIES;
+
+        const opts = Array.from(new Set(source.map(s => String(s).trim()).filter(Boolean)));
+
+        // Ensure the current documentCategory (if any) is present so it appears selected
+        if (documentCategory && !opts.some(o => o.toLowerCase() === String(documentCategory).toLowerCase())) {
+            opts.unshift(String(documentCategory));
+        }
+        return opts;
+    }, [storeDomainCategories, documentCategory]);
+
+    // Normalize selected value so casing differences don't hide the selection
+    const selectedValue = useMemo(() => {
+        if (!documentCategory) return '';
+        const match = categoryOptions.find(cat => cat.toLowerCase() === String(documentCategory).toLowerCase());
+        return match || String(documentCategory);
+    }, [documentCategory, categoryOptions]);
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
@@ -149,6 +187,45 @@ function EditModeRightPanel({
                 <span className="text-xs text-gray-400 whitespace-nowrap">
                     {documentType || 'Markdown'}
                 </span>
+            </div>
+
+            {/* Category selector — always visible; disabled when no setter provided */}
+            <div className="flex items-center gap-2 px-4 py-2 bg-gray-800/30 border-b border-gray-700">
+                <label htmlFor="category-select" className="text-xs text-gray-400">
+                    Category:
+                </label>
+                <select
+                    id="category-select"
+                    value={selectedValue}
+                    onChange={(e) => {
+                        const val = e.target.value;
+                        if (!setDocumentCategory) return;
+                        if (!val) {
+                            setDocumentCategory(undefined);
+                            return;
+                        }
+                        // Prefer exact match, otherwise try case-insensitive, otherwise pass raw value
+                        const chosen = categoryOptions.find(cat => cat === val)
+                            || categoryOptions.find(cat => cat.toLowerCase() === val.toLowerCase())
+                            || val;
+                        setDocumentCategory(chosen as DomainCategory);
+                    }}
+                    className="text-xs bg-gray-900 text-gray-200 rounded px-2 py-1 focus:outline-none"
+                    disabled={!setDocumentCategory}
+                >
+                    <option value="">None</option>
+                    {categoryOptions.length > 0 ? (
+                        categoryOptions.map(cat => (
+                            <option key={cat} value={cat}>{cat}</option>
+                        ))
+                    ) : (
+                        <option value="" disabled>No categories defined</option>
+                    )}
+                </select>
+
+                {!setDocumentCategory && (
+                    <span className="text-xs text-gray-400 ml-2">Read-only (provide setDocumentCategory to edit)</span>
+                )}
             </div>
 
             {/* Character count and save button */}
@@ -197,6 +274,9 @@ export function EditModeContent(params: EditModeContentProps) {
                 setDocumentType={params.setDocumentType}
                 currentDocument={params.currentDocument}
                 handleSetCurrentDocument={params.handleSetCurrentDocument}
+                // Forward the category state/handler into the middle panel header
+                documentCategory={params.documentCategory}
+                setDocumentCategory={params.setDocumentCategory}
             />
         ),
         rightPanel: (

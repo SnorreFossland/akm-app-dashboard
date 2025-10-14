@@ -15,7 +15,8 @@ import {
     setMessages,
     Message
 } from '@/features/chat/chatSlice';
-import { PROMPT_TEMPLATES, PromptTemplate } from './promptTemplates';
+import { PROMPT_TEMPLATES } from './promptTemplates';
+import { selectPromptTemplates } from '@/lib/promptUtils';
 import { systemPrompt as promptBuilderPrompt } from '@/app/prompt-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
@@ -72,6 +73,8 @@ export interface ChatComponentProps {
     includeDomainContext?: boolean;
     setIncludeDomainContext?: (include: boolean) => void;
     onSavePreviewToLibrary?: () => void; // Add callback for saving preview
+    currentDocumentType?: string;               // NEW: e.g. 'markdown' | 'project-plan' ...
+    currentDocumentCategory?: DomainCategory;   // NEW: e.g. 'Business' | 'Technical'
 }
 
 const MAX_MODEL_RETRIES = 4;
@@ -115,7 +118,9 @@ export default function ChatComponent({
     setIsMobile,
     includeDomainContext = false,
     setIncludeDomainContext,
-    onSavePreviewToLibrary
+    onSavePreviewToLibrary,
+    currentDocumentType, // <-- add this line
+    currentDocumentCategory // <-- add this line if needed
 }: ChatComponentProps) {
     const dispatch = useDispatch();
 
@@ -163,7 +168,9 @@ export default function ChatComponent({
 
     // Add right after your state definitions
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
-    const [selectedCategory, setSelectedCategory] = useState<string>('Planning'); // Default to 'Planning'
+    // Default to 'All' so templates are visible by default
+    const [selectedCategory, setSelectedCategory] = useState<string>('All');
+
     const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('');
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
     const [streamedContent, setStreamedContent] = useState<string>('');
@@ -172,59 +179,10 @@ export default function ChatComponent({
     const templateDropdownRef = useRef<HTMLDivElement | null>(null);
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
 
-    // Add throttling for stream updates
-    const streamUpdateTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-    const pendingStreamContentRef = useRef<string>('');
-
-    // NEW: rAF handle for streaming scroll
-    const streamScrollRafRef = useRef<number | null>(null);
-
-    // Throttled function to update streamed content
-    const updateStreamedContent = useCallback((content: string) => {
-        pendingStreamContentRef.current = content;
-
-        if (streamUpdateTimeoutRef.current) {
-            clearTimeout(streamUpdateTimeoutRef.current);
-        }
-
-        streamUpdateTimeoutRef.current = setTimeout(() => {
-            setStreamedContent(pendingStreamContentRef.current);
-        }, 75); // was 50
-    }, []);
-
-
-
-    // Cleanup timeout on unmount
-    useEffect(() => {
-        return () => {
-            if (streamUpdateTimeoutRef.current) {
-                clearTimeout(streamUpdateTimeoutRef.current);
-            }
-        };
-    }, []);
-
-    // New state for system prompt modal
-    const [isSystemPromptOpen, setIsSystemPromptOpen] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a Domain Expert in the domain supplied by the user. 
 Your task is to help the user define a specific domain of interest clearly, comprehensively, and in a structured way. 
 Enhance the given Domain Name if necessary.
 `);
-
-// Domain Name:
-// Domain Description:
-
-// Domain Presentation:
-// Please include the following:
-//     1. Domain Purpose and Scope.
-// 2. Key Concepts and Terminologies.
-// 3. Actors and Roles.
-// 4. Activities and Processes.
-// 5. Objects and Resources.
-// 6. Events and Triggers.
-// 7. Rules and Constraints.
-// 8. Data and Information Flows.
-// 9. External Interfaces or Contexts.
-// 10. Known Sub - domains or Boundaries.
 
     const refinePrompt = (
         `Please revise the content below for clarity, style, and grammar.
@@ -234,23 +192,30 @@ Do not use its contents as contextual input for other questions--I want it impro
     `
     )
 
-    // // Generate categories list dynamically from templates
-    // const CATEGORIES = ["All", ...Array.from(
-    //     new Set(PROMPT_TEMPLATES.map(template => template.category))
-    // ).sort()];
+    // Generate categories list dynamically from templates, with "All" first
+    const CATEGORIES = ['All', ...Array.from(new Set(PROMPT_TEMPLATES.map(template => template.usage))).filter(Boolean).sort()];
 
-    // const filteredTemplates = selectedCategory === 'All'
-    //     ? PROMPT_TEMPLATES
-    //     : PROMPT_TEMPLATES.filter(template => template.category === selectedCategory);
-
-    // Generate categories list dynamically from templates
-    const CATEGORIES = [...Array.from(
-        new Set(PROMPT_TEMPLATES.map(template => template.usage))
-    ).sort(), "All"];
-
-    const filteredTemplatesOrig = selectedCategory === 'All'
-        ? PROMPT_TEMPLATES
-        : PROMPT_TEMPLATES.filter(template => template.usage.includes(selectedCategory));
+    const filteredTemplatesOrig = useMemo(() => {
+        // Plan: call selectPromptTemplates with explicit criteria:
+        // - prefer caller-provided currentDocumentType/currentDocumentCategory
+        // - fallback to heuristics (e.g. inferring type from document content) if absent
+        return selectPromptTemplates(PROMPT_TEMPLATES, {
+            // Prefer explicit props, then any local `documentType`, then a minimal heuristic:
+            // if the text starts with a markdown heading assume 'markdown'.
+            documentType: currentDocumentType ?? (
+                typeof currentDocument === 'string' && currentDocument.trim().startsWith('#')
+                    ? 'markdown'
+                    : undefined
+            ),
+            // Prefer an explicitly supplied document category, then domain's category if available.
+            domainCategory: currentDocumentCategory ?? domain?.domainCategory ?? undefined,
+            usage: selectedCategory === 'All' ? undefined : selectedCategory,
+            includeDomainContext,
+            textContent: currentDocument,
+        }, { limit: 100, allowFallback: true });
+    }, [
+        PROMPT_TEMPLATES, selectedCategory, currentDocument, domain?.domainCategory, includeDomainContext, currentDocumentType, currentDocumentCategory
+    ]);
 
     // If Context Include Domain remove all text in templates with text in square brackets
     const filteredTemplates = filteredTemplatesOrig.map(template => {
@@ -323,7 +288,7 @@ Do not use its contents as contextual input for other questions--I want it impro
 
         // This runs once after mount to set initial size
         if (containerRef.current) {
-            const initialTopHeight = Math.floor(containerHeight * 0.5);
+            const initialTopHeight = Math.floor(containerRef.current.offsetHeight * 0.5);
             setTopHeight(initialTopHeight);
         }
     }, []); // Empty dependency array = runs once on mount
@@ -705,7 +670,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 messageSections: messagesToSend.length,
                 preview: finalPromptText.substring(0, 200) + '...',
                 contextIncluded: finalPromptText.includes(currentDocument?.substring(0, 20) || '') ||
-                finalPromptText.includes(mdContent?.substring(0, 20) || '')
+                    finalPromptText.includes(mdContent?.substring(0, 20) || '')
             });
 
             console.log('Calling gateway helper with model:', selectedModel);
@@ -795,7 +760,7 @@ Do not use its contents as contextual input for other questions--I want it impro
         } finally {
             retryInProgress.current = false;
         }
-    }, [selectedModel, dispatch, systemPrompt, mdContent, currentDocument, docRefine, includeDomainContext, domain]);
+    }, [selectedModel, dispatch, mdContent, currentDocument, docRefine, includeDomainContext, domain]);
 
     // Update handleSubmit to use Redux actions
     const handleSubmit = async (e: React.FormEvent) => {
@@ -918,19 +883,30 @@ Do not use its contents as contextual input for other questions--I want it impro
         );
     };
 
-    // Function to open system prompt modal
-    const handleSystemPromptClick = () => {
-        setIsSystemPromptOpen(true);
-    };
 
-    // Debug logging for props on mount
-    useEffect(() => {
-        console.log('ChatComponent mounted with props:', {
-            includeDomainContext,
-            hasSetIncludeDomainContext: !!setIncludeDomainContext,
-            domainPresentation: domain?.presentation?.substring(0, 50)
+    // Safe handler to toggle the template dropdown and compute placement if needed.
+    // Keeps the JSX free of statements.
+    const handleToggleTemplateDropdown = (buttonEl?: HTMLElement | null) => {
+        setShowTemplateDropdown(prev => {
+            const next = !prev;
+            return next;
         });
-    }, [includeDomainContext, setIncludeDomainContext, domain]);
+        // Placement logic (optional, for dropdown positioning)
+        if (buttonEl) {
+            try {
+                const buttonRect = buttonEl.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const maxHeight = Math.max(viewportHeight - buttonRect.bottom - 12, 120);
+                // If you track dropdown style/state elsewhere, update it here safely:
+                // e.g. if (typeof setTemplateDropdownStyle === 'function') {
+                //   setTemplateDropdownStyle({ top: buttonRect.bottom + window.scrollY, left: buttonRect.left, maxHeight });
+                // }
+            } catch (error) {
+                // Defensive: ignore layout calculation failures
+                console.warn('Could not compute dropdown placement', error);
+            }
+        }
+    };
 
     return (
         <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative border-l-4 border-r-4 border-orange-800/80`}>
@@ -1238,7 +1214,7 @@ Do not use its contents as contextual input for other questions--I want it impro
 
                                 {/* Include Domain Context checkbox */}
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    Context: 
+                                    Context:
                                     <input
                                         type="checkbox"
                                         checked={includeDomainContext}
@@ -1295,73 +1271,41 @@ Do not use its contents as contextual input for other questions--I want it impro
 
                             <div className="flex items-center gap-2">
                                 {/* Template selection */}
-                                {currentDocument && docRefine && (
-                                    <div className="flex items-center gap-2">
+                                {Object.keys(refineTemplates).length > 0 && (
+                                    <div className="relative flex items-center gap-2">
                                         <select
                                             title="Select a style for the document"
                                             className="bg-popover text-sm border border-gray-600 rounded px-2 py-1"
                                             onChange={(e) => {
-                                                const selectedTemplate = refineTemplates[e.target.value as keyof typeof refineTemplates];
+                                                const key = e.target.value;
+                                                const selectedTemplate = refineTemplates[key as keyof typeof refineTemplates];
                                                 if (selectedTemplate) {
+                                                    setSelectedRefineTemplate(key);
                                                     setInput(selectedTemplate);
+                                                    // auto-enable refine mode so the template applies immediately
+                                                    setDocRefine(true);
                                                 }
                                             }}
-                                            disabled={isLoading || !currentDocument}
+                                            disabled={isLoading}
                                         >
                                             <option value="">Select style...</option>
                                             {Object.keys(refineTemplates).map((key) => (
                                                 <option key={key} value={key}>{key}</option>
                                             ))}
                                         </select>
-                                    </div>
-                                )}
-                                {/* Template dropdown for prompt templates */}
-                                <div className="flex items-center gap-2">
-                                    <div className="relative">
+
                                         <button
                                             ref={templateButtonRef}
-                                            className="bg-popover text-xs border border-gray-600 rounded px-2 py-1 flex items-center gap-1 hover:bg-gray-700"
-                                            onClick={(event) => {
-                                                const dropdown = templateDropdownRef.current;
-                                                const button = templateButtonRef.current;
-                                                if (!dropdown || !button) return;
-
-                                                setShowTemplateDropdown((prev) => {
-                                                    const next = !prev;
-                                                    if (next) {
-                                                        const buttonRect = button.getBoundingClientRect();
-                                                        const viewportHeight = window.innerHeight;
-                                                        const spaceBelow = viewportHeight - buttonRect.bottom;
-                                                        const spaceAbove = buttonRect.top;
-
-                                                        if (spaceBelow < 300 && spaceAbove > 150) {
-                                                            dropdown.style.bottom = 'calc(100% + 5px)';
-                                                            dropdown.style.top = 'auto';
-                                                            dropdown.style.maxHeight = `${spaceAbove - 20}px`;
-                                                        } else {
-                                                            dropdown.style.top = 'calc(100% + 5px)';
-                                                            dropdown.style.bottom = 'auto';
-                                                            dropdown.style.maxHeight = `${Math.max(150, spaceBelow - 20)}px`;
-                                                        }
-
-                                                        requestAnimationFrame(() => {
-                                                            const dropdownRect = dropdown.getBoundingClientRect();
-                                                            if (dropdownRect.top < 0) {
-                                                                dropdown.style.top = '5px';
-                                                                dropdown.style.bottom = 'auto';
-                                                            }
-                                                        });
-                                                    }
-                                                    return next;
-                                                });
-                                            }}
-                                            title="Select a template"
+                                            onClick={() => handleToggleTemplateDropdown(templateButtonRef.current)}
+                                            type="button"
+                                            aria-haspopup="menu"
+                                            aria-expanded={showTemplateDropdown}
+                                            className="px-2 py-1 text-xs bg-gray-700 rounded"
                                         >
-                                            <span>Prompt Templates</span>
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                                            </svg>
+                                            Templates
                                         </button>
+
+                                        {/* Floating list with categories and filtered templates */}
                                         <div
                                             ref={templateDropdownRef}
                                             id="template-dropdown"
@@ -1375,207 +1319,154 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                 >
                                                     {CATEGORIES.map((category) => (
                                                         <option key={category} value={category}>
-                                                            {category === "All" ? "All" : category}
+                                                            {category}
                                                         </option>
                                                     ))}
                                                 </select>
                                             </div>
                                             <div className="overflow-y-auto max-h-[180px]">
-                                                {filteredTemplates.map((template, index) => (
+                                                {filteredTemplates.length > 0 ? filteredTemplates.map((template, index) => (
                                                     <button
                                                         key={index}
                                                         className="w-full text-left px-2 py-1 hover:bg-gray-700 text-xs truncate"
                                                         onClick={() => {
                                                             setSelectedReportTemplate(template.title);
                                                             setInput(template.content);
+                                                            // close popover and enable refine mode
                                                             setShowTemplateDropdown(false);
+                                                            setDocRefine(true);
                                                         }}
                                                     >
                                                         {template.title}
                                                     </button>
-                                                ))}
+                                                )) : (
+                                                    <div className="p-2 text-xs text-gray-400">No templates available for the selected category</div>
+                                                )}
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                )}
                             </div>
                         </div>
                     )}
-                    {/* {pathname === '/prompt-builder' &&
-                        <div className="flex items-center justify-between p-2">
+                </div>
 
-                            <div
-                                className="flex items-center gap-2 px-3 cursor-pointer hover:bg-gray-700 rounded"
-                                onClick={handleSystemPromptClick}
-                                title="Click to view system prompt"
-                            >
-                                <span className="flex items-center gap-1 text-gray-400 text-xs">
-                                    <span role="img" aria-label="robot" className="w-4 h-4">🤖</span>
-                                </span>
-                            </div>
+                <div className="flex items-center gap-2"></div>
 
-                            <div className="flex items-center  gap-2">
+
+                {/* START FORM */}
+                <form onSubmit={handleSubmit} className="pt-1 px-2 pb-4 bg-popover rounded-lg min-w-0 w-full">
+                    {/* Add placeholder jump buttons */}
+                    {templatePlaceholders.length > 0 && (
+                        <div className="flex gap-2 mt-2 mb-2 flex-wrap">
+                            <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
+                            {templatePlaceholders.map((placeholder, idx) => (
                                 <button
+                                    key={idx}
                                     type="button"
-                                    className="bg-blue-700 text-gray-300 py-1 p-3 rounded hover:bg-blue-600"
-                                    onClick={() => {
-                                        setInput('Create a prompt with the following items: [Goal], [Context], [Role]')
-                                    }}
+                                    onClick={() => selectTemplatePlaceholder(idx)}
+                                    className={buttonAccent}
                                 >
-                                    Create a enhanced prompt
+                                    {placeholder.text.length > 50
+                                        ? `${placeholder.text.substring(0, 49)}...`
+                                        : placeholder.text}
                                 </button>
+                            ))}
+                        </div>
+                    )}
+                    <TextareaAutosize
+                        ref={textareaRef}
+                        value={input || ''}
+                        onChange={(e) => setInput(e.target.value)}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter' && !e.shiftKey) {
+                                const now = Date.now();
+                                const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
+                                if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
+                                    e.preventDefault();
+                                    handleSubmit(e);
+                                    textarea.lastEnterTime = 0;
+                                } else {
+                                    textarea.lastEnterTime = now;
+                                }
+                            }
+
+                            if (e.key === 'Tab' && templatePlaceholders.length > 0) {
+                                e.preventDefault();
+                                const cursorPos = e.currentTarget.selectionStart;
+                                let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
+                                if (!nextPlaceholder && templatePlaceholders.length > 0) {
+                                    nextPlaceholder = templatePlaceholders[0];
+                                }
+                                if (nextPlaceholder) {
+                                    selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
+                                }
+                            }
+                        }}
+                        placeholder="Ask anything …"
+                        className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        minRows={6}
+                        maxRows={12}
+                        disabled={isLoading}
+                    />
+                    <div className="flex justify-between">
+                        <div className="flex items-center gap-2"></div>
+                        <div className="flex items-center text-foreground gap-1">
+                            <ModelSelector
+                                selectedModel={selectedModel as "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini" | "dummy"}
+                                onModelChange={(newModel) => {
+                                    setSelectedModel(newModel);
+                                    localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                }}
+                            />
+                            <TemperatureSelector />
+                            <div className="flex items-center gap-1 text-xs">
+                                <span className="text-gray-400">Max tokens:</span>
+                                <input
+                                    type="number"
+                                    min={1}
+                                    step={1}
+                                    value={maxTokens}
+                                    onChange={(e) => {
+                                        const v = parseInt(e.target.value, 10);
+                                        if (Number.isNaN(v)) {
+                                            setMaxTokens('');
+                                            localStorage.removeItem('aiDashboard_max_tokens');
+                                        } else {
+                                            setMaxTokens(v);
+                                            localStorage.setItem('aiDashboard_max_tokens', String(v));
+                                        }
+                                    }}
+                                    className="w-20 bg-popover border border-gray-600 rounded text-xs py-0 px-1"
+                                    placeholder="auto"
+                                    title="Max completion tokens for gateway models"
+                                />
                             </div>
                         </div>
-                    } */}
-                    {/* {pathname === '/domain-builder' &&
-                        <div className="flex items-center justify-between p-2">
 
+                        <div className="flex justify-between px-2">
                             <button
-                                type="button"
-                                className="bg-blue-700 text-gray-300 py-1 p-3 ms-auto rounded hover:bg-blue-600"
-                                onClick={() => {
-                                    setDocRefine(true);
-                                    setInput((currentDocument !== "")
-                                        ? `
-Please include [New items] in the existing domain definition below.
-Don't ask clarifying questions or for additional context, just the updated definition.
-
-`
-                                        // Let’s begin by reviewing the current domain definition. I’ll provide it in the next message unless you require a specific format.
-                                        //                                         `
-                                        :
-                                        `I want to scope and define the domain: [DOMAIN NAME]
-
-Please help me:
-- Identify and formalize the core concepts.
-- Capture domain boundaries, assumptions, and known variations.
-- Prepare the result for later use in ontology concepts definition, Process modelling and AKM modeling, data integration.
-- Stating the Domain name and then a description of the domain.
-Don't include explanations, next steps or examples at this stage.
-`)
-                                }}
+                                type="submit"
+                                className="flex items-center bg-gray-800 rounded-full px-2 mb-3 text-blue-300 hover:text-blue-800"
+                                disabled={isLoading || !input?.trim()}
+                                title="Send your question"
                             >
-                                Define & Scope Domain
+                                Send
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    strokeWidth={2}
+                                    className="w-8 h-8"
+                                >
+                                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
+                                </svg>
                             </button>
                         </div>
-                    } */}
-
-                    <div className="flex items-center gap-2"></div>
-
-                    {/* START FORM */}
-                    <form onSubmit={handleSubmit} className="pt-1 px-2 pb-4 bg-popover rounded-lg min-w-0 w-full">
-                        {/* Add placeholder jump buttons */}
-                        {templatePlaceholders.length > 0 && (
-                            <div className="flex gap-2 mt-2 mb-2 flex-wrap">
-                                <span className="text-sm text-gray-400">Click the button to jump to the placeholder ... </span>
-                                {templatePlaceholders.map((placeholder, idx) => (
-                                    <button
-                                        key={idx}
-                                        type="button"
-                                        onClick={() => selectTemplatePlaceholder(idx)}
-                                        className={buttonAccent}
-                                    >
-                                        {placeholder.text.length > 50
-                                            ? `${placeholder.text.substring(0, 49)}...`
-                                            : placeholder.text}
-                                    </button>
-                                ))}
-                            </div>
-                        )}
-                        <TextareaAutosize
-                            ref={textareaRef}
-                            value={input || ''}
-                            onChange={(e) => setInput(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && !e.shiftKey) {
-                                    const now = Date.now();
-                                    const textarea = e.currentTarget as HTMLTextAreaElement & { lastEnterTime?: number };
-                                    if (textarea.lastEnterTime && now - textarea.lastEnterTime < 2000) {
-                                        e.preventDefault();
-                                        handleSubmit(e);
-                                        textarea.lastEnterTime = 0;
-                                    } else {
-                                        textarea.lastEnterTime = now;
-                                    }
-                                }
-
-                                if (e.key === 'Tab' && templatePlaceholders.length > 0) {
-                                    e.preventDefault();
-                                    const cursorPos = e.currentTarget.selectionStart;
-                                    let nextPlaceholder = templatePlaceholders.find(p => p.start > cursorPos);
-                                    if (!nextPlaceholder && templatePlaceholders.length > 0) {
-                                        nextPlaceholder = templatePlaceholders[0];
-                                    }
-                                    if (nextPlaceholder) {
-                                        selectTemplatePlaceholder(templatePlaceholders.indexOf(nextPlaceholder));
-                                    }
-                                }
-                            }}
-                            placeholder="Ask anything …"
-                            className="w-full px-1 bg-popover border border-gray-600 text-foreground rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            minRows={6}
-                            maxRows={12}
-                            disabled={isLoading}
-                        />
-                        <div className="flex justify-between">
-                            <div className="flex items-center gap-2"></div>
-                            <div className="flex items-center text-foreground gap-1">
-                                <ModelSelector
-                                    selectedModel={selectedModel as "deepseek-chat" | "mistral" | "gpt-5" | "gpt-5-mini" | "dummy"}
-                                    onModelChange={(newModel) => {
-                                        setSelectedModel(newModel);
-                                        localStorage.setItem('aiDashboard_selectedModel', newModel);
-                                    }}
-                                />
-                                <TemperatureSelector />
-                                <div className="flex items-center gap-1 text-xs">
-                                    <span className="text-gray-400">Max tokens:</span>
-                                    <input
-                                        type="number"
-                                        min={1}
-                                        step={1}
-                                        value={maxTokens}
-                                        onChange={(e) => {
-                                            const v = parseInt(e.target.value, 10);
-                                            if (Number.isNaN(v)) {
-                                                setMaxTokens('');
-                                                localStorage.removeItem('aiDashboard_max_tokens');
-                                            } else {
-                                                setMaxTokens(v);
-                                                localStorage.setItem('aiDashboard_max_tokens', String(v));
-                                            }
-                                        }}
-                                        className="w-20 bg-popover border border-gray-600 rounded text-xs py-0 px-1"
-                                        placeholder="auto"
-                                        title="Max completion tokens for gateway models"
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="flex justify-between px-2">
-                                <button
-                                    type="submit"
-                                    className="flex items-center bg-gray-800 rounded-full px-2 mb-3 text-blue-300 hover:text-blue-800"
-                                    disabled={isLoading || !input?.trim()}
-                                    title="Send your question"
-                                >
-                                    Send
-                                    <svg
-                                        xmlns="http://www.w3.org/2000/svg"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        strokeWidth={2}
-                                        className="w-8 h-8"
-                                    >
-                                        <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
+                    </div>
+                </form>
+            </div >
         </div >
     )
 }

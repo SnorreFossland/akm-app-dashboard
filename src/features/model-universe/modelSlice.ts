@@ -5,10 +5,11 @@ import { fetchModelDataFromGitHub, saveModelDataToGitHub } from './modelAPI';
 export interface DomainData {
   name: string;
   description: string;
-  presentation: string;
+  domainCategory?: DomainCategory; // Add this property to match initialState
   prompt: string;
   additionalContext?: string; // Make this optional since it's a new field
   ontology?: OntologyData; // Ontology is now nested under domain
+  presentation: string;
 }
 
 // Export the ontology interface separately
@@ -35,12 +36,12 @@ export interface ProjectInfo {
 export interface MarkdownDocument {
   id: string;
   name: string;
-  type?: string;               // made optional
+  type?: string;
+  domainCategory?: DomainCategory; // made optional
   content: string;
   createdAt: string | Date;
   updatedAt?: string | Date;  // made optional
   // Optional metadata for domain documents
-  domainCategory?: DomainCategory;
 }
 
 export interface DataType {
@@ -48,6 +49,7 @@ export interface DataType {
     metis: Metis,
     domain: DomainData,
     documents: MarkdownDocument[], // Add documents here
+    domainCategories?: DomainCategory[]; // <-- new optional list of allowed categories
   },
   phFocus: {
     focusModel: {
@@ -169,35 +171,32 @@ export interface Modelview {
 };
 
 
-// Add domain category enum/union for type-safety
+// Add DomainCategory union for type-safety
 export type DomainCategory =
-	| 'Personal'
-	| 'Business'
-	| 'Technical'
-	| 'Organizational'
-	| 'Educational'
-	| 'Public';
+  | 'Personal'
+  | 'Business'
+  | 'Technical'
+  | 'Organizational'
+  | 'Educational'
+  | 'Public';
+
+// Export a runtime list of categories that components can import/use directly
+export const DOMAIN_CATEGORIES: DomainCategory[] = [
+  'Personal',
+  'Business',
+  'Technical',
+  'Organizational',
+  'Educational',
+  'Public',
+];
 
 // Extend Domain shape to include the category
 interface Domain {
-	// ...existing properties...
-	domainCategory?: DomainCategory;
+  // ...existing properties...
+  domainCategory?: DomainCategory;
 }
 
-// Initialize default category on domain in the slice initial state
-const initialState = {
-	// ...existing state...
-	phData: {
-		// ...existing phData...
-		domain: {
-			// ...existing domain fields (name, description, presentation, etc) ...
-			domainCategory: 'Organizational' as DomainCategory, // sensible default
-		},
-		// ...existing phData...
-	},
-	// ...existing initialState...
-};
-
+// Ensure the single shared initialState contains the new domainCategory default.
 export const initialState: DataType = {
   phData: {
     metis: { name: '', description: '', models: [], metamodels: [] },
@@ -205,12 +204,13 @@ export const initialState: DataType = {
       name: '',
       description: '',
       prompt: '',
-      presentation: '',
-      additionalContext: '',
+      domainCategory: 'Organizational',
       ontology: { name: '', description: '', concepts: [], relationships: [] },
-      domainCategory: 'Organizational', // sensible default
+      additionalContext: '',
+      presentation: '',
     },
-    documents: [], // Add documents to initial state
+    documents: [],
+    domainCategories: DOMAIN_CATEGORIES.slice(), // <-- initialize with defaults
   },
   phFocus: {
     focusModel: { id: '', name: '' },
@@ -221,10 +221,11 @@ export const initialState: DataType = {
     focusRelshipview: { id: '', name: '' },
     focusProj: { id: '', name: '', description: '' },
     focusDoc: { id: null },
-
   },
   phUser: { id: '', name: '', email: '' },
-  phSource: '', status: 'idle', error: null
+  phSource: '',
+  status: 'idle',
+  error: null,
 };
 
 // Define the async thunk
@@ -329,6 +330,8 @@ const modelSlice = createSlice({
       const { currentDocument: _legacyCurrentDoc, ...restPhData } = incomingPhData;
       state.phData = {
         ...restPhData,
+        // Preserve or fill domainCategories during file load/migration:
+        domainCategories: restPhData.domainCategories || state.phData?.domainCategories || initialState.phData.domainCategories,
       };
       state.phFocus = {
         ...action.payload.phFocus,
@@ -552,6 +555,7 @@ const modelSlice = createSlice({
 
     // Add document management reducers
     saveMarkdownDocument: (state, action: PayloadAction<MarkdownDocument>) => {
+      const doc = action.payload;
       // Ensure documents array exists
       if (!state.phData.documents) {
         state.phData.documents = [];
@@ -595,21 +599,25 @@ const modelSlice = createSlice({
         });
       }
 
-      // If we saved a 'domain' type document, propagate its domainCategory into the live domain slice
+      // Ensure saved domain doc's category is tracked in the domainCategories list
       try {
-        const doc = action.payload;
-        if (doc.type === 'domain') {
-          state.phData = state.phData || ({} as any);
+        if (doc.domainCategory) {
+          if (!state.phData.domainCategories) state.phData.domainCategories = DOMAIN_CATEGORIES.slice();
+          if (!state.phData.domainCategories.includes(doc.domainCategory)) {
+            state.phData.domainCategories.push(doc.domainCategory);
+          }
+        }
+
+        if ((doc.type || '').toLowerCase() === 'domain') {
           state.phData.domain = state.phData.domain || ({} as any);
-          // Update domain presentation/content if desired
-          state.phData.domain.presentation = doc.content ?? state.phData.domain.presentation;
-          // Propagate explicit domainCategory if present, otherwise keep existing
+          if (typeof doc.content === 'string' && doc.content.trim() !== '') {
+            state.phData.domain.presentation = doc.content;
+          }
           if (doc.domainCategory) {
             state.phData.domain.domainCategory = doc.domainCategory;
           }
         }
       } catch (e) {
-        // preserve existing behavior on error
         console.warn('saveMarkdownDocument: domain propagation failed', e);
       }
     },
@@ -623,10 +631,24 @@ const modelSlice = createSlice({
     },
     // New: allow explicit updates to the domain category
     setDomainCategory(state, action: PayloadAction<DomainCategory>) {
-			if (!state.phData) state.phData = {} as any;
-			if (!state.phData.domain) state.phData.domain = {} as any;
-			state.phData.domain.domainCategory = action.payload;
-		},
+      if (!state.phData) state.phData = {} as any;
+      if (!state.phData.domain) state.phData.domain = {} as any;
+      state.phData.domain.domainCategory = action.payload;
+    },
+    // New: replace/overwrite the list of allowed categories (useful for admin customisation)
+    setDomainCategories(state, action: PayloadAction<DomainCategory[] | string[]>) {
+      const incoming = Array.isArray(action.payload) ? action.payload.map(String).map(s => s.trim()).filter(Boolean) : [];
+      state.phData.domainCategories = incoming as DomainCategory[];
+    },
+    // New: add a single category to the list (no-op if already present)
+    addDomainCategory(state, action: PayloadAction<DomainCategory | string>) {
+      const val = String(action.payload).trim();
+      if (!val) return;
+      if (!state.phData.domainCategories) state.phData.domainCategories = DOMAIN_CATEGORIES.slice();
+      if (!state.phData.domainCategories.includes(val as DomainCategory)) {
+        state.phData.domainCategories.push(val as DomainCategory);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -672,6 +694,9 @@ export const {
   deleteMarkdownDocument,
   setFocusDoc,
   setDomainCategory,
+  // new exports
+  setDomainCategories,
+  addDomainCategory,
 } = modelSlice.actions;
 
 export default modelSlice.reducer;

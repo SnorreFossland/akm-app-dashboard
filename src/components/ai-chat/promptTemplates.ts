@@ -1,3 +1,17 @@
+// New: structured template type (add fields; keep legacy 'usage' for compatibility)
+export interface PromptTemplate {
+    id: string;
+    title: string;
+    usage?: string; // legacy category / usage string
+    content: string;
+    applicableDocumentTypes?: string[];         // e.g. ['markdown','project-plan']
+    applicableDomainCategories?: (DomainCategory | 'any')[]; // e.g. ['Business','Technical'] or ['any']
+    priority?: number;   // higher => show earlier
+    weight?: number;     // scoring multiplier
+    tags?: string[];     // free-form tags for heuristics
+    createdAt?: string;
+}
+
 // Define the template interface
 export interface PromptTemplate {
     title: string;
@@ -27,24 +41,28 @@ function normalizeTemplateContent(content: string): string {
 
 const RAW_PROMPT_TEMPLATES: PromptTemplate[] = [
     {
+        id: 'brainstorming-ideas',
         title: "Brainstorming Ideas",
         category: "Brainstorming",
         usage: "Business",
         content: "Generate ideas for the topic described in the text below or in the #Context section."
     },
     {
+        id: 'refine-text',
         title: "Refine text",
         category: "Document Refinement",
         usage: "Communication",
         content: "Refine the text below or in the #Context section below to make it more concise and clear."
     },
     {
+        id: 'expand-text',
         title: "Expand text",
         category: "Document Refinement",
         usage: "Communication",
         content: "Expand the text below or in the #Context section below to add more detail and depth."
     },
     {
+        id: 'domain-definition',
         title: "Domain Definition",
         category: "Domain Definition / Business / Analysis / Plan",
         usage: "Domain Definition",
@@ -64,9 +82,19 @@ Success criteria
 Define clear, measurable, and achievable indicators of success
 `
     },
-    { title: "Task List", category: "Task Management / Plan", usage: "Planning", content: "Create a task list for the topic described below or in the context." },
     {
-        title: "Project Plan", category: "Planning / Project Management / Business", usage: "Planning", content: `
+        id: 'task-list',
+        title: "Task List",
+        category: "Task Management / Plan",
+        usage: "Planning",
+        content: "Create a task list for the topic described below or in the context."
+    },
+    {
+        id: 'project-plan',
+        title: "Project Plan",
+        category: "Planning / Project Management / Business",
+        usage: "Planning",
+        content: `
 Create a comprehensive project plan for the project described in the context below.
 Follow this detailed template:
 
@@ -222,14 +250,9 @@ gantt
     Final Review & Reporting      : a8, 2025-07-02, 2025-07-15
 \`\`\`
 `
-        //     7. Risks and Mitigation Strategies
-        //     8. Success Criteria
-        //     9. Budget
-        //     10. Communication Plan (text plus Mermaid diagram)
-        //     11. Evaluation and Reporting
-        // `
     },
     {
+        id: 'product-roadmap',
         title: "Product Roadmap",
         category: "Planning",
         usage: "Planning",
@@ -250,12 +273,14 @@ Include the following sections:
 `
     },
     {
+        id: 'swot-analysis',
         title: "SWOT Analysis",
         category: "Analysis",
         usage: "Business",
         content: "Conduct a SWOT analysis for the topic described in the context below."
     },
     {
+        id: 'meeting-agenda',
         title: "Meeting Agenda",
         category: "Meetings",
         usage: "Meetings",
@@ -277,30 +302,35 @@ Include the following sections:
 `
     },
     {
+        id: 'meeting-summary',
         title: "Meeting Summary",
         category: "Meetings",
         usage: "Meetings",
         content: "Summarize the following meeting notes:\n"
     },
     {
+        id: 'meeting-notes',
         title: "Meeting Notes",
         category: "Meetings",
         usage: "Meetings",
         content: "Create meeting notes for the following meeting:\n"
     },
     {
+        id: 'content-outline',
         title: "Content Outline",
         category: "Content Creation",
         usage: "Business",
         content: "Create an outline for the following text:\n"
     },
     {
+        id: 'presentation-slides',
         title: "Presentation Slides",
         category: "Content Creation",
         usage: "Communication",
         content: "Create a slide deck for the following text:\n"
     },
     {
+        id: 'blog-post',
         title: "Blog Post",
         category: "Content Creation",
         usage: "Communication",
@@ -324,102 +354,119 @@ Include the following sections:
 `
     },
     {
+        id: 'marketing-strategy',
         title: "Marketing Strategy",
         category: "Marketing",
         usage: "Marketing",
         content: "Outline a marketing strategy for the following product:\n"
     },
     {
+        id: 'press-release',
         title: "Press Release",
         category: "Marketing",
         usage: "Marketing",
         content: "Draft a press release for the following event:\n"
     },
     {
+        id: 'user-persona',
         title: "User Persona",
         category: "User Research",
         usage: "Business",
         content: "Create a user persona for the user experience described in the context below."
     },
     {
+        id: 'user-journey-map',
         title: "User Journey Map",
         category: "User Research",
         usage: "Business",
         content: "Create a user journey map for the user experience described in the context below."
     },
     {
+        id: 'competitive-analysis',
         title: "Competitive Analysis",
         category: "Analysis",
         usage: "Business",
         content: "Conduct a competitive analysis for the market described in the context below."
     },
     {
+        id: 'customer-feedback',
         title: "Customer Feedback",
         category: "Feedback",
         usage: "Communication",
         content: "Summarize the following customer feedback:\n"
     },
     {
+        id: 'email-response',
         title: "Email Response",
         category: "Communication",
         usage: "Communication",
         content: "Draft a response to the following email:\n"
     },
     {
+        id: 'email-draft',
         title: "Email Draft",
         category: "Communication",
         usage: "Communication",
         content: "Draft a professional email for the following purpose:\n"
     },
     {
+        id: 'research-summary',
         title: "Research Summary",
         category: "Summarization",
         usage: "Business",
         content: "Summarize the following research findings:\n"
     },
     {
+        id: 'research-paper',
         title: "Research Paper",
         category: "Research",
         usage: "Business",
         content: "Suggesta research paper on the following topic:\n"
     },
     {
+        id: 'feedback-request',
         title: "Feedback Request",
         category: "Feedback",
         usage: "Business",
         content: "Request feedback on the topic described in the context below:\n"
     },
     {
+        id: 'user-guide',
         title: "User Guide",
         category: "Documentation",
         usage: "Business",
         content: "Create a user guide for the following product:\n"
     },
     {
+        id: 'faq-section',
         title: "FAQ Section",
         category: "Documentation",
         usage: "Business",
         content: "Create a FAQ section for the following product:\n"
     },
     {
+        id: 'case-study',
         title: "Case Study",
         category: "Case Studies",
         usage: "Business",
         content: "Create a case study for the following project:\n"
     },
     {
+        id: 'business-proposal',
         title: "Business Proposal",
         category: "Proposals",
         usage: "Business",
         content: "Draft a business proposal for the following project:\n"
     },
     {
+        id: 'grant-application',
         title: "Grant Application",
         category: "Proposals",
         usage: "Business",
         content: "Draft a grant application for the following project:\n"
     },
     {
+        id: 'proposal-outline',
         title: "Proposal Outline",
         category: "Proposals",
         usage: "Business",
@@ -427,12 +474,14 @@ Include the following sections:
     },
 
     {
+        id: 'code-review',
         title: "Code Review",
         category: "Code Review",
         usage: "Business",
         content: "Please review the following code and provide feedback:\n"
     },
     {
+        id: 'plan-a-walk',
         title: "Plan a walk",
         category: "Exercise",
         usage: "Personal",
@@ -454,25 +503,35 @@ Make sure Only walking routes are shown in the map.
 `
     },
     {
+        id: 'social-media-post',
         title: "Social Media Post",
         category: "Content Creation",
         usage: "Communication",
         content: "Create a social media post for the topic described below:\n\n"
     },
     {
+        id: 'learning-plan',
         title: "Learning Plan",
         category: "Learning",
         usage: "Business / Personal",
         content: "Create a learning plan for the topic described in the context below."
     },
-    { title: "Task List", category: "Task Management", usage: "Personal", content: "Create a task list for the topic described in the context below." },
     {
+        id: 'task-list-personal',
+        title: "Task List",
+        category: "Task Management",
+        usage: "Personal",
+        content: "Create a task list for the topic described in the context below."
+    },
+    {
+        id: 'email-draft-personal',
         title: "Email Draft",
         category: "Communication",
         usage: "Personal",
         content: "Draft a professional email for the following purpose:\n"
     },
     {
+        id: 'meal-planning',
         title: "Meal Planning",
         category: "Health & Wellness",
         usage: "Personal",
@@ -491,6 +550,7 @@ Include:
 `
     },
     {
+        id: 'travel-itinerary',
         title: "Travel Itinerary",
         category: "Travel",
         usage: "Business / Personal",
@@ -512,6 +572,7 @@ Include:
 `
     },
     {
+        id: 'workout-routine',
         title: "Workout Routine",
         category: "Health & Wellness",
         usage: "Personal",
@@ -532,6 +593,7 @@ Include:
 `
     },
     {
+        id: 'budget-plan',
         title: "Budget Plan",
         category: "Finance",
         usage: "Planning / Personal",
@@ -552,6 +614,7 @@ Include:
 `
     },
     {
+        id: 'habit-tracker',
         title: "Habit Tracker",
         category: "Personal Development",
         usage: "Personal",
@@ -572,6 +635,7 @@ Include:
 `
     },
     {
+        id: 'book-recommendations',
         title: "Book Recommendations",
         category: "Learning",
         usage: "Personal",
@@ -591,6 +655,7 @@ Include:
 `
     },
     {
+        id: 'gift-ideas',
         title: "Gift Ideas",
         category: "Shopping",
         usage: "Personal",

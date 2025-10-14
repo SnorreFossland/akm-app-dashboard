@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDocument, updateProjectInfo, setFocusDoc } from '@/features/model-universe/modelSlice';
+import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDocument, updateProjectInfo, setFocusDoc, DomainCategory, DOMAIN_CATEGORIES } from '@/features/model-universe/modelSlice';
 import extractDomainNameAndDescription from './docExtraction';
 import { ChevronDown, ChevronRight, Upload, Search, X, Plus } from 'lucide-react';
 import { Check } from 'lucide-react';
@@ -25,6 +25,12 @@ const MarkdownLibrary = ({
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const dispatch = useDispatch();
   const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents) as MarkdownDocument[];
+
+  // Prefer domainCategories defined in the model slice (try a couple of likely locations),
+  // falling back to null if not present so we can use the legacy defaults below.
+  // Try to get domainCategories from phData, fallback to undefined if not present
+  const sliceDomainCategories = DOMAIN_CATEGORIES && Array.isArray(DOMAIN_CATEGORIES) ? DOMAIN_CATEGORIES : null;
+
   // highlight based on focusDoc id or the currentDocument content
   const focusDoc = useSelector((state: RootState) => state.modelUniverse.phFocus?.focusDoc);
   const [searchTerm, setSearchTerm] = useState('');
@@ -36,6 +42,7 @@ const MarkdownLibrary = ({
   const [editName, setEditName] = useState('');
   const [editType, setEditType] = useState('');
   const [editContent, setEditContent] = useState('');
+  const [editDomainCategory, setEditDomainCategory] = useState('');
   const [metadataMessage, setMetadataMessage] = useState<string | null>(null);
   const [metadataError, setMetadataError] = useState<string | null>(null);
 
@@ -49,6 +56,21 @@ const MarkdownLibrary = ({
     'specification',
     'requirements',
   ];
+
+  // Category options: gather existing categories from documents and append defaults
+  const categoryOptions = useMemo(() => {
+    const docCats = (documents || []).map(d => d.domainCategory).filter(Boolean) as string[];
+    const uniqueDocCats = Array.from(new Set(docCats));
+
+    // Use categories from the slice when available; otherwise fall back to legacy defaults.
+    const legacyDefaults = ['Personal','Business', 'Technical', 'Organizational', 'Educational','Research', 'Design', 'Operations', 'Product', 'Public','Other'];
+    const sourceDefaults = Array.isArray(sliceDomainCategories) && sliceDomainCategories.length > 0
+      ? sliceDomainCategories
+      : legacyDefaults;
+
+    // Keep document-discovered categories first, then append defaults that aren't already present.
+    return [...uniqueDocCats, ...sourceDefaults.filter(d => !uniqueDocCats.includes(d))];
+  }, [documents, sliceDomainCategories]);
 
   const filteredDocuments = documents?.filter(doc =>
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -193,13 +215,13 @@ const MarkdownLibrary = ({
       name: doc.name,
     }));
   };
-
   const beginEditMetadata = (doc: MarkdownDocument, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingDocId(doc.id);
     setEditName(doc.name);
     setEditType(doc.type || 'markdown');
     setEditContent(doc.content || '');
+    setEditDomainCategory(doc.domainCategory || '');
     setMetadataMessage(null);
     setMetadataError(null);
   };
@@ -225,6 +247,7 @@ const MarkdownLibrary = ({
       name: trimmedName,
       type: normalizedType,
       content: editContent,
+      domainCategory: (editDomainCategory as DomainCategory) || undefined,
       updatedAt: new Date().toISOString(),
     };
 
@@ -238,7 +261,6 @@ const MarkdownLibrary = ({
       onSetCurrentDocument(updatedDoc.content, updatedDoc.name, updatedDoc);
     }
   };
-
   return (
     <div className="flex flex-col gap-2 w-full h-full p-2 bg-background rounded-lg overflow-hidden">
       <input
@@ -342,9 +364,6 @@ const MarkdownLibrary = ({
                 );
                 const rawType = (doc.type || 'markdown').toString();
                 const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
-                function setEditId(value: string) {
-                  throw new Error('Function not implemented.');
-                }
 
                 return (
                   <div key={doc.id} className="bg-gray-700 rounded transition-colors">
@@ -437,14 +456,12 @@ const MarkdownLibrary = ({
                                   <span>Document id</span>
                                   <input
                                     value={doc.id}
-                                    onChange={(event) => {
-                                      setEditId(event.target.value);
-                                      if (metadataError) setMetadataError(null);
-                                    }}
-                                    className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
-                                    placeholder="Enter document id"
+                                    readOnly
+                                    title="Document id (read-only)"
+                                    className="bg-gray-800 text-gray-400 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none"
                                   />
                                 </label>
+
                                 <label className="text-xs text-gray-300 flex flex-col gap-1">
                                   <span>Document name</span>
                                   <input
@@ -457,6 +474,7 @@ const MarkdownLibrary = ({
                                     placeholder="Enter document name"
                                   />
                                 </label>
+
                                 <label className="text-xs text-gray-300 flex flex-col gap-1">
                                   <span>Document type</span>
                                   <select
@@ -474,7 +492,26 @@ const MarkdownLibrary = ({
                                     ))}
                                   </select>
                                 </label>
+
+                                {/* Replaced free-text category input with a dropdown */}
+                                <label className="text-xs text-gray-300 flex flex-col gap-1">
+                                  <span>Domain category</span>
+                                  <select
+                                    value={editDomainCategory}
+                                    onChange={(event) => {
+                                      setEditDomainCategory(event.target.value);
+                                      if (metadataError) setMetadataError(null);
+                                    }}
+                                    className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                  >
+                                    <option value="">(none)</option>
+                                    {categoryOptions.map((cat) => (
+                                      <option key={cat} value={cat}>{cat}</option>
+                                    ))}
+                                  </select>
+                                </label>
                               </div>
+
                               <label className="text-xs text-gray-300 flex flex-col gap-1">
                                 <span>Document content</span>
                                 <textarea

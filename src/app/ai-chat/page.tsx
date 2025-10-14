@@ -13,7 +13,8 @@ import { ModeHeader } from '@/components/ai-chat/ModeHeader';
 import { ViewModeContent } from '@/components/ai-chat/modes/ViewModeContent';
 import { ChatModeContent } from '@/components/ai-chat/modes/ChatModeContent';
 import { EditModeContent } from '@/components/ai-chat/modes/EditModeContent';
-import { setFocusDoc, MarkdownDocument, saveMarkdownDocument, updateProjectInfo, setDomainCategory, DomainCategory } from '@/features/model-universe/modelSlice';
+import { setFocusDoc, MarkdownDocument, saveMarkdownDocument, updateProjectInfo, setDomainCategory } from '@/features/model-universe/modelSlice';
+import type { DomainCategory } from '@/features/model-universe/modelSlice';
 import DocumentTemplateSelector, { DocumentTemplate } from '@/components/ai-chat/DocumentTemplateSelector';
 import { useAIChatMode } from '@/hooks/useAIChatMode';
 import { MODE_CONFIGS } from '@/types/aiChatModes';
@@ -97,6 +98,9 @@ const AIChatPage = () => {
     const [documentType, setDocumentType] = useState('markdown');
     const [previewContent, setPreviewContent] = useState('');
     const [originalContent, setOriginalContent] = useState(''); // Add this to track original content
+
+    // New: local UI state for document/domain category (pre-populated from domain if available)
+    const [documentCategory, setDocumentCategory] = useState<DomainCategory>(domain?.domainCategory ?? 'Organizational');
 
     // Library modal state
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
@@ -361,7 +365,7 @@ const AIChatPage = () => {
                 name: documentName || 'Untitled Document',
                 type: documentType,
                 // attach category for new domain documents
-                ...( (documentType || '').trim().toLowerCase() === 'domain' ? { domainCategory: documentCategory } : {} ),
+                ...((documentType || '').trim().toLowerCase() === 'domain' ? { domainCategory: documentCategory } : {}),
                 content: contentToSave,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -449,40 +453,40 @@ const AIChatPage = () => {
             updatedAt: nowIso,
             // if the template is a domain template, carry over current UI category (optional)
             ...(normalizedType === 'domain' ? { domainCategory: documentCategory } : {})
-         };
+        };
 
-         dispatch(saveMarkdownDocument(templateDoc));
-         dispatch(setFocusDoc({ id: templateDoc.id }));
-         if (templateDoc.type === 'domain') {
+        dispatch(saveMarkdownDocument(templateDoc));
+        dispatch(setFocusDoc({ id: templateDoc.id }));
+        if (templateDoc.type === 'domain') {
             // keep live domain slice in sync
             dispatch(setDomainCategory((templateDoc as any).domainCategory ?? documentCategory));
-         }
+        }
 
-         setSelectedDocument(templateDoc);
-         setDocumentName(template.name);
-         setDocumentType(normalizedType);
-         setPreviewContent(template.content);
-         setOriginalContent(template.content);
-         setChatMdPreview(template.content);
-         setCurrentDocument(template.content);
+        setSelectedDocument(templateDoc);
+        setDocumentName(template.name);
+        setDocumentType(normalizedType);
+        setPreviewContent(template.content);
+        setOriginalContent(template.content);
+        setChatMdPreview(template.content);
+        setCurrentDocument(template.content);
 
-         updateProjectFromDocument(templateDoc);
-         closeLibrary();
-         setShowTemplateSelector(false);
-     }, [
-         dispatch,
-         normalizeDocumentType,
-         updateProjectFromDocument,
-         setSelectedDocument,
-         setDocumentName,
-         setDocumentType,
-         setPreviewContent,
-         setOriginalContent,
-         setChatMdPreview,
-         closeLibrary,
-         setShowTemplateSelector,
-         documentCategory,
-     ]);
+        updateProjectFromDocument(templateDoc);
+        closeLibrary();
+        setShowTemplateSelector(false);
+    }, [
+        dispatch,
+        normalizeDocumentType,
+        updateProjectFromDocument,
+        setSelectedDocument,
+        setDocumentName,
+        setDocumentType,
+        setPreviewContent,
+        setOriginalContent,
+        setChatMdPreview,
+        closeLibrary,
+        setShowTemplateSelector,
+        documentCategory,
+    ]);
 
     // Handler for saving preview from chat mode
     const handleSavePreviewToLibrary = useCallback((
@@ -493,13 +497,6 @@ const AIChatPage = () => {
     ) => {
         if (!content) return;
 
-        console.log('💾 Saving preview to library:', {
-            name,
-            type,
-            contentLength: content.length,
-            forceNew: options?.forceNew ?? false
-        });
-
         const timestamp = new Date().toISOString().split('T')[0];
         const baseName = name?.trim() || `AI Response ${timestamp}`;
         const documentType = type || 'ai-response';
@@ -507,19 +504,13 @@ const AIChatPage = () => {
 
         const ensureUniqueName = (desiredName: string) => {
             if (!documents || documents.length === 0) return desiredName;
-
-            if (!documents.some(doc => doc.name === desiredName)) {
-                return desiredName;
-            }
-
+            if (!documents.some(doc => doc.name === desiredName)) return desiredName;
             let attempt = 2;
             let candidate = `${desiredName} (${attempt})`;
-
             while (documents.some(doc => doc.name === candidate)) {
                 attempt += 1;
                 candidate = `${desiredName} (${attempt})`;
             }
-
             return candidate;
         };
 
@@ -535,11 +526,14 @@ const AIChatPage = () => {
 
         if (existingDoc) {
             // Updating existing document - keep the same ID
-            console.log('📝 Updating existing document:', existingDoc.name);
             newDoc = {
                 id: existingDoc.id,
                 name: documentName,
                 type: documentType,
+                // Preserve or update domainCategory: prefer current UI selection for domain docs
+                domainCategory: (documentType || '').trim().toLowerCase() === 'domain'
+                    ? documentCategory
+                    : existingDoc.domainCategory,
                 content: content,
                 createdAt: existingDoc.createdAt,
                 updatedAt: new Date().toISOString()
@@ -547,11 +541,12 @@ const AIChatPage = () => {
             oldContent = existingDoc.content;
         } else {
             // Creating new document
-            console.log('✨ Creating new document:', documentName);
             newDoc = {
                 id: `doc-${Date.now()}`,
                 name: documentName,
                 type: documentType,
+                // Attach category for domain documents so reducer and domain slice can pick it up
+                ...((documentType || '').trim().toLowerCase() === 'domain' ? { domainCategory: documentCategory } : {}),
                 content: content,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString()
@@ -561,7 +556,7 @@ const AIChatPage = () => {
         // Show diff modal
         setPendingSave({ doc: newDoc, oldContent });
         setShowDiffModal(true);
-    }, [documents]);
+    }, [documents, documentCategory]); // documentCategory added to deps
 
     // Debug: Log chat state changes
     useEffect(() => {
@@ -681,7 +676,7 @@ const AIChatPage = () => {
                 previewContent: currentDocument,
                 setPreviewContent,
                 onSaveToLibrary: handleSaveToLibrary,
-                // new props for domain category editing
+                // pass the category state so the editor UI can display/edit it
                 documentCategory,
                 setDocumentCategory,
             });
@@ -698,6 +693,25 @@ const AIChatPage = () => {
             middlePanelContent: <div>Unknown mode</div>,
             rightPanelContent: <div>Unknown mode</div>,
         };
+    })();
+
+    // Precompute panel prop values to avoid large inline ternaries in JSX (prevents parser/hydration errors).
+    const leftPanelProp = (() => {
+        const lp = panelConfigs.leftPanelContent;
+        if (lp && typeof lp === 'object' && 'tabs' in lp) return lp as any;
+        return { tabs: [{ key: 'domain', label: 'Domain', content: lp as React.ReactElement }], defaultTab: 'domain' };
+    })();
+
+    const middlePanelProp = (() => {
+        const mp = panelConfigs.middlePanelContent;
+        if (mp && typeof mp === 'object' && 'tabs' in mp) return mp as any;
+        return undefined;
+    })();
+
+    const rightPanelProp = (() => {
+        const rp = panelConfigs.rightPanelContent;
+        if (rp && typeof rp === 'object' && 'tabs' in rp) return rp as any;
+        return { tabs: [{ key: 'preview', label: 'Preview', content: rp as React.ReactElement }], defaultTab: 'preview' };
     })();
 
     const modeConfig = MODE_CONFIGS[mode];
@@ -725,21 +739,9 @@ const AIChatPage = () => {
             {/* )} */}
             <div className="flex-1 overflow-hidden bg-gray-900/60">
                 <ThreePanelLayout
-                    leftPanelContent={
-                        panelConfigs.leftPanelContent && typeof panelConfigs.leftPanelContent === 'object' && 'tabs' in panelConfigs.leftPanelContent
-                            ? panelConfigs.leftPanelContent
-                            : { tabs: [{ key: 'domain', label: 'Domain', content: panelConfigs.leftPanelContent as React.ReactElement }], defaultTab: 'domain' }
-                    }
-                    middlePanelContent={
-                        panelConfigs.middlePanelContent && typeof panelConfigs.middlePanelContent === 'object' && 'tabs' in panelConfigs.middlePanelContent
-                            ? panelConfigs.middlePanelContent
-                            : undefined
-                    }
-                    rightPanelContent={
-                        (panelConfigs.rightPanelContent && 'tabs' in panelConfigs.rightPanelContent)
-                            ? panelConfigs.rightPanelContent
-                            : { tabs: [{ key: 'preview', label: 'Preview', content: panelConfigs.rightPanelContent as React.ReactElement }], defaultTab: 'preview' }
-                    }
+                    leftPanelContent={leftPanelProp}
+                    middlePanelContent={middlePanelProp}
+                    rightPanelContent={rightPanelProp}
                     showLeftPanel={showLeftPanel}
                     setShowLeftPanel={setShowLeftPanel}
                     showRightPanel={showRightPanel}
