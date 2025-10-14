@@ -1,9 +1,10 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store';
-import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDocument, updateProjectInfo } from '@/features/model-universe/modelSlice';
+import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDocument, updateProjectInfo, setFocusDoc } from '@/features/model-universe/modelSlice';
 import extractDomainNameAndDescription from './docExtraction';
 import { ChevronDown, ChevronRight, Upload, Search, X, Plus } from 'lucide-react';
+import { Check } from 'lucide-react';
 
 interface MarkdownLibraryProps {
   onSelect: (content: string, name: string, docMeta?: MarkdownDocument) => void;
@@ -24,6 +25,8 @@ const MarkdownLibrary = ({
   const [isLibraryOpen, setIsLibraryOpen] = useState(false);
   const dispatch = useDispatch();
   const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents) as MarkdownDocument[];
+  // highlight based on focusDoc id or the currentDocument content
+  const focusDoc = useSelector((state: RootState) => state.modelUniverse.phFocus?.focusDoc);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
   const [showImportDialog, setShowImportDialog] = useState(false);
@@ -51,6 +54,15 @@ const MarkdownLibrary = ({
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     doc.content.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // If focusDoc is not set, find the first document whose content matches currentDocument.
+  // This ensures only one "Current" document is highlighted even if multiple docs share identical content.
+  const contentMatchId = useMemo(() => {
+    if (!currentDocument) return null;
+    const normalized = currentDocument.trim();
+    if (!normalized) return null;
+    return documents?.find(d => (d.content || '').trim() === normalized)?.id || null;
+  }, [documents, currentDocument]);
 
   // Auto-scroll when expanded content is rendered
   useEffect(() => {
@@ -320,14 +332,27 @@ const MarkdownLibrary = ({
           <div className="overflow-y-auto flex-1">
             <div className="grid grid-cols-1 gap-1 p-2">
               {filteredDocuments?.map((doc, index) => {
+                // determine if this document is the "current" one
+                // Priority:
+                // 1) Explicit focusDoc from Redux
+                // 2) If no focusDoc, the first document whose content matches currentDocument
+                const isCurrent = !!(
+                  (focusDoc && focusDoc.id === doc.id) ||
+                  (!focusDoc?.id && contentMatchId === doc.id)
+                );
                 const rawType = (doc.type || 'markdown').toString();
                 const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+                function setEditId(value: string) {
+                  throw new Error('Function not implemented.');
+                }
+
                 return (
                   <div key={doc.id} className="bg-gray-700 rounded transition-colors">
                     {/* Document Header - Clickable to expand/collapse */}
                     <div
                       onClick={(e) => handleDocumentClick(doc.id, e)}
-                      className="px-3 py-2 cursor-pointer hover:bg-gray-600 transition-colors rounded"
+                      aria-current={isCurrent ? 'true' : undefined}
+                      className={`px-3 py-2 cursor-pointer transition-colors rounded ${isCurrent ? 'bg-blue-800/30 border-l-4 border-blue-500' : 'hover:bg-gray-600'}`}
                     >
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -336,10 +361,16 @@ const MarkdownLibrary = ({
                           ) : (
                             <ChevronRight className="h-3.5 w-3.5 text-gray-400 flex-shrink-0" />
                           )}
-                          <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <div className="flex items-center justify-between gap-2 min-w-0 flex-1">
                             <h4 className="text-xs text-gray-300 truncate">{doc.name}</h4>
+                            {/* {isCurrent && (
+                              <span className="ml-2 inline-flex items-center gap-1 text-[0.65rem] px-2 py-0.5 rounded bg-green-900/30 text-green-300">
+                                <Check className="h-3 w-3" />
+                                Current
+                              </span>
+                            )} */}
                             <span className="px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide rounded-full bg-blue-900/40 text-blue-200 border border-blue-800/60 flex-shrink-0">
-                              {displayType}
+                              ( {displayType} )
                             </span>
                           </div>
                         </div>
@@ -347,18 +378,6 @@ const MarkdownLibrary = ({
                           <span className="text-[0.65rem] text-gray-400">
                             {new Date(doc.createdAt).toLocaleDateString()}
                           </span>
-                          <button
-                            onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
-                            className="text-[0.65rem] bg-green-800 hover:bg-green-700 text-white px-1.5 py-0.5 rounded"
-                          >
-                            Export
-                          </button>
-                          <button
-                            onClick={(e) => handleDelete(doc.id, e)}
-                            className="text-[0.65rem] bg-red-800 hover:bg-red-700 text-white px-1.5 py-0.5 rounded"
-                          >
-                            Delete
-                          </button>
                         </div>
                       </div>
                     </div>
@@ -374,32 +393,58 @@ const MarkdownLibrary = ({
                             onClick={(e) => beginEditMetadata(doc, e)}
                             disabled={editingDocId === doc.id}
                             className={`flex w-full items-center justify-between gap-1 text-[0.65rem] px-2 py-1 rounded 
-                              ${editingDocId === doc.id 
-                              ? 'bg-gray-700 text-gray-400 cursor-not-allowed' 
-                              : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
+                               ${editingDocId === doc.id
+                                ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                                : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
                           >
-                            <span className="flex items-center gap-1">
-                              {editingDocId === doc.id 
-                              ? (
-                              <span>Editing…</span>
-                              ) : (
-                              <>
-                                <span>{doc.name}</span>
-                                {doc.type && (
-                                <span className="text-blue-300">({displayType})</span>
+                            <span className="flex items-center justify-between w-full gap-1">
+                              {editingDocId === doc.id
+                                ? (
+                                  <span>Editing…</span>
+                                ) : (
+                                  <>
+                                    <span>{doc.name}</span>
+                                    <>
+                                      {doc.type && (
+                                        <span className="text-blue-300">({displayType})</span>
+                                      )}
+                                      <button
+                                        className="ms-auto px-2 py-1 text-xs bg-gray-700 rounded hover:bg-blue-900 transition-colors"
+                                      >
+                                        Edit
+                                      </button>
+                                      <button
+                                        onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
+                                        className="text-[0.65rem] bg-green-800 hover:bg-green-700 text-white px-1.5 py-0.5 rounded"
+                                      >
+                                        Export
+                                      </button>
+                                      <button
+                                        onClick={(e) => handleDelete(doc.id, e)}
+                                        className="text-[0.65rem] bg-red-800 hover:bg-red-700 text-white px-1.5 py-0.5 rounded"
+                                      >
+                                        Delete
+                                      </button>
+                                    </>
+                                  </>
                                 )}
-                                <button
-                                  className="ms-auto px-2 py-1 text-xs bg-gray-700 rounded hover:bg-blue-900 transition-colors"
-                                >
-                                  Edit
-                                </button>
-                              </>
-                              )}
                             </span>
                           </button>
                           {editingDocId === doc.id && (
                             <div className="mt-3 space-y-3 rounded-md border border-gray-600 bg-gray-900/70 p-3">
                               <div className="grid gap-2 md:grid-cols-2">
+                                <label className="text-xs text-gray-300 flex flex-col gap-1">
+                                  <span>Document id</span>
+                                  <input
+                                    value={doc.id}
+                                    onChange={(event) => {
+                                      setEditId(event.target.value);
+                                      if (metadataError) setMetadataError(null);
+                                    }}
+                                    className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400"
+                                    placeholder="Enter document id"
+                                  />
+                                </label>
                                 <label className="text-xs text-gray-300 flex flex-col gap-1">
                                   <span>Document name</span>
                                   <input
@@ -468,7 +513,7 @@ const MarkdownLibrary = ({
                           <div className="flex justify-between items-center">
                             <div className="text-[0.65rem] text-gray-400 space-x-2">
                               <span>• {doc.content.length} chars</span>
-                              <span>• {displayType}</span>
+                              {/* <span>• ({displayType})</span> */}
                             </div>
                             <div className="flex gap-1.5">
                               <button
@@ -478,24 +523,27 @@ const MarkdownLibrary = ({
                                 }}
                                 className="flex items-center gap-1 text-[0.65rem] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                               >
-                                Set Additional Context
+                                Set as Additional Context
                               </button>
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
+                                  if (isCurrent) return;
+                                  dispatch(setFocusDoc({ id: doc.id }));
                                   if (onSetCurrentDocument) {
                                     onSetCurrentDocument(doc.content, doc.name, doc);
                                   } else {
                                     onSelect(doc.content, doc.name, doc);
                                   }
                                 }}
-                                className="flex items-center gap-1 text-[0.65rem] bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded"
+                                disabled={isCurrent}
+                                className={`flex items-center gap-1 text-[0.65rem] px-2 py-1 rounded ${isCurrent ? 'bg-gray-600 text-gray-200 cursor-default' : 'bg-blue-700 hover:bg-blue-600 text-white'}`}
                               >
                                 Set as Current
                               </button>
                               <button
                                 onClick={(e) => handleSetFocusProject(doc, e)}
-                                className="flex items-center gap-1 text-[0.65rem] bg-orange-700 hover:bg-orange-600 text-white px-2 py-1 rounded"
+                                className="flex items-center gap-1 text-[0.65rem] bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded"
                                 title="Set as focus project"
                               >
                                 Set Project Plan

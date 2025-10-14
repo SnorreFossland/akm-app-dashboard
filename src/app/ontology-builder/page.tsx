@@ -473,6 +473,35 @@ export default function OntologyBuilderPage() {
   const leftPanelContent = {
     tabs: [
       {
+        key: 'domain',
+        label: 'Domain Description',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
+            <DocumentPanel
+              mdContent={mdContent}
+              setMdContent={(c: string) => setMdContent(c)}
+              documentId={domainData?.id || undefined}
+              panelType='left'
+              setIsLibraryOpen={setIsLibraryOpen}
+              isLibraryOpen={isLibraryOpen}
+              onSaveToLibrary={(content: string) => {
+                if (!domainData) {
+                  alert('No domain data to save to');
+                  return;
+                }
+                dispatch(setDomainData({
+                  ...domainData,
+                  presentation: content,
+                } as any));
+                setMdContent(content);
+                setStatusMsg('Domain description saved');
+                setTimeout(() => setStatusMsg(''), 3000);
+              }}
+            />
+          </div>
+        )
+      },
+      {
         key: 'project',
         label: 'Project Plan',
         content: (
@@ -504,35 +533,6 @@ export default function OntologyBuilderPage() {
                 setProjectDocId(id);
                 setProjectContent(content);
                 setStatusMsg('Project plan saved');
-                setTimeout(() => setStatusMsg(''), 3000);
-              }}
-            />
-          </div>
-        )
-      },
-      {
-        key: 'domain',
-        label: 'Domain Description',
-        content: (
-          <div className="flex-1 overflow-auto bg-gray-800/20 rounded p-1">
-            <DocumentPanel
-              mdContent={mdContent}
-              setMdContent={(c: string) => setMdContent(c)}
-              documentId={domainData?.id || undefined}
-              panelType='left'
-              setIsLibraryOpen={setIsLibraryOpen}
-              isLibraryOpen={isLibraryOpen}
-              onSaveToLibrary={(content: string) => {
-                if (!domainData) {
-                  alert('No domain data to save to');
-                  return;
-                }
-                dispatch(setDomainData({
-                  ...domainData,
-                  presentation: content,
-                } as any));
-                setMdContent(content);
-                setStatusMsg('Domain description saved');
                 setTimeout(() => setStatusMsg(''), 3000);
               }}
             />

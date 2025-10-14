@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
@@ -16,354 +16,319 @@ interface MarkdownPreviewProps {
 // Sanitize markdown content to prevent invalid HTML tags
 function sanitizeMarkdown(content: string): string {
     if (!content) return '';
+    const validTags = new Set([
+        'a', 'abbr', 'b', 'blockquote', 'br', 'code', 'dd', 'del', 'div', 'dl', 'dt', 'em',
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'ins', 'kbd', 'li', 'ol', 'p',
+        'pre', 'span', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th',
+        'thead', 'tr', 'ul'
+    ]);
 
-    // Remove or escape common problematic patterns
-    return content
-        // Remove XML/HTML-like tags that aren't valid HTML (like <rowid>)
-        .replace(/<([a-z][a-z0-9]*)\b[^>]*>/gi, (match, tagName) => {
-            // List of valid HTML tags we want to keep
-            const validTags = ['a', 'abbr', 'b', 'blockquote', 'br', 'code', 'dd', 'del', 'div', 'dl', 'dt', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'hr', 'i', 'img', 'ins', 'kbd', 'li', 'ol', 'p', 'pre', 'span', 'strong', 'sub', 'sup', 'table', 'tbody', 'td', 'tfoot', 'th', 'thead', 'tr', 'ul'];
+    return content.replace(/<\/?([a-z][a-z0-9]*)\b[^>]*>/gi, (m, tag) => {
+        return validTags.has(tag.toLowerCase())
+            ? m
+            : m.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    });
+}
 
-            if (!validTags.includes(tagName.toLowerCase())) {
-                // Escape invalid tags
-                return match.replace(/</g, '&lt;').replace(/>/g, '&gt;');
-            }
-            return match;
+// New helper: inject an SVG-scoped style and apply conservative attribute fixes so all diagram text/strokes show white
+function applyWhiteTextToSVG(svg: SVGSVGElement | null) {
+    // ...defensive no-op if missing
+    if (!svg) return;
+    try {
+        // Avoid injecting multiple times
+        if (svg.querySelector('style[data-injected-mermaid-text-color]')) return;
+
+        // Create an SVG style node (namespace aware)
+        const styleNode = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+        styleNode.setAttribute('data-injected-mermaid-text-color', '1');
+
+        // Keep rules minimal but broad — use !important to override inline styles when needed
+        styleNode.textContent = `
+			/* Force all SVG text to white for readability */
+			text, tspan, .label, .edgeLabel, .node text, .node tspan, .label * {
+				fill: #ffffff !important;
+				color: #ffffff !important;
+			}
+			/* Slightly lighten edge strokes for contrast */
+			.edgePath, path, line, polyline, polygon, rect, circle {
+				stroke: rgba(255,255,255,0.90) !important;
+			}
+			/* Make node fills darker/lighter as needed (non-invasive) */
+			.node rect, .node polygon, .node circle {
+				fill-opacity: 0.06 !important;
+			}
+		`;
+
+        // Append style to the SVG so it will generally appear later in the cascade,
+        // helping override earlier mermaid-inserted rules. Also rely on MutationObserver to reapply if mermaid updates.
+        svg.appendChild(styleNode);
+
+        // Extra compatibility: set fill attribute on any existing text/tspan elements
+        const textEls = svg.querySelectorAll<SVGElement>('text, tspan');
+        textEls.forEach((el) => {
+            try {
+                el.setAttribute('fill', '#FFFFFF');
+                (el as any).style.fill = '#FFFFFF';
+            } catch { /* ignore */ }
         });
-}
 
-function ensureMermaidCodeFences(content: string): string {
-    if (!content) return '';
-
-    const mermaidKeywords = [
-        'mermaid',
-        'gantt',
-        'sequence',
-        'sequencediagram',
-        'graph',
-        'classdiagram',
-        'erdiagram',
-        'journey',
-        'state',
-        'statediagram',
-        'pie',
-        'mindmap',
-        'timeline',
-        'flowchart'
-    ];
-
-    const lines = content.split(/\r?\n/);
-    const result: string[] = [];
-    let i = 0;
-    let insideFence = false;
-
-    while (i < lines.length) {
-        const line = lines[i];
-        const trimmed = line.trim();
-
-        if (trimmed.startsWith('```')) {
-            insideFence = !insideFence;
-            result.push(line);
-            i += 1;
-            continue;
-        }
-
-        const lower = trimmed.toLowerCase();
-        const isMermaidStart = !insideFence && mermaidKeywords.some((keyword) => lower === keyword || lower.startsWith(`${keyword} `));
-
-        if (isMermaidStart) {
-            const blockLines: string[] = [];
-            
-            // Collect block lines until an empty line or EOF
-            while (i < lines.length && lines[i].trim() !== '') {
-                blockLines.push(lines[i]);
-                i += 1;
-            }
-
-            if (result.length > 0 && result[result.length - 1].trim() !== '') {
-                result.push('');
-            }
-            const spacer = '\n';
-            result.push('```mermaid');
-            result.push(...blockLines);
-            result.push('```');
-            result.push(spacer);
-
-            // preserve blank line separator
-            while (i < lines.length && lines[i].trim() === '') {
-                result.push(lines[i]);
-                i += 1;
-            }
-            continue;
-        }
-
-        result.push(line);
-        i += 1;
+        // Also make HTML inside foreignObject readable
+        const foreignObjects = svg.querySelectorAll<HTMLElement>('foreignObject *');
+        foreignObjects.forEach((el) => {
+            try {
+                (el as HTMLElement).style.color = '#FFFFFF';
+                (el as HTMLElement).style.fill = '#FFFFFF';
+            } catch { /* ignore */ }
+        });
+    } catch (err) {
+        // Defensive logging but do not throw
+        // eslint-disable-next-line no-console
+        console.warn('[MarkdownPreview] applyWhiteTextToSVG failed', err);
     }
-
-    return result.join('\n');
-}
-
-function preprocessMermaidDefinition(definition: string): string {
-    if (!definition) return '';
-
-    const cleaned = definition
-        .replace(/---(?=\|)/g, '--')
-        .replace(/(\s*(?:--|==|\-\.)(?:>|\.>|->|\.->|=?>)?\s*\|[^|]+\|)\s*(?:\r?\n)+\s*(?=\s*\S)/g, '$1 ')
-        .replace(/\(([^)]*?)\)/g, '$1')
-        .replace(/\[([^\]]*?)\]/g, (_match, label) => {
-            const sanitizedLabel = label.replace(/[()]/g, '');
-            return `[${sanitizedLabel}]`;
-        })
-        .replace(/&(?!amp;|lt;|gt;|quot;|apos;)/g, '&amp;');
-
-    return cleaned;
 }
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 'default' }) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
-    const modalDiagramRef = useRef<HTMLDivElement | null>(null);
-    const [modalContent, setModalContent] = useState<string | null>(null);
 
-    // Configure mermaid once on mount
-    useEffect(() => {
-        try {
-            mermaid.initialize({
-                startOnLoad: false,
-                securityLevel: 'loose',
-                deterministicIds: true,
-            });
-        } catch (error) {
-            console.error('Mermaid initialization failed:', error);
-        }
-    }, []);
+    // existing re-init on markdown change
+    useLayoutEffect(() => {
+        mermaid.initialize({ startOnLoad: false });
+        mermaid.init(undefined, '.mermaid');
+    }, [mdPreview]);
 
-    const renderMermaidWithTheme = useCallback(async (definition: string, container: HTMLElement) => {
-        try {
-            const renderId = `mermaid-${Date.now()}`;
-            const { svg, bindFunctions } = await mermaid.render(renderId, definition);
-
-            if (!container) return;
-
-           const parser = new DOMParser();
-           const svgDoc = parser.parseFromString(svg, 'image/svg+xml');
-           const svgElement = svgDoc.documentElement;
-
-            svgElement.setAttribute('style', `${svgElement.getAttribute('style') || ''};background-color: transparent;`);
-            svgElement.setAttribute('width', '100%');
-            svgElement.setAttribute('height', 'auto');
-            svgElement.setAttribute('preserveAspectRatio', 'xMidYMid meet');
-
-            const textNodes = svgElement.querySelectorAll('text, tspan');
-            textNodes.forEach((node) => {
-                node.setAttribute('fill', '#f3f4f6');
-                const existingStyle = node.getAttribute('style') || '';
-                node.setAttribute('style', `${existingStyle} fill: #f3f4f6 !important;`);
-            });
-
-            const shapeNodes = svgElement.querySelectorAll('rect, polygon, path, ellipse, line, polyline');
-            shapeNodes.forEach((node) => {
-                const fill = node.getAttribute('fill');
-                if (fill && ['#ffffff', '#fff', '#f9f9f9', '#fafafa', '#fefefe'].includes(fill.toLowerCase())) {
-                    node.setAttribute('fill', '#111827');
-                }
-
-                const stroke = node.getAttribute('stroke');
-                if (!stroke || ['#000000', '#000', '#111827', '#1f2937', '#333333'].includes(stroke.toLowerCase())) {
-                    node.setAttribute('stroke', '#9ca3af');
-                }
-            });
-
-            const styleElement = svgDoc.createElementNS('http://www.w3.org/2000/svg', 'style');
-            styleElement.textContent = `
-                .taskTextOutsideRight,
-                .taskTextOutsideLeft,
-                .sectionTitle,
-                .taskText,
-                .todayText,
-                text,
-                tspan {
-                    fill: #f3f4f6 !important;
-                    font-size: 16px !important;
-                }
-            `;
-            svgElement.insertBefore(styleElement, svgElement.firstChild);
-
-            container.innerHTML = new XMLSerializer().serializeToString(svgElement);
-            container.classList.add('cursor-zoom-in', 'hover:bg-gray-800/40', 'rounded', 'bg-gray-900/60', 'p-2', '[&>svg]:max-w-full');
-            container.setAttribute('data-mermaid-definition', definition);
-
-            if (typeof bindFunctions === 'function') {
-                bindFunctions(container);
-            }
-        } catch (error) {
-            console.error('Mermaid render failed:', error);
-            console.error('Offending definition:', definition);
-            const message = error instanceof Error ? error.message : 'Unable to render Mermaid diagram.';
-            container.innerHTML = `\n                <div class="rounded-md border border-red-500/40 bg-red-500/10 p-3 text-xs text-red-200">\n                    <strong class="block text-red-300 mb-1">Mermaid render error</strong>\n                    <pre class="whitespace-pre-wrap text-red-200">${message}</pre>\n                </div>\n            `;
-            container.classList.remove('cursor-zoom-in', 'hover:bg-gray-800/40');
-        }
-    }, []);
-
-    const renderMermaidDiagrams = useCallback(async () => {
-        if (!containerRef.current) return;
-
-        const mermaidBlocks = Array.from(
-            containerRef.current.querySelectorAll<HTMLElement>('.mermaid')
-        );
-
-        if (mermaidBlocks.length === 0) return;
-
-        await Promise.all(
-            mermaidBlocks.map(async (block) => {
-                const definition = block.textContent?.trim();
-                if (!definition) return;
-
-                if (!containerRef.current?.contains(block)) return;
-
-                const sanitizedDefinition = preprocessMermaidDefinition(definition);
-
-                await renderMermaidWithTheme(sanitizedDefinition, block);
-                block.addEventListener('click', () => {
-                    setModalContent(sanitizedDefinition);
-                });
-            })
-        );
-    }, [renderMermaidWithTheme]);
-
-    useEffect(() => {
-        renderMermaidDiagrams();
-    }, [mdPreview, renderMermaidDiagrams]);
-
-    useEffect(() => {
-        if (!modalContent || !modalDiagramRef.current) return;
-
-        (async () => {
-            if (!modalDiagramRef.current) return;
-            await renderMermaidWithTheme(modalContent, modalDiagramRef.current);
-        })();
-    }, [modalContent, renderMermaidWithTheme]);
-
+    // re-init diagrams when window regains focus
     useEffect(() => {
         const handleWindowFocus = () => {
-            renderMermaidDiagrams();
+            mermaid.init(undefined, '.mermaid');
+            // Re-apply white text after mermaid may have re-rendered on focus
+            window.setTimeout(() => {
+                const container = containerRef.current;
+                if (!container) return;
+                const svgs = Array.from(container.querySelectorAll<SVGSVGElement>('.mermaid svg'));
+                svgs.forEach(s => applyWhiteTextToSVG(s));
+            }, 50);
         };
         window.addEventListener('focus', handleWindowFocus);
         return () => {
             window.removeEventListener('focus', handleWindowFocus);
         };
-    }, [renderMermaidDiagrams]);
+    }, []);
+
+    // Inject a small, scoped stylesheet to reduce spacing around <hr> and tables
+    useEffect(() => {
+        const container = containerRef.current;
+        if (!container) return;
+        if (container.querySelector('style[data-md-hr]')) return;
+
+        const s = document.createElement('style');
+        s.setAttribute('data-md-hr', '1');
+        s.textContent = `
+      /* Reduce vertical spacing for <hr> produced by Markdown '---' */
+      .markdown-preview.prose hr,
+      .markdown-preview hr {
+        margin-top: 0.3rem !important;
+        margin-bottom: 0.25rem !important;
+        height: 1px !important;
+        border: none !important;
+        border-top: 1px solid rgba(255,255,255,0.08) !important;
+        opacity: 0.9;
+      }
+      /* Reduce extra spacing from adjacent elements (paragraphs, lists, headers) */
+      .markdown-preview.prose * + hr,
+      .markdown-preview * + hr {
+        margin-top: 0.4rem !important;
+      }
+      .markdown-preview.prose hr + *,
+      .markdown-preview hr + * {
+        margin-top: 0.3rem !important;
+      }
+
+      /* Ensure headings have clear separation from preceding content */
+      .markdown-preview h1,
+      .markdown-preview h2,
+      .markdown-preview h3,
+      .markdown-preview h4,
+      .markdown-preview h5,
+      .markdown-preview h6 {
+        /* Increased top margin for clearer separation */
+        margin-top: 1rem !important;
+        margin-bottom: 1rem !important;
+        scroll-margin-top: 1rem !important;
+      }
+      /* Add a little more top space when a heading immediately follows a paragraph/list/table */
+      .markdown-preview p + h1,
+      .markdown-preview p + h2,
+      .markdown-preview p + h3,
+      .markdown-preview p + h4,
+      .markdown-preview p + h5,
+      .markdown-preview p + h6,
+      .markdown-preview ul + h1,
+      .markdown-preview ol + h1,
+      .markdown-preview table + h1 {
+        margin-top: 1.05rem !important;
+      }
+
+      /* Hide completely empty paragraphs created by consecutive blank lines */
+      .markdown-preview.prose p:empty,
+      .markdown-preview p:empty {
+        display: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+        height: 0 !important;
+        overflow: hidden !important;
+      }
+
+      /* Compact tables: reduce top/bottom margins and cell padding */
+      .markdown-preview.prose table,
+      .markdown-preview table {
+        margin-top: 0.25rem !important;
+        margin-bottom: 0.25rem !important;
+        border-collapse: collapse !important;
+        border-spacing: 0 !important;
+        width: 100% !important;
+        font-size: 0.95em !important;
+        line-height: 1.25 !important;
+      }
+      .markdown-preview.prose table th,
+      .markdown-preview.prose table td,
+      .markdown-preview table th,
+      .markdown-preview table td {
+        padding: 0.35rem 0.5rem !important;
+        vertical-align: top !important;
+        line-height: 1.2 !important;
+        border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+      }
+      /* Reduce spacing before tables when preceded by headings or paragraphs */
+      .markdown-preview p + table,
+      .markdown-preview h1 + table,
+      .markdown-preview h2 + table,
+      .markdown-preview h3 + table,
+      .markdown-preview h4 + table,
+      .markdown-preview h5 + table,
+      .markdown-preview h6 + table {
+        margin-top: 0.25rem !important;
+      }
+
+      /* Compact caption */
+      .markdown-preview caption {
+        caption-side: top;
+        margin-bottom: 0.25rem;
+        font-size: 0.9em;
+        color: rgba(255,255,255,0.85);
+      }
+
+      /* Slightly reduce spacing for tables inside blockquotes */
+      .markdown-preview blockquote table {
+        margin-top: 0.25rem !important;
+        margin-bottom: 0.25rem !important;
+      }
+    `;
+        // prepend so it is applied before other container styles
+        container.prepend(s);
+        return () => {
+            s.remove();
+        };
+    }, []);
 
     if (!mdPreview) {
         return <div className="text-gray-400 p-2 text-xs leading-tight">No content to display</div>;
     }
 
     // Clean up extra newlines before tables and remove trailing spaces
-    const cleanedMdPreview = mdPreview.replace(/(\r\n|\n|\r){2,}/g, '\n\n');
+    // const cleanedMdPreview = mdPreview.replace(/(\r\n|\n|\r){2,}/g, '\n\n');
 
     const baseClasses =
-        'markdown-preview prose prose-invert custom-markdown bg-transparent text-primary rounded-md overflow-auto whitespace-pre-wrap break-words break-all';
+        'markdown-preview prose prose-invert custom-markdown bg-transparent text-primary rounded-md overflow-auto whitespace-normal break-words';
+
     const variantClasses =
         variant === 'compact'
             ? [
                 'condensed-prose',
                 'prose-base leading-[1.35] tracking-normal',
                 'p-2 max-w-full',
-                '[&_p]:mt-[0.4rem] [&_p]:mb-[0.4rem] [&_p]:text-[16px] [&_p]:leading-[1.42]',
-                '[&_li]:mt-[0.3rem] [&_li]:mb-[0.3rem] [&_li]:text-[16px] [&_li]:leading-[1.4]',
-                '[&_ul]:ml-3 [&_ol]:ml-3',
-                '[&_h1]:text-2xl [&_h1]:mt-[0.2rem] [&_h1]:mb-[0.1rem]',
-                '[&_h2]:text-xl [&_h2]:mt-[0.2rem] [&_h2]:mb-[0.1rem]',
-                '[&_h3]:text-lg [&_h3]:mt-[0.1rem] [&_h3]:mb-[0.1rem]',
-                '[&_table]:text-[16px] [&_table]:leading-[1.38] [&_table]:my-[0.2rem]',
-                '[&_th]:px-3.5 [&_th]:py-[0.4rem] [&_td]:px-3.5 [&_td]:py-[0.35rem]',
+                // paragraphs
+                '[&_p]:mt-[0.4rem] [&_p]:mb-[0.4rem] [&_p:empty]:hidden',
+                // headings
+                '[&_h1]:text-2xl [&_h1]:mt-2 [&_h1]:mb-1',
+                '[&_h2]:text-xl  [&_h2]:mt-2 [&_h2]:mb-1',
+                '[&_h3]:text-lg  [&_h3]:mt-3 [&_h3]:mb-1',
+                // add space when a heading follows common blocks
+                '[&_p+h1]:mt-3 [&_p+h2]:mt-3 [&_p+h3]:mt-4',
+                '[&_ul+h1]:mt-3 [&_ul+h2]:mt-3 [&_ul+h3]:mt-4',
+                '[&_ol+h1]:mt-3 [&_ol+h2]:mt-3 [&_ol+h3]:mt-4',
+                '[&_table+h1]:mt-3 [&_table+h2]:mt-3 [&_table+h3]:mt-4',
+
+
+                // tables
+                '[&_table]:my-[0.2rem] [&_table]:mt-0',
+                '[&_thead_th]:pt-0 [&_thead_th]:pb-[0.35rem]',
+                '[&_th]:px-3.5 [&_td]:px-3.5 [&_td]:py-[0.35rem]',
+                // wrapping
+                '[&_th]:break-words [&_td]:break-words',
+                // code
                 '[&_code]:text-[14px] [&_code]:leading-[1.3]',
-                '[&_blockquote]:text-[16px] [&_blockquote]:py-[0.5rem] [&_blockquote]:pl-4.5'
             ].join(' ')
             : 'condensed-prose p-4 max-w-[600px] mx-auto leading-tight';
 
-    const sanitizedContent = ensureMermaidCodeFences(sanitizeMarkdown(mdPreview));
+
+    // collapse stray blank lines, esp. before tables
+    const cleanedMdPreview = mdPreview
+        .replace(/(\r\n|\n|\r){3,}/g, '\n\n')
+        .replace(/(?:^|\n)\s*\n(?=\|.*\|)/g, '\n');
+
+    const sanitizedContent = sanitizeMarkdown(cleanedMdPreview);
+
 
     return (
-        <div ref={containerRef} className={`${baseClasses} ${variantClasses}`}>
+        <div className={`${baseClasses} ${variantClasses}`} ref={containerRef}>
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw]}
                 components={{
                     code: ({ node, inline, className, children, ...props }: any) => {
-                        const match = /language-([\w-]+)/.exec(className || '');
-                        const language = match?.[1]?.toLowerCase();
-                        const mermaidLanguages = new Set([
-                            'mermaid',
-                            'gantt',
-                            'sequence',
-                            'sequencediagram',
-                            'classdiagram',
-                            'erdiagram',
-                            'journey',
-                            'state',
-                            'statediagram',
-                            'pie',
-                            'mindmap',
-                            'timeline',
-                            'flowchart'
-                        ]);
-
-                        const isMermaidDiagram = language ? mermaidLanguages.has(language) : false;
-
-                        if (isMermaidDiagram) {
-                            let definition = String(children).replace(/\n$/, '');
-                            const diagramKeyword = language === 'mermaid' ? '' : language;
-
-                            if (diagramKeyword && !definition.trimStart().toLowerCase().startsWith(diagramKeyword)) {
-                                definition = `${diagramKeyword}\n${definition}`;
-                            }
-
-                            return (
-                                <div className="mermaid my-3 break-all" data-diagram-type={language}>
-                                    {definition}
-                                </div>
-                            );
+                        const match = /language-(\w+)/.exec(className || '');
+                        if (match && match[1] === 'mermaid') {
+                            return <div className="mermaid my-3">{String(children).replace(/\n$/, '')}</div>;
                         }
-                        // Handle other code blocks with proper formatting
                         return !inline && match ? (
                             <SyntaxHighlighter
                                 {...props}
                                 style={atomDark}
                                 language={match[1]}
                                 PreTag="div"
+                                customStyle={{ whiteSpace: 'pre-wrap', wordBreak: 'break-word' }}
                             >
                                 {String(children).replace(/\n$/, '')}
                             </SyntaxHighlighter>
                         ) : (
-                            <code className={`${className || ''} break-all`} {...props}>
+                            <code className={`${className || ''} break-words`} {...props}>
                                 {children}
                             </code>
                         );
-                    }
+                    },
+                    // Explicit heading renderers to ensure consistent spacing and avoid margin-collapse oddities
+                    h1: ({ node, children, ...props }: any) => (
+                        <h1 {...props} style={{ marginTop: '1.0rem', marginBottom: '0.35rem' }}>{children}</h1>
+                    ),
+                    h2: ({ node, children, ...props }: any) => (
+                        <h2 {...props} style={{ marginTop: '1.0rem', marginBottom: '0.35rem' }}>{children}</h2>
+                    ),
+                    h3: ({ node, children, ...props }: any) => (
+                        <h3 {...props} style={{ marginTop: '0.95rem', marginBottom: '0.32rem' }}>{children}</h3>
+                    ),
+                    h4: ({ node, children, ...props }: any) => (
+                        <h4 {...props} style={{ marginTop: '0.85rem', marginBottom: '0.28rem' }}>{children}</h4>
+                    ),
+                    h5: ({ node, children, ...props }: any) => (
+                        <h5 {...props} style={{ marginTop: '0.75rem', marginBottom: '0.25rem' }}>{children}</h5>
+                    ),
+                    h6: ({ node, children, ...props }: any) => (
+                        <h6 {...props} style={{ marginTop: '0.65rem', marginBottom: '0.22rem' }}>{children}</h6>
+                    ),
                 }}
             >
                 {sanitizedContent}
             </ReactMarkdown>
-            {modalContent && (
-                <div
-                    className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 px-4"
-                    onClick={() => setModalContent(null)}
-                >
-                    <div
-                        className="relative w-full max-w-5xl max-h-[90vh] overflow-auto rounded-lg border border-gray-700 bg-gray-900 p-4"
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        <button
-                            className="absolute right-4 top-4 text-gray-400 hover:text-white"
-                            onClick={() => setModalContent(null)}
-                        >
-                            ×
-                        </button>
-                        <div ref={modalDiagramRef} className="mermaid text-xl" data-modal-diagram />
-                    </div>
-                </div>
-            )}
         </div>
     );
 };

@@ -158,8 +158,8 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                     {[
                         // { label: 'Dashboard', href: '/dashboard' },
                         { label: 'AI Chat', href: '/ai-chat' },
-                        { label: 'Domain', href: '/domain-builder' },
-                        { label: 'Ontology', href: '/ontology-builder' },
+                        // { label: 'Domain', href: '/domain-builder' },
+                        // { label: 'Ontology', href: '/ontology-builder' },
                         { label: 'Model', href: '/model-builder' },
                         { label: 'Modelview', href: '/modelview-builder' },
                         // { label: 'Prompt', href: '/prompt-builder' },

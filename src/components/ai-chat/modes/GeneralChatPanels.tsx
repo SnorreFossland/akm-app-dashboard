@@ -1,10 +1,9 @@
 'use client';
 
 import ChatComponent from '@/components/ai-chat/ChatComponent';
-import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
-import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import type { DomainData } from '@/features/model-universe/modelSlice';
+import { buildLeftPanelTabs } from './sharedPanelBuilders';
+import type { DomainData, MarkdownDocument } from '@/features/model-universe/modelSlice';
 import { BookmarkPlus, X, Check, Edit, FilePlus } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
 
@@ -38,6 +37,10 @@ interface GeneralChatPanelsProps {
     documentType?: string;
     onSavePreviewToLibrary?: (content: string, name?: string, type?: string, options?: { forceNew?: boolean }) => void;
     onCreateDocumentFromTemplate?: () => void;
+    projectDocument?: MarkdownDocument | null;
+    // New optional free-text additional context for General chat (no library)
+    additionalContext?: string;
+    setAdditionalContext?: (content: string) => void;
 }
 
 export function GeneralChatPanels(props: GeneralChatPanelsProps) {
@@ -46,6 +49,8 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
         contextContent,
         setContextContent,
         currentDocument,
+        additionalContext,
+        setAdditionalContext,
         isLibraryOpen,
         libraryTarget,
         openLibraryFor,
@@ -69,98 +74,78 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
         documentType,
         onSavePreviewToLibrary,
         onCreateDocumentFromTemplate,
+        projectDocument,
     } = props;
 
     const handleResponseChange = (response: string) => {
-        // setChatMdPreview(response);
+        // future hook point
     };
 
     const handleViewInMarkdown = (response: string) => {
         setChatMdPreview(response);
+        // Set preview name to first line of response (strip markdown heading markers)
+        const firstLine = response.split('\n')[0].replace(/^#+\s*/, '').trim();
+        if (firstLine) {
+            // Optionally: expose a setter for previewName via props or context
+            // For this file, use window event as a workaround
+            window.dispatchEvent(new CustomEvent('aiChat_setPreviewName', { detail: { previewName: firstLine } }));
+        }
     };
 
+    // Build a consistent base left-panel (domain + projects) and include Additional Context.
+    const baseLeftPanel = buildLeftPanelTabs({
+        domain,
+        projectDocument,
+        currentDocument,
+        onCreateDocumentFromTemplate,
+        includeLibrary: false, // General chat should not show the library list
+        onSetCurrentDocument: handleSetCurrentDocument,
+        includeAdditional: true, // put Additional Context into the shared tabs
+        additionalContext: additionalContext || '',
+        setAdditionalContext: setAdditionalContext,
+    });
+
+    const documentTab = {
+        key: 'document',
+        label: 'Current Document',
+        content: (
+            <div className="h-full overflow-auto px-4 py-4">
+                <MarkdownPreview mdPreview={currentDocument} variant="default" />
+            </div>
+        ),
+    };
+
+    const leftPanelContent = {
+        ...baseLeftPanel,
+        // Ensure the Current Document tab is available in General chat
+        tabs: [...(baseLeftPanel.tabs || []), documentTab],
+        defaultTab: baseLeftPanel.defaultTab || 'domain',
+    };
+
+    // Right panel: only Preview kept for General chat (library removed so the document list is hidden)
+    const rightPanelContent = {
+        tabs: [
+            {
+                key: 'preview',
+                label: 'Preview',
+                content: (
+                    <PreviewPanel
+                        chatMdPreview={chatMdPreview}
+                        setChatMdPreview={setChatMdPreview}
+                        onSavePreviewToLibrary={props.onSavePreviewToLibrary}
+                        documentName={props.documentName}
+                        documentType={props.documentType}
+                    />
+                ),
+            },
+        ],
+        defaultTab: 'preview',
+    };
 
     return {
-        leftPanelContent: {
-            tabs: [
-                {
-                    key: 'domain',
-                    label: 'Domain',
-                    content: (
-                        <div className="h-full overflow-auto px-2 py-2">
-                            {domain?.presentation ? (
-                                <MarkdownPreview mdPreview={domain.presentation} variant="compact" />
-                            ) : (
-                                <div className="text-sm text-gray-400">No domain presentation available.</div>
-                            )}
-                        </div>
-                    ),
-                },
-                // {
-                //     key: 'context',
-                //     label: 'Context Docs',
-                //     content: (
-                //         <div className="h-full flex flex-col overflow-hidden">
-                //             {currentDocument && (
-                //                 <div className="border-b border-gray-700 pb-2 mb-2">
-                //                     <div className="text-xs font-semibold text-gray-400 px-2 mb-1">Current Document:</div>
-                //                     <div className="px-2 max-h-40 overflow-auto bg-gray-900/50 rounded p-2">
-                //                         <MarkdownPreview mdPreview={currentDocument} variant="compact" />
-                //                     </div>
-                //                 </div>
-                //             )}
-                //             {/* <DocumentPanel
-                //                 mdContent={contextContent}
-                //                 setMdContent={setContextContent}
-                //                 setIsLibraryOpen={(open) => {
-                //                     if (open) openLibraryFor('context');
-                //                     else closeLibrary();
-                //                 }}
-                //                 isLibraryOpen={isLibraryOpen && libraryTarget === 'context'}
-                //                 panelType="left"
-                //             /> */}
-                //         </div>
-                //     ),
-                // },
-                {
-                    key: 'document',
-                    label: 'Current Document',
-                    content: (
-                        <div className="h-full overflow-auto px-4 py-4">
-                            <MarkdownPreview mdPreview={currentDocument} variant="default" />
-                        </div>
-                    ),
-                },
-                // {
-                //     key: 'history',
-                //     label: 'History',
-                //     content: (
-                //         <div className="h-full overflow-auto px-2 py-2">
-                //             <div className="text-sm text-gray-400">Chat history placeholder</div>
-                //         </div>
-                //     ),
-                // },
-            ],
-            defaultTab: 'domain',
-        },
+        leftPanelContent,
         middlePanelContent: {
             tabs: [
-                // {
-                //     key: 'document',
-                //     label: 'Current Document',
-                //     content: (
-                //         <div className="h-full overflow-auto px-4 py-4">
-                //             {currentDocument ? (
-                //                 <MarkdownPreview mdPreview={currentDocument} variant="default" />
-                //             ) : (
-                //                 <div className="text-center text-gray-400 p-8">
-                //                     <p className="text-sm">No document selected</p>
-                //                     <p className="text-xs mt-2">Select a document from the library to view it here</p>
-                //                 </div>
-                //             )}
-                //         </div>
-                //     ),
-                // },
                 {
                     key: 'chat',
                     label: 'AI Chat',
@@ -198,39 +183,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
             ],
             defaultTab: 'chat',
         },
-        rightPanelContent: {
-            tabs: [
-                {
-                    key: 'preview',
-                    label: 'Preview',
-                    content: (
-                        <PreviewPanel
-                            chatMdPreview={chatMdPreview}
-                            setChatMdPreview={setChatMdPreview}
-                            onSavePreviewToLibrary={props.onSavePreviewToLibrary}
-                            documentName={props.documentName}
-                            documentType={props.documentType}
-                        />
-                    ),
-                },
-                {
-                    key: 'library',
-                    label: 'Library',
-                    content: (
-                        <div className="h-full overflow-auto px-2 py-2">
-                            <MarkdownLibrary
-                                onSelect={(content) => setContextContent(content)}
-                                hideExportLibraryButton={true}
-                                onSetCurrentDocument={handleSetCurrentDocument}
-                                currentDocument={currentDocument}
-                                onCreateFromTemplate={onCreateDocumentFromTemplate}
-                            />
-                        </div>
-                    ),
-                },
-            ],
-            defaultTab: 'preview',
-        },
+        rightPanelContent,
     };
 
     // Extract preview panel into a separate component where hooks are allowed
@@ -398,45 +351,45 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                         <div className="flex-1 overflow-auto px-4 py-4">
                             {isEditingPreview ? (
                                 <>
-                                <div className="mb-3 flex gap-2 items-center">
-                                    <input
-                                        type="text"
-                                        value={previewName}
-                                        onChange={e => {
-                                            if (!props.documentName) {
-                                                setPreviewName(e.target.value);
-                                            }
-                                        }}
-                                        disabled={!!props.documentName}
-                                        className="px-2 py-1 text-sm rounded bg-gray-700 text-gray-200 border border-gray-600 focus:border-blue-500 focus:outline-none w-1/2"
-                                        placeholder="Document Name"
+                                    <div className="mb-3 flex gap-2 items-center">
+                                        <input
+                                            type="text"
+                                            value={previewName}
+                                            onChange={e => {
+                                                if (!props.documentName) {
+                                                    setPreviewName(e.target.value);
+                                                }
+                                            }}
+                                            disabled={!!props.documentName}
+                                            className="px-2 py-1 text-sm rounded bg-gray-700 text-gray-200 border border-gray-600 focus:border-blue-500 focus:outline-none w-1/2"
+                                            placeholder="Document Name"
+                                        />
+                                        <select
+                                            value={previewType}
+                                            onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
+                                                if (!props.documentType) {
+                                                    setPreviewType(e.target.value);
+                                                }
+                                            }}
+                                            disabled={!!props.documentType}
+                                            className="px-2 py-1 text-sm rounded bg-gray-700 text-gray-200 border border-gray-600 focus:border-blue-500 focus:outline-none"
+                                        >
+                                            <option value="ai-response">AI Response</option>
+                                            <option value="markdown">Markdown</option>
+                                            <option value="project-plan">Project Plan</option>
+                                            <option value="roadmap">Roadmap</option>
+                                            <option value="domain">Domain</option>
+                                            <option value="prompt">Prompt</option>
+                                            <option value="specification">Specification</option>
+                                            <option value="requirements">Requirements</option>
+                                        </select>
+                                    </div>
+                                    <textarea
+                                        value={previewEditContent}
+                                        onChange={(e) => setPreviewEditContent(e.target.value)}
+                                        className="w-full h-full bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
+                                        placeholder="Edit preview content..."
                                     />
-                                    <select
-                                        value={previewType}
-                                        onChange={(e: React.ChangeEvent<HTMLSelectElement>) => {
-                                            if (!props.documentType) {
-                                                setPreviewType(e.target.value);
-                                            }
-                                        }}
-                                        disabled={!!props.documentType}
-                                        className="px-2 py-1 text-sm rounded bg-gray-700 text-gray-200 border border-gray-600 focus:border-blue-500 focus:outline-none"
-                                    >
-                                        <option value="ai-response">AI Response</option>
-                                        <option value="markdown">Markdown</option>
-                                        <option value="project-plan">Project Plan</option>
-                                        <option value="roadmap">Roadmap</option>
-                                        <option value="domain">Domain</option>
-                                        <option value="prompt">Prompt</option>
-                                        <option value="specification">Specification</option>
-                                        <option value="requirements">Requirements</option>
-                                    </select>
-                                </div>
-                                <textarea
-                                    value={previewEditContent}
-                                    onChange={(e) => setPreviewEditContent(e.target.value)}
-                                    className="w-full h-full bg-gray-800 text-gray-200 p-2 rounded-md border border-gray-700 focus:border-blue-500 focus:outline-none resize-none font-mono text-sm"
-                                    placeholder="Edit preview content..."
-                                />
                                 </>
                             ) : (
                                 <MarkdownPreview mdPreview={chatMdPreview} variant="default" />

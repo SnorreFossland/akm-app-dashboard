@@ -6,7 +6,7 @@ import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import extractDomainNameAndDescription from './docExtraction';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye, Plus } from 'lucide-react';
-import { setDomainData, saveMarkdownDocument, setCurrentDocument, updateProjectInfo, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import { setDomainData, saveMarkdownDocument, updateProjectInfo, MarkdownDocument, setFocusDoc } from '@/features/model-universe/modelSlice'; // Updated import
 import DiffModal from './DiffModal';
 
 interface DocumentPanelProps {
@@ -34,6 +34,7 @@ interface DocumentPanelProps {
     documentName?: string;
     documentType?: string;
     onNewDocument?: () => void;
+    onFocusDocChange?: (docId: string | null) => void;
 }
 
 export default function DocumentPanel({
@@ -60,6 +61,7 @@ export default function DocumentPanel({
     documentName,
     documentType,
     onNewDocument,
+    onFocusDocChange,
 }: DocumentPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
@@ -283,6 +285,9 @@ export default function DocumentPanel({
             updatedAt: nowIso,
         }));
 
+        dispatch(setFocusDoc({ id: idToUse }));
+        onFocusDocChange?.(idToUse);
+
         // Update the currentDocument state in the parent component
         console.log('About to update parent with content:', contentToSave?.substring(0, 100));
         setMdContent(contentToSave);
@@ -306,8 +311,6 @@ export default function DocumentPanel({
         }
 
         // Sync the current document into Redux so all views stay aligned
-        dispatch(setCurrentDocument(contentToSave));
-
         // Show confirmation
         setStatusMsg('Saved to library');
         setTimeout(() => setStatusMsg(''), 3000);

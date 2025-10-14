@@ -23,6 +23,12 @@ export function DomainBuilderHeader({
 }: DomainBuilderHeaderProps) {
     const isViewMode = !isAIAssistantActive && !isEditDocumentActive;
 
+    // All buttons use gray base, only active gets color
+    const baseBtn = "flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors bg-gray-600 text-white hover:bg-gray-500";
+    const activeView = "bg-gray-700";
+    const activeEdit = "bg-blue-600";
+    const activeAI = "bg-purple-600";
+
     return (
         <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/50">
             <div className="flex items-center gap-2">
@@ -30,45 +36,32 @@ export function DomainBuilderHeader({
                     <span className="text-xs text-gray-400">← Toggle left panel</span>
                 )}
             </div>
-
             <div className="flex items-center gap-2">
                 <button
                     onClick={onViewMode}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${isViewMode
-                            ? 'bg-emerald-500 hover:bg-emerald-400 text-white'
-                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                        }`}
+                    className={`${baseBtn} ${isViewMode ? activeView : ''}`}
                     title="View mode"
                 >
                     <Eye className="h-4 w-4" />
                     View
                 </button>
-
                 <button
                     onClick={onEditDocument}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${isEditDocumentActive
-                            ? 'bg-blue-500 text-white'
-                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                        }`}
+                    className={`${baseBtn} ${isEditDocumentActive ? activeEdit : ''}`}
                     title="Toggle domain editor"
                 >
                     <Edit className="h-4 w-4" />
                     Edit Document
                 </button>
-
                 <button
                     onClick={onOpenAIAssistant}
-                    className={`flex items-center gap-2 px-3 py-1.5 rounded text-sm font-medium transition-colors ${isAIAssistantActive
-                            ? 'bg-purple-500 text-white'
-                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                        }`}
+                    className={`${baseBtn} ${isAIAssistantActive ? activeAI : ''}`}
                     title="Toggle AI Assistant chat"
                 >
                     <Sparkles className="h-4 w-4" />
                     AI Assistant
                 </button>
             </div>
-
             <div className="flex items-center gap-2">
                 {!showRightPanel && (
                     <span className="text-xs text-gray-400">Toggle right panel →</span>

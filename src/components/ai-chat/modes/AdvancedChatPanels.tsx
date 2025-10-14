@@ -352,7 +352,7 @@ export function AdvancedChatPanels(props: AdvancedChatPanelsProps) {
                                         title="Save preview to library"
                                     >
                                         <BookmarkPlus className="h-3 w-3" />
-                                        Save to Library
+                                        Save to current doc
                                     </button>
                                     <button
                                         onClick={() => {

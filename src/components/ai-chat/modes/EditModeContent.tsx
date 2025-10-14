@@ -3,6 +3,7 @@
 import { DocumentMetadataHeader } from '@/components/ai-chat/DocumentMetadataHeader';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
+import type { DomainCategory } from '@/features/model-universe/modelSlice';
 
 interface EditModeContentProps {
     documentName: string;
@@ -21,6 +22,9 @@ interface EditModeContentProps {
     domain?: { presentation?: string } | null;
     contextContent?: string;
     setContextContent?: (content: string) => void;
+    // New: category state and setter
+    documentCategory?: DomainCategory;
+    setDocumentCategory?: (c: DomainCategory) => void;
 }
 
 function EditModeLeftPanel({
@@ -123,11 +127,15 @@ function EditModeRightPanel({
     documentType,
     previewContent,
     onSaveToLibrary,
+    documentCategory,
+    setDocumentCategory,
 }: {
     documentName: string;
     documentType: string;
     previewContent: string;
     onSaveToLibrary: () => void;
+    documentCategory?: DomainCategory;
+    setDocumentCategory?: (c: DomainCategory) => void;
 }) {
     const displayContent = previewContent || '';
 
@@ -197,6 +205,8 @@ export function EditModeContent(params: EditModeContentProps) {
                 documentType={params.documentType}
                 previewContent={params.currentDocument}
                 onSaveToLibrary={params.onSaveToLibrary}
+                documentCategory={params.documentCategory}
+                setDocumentCategory={params.setDocumentCategory}
             />
         ),
     };

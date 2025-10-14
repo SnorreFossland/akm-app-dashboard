@@ -31,7 +31,7 @@ export interface ProjectInfo {
   username?: string;
   description: string;
 }
-// Export the document interface (moved from markdownSlice)
+// Extend MarkdownDocument so domain docs can carry the category
 export interface MarkdownDocument {
   id: string;
   name: string;
@@ -39,6 +39,8 @@ export interface MarkdownDocument {
   content: string;
   createdAt: string | Date;
   updatedAt?: string | Date;  // made optional
+  // Optional metadata for domain documents
+  domainCategory?: DomainCategory;
 }
 
 export interface DataType {
@@ -46,7 +48,6 @@ export interface DataType {
     metis: Metis,
     domain: DomainData,
     documents: MarkdownDocument[], // Add documents here
-    currentDocument: string,
   },
   phFocus: {
     focusModel: {
@@ -78,6 +79,9 @@ export interface DataType {
       name: string;
       description: string;
 
+    };
+    focusDoc?: {
+      id: string | null;
     };
   },
   phUser: {
@@ -165,6 +169,35 @@ export interface Modelview {
 };
 
 
+// Add domain category enum/union for type-safety
+export type DomainCategory =
+	| 'Personal'
+	| 'Business'
+	| 'Technical'
+	| 'Organizational'
+	| 'Educational'
+	| 'Public';
+
+// Extend Domain shape to include the category
+interface Domain {
+	// ...existing properties...
+	domainCategory?: DomainCategory;
+}
+
+// Initialize default category on domain in the slice initial state
+const initialState = {
+	// ...existing state...
+	phData: {
+		// ...existing phData...
+		domain: {
+			// ...existing domain fields (name, description, presentation, etc) ...
+			domainCategory: 'Organizational' as DomainCategory, // sensible default
+		},
+		// ...existing phData...
+	},
+	// ...existing initialState...
+};
+
 export const initialState: DataType = {
   phData: {
     metis: { name: '', description: '', models: [], metamodels: [] },
@@ -175,9 +208,9 @@ export const initialState: DataType = {
       presentation: '',
       additionalContext: '',
       ontology: { name: '', description: '', concepts: [], relationships: [] },
+      domainCategory: 'Organizational', // sensible default
     },
     documents: [], // Add documents to initial state
-    currentDocument: '',
   },
   phFocus: {
     focusModel: { id: '', name: '' },
@@ -187,6 +220,7 @@ export const initialState: DataType = {
     focusRelship: { id: '', name: '' },
     focusRelshipview: { id: '', name: '' },
     focusProj: { id: '', name: '', description: '' },
+    focusDoc: { id: null },
 
   },
   phUser: { id: '', name: '', email: '' },
@@ -292,11 +326,14 @@ const modelSlice = createSlice({
         const { presentation, ...rest } = incomingPhData.domain.ontology;
         incomingPhData.domain.ontology = { ...rest };
       }
+      const { currentDocument: _legacyCurrentDoc, ...restPhData } = incomingPhData;
       state.phData = {
-        ...incomingPhData,
-        currentDocument: incomingPhData.currentDocument || '',
+        ...restPhData,
       };
-      state.phFocus = { ...action.payload.phFocus };
+      state.phFocus = {
+        ...action.payload.phFocus,
+        focusDoc: action.payload.phFocus?.focusDoc || { id: null },
+      };
       state.phUser = { ...action.payload.phUser };
       state.phSource = action.payload.phSource;
     },
@@ -386,6 +423,9 @@ const modelSlice = createSlice({
     setFocusModelview(state, action: PayloadAction<DataType['phFocus']['focusModelview']>) {
       console.log('344 action.payload', action.payload, state);
       state.phFocus.focusModelview = action.payload;
+    },
+    setFocusDoc(state, action: PayloadAction<{ id: string | null }>) {
+      state.phFocus.focusDoc = action.payload;
     },
     setSource(state, action: PayloadAction<DataType['phSource']>) {
       state.phSource = action.payload;
@@ -554,6 +594,24 @@ const modelSlice = createSlice({
           updatedAt: updatedDoc.updatedAt || new Date().toISOString(),
         });
       }
+
+      // If we saved a 'domain' type document, propagate its domainCategory into the live domain slice
+      try {
+        const doc = action.payload;
+        if (doc.type === 'domain') {
+          state.phData = state.phData || ({} as any);
+          state.phData.domain = state.phData.domain || ({} as any);
+          // Update domain presentation/content if desired
+          state.phData.domain.presentation = doc.content ?? state.phData.domain.presentation;
+          // Propagate explicit domainCategory if present, otherwise keep existing
+          if (doc.domainCategory) {
+            state.phData.domain.domainCategory = doc.domainCategory;
+          }
+        }
+      } catch (e) {
+        // preserve existing behavior on error
+        console.warn('saveMarkdownDocument: domain propagation failed', e);
+      }
     },
     deleteMarkdownDocument: (state, action: PayloadAction<string>) => {
       // Ensure documents array exists before filtering
@@ -563,9 +621,12 @@ const modelSlice = createSlice({
       }
       state.phData.documents = state.phData.documents.filter(doc => doc.id !== action.payload);
     },
-    setCurrentDocument: (state, action: PayloadAction<string>) => {
-      state.phData.currentDocument = action.payload;
-    },
+    // New: allow explicit updates to the domain category
+    setDomainCategory(state, action: PayloadAction<DomainCategory>) {
+			if (!state.phData) state.phData = {} as any;
+			if (!state.phData.domain) state.phData.domain = {} as any;
+			state.phData.domain.domainCategory = action.payload;
+		},
   },
   extraReducers: (builder) => {
     builder
@@ -609,7 +670,8 @@ export const {
   // Add the new document actions
   saveMarkdownDocument,
   deleteMarkdownDocument,
-  setCurrentDocument,
+  setFocusDoc,
+  setDomainCategory,
 } = modelSlice.actions;
 
 export default modelSlice.reducer;

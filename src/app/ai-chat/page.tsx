@@ -1,24 +1,24 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { X } from 'lucide-react';
 
 import { RootState } from '@/store';
 import { FileOperations } from '@/components/FileOperations';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
-import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { ModeHeader } from '@/components/ai-chat/ModeHeader';
 import { ViewModeContent } from '@/components/ai-chat/modes/ViewModeContent';
 import { ChatModeContent } from '@/components/ai-chat/modes/ChatModeContent';
 import { EditModeContent } from '@/components/ai-chat/modes/EditModeContent';
-import { setCurrentDocument, MarkdownDocument, saveMarkdownDocument, updateProjectInfo } from '@/features/model-universe/modelSlice';
+import { setFocusDoc, MarkdownDocument, saveMarkdownDocument, updateProjectInfo, setDomainCategory, DomainCategory } from '@/features/model-universe/modelSlice';
 import DocumentTemplateSelector, { DocumentTemplate } from '@/components/ai-chat/DocumentTemplateSelector';
 import { useAIChatMode } from '@/hooks/useAIChatMode';
 import { MODE_CONFIGS } from '@/types/aiChatModes';
 import DiffModal from '@/components/ai-chat/DiffModal';
+import { buildLeftPanelTabs } from '@/components/ai-chat/modes/sharedPanelBuilders';
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
@@ -26,7 +26,7 @@ const AIChatPage = () => {
 
     const domain = useSelector((state: RootState) => state.modelUniverse?.phData?.domain);
     const documents = useSelector((state: RootState) => state.modelUniverse?.phData?.documents);
-    const currentDocument = useSelector((state: RootState) => state.modelUniverse.phData.currentDocument);
+    const focusDoc = useSelector((state: RootState) => state.modelUniverse?.phFocus?.focusDoc);
     const focusProject = useSelector((state: RootState) => state.modelUniverse?.phFocus?.focusProj);
     const [projectDocument, setProjectDocument] = useState<MarkdownDocument | null>(null);
     const ontology = useSelector((state: RootState) => state.modelUniverse?.phData?.domain.ontology);
@@ -34,10 +34,11 @@ const AIChatPage = () => {
     // Shared state across all modes
     const [contextContent, setContextContent] = useState('');
     const [additionalContext, setAdditionalContext] = useState('');
-    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
+    // (Editing UI moved into sharedPanelBuilders' Additional Context textarea)
 
     // View mode state
     const [selectedDocument, setSelectedDocument] = useState<MarkdownDocument | undefined>();
+    const [currentDocument, setCurrentDocument] = useState('');
 
     // Add useEffect to sync projectDocument with focusProject
     useEffect(() => {
@@ -49,6 +50,48 @@ const AIChatPage = () => {
         }
     }, [focusProject, documents]);
 
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const storedContext = localStorage.getItem('aiChat_context');
+        const storedAdditionalContext = localStorage.getItem('aiChat_additionalContext');
+        const storedFocusDocId = localStorage.getItem('aiChat_focusDocId');
+
+        if (storedContext) setContextContent(storedContext);
+        if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
+        if (storedFocusDocId) {
+            dispatch(setFocusDoc({ id: storedFocusDocId }));
+        }
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (focusDoc?.id) {
+            localStorage.setItem('aiChat_focusDocId', focusDoc.id);
+        } else {
+            localStorage.removeItem('aiChat_focusDocId');
+        }
+    }, [focusDoc]);
+
+    useEffect(() => {
+        if (!focusDoc?.id) {
+            setSelectedDocument(undefined);
+            setCurrentDocument('');
+            return;
+        }
+
+        const doc = documents?.find(d => d.id === focusDoc.id);
+        if (doc) {
+            setSelectedDocument(doc);
+            setDocumentName(doc.name);
+            setDocumentType(doc.type || 'markdown');
+            setPreviewContent(doc.content);
+            setOriginalContent(doc.content);
+            setCurrentDocument(doc.content);
+            // initialize category from doc (if present) or fallback to live domain
+            setDocumentCategory((doc as any).domainCategory ?? domain?.domainCategory ?? 'Organizational');
+        }
+    }, [focusDoc, documents, domain]);
+
     // Edit mode state
     const [documentName, setDocumentName] = useState('');
     const [documentType, setDocumentType] = useState('markdown');
@@ -58,6 +101,9 @@ const AIChatPage = () => {
     // Library modal state
     const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [libraryTarget, setLibraryTarget] = useState<'context' | 'document' | null>(null);
+
+    // Template selector modal state
+    const [showTemplateSelector, setShowTemplateSelector] = useState(false);
 
     // Panel visibility state
     const [showLeftPanel, setShowLeftPanel] = useState(true);
@@ -70,34 +116,50 @@ const AIChatPage = () => {
         oldContent: string;
     } | null>(null);
 
-    const previousDocumentRef = useRef('');
-
-    // Initialize from localStorage - ONLY RUN ONCE ON MOUNT
     useEffect(() => {
         if (typeof window === 'undefined') return;
-
         const storedContext = localStorage.getItem('aiChat_context');
         const storedAdditionalContext = localStorage.getItem('aiChat_additionalContext');
-        const storedDocument = localStorage.getItem('currentDocument');
+        const storedFocusDocId = localStorage.getItem('aiChat_focusDocId');
 
         if (storedContext) setContextContent(storedContext);
         if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
-
-        if (storedDocument) {
-            dispatch(setCurrentDocument(storedDocument));
-            setPreviewContent(storedDocument);
-            previousDocumentRef.current = storedDocument;
-
-            // Try to find matching document for edit mode
-            // Only do this on initial mount, not when documents change
-            const matchingDoc = documents?.find(doc => doc.content === storedDocument);
-            if (matchingDoc) {
-                setDocumentName(matchingDoc.name);
-                setDocumentType(matchingDoc.type || 'markdown');
-                setSelectedDocument(matchingDoc);
-            }
+        if (storedFocusDocId) {
+            dispatch(setFocusDoc({ id: storedFocusDocId }));
         }
-    }, [dispatch]); // <-- Removed 'documents' from dependencies
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (focusDoc?.id) {
+            localStorage.setItem('aiChat_focusDocId', focusDoc.id);
+        } else {
+            localStorage.removeItem('aiChat_focusDocId');
+        }
+    }, [focusDoc]);
+
+    useEffect(() => {
+        if (!focusDoc?.id) {
+            setSelectedDocument(undefined);
+            setCurrentDocument('');
+            return;
+        }
+
+        const doc = documents?.find(d => d.id === focusDoc.id);
+        if (doc) {
+            setSelectedDocument(doc);
+            setDocumentName(doc.name);
+            setDocumentType(doc.type || 'markdown');
+            setPreviewContent(doc.content);
+            setOriginalContent(doc.content);
+            setCurrentDocument(doc.content);
+            // initialize category from doc (if present) or fallback to live domain
+            setDocumentCategory((doc as any).domainCategory ?? domain?.domainCategory ?? 'Organizational');
+        }
+    }, [focusDoc, documents, domain]);
+
+    // Ref to track previous document value
+    const previousDocumentRef = useRef<string | null>(null);
 
     useEffect(() => {
         if (focusProject) {
@@ -107,6 +169,48 @@ const AIChatPage = () => {
             setProjectDocument(null);
         }
     }, [focusProject, documents]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const storedContext = localStorage.getItem('aiChat_context');
+        const storedAdditionalContext = localStorage.getItem('aiChat_additionalContext');
+        const storedFocusDocId = localStorage.getItem('aiChat_focusDocId');
+
+        if (storedContext) setContextContent(storedContext);
+        if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
+        if (storedFocusDocId) {
+            dispatch(setFocusDoc({ id: storedFocusDocId }));
+        }
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        if (focusDoc?.id) {
+            localStorage.setItem('aiChat_focusDocId', focusDoc.id);
+        } else {
+            localStorage.removeItem('aiChat_focusDocId');
+        }
+    }, [focusDoc]);
+
+    useEffect(() => {
+        if (!focusDoc?.id) {
+            setSelectedDocument(undefined);
+            setCurrentDocument('');
+            return;
+        }
+
+        const doc = documents?.find(d => d.id === focusDoc.id);
+        if (doc) {
+            setSelectedDocument(doc);
+            setDocumentName(doc.name);
+            setDocumentType(doc.type || 'markdown');
+            setPreviewContent(doc.content);
+            setOriginalContent(doc.content);
+            setCurrentDocument(doc.content);
+            // initialize category from doc (if present) or fallback to live domain
+            setDocumentCategory((doc as any).domainCategory ?? domain?.domainCategory ?? 'Organizational');
+        }
+    }, [focusDoc, documents, domain]);
 
     // Persist context to localStorage
     useEffect(() => {
@@ -119,24 +223,9 @@ const AIChatPage = () => {
         localStorage.setItem('aiChat_additionalContext', additionalContext);
     }, [additionalContext]);
 
-    // Persist current document changes
-    useEffect(() => {
-        const oldValue = previousDocumentRef.current;
-        if (oldValue === currentDocument) return;
-
-        previousDocumentRef.current = currentDocument;
-
-        if (typeof window !== 'undefined') {
-            localStorage.setItem('currentDocument', currentDocument);
-            window.dispatchEvent(new CustomEvent('localStorageChange', {
-                detail: { key: 'currentDocument', newValue: currentDocument, oldValue },
-            }));
-        }
-    }, [currentDocument]);
-
     const handleSetCurrentDocument = useCallback((content: string) => {
-        dispatch(setCurrentDocument(content));
-    }, [dispatch]);
+        setCurrentDocument(content);
+    }, []);
 
     const openLibraryFor = useCallback((target: 'context' | 'document') => {
         setLibraryTarget(target);
@@ -172,11 +261,16 @@ const AIChatPage = () => {
         if (libraryTarget === 'context') {
             setContextContent(content);
         } else if (libraryTarget === 'document') {
-            dispatch(setCurrentDocument(content));
+            setCurrentDocument(content);
             if (doc) {
+                dispatch(setFocusDoc({ id: doc.id }));
                 setSelectedDocument(doc);
                 setDocumentName(doc.name);
                 setDocumentType(doc.type || 'markdown');
+                setPreviewContent(doc.content);
+                setOriginalContent(doc.content);
+            } else {
+                dispatch(setFocusDoc({ id: null }));
             }
         }
         closeLibrary();
@@ -184,11 +278,13 @@ const AIChatPage = () => {
 
     // View mode handlers
     const handleSelectDocument = useCallback((doc: MarkdownDocument) => {
+        dispatch(setFocusDoc({ id: doc.id }));
         setSelectedDocument(doc);
-        dispatch(setCurrentDocument(doc.content));
         setDocumentName(doc.name);
         setDocumentType(doc.type || 'markdown');
-        setOriginalContent(doc.content); // Store original content when selecting
+        setOriginalContent(doc.content);
+        setPreviewContent(doc.content);
+        setCurrentDocument(doc.content);
     }, [dispatch]);
 
     const handleEditDocument = useCallback(() => {
@@ -196,11 +292,11 @@ const AIChatPage = () => {
             setDocumentName(selectedDocument.name);
             setDocumentType(selectedDocument.type || 'markdown');
             setPreviewContent(selectedDocument.content);
-            dispatch(setCurrentDocument(selectedDocument.content)); // Ensure currentDocument is set
-            setOriginalContent(selectedDocument.content); // Store original content when entering edit mode
+            setOriginalContent(selectedDocument.content);
+            setCurrentDocument(selectedDocument.content);
         }
         switchMode('edit');
-    }, [selectedDocument, switchMode, dispatch]);
+    }, [selectedDocument, switchMode]);
 
     const handleChatWithDocument = useCallback(() => {
         if (selectedDocument) {
@@ -209,13 +305,14 @@ const AIChatPage = () => {
         switchMode('chat');
     }, [selectedDocument, switchMode]);
 
-    const handleDeleteDocument = useCallback(() => {
+    const handleClearCurrentDocument = useCallback(() => {
         if (!selectedDocument) return;
 
-        const confirmed = window.confirm(`Delete "${selectedDocument.name}"?`);
+        const confirmed = window.confirm(`Clear "${selectedDocument.name}"?`);
         if (confirmed) {
+            setCurrentDocument('');
             // TODO: Implement delete in Redux
-            console.log('Delete document:', selectedDocument.id);
+            console.log('Clear document:', selectedDocument.id);
         }
     }, [selectedDocument]);
 
@@ -246,6 +343,8 @@ const AIChatPage = () => {
                 id: existingDoc.id, // Keep the same ID to update in place
                 name: finalName,
                 type: normalizedType,
+                // propagate domainCategory when updating domain docs
+                ...(normalizedType === 'domain' ? { domainCategory: documentCategory } : {}),
                 content: contentToSave,
                 createdAt: existingDoc.createdAt,
                 updatedAt: new Date().toISOString(),
@@ -261,6 +360,8 @@ const AIChatPage = () => {
                 id: Date.now().toString(),
                 name: documentName || 'Untitled Document',
                 type: documentType,
+                // attach category for new domain documents
+                ...( (documentType || '').trim().toLowerCase() === 'domain' ? { domainCategory: documentCategory } : {} ),
                 content: contentToSave,
                 createdAt: new Date().toISOString(),
                 updatedAt: new Date().toISOString(),
@@ -271,7 +372,7 @@ const AIChatPage = () => {
         // Show diff modal
         setPendingSave({ doc: newDoc, oldContent });
         setShowDiffModal(true);
-    }, [documentName, documentType, currentDocument, documents, originalContent]);
+    }, [documentName, documentType, currentDocument, documents, originalContent, documentCategory]);
 
     const handleConfirmSave = useCallback(() => {
         if (!pendingSave) {
@@ -279,27 +380,15 @@ const AIChatPage = () => {
             return;
         }
 
-        console.group('💾 Save Confirmation Flow');
-        console.log('1. Pending save document:', {
-            id: pendingSave.doc.id,
-            name: pendingSave.doc.name,
-            type: pendingSave.doc.type,
-            contentLength: pendingSave.doc.content.length,
-        });
-
         try {
-            // Step 1: Save to library
-            console.log('2. Dispatching saveMarkdownDocument with:', {
-                name: pendingSave.doc.name,
-                type: pendingSave.doc.type,
-            });
+            // dispatch save action
             dispatch(saveMarkdownDocument(pendingSave.doc));
-            console.log('   ✓ saveMarkdownDocument dispatched');
-
-            // Step 2: Set as current document
-            console.log('3. Dispatching setCurrentDocument...');
-            dispatch(setCurrentDocument(pendingSave.doc.content));
-            console.log('   ✓ setCurrentDocument dispatched');
+            // If saving a domain, also ensure domain slice category is set
+            if (pendingSave.doc.type === 'domain') {
+                const cat = pendingSave.doc.domainCategory ?? (domain?.domainCategory ?? 'Organizational');
+                // keep domain slice in sync
+                dispatch(setDomainCategory(cat));
+            }
 
             // Step 3: Update local state - CRITICAL: Set selectedDocument for View Mode
             console.log('4. Updating local state...');
@@ -308,23 +397,10 @@ const AIChatPage = () => {
             setDocumentType(pendingSave.doc.type || 'markdown');
             setOriginalContent(pendingSave.doc.content);
             setPreviewContent(pendingSave.doc.content);
+            setCurrentDocument(pendingSave.doc.content);
             console.log('   ✓ Local state updated - selectedDocument set to:', pendingSave.doc.name);
 
             // Step 4: Persist to localStorage
-            console.log('5. Persisting to localStorage...');
-            if (typeof window !== 'undefined') {
-                const previousValue = localStorage.getItem('currentDocument');
-                localStorage.setItem('currentDocument', pendingSave.doc.content);
-                window.dispatchEvent(new CustomEvent('localStorageChange', {
-                    detail: {
-                        key: 'currentDocument',
-                        newValue: pendingSave.doc.content,
-                        oldValue: previousValue,
-                    }
-                }));
-                console.log('   ✓ localStorage updated');
-            }
-
             // Step 5: Clear modal state
             console.log('6. Clearing modal state...');
             setShowDiffModal(false);
@@ -345,7 +421,7 @@ const AIChatPage = () => {
             console.error('❌ Error during save:', error);
             console.groupEnd();
         }
-    }, [pendingSave, dispatch, switchMode]);
+    }, [pendingSave, dispatch, switchMode, domain]);
 
     const handleCancelSave = useCallback(() => {
         setShowDiffModal(false);
@@ -371,34 +447,42 @@ const AIChatPage = () => {
             content: template.content,
             createdAt: nowIso,
             updatedAt: nowIso,
-        };
+            // if the template is a domain template, carry over current UI category (optional)
+            ...(normalizedType === 'domain' ? { domainCategory: documentCategory } : {})
+         };
 
-        dispatch(saveMarkdownDocument(templateDoc));
-        dispatch(setCurrentDocument(template.content));
+         dispatch(saveMarkdownDocument(templateDoc));
+         dispatch(setFocusDoc({ id: templateDoc.id }));
+         if (templateDoc.type === 'domain') {
+            // keep live domain slice in sync
+            dispatch(setDomainCategory((templateDoc as any).domainCategory ?? documentCategory));
+         }
 
-        setSelectedDocument(templateDoc);
-        setDocumentName(template.name);
-        setDocumentType(normalizedType);
-        setPreviewContent(template.content);
-        setOriginalContent(template.content);
-        setChatMdPreview(template.content);
+         setSelectedDocument(templateDoc);
+         setDocumentName(template.name);
+         setDocumentType(normalizedType);
+         setPreviewContent(template.content);
+         setOriginalContent(template.content);
+         setChatMdPreview(template.content);
+         setCurrentDocument(template.content);
 
-        updateProjectFromDocument(templateDoc);
-        closeLibrary();
-        setShowTemplateSelector(false);
-    }, [
-        dispatch,
-        normalizeDocumentType,
-        updateProjectFromDocument,
-        setSelectedDocument,
-        setDocumentName,
-        setDocumentType,
-        setPreviewContent,
-        setOriginalContent,
-        setChatMdPreview,
-        closeLibrary,
-        setShowTemplateSelector,
-    ]);
+         updateProjectFromDocument(templateDoc);
+         closeLibrary();
+         setShowTemplateSelector(false);
+     }, [
+         dispatch,
+         normalizeDocumentType,
+         updateProjectFromDocument,
+         setSelectedDocument,
+         setDocumentName,
+         setDocumentType,
+         setPreviewContent,
+         setOriginalContent,
+         setChatMdPreview,
+         closeLibrary,
+         setShowTemplateSelector,
+         documentCategory,
+     ]);
 
     // Handler for saving preview from chat mode
     const handleSavePreviewToLibrary = useCallback((
@@ -495,219 +579,126 @@ const AIChatPage = () => {
         console.groupEnd();
     }, [selectedDocument]);
 
-    // Get panel configurations based on current mode
-    const panelConfigs = useMemo(() => {
-        // Shared left panel for edit mode
-        const editLeftPanel = {
-            tabs: [
-                {
-                    key: 'domain',
-                    label: 'Domain',
-                    content: (
-                        <div className="h-full overflow-auto px-2 py-2">
-                            {domain?.presentation ? (
-                                <MarkdownPreview mdPreview={domain.presentation} variant="compact" />
-                            ) : (
-                                <div className="text-sm text-gray-400">No domain presentation available.</div>
-                            )}
-                        </div>
-                    ),
-                },
-                {
-                    key: 'projects',
-                    label: 'Focus Project',
-                    content: (
-                        <div className="h-full flex flex-col overflow-hidden">
-                            {projectDocument ? (
-                                <>
-                                    <div className="flex items-center justify-between gap-3 px-4 py-3 border-b border-gray-700 bg-gray-800/50">
-                                        <h3 className="text-base font-semibold text-gray-200 truncate">
-                                            {documentName || 'Untitled Document'}
-                                        </h3>
-                                        <span className="text-xs text-gray-400 whitespace-nowrap">
-                                            {documentType || 'Markdown'}
-                                        </span>
-                                    </div>
-                                    <div className="flex-1 overflow-auto px-4 py-4">
-                                        {projectDocument.content ? (
-                                            <MarkdownPreview mdPreview={projectDocument.content} variant="compact" />
-                                        ) : (
-                                            <div className="text-sm text-gray-400">Loading content...</div>
-                                        )}
-                                    </div>
-                                </>
-                            ) : focusProject ? (
-                                <div className="h-full flex items-center justify-center px-4 py-4">
-                                    <div className="text-center text-gray-400">
-                                        <p className="text-sm">Project not found in library</p>
-                                        <p className="text-xs mt-2">ID: {focusProject.id}</p>
-                                    </div>
-                                </div>
-                            ) : (
-                                <div className="h-full flex items-center justify-center px-4 py-4">
-                                    <div className="text-center text-gray-400">
-                                        <p className="text-sm">No focus project set</p>
-                                        <p className="text-xs mt-2">Click "Focus" on a project in the Library to set it</p>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-                    ),
-                },
-                {
-                    key: 'context',
-                    label: 'Context Docs',
-                    content: (
-                        <DocumentPanel
-                            mdContent={contextContent}
-                            setMdContent={setContextContent}
-                            setIsLibraryOpen={(open) => {
-                                if (open) openLibraryFor('context');
-                                else closeLibrary();
-                            }}
-                            isLibraryOpen={isLibraryOpen && libraryTarget === 'context'}
-                            panelType="left"
-                        />
-                    ),
-                },
-            ],
-            defaultTab: projectDocument ? 'projects' : (domain?.presentation ? 'domain' : 'context'),
-        };
+    // Compute panels directly per-mode. Left panels are delegated to the shared builder where appropriate.
+    const panelConfigs = (() => {
+        // Use shared builder for the edit-mode left panel (Domain, Project Plan, Context)
+        const editLeftPanel = buildLeftPanelTabs({
+            domain,
+            projectDocument,
+            currentDocument,
+            onSelectDocument: handleSelectDocument,
+            onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+            includeLibrary: false,
+            includeContext: true, // show Context Docs (DocumentPanel)
+            contextContent,
+            setContextContent,
+            isLibraryOpen,
+            libraryTarget,
+            openLibraryFor,
+            closeLibrary,
+            onSetCurrentDocument: handleSetCurrentDocument,
+        });
 
-        switch (mode) {
-            case 'view':
-                console.log('🔍 Rendering View Mode with:', {
-                    hasCurrentDocument: !!currentDocument,
-                    hasSelectedDocument: !!selectedDocument,
-                    selectedDocName: selectedDocument?.name,
-                    currentDocLength: currentDocument?.length
-                });
-                return ViewModeContent({
-                    domain,
-                    currentDocument,
-                    selectedDocument,
-                    onSelectDocument: handleSelectDocument,
-                    onEditDocument: handleEditDocument,
-                    onChatWithDocument: handleChatWithDocument,
-                    onDeleteDocument: handleDeleteDocument,
-                    previewContent,
-                    projectDocument,
-                    onCreateDocumentFromTemplate: handleOpenTemplateSelector,
-                });
+        const viewPanels = ViewModeContent({
+            domain,
+            currentDocument,
+            selectedDocument,
+            onSelectDocument: handleSelectDocument,
+            onEditDocument: handleEditDocument,
+            onChatWithDocument: handleChatWithDocument,
+            onClearCurrentDocument: handleClearCurrentDocument,
+            previewContent,
+            projectDocument,
+            onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+        });
 
-            case 'chat':
-                console.log('💬 Rendering Chat Mode with:', {
-                    documentName,
-                    documentType,
-                    subMode: chatSubMode
-                });
-                return ChatModeContent({
-                    subMode: chatSubMode,
-                    domain,
-                    ontology, // Pass ontology as prop
-                    contextContent,
-                    setContextContent,
-                    additionalContext,
-                    setAdditionalContext,
-                    currentDocument,
-                    previewContent,
-                    isLibraryOpen,
-                    libraryTarget,
-                    openLibraryFor,
-                    closeLibrary,
-                    handleSetCurrentDocument,
-                    // Pass chat state
-                    chatInput,
-                    setChatInput,
-                    chatSelectedModel,
-                    setChatSelectedModel,
-                    chatMdPreview,
-                    setChatMdPreview,
-                    chatShowLeftPanel,
-                    setChatShowLeftPanel,
-                    chatShowRightPanel,
-                    setChatShowRightPanel,
-                    chatMessages,
-                    setChatMessages,
-                    includeDomainContext,
-                    setIncludeDomainContext,
-                    documentName,
-                    documentType,
-                    onSavePreviewToLibrary: handleSavePreviewToLibrary,
-                    onCreateDocumentFromTemplate: handleOpenTemplateSelector,
-                });
+        if (mode === 'view') return viewPanels;
 
-            case 'edit':
-                const editPanels = EditModeContent({
-                    documentName,
-                    setDocumentName,
-                    documentType,
-                    setDocumentType,
-                    currentDocument,
-                    handleSetCurrentDocument,
-                    isLibraryOpen,
-                    libraryTarget,
-                    openLibraryFor,
-                    closeLibrary,
-                    previewContent: currentDocument, // Pass currentDocument for live preview
-                    setPreviewContent,
-                    onSaveToLibrary: handleSaveToLibrary,
-                });
+        if (mode === 'chat') {
+            const chatPanels = ChatModeContent({
+                subMode: chatSubMode,
+                domain,
+                ontology,
+                contextContent,
+                setContextContent,
+                additionalContext,
+                setAdditionalContext,
+                currentDocument,
+                previewContent,
+                isLibraryOpen,
+                libraryTarget,
+                openLibraryFor,
+                closeLibrary,
+                handleSetCurrentDocument,
+                chatInput,
+                setChatInput,
+                chatSelectedModel,
+                setChatSelectedModel,
+                chatMdPreview,
+                setChatMdPreview,
+                chatShowLeftPanel,
+                setChatShowLeftPanel,
+                chatShowRightPanel,
+                setChatShowRightPanel,
+                chatMessages,
+                setChatMessages,
+                includeDomainContext,
+                setIncludeDomainContext,
+                documentName,
+                documentType,
+                onSavePreviewToLibrary: handleSavePreviewToLibrary,
+                onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+            });
 
-                return {
-                    leftPanelContent: editLeftPanel,
-                    middlePanelContent: editPanels.middlePanel,
-                    rightPanelContent: editPanels.rightPanel,
-                };
+            const chatLeftPanel = buildLeftPanelTabs({
+                domain,
+                projectDocument,
+                currentDocument,
+                onSelectDocument: handleSelectDocument,
+                onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+                includeLibrary: true,
+                includeAdditional: true,
+                additionalContext,
+                setAdditionalContext,
+                onSetCurrentDocument: handleSetCurrentDocument,
+            });
 
-            default:
-                return {
-                    leftPanelContent: editLeftPanel,
-                    middlePanelContent: <div>Unknown mode</div>,
-                    rightPanelContent: <div>Unknown mode</div>,
-                };
+            return { ...chatPanels, leftPanelContent: chatLeftPanel };
         }
-    }, [
-        mode,
-        chatSubMode,
-        domain,
-        currentDocument,
-        selectedDocument,
-        contextContent,
-        additionalContext,
-        previewContent,
-        documentName,
-        documentType,
-        isLibraryOpen,
-        libraryTarget,
-        focusProject,
-        projectDocument, // Add projectDocument to dependencies
-        handleSelectDocument,
-        handleEditDocument,
-        handleChatWithDocument,
-        handleDeleteDocument,
-        handleSetCurrentDocument,
-        handleSaveToLibrary,
-        openLibraryFor,
-        closeLibrary,
-        // Add chat state to dependencies
-        chatInput,
-        setChatInput,
-        chatSelectedModel,
-        setChatSelectedModel,
-        chatMdPreview,
-        setChatMdPreview,
-        chatShowLeftPanel,
-        setChatShowLeftPanel,
-        chatShowRightPanel,
-        setChatShowRightPanel,
-        chatMessages,
-        setChatMessages,
-        includeDomainContext,
-        setIncludeDomainContext,
-        handleSavePreviewToLibrary, // Add to dependencies
-        handleOpenTemplateSelector,
-    ]);
+
+        if (mode === 'edit') {
+            const editPanels = EditModeContent({
+                documentName,
+                setDocumentName,
+                documentType,
+                setDocumentType,
+                currentDocument,
+                handleSetCurrentDocument,
+                isLibraryOpen,
+                libraryTarget,
+                openLibraryFor,
+                closeLibrary,
+                previewContent: currentDocument,
+                setPreviewContent,
+                onSaveToLibrary: handleSaveToLibrary,
+                // new props for domain category editing
+                documentCategory,
+                setDocumentCategory,
+            });
+
+            return {
+                leftPanelContent: viewPanels?.leftPanelContent || editLeftPanel,
+                middlePanelContent: editPanels.middlePanel,
+                rightPanelContent: editPanels.rightPanel,
+            };
+        }
+
+        return {
+            leftPanelContent: editLeftPanel,
+            middlePanelContent: <div>Unknown mode</div>,
+            rightPanelContent: <div>Unknown mode</div>,
+        };
+    })();
 
     const modeConfig = MODE_CONFIGS[mode];
     const containerClassName = modeConfig.showBorder

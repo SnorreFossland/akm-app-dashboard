@@ -163,7 +163,7 @@ export default function ChatComponent({
 
     // Add right after your state definitions
     const [selectedRefineTemplate, setSelectedRefineTemplate] = useState<string>('');
-    const [selectedCategory, setSelectedCategory] = useState<string>('Personal');
+    const [selectedCategory, setSelectedCategory] = useState<string>('Planning'); // Default to 'Planning'
     const [selectedReportTemplate, setSelectedReportTemplate] = useState<string>('');
     const [previewMessageIndex, setPreviewMessageIndex] = useState<number | null>(null);
     const [streamedContent, setStreamedContent] = useState<string>('');
@@ -208,22 +208,23 @@ export default function ChatComponent({
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a Domain Expert in the domain supplied by the user. 
 Your task is to help the user define a specific domain of interest clearly, comprehensively, and in a structured way. 
 Enhance the given Domain Name if necessary.
-Domain Name:
-Domain Description:
-
-Domain Presentation:
-Please include the following:
-1. Domain Purpose and Scope.
-2. Key Concepts and Terminologies.
-3. Actors and Roles.
-4. Activities and Processes.
-5. Objects and Resources.
-6. Events and Triggers.
-7. Rules and Constraints.
-8. Data and Information Flows.
-9. External Interfaces or Contexts.
-10. Known Sub-domains or Boundaries.
 `);
+
+// Domain Name:
+// Domain Description:
+
+// Domain Presentation:
+// Please include the following:
+//     1. Domain Purpose and Scope.
+// 2. Key Concepts and Terminologies.
+// 3. Actors and Roles.
+// 4. Activities and Processes.
+// 5. Objects and Resources.
+// 6. Events and Triggers.
+// 7. Rules and Constraints.
+// 8. Data and Information Flows.
+// 9. External Interfaces or Contexts.
+// 10. Known Sub - domains or Boundaries.
 
     const refinePrompt = (
         `Please revise the content below for clarity, style, and grammar.
@@ -253,10 +254,13 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     // If Context Include Domain remove all text in templates with text in square brackets
     const filteredTemplates = filteredTemplatesOrig.map(template => {
-        return {
-            ...template,
-            content: template.content.replace(/\[[^\]]*\]/g, '')
-        };
+        if (includeDomainContext) {
+            return {
+                ...template,
+                content: template.content.replace(/\[[^\]]*\]/g, '')
+            };
+        }
+        return template;
     });
 
     // Define templates for document refinement
@@ -701,7 +705,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 messageSections: messagesToSend.length,
                 preview: finalPromptText.substring(0, 200) + '...',
                 contextIncluded: finalPromptText.includes(currentDocument?.substring(0, 20) || '') ||
-                    finalPromptText.includes(mdContent?.substring(0, 20) || '')
+                finalPromptText.includes(mdContent?.substring(0, 20) || '')
             });
 
             console.log('Calling gateway helper with model:', selectedModel);
@@ -795,9 +799,9 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     // Update handleSubmit to use Redux actions
     const handleSubmit = async (e: React.FormEvent) => {
-        console.log('1022 handleSubmit called!', { input, docRefine }); // Add this first
+        console.log('798 handleSubmit called!', { input, docRefine }); // Add this first
         e.preventDefault();
-        console.log('1024 Submitting message:', docRefine, input, currentDocument, mdContent);
+        console.log('800 Submitting message:', docRefine, input, currentDocument, mdContent);
         if (!input?.trim()) return;
 
 

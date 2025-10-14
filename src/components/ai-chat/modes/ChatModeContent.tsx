@@ -35,19 +35,13 @@ interface ChatModeContentParams {
     includeDomainContext: boolean;
     setIncludeDomainContext: (include: boolean) => void;
     documentName?: string;
-   documentType?: string;
+    documentType?: string;
     onSavePreviewToLibrary?: (content: string, name?: string, type?: string, options?: { forceNew?: boolean }) => void;
     onCreateDocumentFromTemplate?: () => void;
+    projectDocument?: MarkdownDocument | null;
 }
 
 export function ChatModeContent(params: ChatModeContentParams) {
-    console.log('📝 ChatModeContent called with:', {
-        hasDocumentName: !!params.documentName,
-        documentName: params.documentName,
-        documentType: params.documentType,
-        subMode: params.subMode
-    });
-
     // Get panels for both sub-modes
     const generalPanels = GeneralChatPanels({
         domain: params.domain,
@@ -78,6 +72,7 @@ export function ChatModeContent(params: ChatModeContentParams) {
         documentType: params.documentType,
         onSavePreviewToLibrary: params.onSavePreviewToLibrary,
         onCreateDocumentFromTemplate: params.onCreateDocumentFromTemplate,
+        projectDocument: params.projectDocument,
     });
 
     const advancedPanels = AdvancedChatPanels({

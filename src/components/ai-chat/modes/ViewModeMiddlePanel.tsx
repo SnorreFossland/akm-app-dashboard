@@ -29,14 +29,35 @@ export function ViewModeMiddlePanel({
     return (
         <div className="h-full flex flex-col overflow-hidden">
             {/* Document Header with Name and Type */}
-            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">
-                <div className="flex items-center gap-2 flex-1">
-                    <span className="font-semibold text-gray-200 break-words whitespace-pre-line">
-                        {document?.name || 'Current Document'}
-                    </span>
-                    <span className="ml-2 px-2 py-0.5 rounded bg-gray-700 text-xs text-gray-400">
-                        {document?.type || 'Markdown'}
-                    </span>
+            <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-transparent">
+                <div className="flex items-center justify-between gap-2 flex-1">
+                    <div className="flex items-center space-x-2">
+                        <span className="font-semibold text-gray-200 break-words whitespace-pre-line">
+                            {document?.name || 'Current Document'}
+                        </span>
+                        <span className="ml-4 px-2 py-0.5 rounded bg-gray-700 text-xs text-gray-400">
+                            {document?.type || 'Markdown'}
+                        </span>
+                    </div>
+                    {onDelete && (
+                        <button
+                            type="button"
+                            className="ml-2 px-2 py-1 rounded bg-red-600/60 hover:bg-red-500 text-xs text-white flex items-center"
+                            title="Clear document"
+                            onClick={onDelete}
+                        >
+                            <svg
+                                className="h-4 w-4 mr-1"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth={2}
+                                viewBox="0 0 24 24"
+                            >
+                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                            Clear
+                        </button>
+                    )}
                 </div>
             </div>
 

@@ -6,8 +6,26 @@ export interface PromptTemplate {
     content: string;
 }
 
-// Export the templates array
-export const PROMPT_TEMPLATES: PromptTemplate[] = [
+// New: normalize template content to reduce excessive blank lines and collapse many empty rows before table headers
+function normalizeTemplateContent(content: string): string {
+    if (!content) return content;
+    // Normalize line endings
+    let s = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    // Collapse runs of 3+ newlines into two (preserve paragraph breaks)
+    s = s.replace(/\n{3,}/g, '\n\n');
+    // Specifically collapse 2+ newlines immediately before a markdown table header line (starting with '|') to a single newline
+    s = s.replace(/\n{2,}(?=\s*\|)/g, '\n');
+    // Remove leading blank lines
+    s = s.replace(/^\s*\n+/, '');
+    // Trim trailing whitespace/newlines
+    s = s.replace(/\s+$/g, '');
+    return s;
+}
+
+// Replace direct export with raw + sanitized export.
+// Keep the original template objects untouched; export the sanitized versions instead.
+
+const RAW_PROMPT_TEMPLATES: PromptTemplate[] = [
     {
         title: "Brainstorming Ideas",
         category: "Brainstorming",
@@ -28,12 +46,12 @@ export const PROMPT_TEMPLATES: PromptTemplate[] = [
     },
     {
         title: "Domain Definition",
-        category: "Domain Definition",
+        category: "Domain Definition / Business / Analysis / Plan",
         usage: "Domain Definition",
         content: `Help me define and scope the domain described below and in the context.
 Use the following format:
-Domain name:** [Insert concise and specific name] **
-Domain description:** [Provide a clear, concise summary (2-3 sentences) of the domain.] **
+Domain name: [Insert concise and specific name] 
+Domain description: [Provide a clear, concise summary (2-3 sentences) of the domain.]
 Domain definition:
 In-scope: include this list: [List elements, activities, or areas included within the domain] but you can also add elements if you think they are relevant.
 Out-of-scope: [Clearly specify what aspects are explicitly excluded from the domain.]
@@ -48,22 +66,168 @@ Define clear, measurable, and achievable indicators of success
     },
     { title: "Task List", category: "Task Management / Plan", usage: "Planning", content: "Create a task list for the topic described below or in the context." },
     {
-        title: "Project Plan", category: "Planning / Project Management / Business", usage: "Planning", content:
-            `Make a project plan for a project within the domain/topic described in the context below.
-Include the following sections:
-1. Project Overview
-2. Scope Domain
-3. Key Stakeholders
-4. Objectives
-5. Timeline (phases and milestones as Mermaid diagram)
-6. Resources
-7. Risks and Mitigation Strategies
-8. Success Criteria
-9. Budget
-10. Communication Plan (text plus Mermaid diagram)
-11. Evaluation and Reporting
+        title: "Project Plan", category: "Planning / Project Management / Business", usage: "Planning", content: `
+Create a comprehensive project plan for the project described in the context below.
+Follow this detailed template:
 
+---
+title: "Generic Project Plan Template"
+author: "Project Owner"
+version: "1.0"
+date: "YYYY-MM-DD"
+---
+
+# **Project Plan Template**
+
+---
+
+## **1. Summary of the Domain/Topic**
+
+Provide a concise overview of the domain or topic area.
+Describe the purpose, context, and importance of the project within this domain.
+Identify the challenges, current gaps, and opportunities for improvement or innovation.
+
+---
+
+## **2. Project Overview and Scope**
+
+### **2.1 Project Objectives (SMART)**
+
+| Objective | Specific | Measurable | Achievable | Relevant | Time-bound |
+|------------|-----------|-------------|-------------|------------|-------------|
+| **O1** | Clearly define the objective and its scope | Define measurable indicators or metrics | Verify that it is realistically achievable | Explain how it supports the domain or organization’s goals | Assign a completion timeline |
+| **O2** |  |  |  |  |  |
+| **O3** |  |  |  |  |  |
+
+---
+
+### **2.2 Project Scope**
+
+**In Scope:**
+- Define what is included in the project focus.
+- Identify systems, processes, or components to be developed or modeled.
+- Specify outputs and deliverables.
+
+**Out of Scope:**
+- List items explicitly excluded from the project.
+- Clarify dependencies, limitations, and assumptions.
+
+---
+
+### **2.3 Overall Processes and Methodologies**
+
+| Category | Methodology |
+|-----------|--------------|
+| **Process Modeling** | POPS (Process-Organization-Product-Service) |
+| **Workspace Modeling** | IRTV (Information-Roles-Tasks-Views) |
+| **Metamodeling** | TYPE (EntityTypes-Properties-RelationshipTypes) |
+| **Instance Modeling** | ORIM (Objects-Relationships-Instances-States) |
+| **Specification** | Spec-Kit or structured requirement templates |
+| **Implementation planning** | Architectural design and technology stack selection |
+| **Implementation** | Code Generation** | AI-assisted or rule-based generation (CODEX or equivalent) |
+| **Quality Assurance** | Verification, validation, and model consistency checks |
+
+---
+
+### **2.4 Project Phases**
+
+#### **Initiation**
+- [ ] Define the problem statement and expected outcomes
+- [ ] Identify key stakeholders and domain experts
+- [ ] Approve project charter and funding
+
+#### **Planning**
+- [ ] Define Process and Sub-process Modeling (POPS)
+- [ ] Define Workspace Modeling (IRTV) for each process
+- [ ] Conduct Detailed Metamodeling (TYPE)
+- [ ] Develop Object Relationship Instance Models (ORIM)
+- [ ] Generate Specification Kit (Spec-Kit)
+- [ ] Plan Implementation Architecture
+- [ ] Implement AI-assisted Code Generation (CODEX)
+- [ ] Prepare Testing and QA procedures
+- [ ] Define Deployment strategy
+- [ ] Plan Training and Support
+- [ ] Plan Maintenance and Updates
+
+#### **Implementation**
+- [ ] Develop and test process and workspace models
+- [ ] Execute AI-assisted code generation
+- [ ] Perform integration testing and validation
+- [ ] Deploy working prototype or final product
+
+#### **Evaluation**
+- [ ] Validate project outcomes against SMART objectives
+- [ ] Conduct performance and quality review
+- [ ] Gather stakeholder feedback
+- [ ] Document lessons learned and improvement opportunities
+
+---
+
+### **Deliverables for Each Phase**
+
+| Phase | Deliverables |
+|--------|---------------|
+| **Initiation** | Project Charter, Stakeholder Register, Success Criteria |
+| **Planning** | POPS, IRTV, TYPE, ORIM models; Specification documents |
+| **Implementation** | Deployed system, generated scripts, functional components |
+| **Testing** | QA Reports, Verification Logs |
+| **Evaluation** | Final Report, Improvement Recommendations |
+
+---
+
+### **Milestones and Timelines**
+
+| Milestone | Target Date | Deliverable |
+|------------|--------------|--------------|
+| Project Charter Approved | YYYY-MM-DD | Charter Document |
+| Metamodel Completed | YYYY-MM-DD | TYPE and ORIM models |
+| Implementation Complete | YYYY-MM-DD | Functional Prototype |
+| Testing & QA Complete | YYYY-MM-DD | QA Reports |
+| Project Evaluation Complete | YYYY-MM-DD | Final Report |
+
+---
+
+## **3. Key Stakeholders**
+
+| Role | Name / Group | Responsibility |
+|------|----------------|----------------|
+| Project Sponsor |  | Strategic oversight and funding |
+| Project Manager |  | Coordination, scheduling, reporting |
+| Domain Expert |  | Subject matter knowledge |
+| Model Architect |  | POPS-IRTV-TYPE-ORIM design |
+| Developer |  | CODEX implementation and automation |
+| QA Lead |  | Verification and validation |
+| End Users |  | Acceptance testing and feedback |
+
+---
+
+## **4. Timeline (Phases and Milestones as Mermaid Diagram)**
+
+## Example
+\`\`\`mermaid
+gantt
+    title Generic Project Timeline
+    dateFormat  YYYY-MM-DD
+    section Initiation
+    Project Charter Approval      : done, a1, 2025-01-01, 2025-01-15
+    Stakeholder Identification    : active, a2, 2025-01-16, 2025-01-30
+    section Planning
+    Process & Workspace Modeling  : a3, 2025-02-01, 2025-03-15
+    Metamodel Development         : a4, 2025-03-16, 2025-04-10
+    Specification Preparation     : a5, 2025-04-11, 2025-05-15
+    section Implementation
+    Code Generation & Testing     : a6, 2025-05-16, 2025-06-15
+    Deployment & Training         : a7, 2025-06-16, 2025-07-01
+    section Evaluation
+    Final Review & Reporting      : a8, 2025-07-02, 2025-07-15
+\`\`\`
 `
+        //     7. Risks and Mitigation Strategies
+        //     8. Success Criteria
+        //     9. Budget
+        //     10. Communication Plan (text plus Mermaid diagram)
+        //     11. Evaluation and Reporting
+        // `
     },
     {
         title: "Product Roadmap",
@@ -446,3 +610,9 @@ Include:
 `
     }
 ];
+
+// Export a sanitized copy so any consumer (MarkdownPreview or other renderers) gets compacted spacing
+export const PROMPT_TEMPLATES: PromptTemplate[] = RAW_PROMPT_TEMPLATES.map(t => ({
+    ...t,
+    content: normalizeTemplateContent(t.content)
+}));

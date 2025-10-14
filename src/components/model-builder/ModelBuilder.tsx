@@ -227,6 +227,9 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
     // ---------- Auto-prompt generation when curmod or curMetamodel changes ----------
     useEffect(() => {
         if (!curmod || !curMetamodel) return;
+        const popsmodel = data?.phData?.metis?.models?.find((m: any) => m.name.includes("POPS"));
+        const popsProcesses = popsmodel?.objects?.filter((o: any) => o.typeName === "Process") || [];
+        const popsProcessesNames = popsProcesses.map((p: any) => p.name);
         let types = (curMetamodel.objecttypes || [])
             .filter((o: any) => o.name !== "EntityType")
             .filter((o: any) => o.name !== "Gateway")
@@ -235,8 +238,10 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
         // const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
         switch (curMetamodel.name) {
             case "IRTV_META":
-                nextAutoPrompt = `Create an IRTV Workspace for the Process: [ProcessName]. 
-First create a Container with the name [ProcessName] the Information objects with vital Properties, then add Views, Tasks and Roles related to the Information objects. ${types.length ? types.join(" ") : ""} based on the Domain description below:
+
+                nextAutoPrompt = `Create an IRTV Workspace for the the following Processes ${popsProcessesNames.join(", ")}.
+Create a Container for each process and add Information objects with vital Properties, 
+then add Views, Tasks and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} Use the Domain definition as context.
 `;
                 break;
             case "CORE_META":
@@ -249,9 +254,9 @@ First create a Container with the name [ProcessName] the Information objects wit
                     .filter((o: any) => o.name !== "Fieldtype")
                     .filter((o: any) => o.name !== "Type")
                     .map((o: any) => o.name + ', ');
-                nextAutoPrompt = `The purpose is to create a Model that can represent the provided Domain description.
-Create a Model using the following object types: ${(types.length ? types.join(" ") : "")}  
-Create an object of type Metamodel with a relship "contains" to all objects of type EntityType.
+                nextAutoPrompt = `Create a Type model with focus on defining types and their relationships, using the following object types: 
+${(types.length ? types.join(" ") : "")}  
+Start with creating an object of type Metamodel with a relship "contains" to all objects of type EntityType.
 `
                 break;
             case "POPS_META":
@@ -261,11 +266,17 @@ Create an object of type Metamodel with a relship "contains" to all objects of t
                     .filter((o: any) => o.name !== "Material")
                     .filter((o: any) => o.name !== "DistributionNetwork")
                     .filter((o: any) => o.name !== "Device")
+                    .filter((o: any) => o.name !== "Label")
+                    .filter((o: any) => o.name !== "Generic")
+                    .filter((o: any) => o.name !== "Equipment")
+                    .filter((o: any) => o.name !== "Facility")
+                    .filter((o: any) => o.name !== "DistributionNetwork")
+                    .filter((o: any) => o.name !== "Event")
                     .map((o: any) => o.name + ', ');
 
                 nextAutoPrompt =
-                    "Create a POPS model of the Ontology concepts and relationships with focus on generating processes and products using the following object types: " +
-                    (types.length ? types.join(" ") + " based on the domain description below: " : "");
+                    "Build a POPS model based on the Domain definition in Context below. Create objects and relationships using the following object types: " +
+                (types.length ? types.join(" ") + " Focus on Processes and Products. Processes may have a hierarchy of multiple 'sub-processes'." : "");
                 break;
             case "BPMN_META":
                 types = (curMetamodel.objecttypes || [])
@@ -274,7 +285,7 @@ Create an object of type Metamodel with a relship "contains" to all objects of t
                     .map((o: any) => o.name + ', ');
                 nextAutoPrompt =
                     "Create a BPMN model using the following object types: " +
-                    (types.length ? types.join(" ") + " based on the domain description below: " : "");
+                    (types.length ? types.join(" ") + " based on the Domain definition. " : "");
                 break;
         }
 
@@ -579,6 +590,12 @@ Ensure logical consistency and relationship principles.`
                 .filter(line => !line.includes("name: Material"))
                 .filter(line => !line.includes("name: DistributionNetwork"))
                 .filter(line => !line.includes("name: Device"))
+                .filter(line => !line.includes("name: Label"))
+                .filter(line => !line.includes("name: Generic"))
+                .filter(line => !line.includes("name: Equipment"))
+                .filter(line => !line.includes("name: Facility"))
+                .filter(line => !line.includes("name: DistributionNetwork"))
+                .filter(line => !line.includes("name: Event"))
                 .join("\n");
 
             exampleString += `
