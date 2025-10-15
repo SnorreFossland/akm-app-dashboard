@@ -4,7 +4,7 @@ import React from "react";
 import MarkdownPreview from "@/components/ai-chat/MarkdownPreview";
 
 export default function RoadmapPage() {
-  const filePath = path.join(process.cwd(), "ROADMAP.md");
+  const filePath = path.join(process.cwd(), "docs", "ROADMAP.md");
   let content = "# Roadmap\nFile not found.";
   try {
     content = fs.readFileSync(filePath, "utf8");
