@@ -165,6 +165,8 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                             setMdContent={setContextContent}
                             currentDocument={currentDocument}
                             setCurrentDocument={handleSetCurrentDocument}
+                            documentName={props.documentName}
+                            documentType={props.documentType}
                             mdPreview={chatMdPreview}
                             setMdPreview={setChatMdPreview}
                             setCurrentMessages={setChatMessages}
@@ -382,6 +384,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                             <option value="prompt">Prompt</option>
                                             <option value="specification">Specification</option>
                                             <option value="requirements">Requirements</option>
+                                            <option value="report">Report</option>
                                         </select>
                                     </div>
                                     <textarea

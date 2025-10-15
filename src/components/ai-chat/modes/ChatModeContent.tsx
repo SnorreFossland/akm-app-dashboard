@@ -75,51 +75,51 @@ export function ChatModeContent(params: ChatModeContentParams) {
         projectDocument: params.projectDocument,
     });
 
-    const advancedPanels = AdvancedChatPanels({
-        domain: params.domain,
-        contextContent: params.contextContent,
-        setContextContent: params.setContextContent,
-        additionalContext: params.additionalContext ?? '',
-        setAdditionalContext: params.setAdditionalContext ?? (() => { }),
-        currentDocument: params.currentDocument,
-        isLibraryOpen: params.isLibraryOpen,
-        libraryTarget: params.libraryTarget,
-        openLibraryFor: params.openLibraryFor,
-        closeLibrary: params.closeLibrary,
-        chatInput: params.chatInput,
-        setChatInput: params.setChatInput,
-        chatSelectedModel: params.chatSelectedModel,
-        setChatSelectedModel: params.setChatSelectedModel,
-        chatMdPreview: params.chatMdPreview,
-        setChatMdPreview: params.setChatMdPreview,
-        chatShowLeftPanel: params.chatShowLeftPanel,
-        setChatShowLeftPanel: params.setChatShowLeftPanel,
-        chatShowRightPanel: params.chatShowRightPanel,
-        setChatShowRightPanel: params.setChatShowRightPanel,
-        chatMessages: params.chatMessages,
-        setChatMessages: params.setChatMessages,
-        includeDomainContext: params.includeDomainContext,
-        setIncludeDomainContext: params.setIncludeDomainContext,
-        documentName: params.documentName,
-        documentType: params.documentType,
-        onSavePreviewToLibrary: params.onSavePreviewToLibrary,
-        onCreateDocumentFromTemplate: params.onCreateDocumentFromTemplate,
-    });
+    // const advancedPanels = AdvancedChatPanels({
+    //     domain: params.domain,
+    //     contextContent: params.contextContent,
+    //     setContextContent: params.setContextContent,
+    //     additionalContext: params.additionalContext ?? '',
+    //     setAdditionalContext: params.setAdditionalContext ?? (() => { }),
+    //     currentDocument: params.currentDocument,
+    //     isLibraryOpen: params.isLibraryOpen,
+    //     libraryTarget: params.libraryTarget,
+    //     openLibraryFor: params.openLibraryFor,
+    //     closeLibrary: params.closeLibrary,
+    //     chatInput: params.chatInput,
+    //     setChatInput: params.setChatInput,
+    //     chatSelectedModel: params.chatSelectedModel,
+    //     setChatSelectedModel: params.setChatSelectedModel,
+    //     chatMdPreview: params.chatMdPreview,
+    //     setChatMdPreview: params.setChatMdPreview,
+    //     chatShowLeftPanel: params.chatShowLeftPanel,
+    //     setChatShowLeftPanel: params.setChatShowLeftPanel,
+    //     chatShowRightPanel: params.chatShowRightPanel,
+    //     setChatShowRightPanel: params.setChatShowRightPanel,
+    //     chatMessages: params.chatMessages,
+    //     setChatMessages: params.setChatMessages,
+    //     includeDomainContext: params.includeDomainContext,
+    //     setIncludeDomainContext: params.setIncludeDomainContext,
+    //     documentName: params.documentName,
+    //     documentType: params.documentType,
+    //     onSavePreviewToLibrary: params.onSavePreviewToLibrary,
+    //     onCreateDocumentFromTemplate: params.onCreateDocumentFromTemplate,
+    // });
 
     // Return combined structure with tabs for both sub-modes
     return {
         leftPanelContent: params.subMode === 'general'
             ? generalPanels.leftPanelContent
-            : advancedPanels.leftPanelContent,
+            : null, //advancedPanels.leftPanelContent,
 
         middlePanelContent: {
             tabs: params.subMode === 'general'
                 ? generalPanels.middlePanelContent.tabs
-                : advancedPanels.middlePanelContent.tabs,
+                : null, //advancedPanels.middlePanelContent.tabs,
         },
 
         rightPanelContent: params.subMode === 'general'
             ? generalPanels.rightPanelContent
-            : advancedPanels.rightPanelContent,
+            : null, //advancedPanels.rightPanelContent,
     };
 }

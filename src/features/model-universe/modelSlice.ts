@@ -1,5 +1,6 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit';
 import { fetchModelDataFromGitHub, saveModelDataToGitHub } from './modelAPI';
+import { experimental_createProviderRegistry } from 'ai';
 
 // Define a specific type for the domain data
 export interface DomainData {
@@ -178,6 +179,10 @@ export type DomainCategory =
   | 'Technical'
   | 'Organizational'
   | 'Educational'
+  | 'Financial'
+  | 'Healthcare'
+  | 'Legal'
+  | 'Marketing'
   | 'Public';
 
 // Export a runtime list of categories that components can import/use directly
@@ -187,7 +192,32 @@ export const DOMAIN_CATEGORIES: DomainCategory[] = [
   'Technical',
   'Organizational',
   'Educational',
+  'Financial',
+  'Healthcare',
+  'Legal',
+  'Marketing',
   'Public',
+];
+
+export type DocumentTypes =
+  | 'markdown'
+  | 'project-plan'
+  | 'roadmap'
+  | 'domain'
+  | 'prompt'
+  | 'specification'
+  | 'requirements'
+  | 'report';
+
+export const DOCUMENT_TYPES: string[] = [
+  'markdown',
+  'project-plan',
+  'roadmap',
+  'domain',
+  'prompt',
+  'specification',
+  'requirements',
+  'report',
 ];
 
 // Extend Domain shape to include the category
@@ -427,7 +457,7 @@ const modelSlice = createSlice({
       console.log('344 action.payload', action.payload, state);
       state.phFocus.focusModelview = action.payload;
     },
-    setFocusDoc(state, action: PayloadAction<{ id: string | null }>) {
+    setFocusDoc(state, action: PayloadAction<{ id: string | null, name: string | null }>) {
       state.phFocus.focusDoc = action.payload;
     },
     setSource(state, action: PayloadAction<DataType['phSource']>) {

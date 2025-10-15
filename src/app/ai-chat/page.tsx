@@ -60,7 +60,7 @@ const AIChatPage = () => {
         if (storedContext) setContextContent(storedContext);
         if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
         if (storedFocusDocId) {
-            dispatch(setFocusDoc({ id: storedFocusDocId }));
+            dispatch(setFocusDoc({ id: storedFocusDocId, name: '' })); // name can be empty; will be set when doc is loaded
         }
     }, [dispatch]);
 
@@ -128,9 +128,9 @@ const AIChatPage = () => {
 
         if (storedContext) setContextContent(storedContext);
         if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
-        if (storedFocusDocId) {
-            dispatch(setFocusDoc({ id: storedFocusDocId }));
-        }
+        // if (storedFocusDocId) {
+        //     dispatch(setFocusDoc({ id: storedFocusDocId }));
+        // }
     }, [dispatch]);
 
     useEffect(() => {
@@ -183,7 +183,7 @@ const AIChatPage = () => {
         if (storedContext) setContextContent(storedContext);
         if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
         if (storedFocusDocId) {
-            dispatch(setFocusDoc({ id: storedFocusDocId }));
+            dispatch(setFocusDoc({ id: storedFocusDocId, name: '' })); // name can be empty; will be set when doc is loaded
         }
     }, [dispatch]);
 
@@ -267,14 +267,14 @@ const AIChatPage = () => {
         } else if (libraryTarget === 'document') {
             setCurrentDocument(content);
             if (doc) {
-                dispatch(setFocusDoc({ id: doc.id }));
+                dispatch(setFocusDoc({ id: doc.id , name: doc.name }));
                 setSelectedDocument(doc);
                 setDocumentName(doc.name);
                 setDocumentType(doc.type || 'markdown');
                 setPreviewContent(doc.content);
                 setOriginalContent(doc.content);
             } else {
-                dispatch(setFocusDoc({ id: null }));
+                dispatch(setFocusDoc({ id: null, name: name || 'Untitled Document' })); // Clear focus if no doc
             }
         }
         closeLibrary();
@@ -282,7 +282,7 @@ const AIChatPage = () => {
 
     // View mode handlers
     const handleSelectDocument = useCallback((doc: MarkdownDocument) => {
-        dispatch(setFocusDoc({ id: doc.id }));
+        dispatch(setFocusDoc({ id: doc.id, name: doc.name }));
         setSelectedDocument(doc);
         setDocumentName(doc.name);
         setDocumentType(doc.type || 'markdown');
@@ -402,6 +402,7 @@ const AIChatPage = () => {
             setOriginalContent(pendingSave.doc.content);
             setPreviewContent(pendingSave.doc.content);
             setCurrentDocument(pendingSave.doc.content);
+            setFocusDoc({ id: pendingSave.doc.id, name: pendingSave.doc.name });
             console.log('   ✓ Local state updated - selectedDocument set to:', pendingSave.doc.name);
 
             // Step 4: Persist to localStorage
@@ -678,7 +679,9 @@ const AIChatPage = () => {
                 onSaveToLibrary: handleSaveToLibrary,
                 // pass the category state so the editor UI can display/edit it
                 documentCategory,
-                setDocumentCategory,
+                setDocumentCategory: (c?: DomainCategory | undefined) => {
+                    if (c !== undefined) setDocumentCategory(c);
+                },
             });
 
             return {

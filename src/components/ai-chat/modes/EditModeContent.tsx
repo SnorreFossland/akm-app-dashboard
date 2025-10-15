@@ -155,11 +155,9 @@ function EditModeRightPanel({
     const displayContent = previewContent || '';
 
     // Read categories from the slice (fallback to the runtime defaults exported from the slice)
-    const storeDomainCategories = useSelector((state: RootState) => state.modelUniverse.phData.domainCategories);
+    const storeDomainCategories = DOMAIN_CATEGORIES;
     const categoryOptions = useMemo(() => {
-        const source = Array.isArray(storeDomainCategories) && storeDomainCategories.length > 0
-            ? storeDomainCategories
-            : DOMAIN_CATEGORIES;
+        const source = Array.isArray(storeDomainCategories) && storeDomainCategories.length > 0 ? DOMAIN_CATEGORIES : []
 
         const opts = Array.from(new Set(source.map(s => String(s).trim()).filter(Boolean)));
 

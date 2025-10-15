@@ -35,6 +35,8 @@ const MarkdownLibrary = ({
   const focusDoc = useSelector((state: RootState) => state.modelUniverse.phFocus?.focusDoc);
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
+  const [expandedDocName, setExpandedDocName] = useState<string>('');
+  
   const [showImportDialog, setShowImportDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const expandedContentRef = useRef<HTMLDivElement>(null);
@@ -181,6 +183,9 @@ const MarkdownLibrary = ({
     e.stopPropagation();
     const newExpandedId = expandedDocId === docId ? null : docId;
     setExpandedDocId(newExpandedId);
+    setExpandedDocName(newExpandedId ? (documents.find(d => d.id === newExpandedId)?.name || '') : '');
+    setExpandedDocType(newExpandedId ? (documents.find(d => d.id === newExpandedId)?.type || '') : '');
+
   };
 
   // Handle showing document in left panel
@@ -362,8 +367,8 @@ const MarkdownLibrary = ({
                   (focusDoc && focusDoc.id === doc.id) ||
                   (!focusDoc?.id && contentMatchId === doc.id)
                 );
-                const rawType = (doc.type || 'markdown').toString();
-                const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
+                const displayType = (doc.type || 'markdown').toString();
+                // const displayType = rawType.charAt(0).toUpperCase() + rawType.slice(1);
 
                 return (
                   <div key={doc.id} className="bg-gray-700 rounded transition-colors">
@@ -389,7 +394,7 @@ const MarkdownLibrary = ({
                               </span>
                             )} */}
                             <span className="px-1.5 py-0.5 text-[0.6rem] uppercase tracking-wide rounded-full bg-blue-900/40 text-blue-200 border border-blue-800/60 flex-shrink-0">
-                              ( {displayType} )
+                              ( {doc.type})
                             </span>
                           </div>
                         </div>
@@ -566,7 +571,7 @@ const MarkdownLibrary = ({
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   if (isCurrent) return;
-                                  dispatch(setFocusDoc({ id: doc.id }));
+                                  dispatch(setFocusDoc({ id: doc.id, name: doc.name }));
                                   if (onSetCurrentDocument) {
                                     onSetCurrentDocument(doc.content, doc.name, doc);
                                   } else {

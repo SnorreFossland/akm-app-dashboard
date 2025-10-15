@@ -4,8 +4,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useSearchParams } from 'next/navigation';
 import { RootState } from '@/store';
-import { DOMAIN_CATEGORIES, setDomainCategory, addDomainCategory } from '@/features/model-universe/modelSlice';
-import type { DomainCategory } from '@/features/model-universe/modelSlice';
+import { DOMAIN_CATEGORIES, DOCUMENT_TYPES, setDomainCategory, addDomainCategory, DomainCategory } from '@/features/model-universe/modelSlice';
 
 interface DocumentMetadataHeaderProps {
     documentName: string;
@@ -16,17 +15,6 @@ interface DocumentMetadataHeaderProps {
     documentCategory?: DomainCategory;
     setDocumentCategory?: (c?: DomainCategory) => void;
 }
-
-// Document type options - shared with MarkdownLibrary
-const documentTypeOptions = [
-    'markdown',
-    'project-plan',
-    'roadmap',
-    'domain',
-    'prompt',
-    'specification',
-    'requirements',
-];
 
 export function DocumentMetadataHeader({
     documentName,
@@ -57,7 +45,7 @@ export function DocumentMetadataHeader({
     }, [currentDocument, documentName, hasUserSetName, setDocumentName]);
 
     // Build category options from store or fallback to runtime defaults
-    const storeDomainCategories = useSelector((state: RootState) => state.modelUniverse.phData.domainCategories);
+    const storeDomainCategories = DOMAIN_CATEGORIES;
     const categoryOptions = useMemo(() => {
         const source = Array.isArray(storeDomainCategories) && storeDomainCategories.length > 0
             ? storeDomainCategories
@@ -68,6 +56,24 @@ export function DocumentMetadataHeader({
         }
         return opts;
     }, [storeDomainCategories, documentCategory]);
+
+    // Document types: prefer values provided by modelSlice (phData.documentTypes); fall back to legacy list.
+    const storeDocumentTypes = DOCUMENT_TYPES 
+    const documentTypeOptions = useMemo(() => {
+        const fallback = [
+            'markdown',
+            'project-plan',
+            'roadmap',
+            'domain',
+            'prompt',
+            'specification',
+            'requirements',
+        ];
+        const source = Array.isArray(storeDocumentTypes) && storeDocumentTypes.length > 0
+            ? storeDocumentTypes
+            : fallback;
+        return Array.from(new Set(source.map(s => String(s).trim()).filter(Boolean)));
+    }, [storeDocumentTypes]);
 
     const selectedValue = useMemo(() => {
         if (!documentCategory) return '';

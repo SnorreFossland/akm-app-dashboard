@@ -15,15 +15,7 @@ import Guide from '@/components/domain-builder/Guide';
 import ChatComponent from '@/components/domain-builder/ChatComponent';
 import { FileOperations } from '@/components/FileOperations';
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
-// If MarkdownDocument is a type, define it locally here:
-export type MarkdownDocument = {
-    id?: string;
-    name: string;
-    type: string;
-    content: string;
-    createdAt?: string;
-    updatedAt?: string;
-};
+import type { MarkdownDocument } from '@/features/model-universe/modelSlice';
 
 const MarkdownLibrary = dynamic(
     () => import('@/components/ai-chat/MarkdownLibrary'),

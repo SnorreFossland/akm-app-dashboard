@@ -5,37 +5,30 @@ import { useDispatch, useSelector } from 'react-redux'; // Add this import
 import { usePathname } from 'next/navigation';
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed, ChevronLeft, ChevronRight } from 'lucide-react';
 import MarkdownPreview from './MarkdownPreview';
-// import DraggableDivider from '@/components/DraggableDivider';
-// import SimpleDivider from '@/components/SimpleDivider';
-// import styles from '@/components/SplitPanel.module.css';
 
 import { RootState } from '@/store';
+import type { DomainCategory } from '@/features/model-universe/modelSlice'; // <-- added
 import {
     addMessage,
     setMessages,
     Message
 } from '@/features/chat/chatSlice';
 import { PROMPT_TEMPLATES } from './promptTemplates';
+import { REFINE_TEMPLATES } from './refineTemplates';
 import { selectPromptTemplates } from '@/lib/promptUtils';
 import { systemPrompt as promptBuilderPrompt } from '@/app/prompt-builder/prompts';
 import TextareaAutosize from 'react-textarea-autosize';
 import DigitalRain from '@/components/DigitalRain';
 import AnimatedAICircle from '../ui/AnimatedAICircle';
-// Import mammoth.js for DOCX conversion
-// import * as mammoth from 'mammoth';
-// import * as pdfjsLib from 'pdfjs-dist/legacy/build/pdf';
-// import pdfjsWorker from 'pdfjs-dist/legacy/build/pdf.worker.entry';
 import ModelSelector from './ModelSelector';
-import TemperatureSelector from './TemperatureSelector';
-import { saveMarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+// removed import of TemperatureSelector to avoid shadowing the locally-defined selector
+import { saveMarkdownDocument, setFocusDoc } from '@/features/model-universe/modelSlice'; // Updated import
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import DigitalRainIntro from './DigitalRainIntro';
 // import GettingStartedGuide from './GettingStartedGuide';
 // import { refineTemplates } from '@/features/documents/refine-templates';
-import { REFINE_TEMPLATES } from './refineTemplates';
 import { error } from 'console';
 import { Messages } from 'openai/resources/beta/threads/messages.mjs';
-// import { API_BASE_URL } from '@/config/apiConfig';
 import { callGateway } from '@/lib/ai/generate';
 import { mapModelId } from '@/lib/ai/modelMap';
 
@@ -61,6 +54,8 @@ export interface ChatComponentProps {
     onAddMD?: () => void;
     currentDocument?: string;
     setCurrentDocument?: (doc: string) => void; // Add this line to the destructuring
+    documentName?: string;
+    documentType?: string;
     mdPreview: string;
     setMdPreview: (preview: string) => void;
     setCurrentMessages: (messages: any[]) => void;
@@ -109,6 +104,8 @@ export default function ChatComponent({
     setMdContent,
     currentDocument,
     setCurrentDocument,
+    documentName,
+    documentType,
     mdPreview,
     setMdPreview,
     setCurrentMessages,
@@ -179,6 +176,23 @@ export default function ChatComponent({
     const templateDropdownRef = useRef<HTMLDivElement | null>(null);
     const [showTemplateDropdown, setShowTemplateDropdown] = useState(false);
 
+    // Define CATEGORIES for template filtering
+    const CATEGORIES = [
+        'All',
+        'Refinement',
+        'Report',
+        'Analysis',
+        'Summary',
+        'Technical',
+        'Business',
+        'Specification',
+        'Requirements',
+        'Prompt',
+        'Domain',
+        'Project',
+        'Roadmap'
+    ];
+
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a Domain Expert in the domain supplied by the user. 
 Your task is to help the user define a specific domain of interest clearly, comprehensively, and in a structured way. 
 Enhance the given Domain Name if necessary.
@@ -193,8 +207,6 @@ Do not use its contents as contextual input for other questions--I want it impro
     )
 
     // Generate categories list dynamically from templates, with "All" first
-    const CATEGORIES = ['All', ...Array.from(new Set(PROMPT_TEMPLATES.map(template => template.usage))).filter(Boolean).sort()];
-
     const filteredTemplatesOrig = useMemo(() => {
         // Plan: call selectPromptTemplates with explicit criteria:
         // - prefer caller-provided currentDocumentType/currentDocumentCategory
@@ -1192,7 +1204,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 <div className={`${isMobile ? 'fixed bottom-5 left-0 right-0 px-2' : ''} bg-popover border-t border-gray-600 z-10`}>
                     {pathname.startsWith('/ai-chat') && (
                         <div className="flex items-center justify-between p-2 min-w-0">
-                            {/* button row above the chat */}
+                            {/* buttons above the chat */}
                             <div className="flex items-center gap-2">
                                 {/* <button
                                     type="button"
@@ -1265,13 +1277,13 @@ Do not use its contents as contextual input for other questions--I want it impro
                                             <div className="h-2 w-2 bg-white rounded-full"></div>
                                         )}
                                     </div>
-                                    <span className="text-gray-500">{currentDocument ? "Refine current doc." : "No document"}</span>
+                                    <span className="text-gray-500">{currentDocument ? `Refine current doc.: ${documentName} (${documentType})` : `No document`} {``}</span>
                                 </label>
                             </div>
 
                             <div className="flex items-center gap-2">
                                 {/* Template selection */}
-                                {Object.keys(refineTemplates).length > 0 && (
+                                {(docRefine && currentDocument && Object.keys(refineTemplates).length > 0) && (
                                     <div className="relative flex items-center gap-2">
                                         <select
                                             title="Select a style for the document"
@@ -1288,12 +1300,15 @@ Do not use its contents as contextual input for other questions--I want it impro
                                             }}
                                             disabled={isLoading}
                                         >
-                                            <option value="">Select style...</option>
+                                            <option value="">Select refinement style...</option>
                                             {Object.keys(refineTemplates).map((key) => (
                                                 <option key={key} value={key}>{key}</option>
                                             ))}
                                         </select>
-
+                                    </div>
+                                )}
+                                {(!docRefine) && (
+                                    <>
                                         <button
                                             ref={templateButtonRef}
                                             onClick={() => handleToggleTemplateDropdown(templateButtonRef.current)}
@@ -1304,7 +1319,6 @@ Do not use its contents as contextual input for other questions--I want it impro
                                         >
                                             Templates
                                         </button>
-
                                         {/* Floating list with categories and filtered templates */}
                                         <div
                                             ref={templateDropdownRef}
@@ -1344,7 +1358,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                 )}
                                             </div>
                                         </div>
-                                    </div>
+                                    </>
                                 )}
                             </div>
                         </div>
