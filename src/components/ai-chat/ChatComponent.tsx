@@ -7,7 +7,7 @@ import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check
 import MarkdownPreview from './MarkdownPreview';
 
 import { RootState } from '@/store';
-import type { DomainCategory } from '@/features/model-universe/modelSlice'; // <-- added
+import type { DomainCategory, DomainData } from '@/features/model-universe/modelSlice'; // <-- added
 import {
     addMessage,
     setMessages,
@@ -31,6 +31,7 @@ import { error } from 'console';
 import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 import { callGateway } from '@/lib/ai/generate';
 import { mapModelId } from '@/lib/ai/modelMap';
+import { Domain } from 'domain';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -122,7 +123,12 @@ export default function ChatComponent({
     const dispatch = useDispatch();
 
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
-    const domain = useSelector((state: RootState) => state.modelUniverse?.phData?.domain);
+    const domain = useSelector((state: RootState) => state.modelUniverse?.phData?.domain as DomainData | null);
+
+    // NEW: only allow "Include Domain" when domain.presentation has non-empty text
+    const hasDomainPresentation = Boolean(domain?.presentation && domain.presentation.trim().length > 0);
+    const includeDomainContextEffective = includeDomainContext && hasDomainPresentation;
+    console.log('131 Include Domain Context:', includeDomainContext, 'Effective:', includeDomainContextEffective, 'Domain Presentation Length:', domain?.presentation?.length);
 
     // Get messages from Redux instead of local state
     const messages = useSelector((state: RootState) => state.chat?.currentMessages ?? []); // safer
@@ -1229,14 +1235,22 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     Context:
                                     <input
                                         type="checkbox"
-                                        checked={includeDomainContext}
-                                        disabled={isLoading || !setIncludeDomainContext}
+                                        checked={includeDomainContextEffective}
+                                        disabled={isLoading || !setIncludeDomainContext || !hasDomainPresentation}
                                         onChange={(e) => {
                                             console.log('Checkbox onChange event:', {
                                                 checked: e.target.checked,
                                                 currentValue: includeDomainContext,
-                                                hasSetFunction: !!setIncludeDomainContext
+                                                hasSetFunction: !!setIncludeDomainContext,
+                                                hasDomainPresentation
                                             });
+                                            if (!hasDomainPresentation) {
+                                                console.warn('Cannot enable domain context: domain.presentation is empty.');
+                                                if (setIncludeDomainContext) {
+                                                    setIncludeDomainContext(false);
+                                                }
+                                                return;
+                                            }
                                             if (setIncludeDomainContext) {
                                                 const newValue = e.target.checked;
                                                 console.log('Calling setIncludeDomainContext with:', newValue);
@@ -1250,13 +1264,13 @@ Do not use its contents as contextual input for other questions--I want it impro
                                         }}
                                         className="sr-only"
                                     />
-                                    <div className={`h-5 w-5 border ${includeDomainContext ? 'bg-green-500 border-green-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                                        {includeDomainContext && (
+                                    <div className={`h-5 w-5 border ${includeDomainContextEffective ? 'bg-green-500 border-green-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                        {includeDomainContextEffective && (
                                             <div className="h-2 w-2 bg-white rounded-full"></div>
                                         )}
                                     </div>
-                                    <span className={`text-gray-500 ${!setIncludeDomainContext ? 'opacity-50' : ''}`}>
-                                        Include Domain {!setIncludeDomainContext && '(not wired)'}
+                                    <span className={`text-gray-500 ${(!setIncludeDomainContext || !hasDomainPresentation) ? 'opacity-50' : ''}`}>
+                                        {!hasDomainPresentation ? ' (no domain context)' : 'Include Domain context'}
                                     </span>
                                 </label>
 

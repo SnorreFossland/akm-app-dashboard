@@ -1,38 +1,17 @@
-+ cat
-+ printf
-
-
-%s
-
-
-## Product spec (migrated)
-+ cat
-spec/product_spec.md
-+ printf
-
-
-%s
-
-
-## Context / Existing system (archived)
-+ cat
-spec/spec-existing-application.md
-+ cat
-spec/product_spec.md
 # Product Spec
 
 ## Meta
-- Project: AI Mimris Dashboard
-- Agent: ontology
+- Project: MimrAI Dashboard (Mimris AI addition)
+- Module: ai-chat
 - Phase: spec
 - Source of truth: This document governs WHAT. See `tech_plan.md` for HOW.
 
 ## Problem Statement
-Users need deterministic generation and visualization of ontologies inside a three-panel agent UI.
+Users need deterministic generation and visualization of document inside a three-panel module UI.
 
 ## Goals
-1. Generate ontology JSON based on current Domain and conforming to `OntologySchema`.
-2. Deduplicate concepts (case-insensitive) and relationship triplets.
+1. Generate POPS, IRTV and META Model JSON based on current Domain, current Metamodel and conforming to `OntologySchema`.
+2. Deduplicate object (case-insensitive) and relationship triplets.
 3. Persist to Redux `model-universe` and visualize with graph diff.
 4. Enforce prompt scope and naming rules.
 
@@ -41,17 +20,19 @@ Users need deterministic generation and visualization of ontologies inside a thr
 - Non-ontology model editing.
 
 ## User Stories
-- As a modeler, I provide domain text and receive a valid ontology JSON with diffs against current state.
-- As a developer, I can re-run generation with a different model/temperature/tokens without changing UX.
+- As a user, I provide text-prompt and receive a valid document.md with diffs against current state.
+- As a user, I provide a context and text-prompt and receive a response, that can be preview in right panel and then saved as a document.
+- As a modeler, I select Metamodel, context model and provide additional context, and select template prompts, and receive object/relationships lists that can be previewed in right panel and with approved diffs, dispatched to redux.
+- As a developer/modeler, I can re-run generation with a different model/temperature/tokens without changing UX.
 
 ## Inputs
-- Domain text in Document Panel.
+- Context text in Document Panel.
 - Controls: model, temperature, max tokens.
-- Optional: prior ontology state for diff.
+- Optional: prior domain state for diff.
 
 ## Outputs
 - `application/json` valid against `OntologySchema`.
-- UI: graph visualization with new/changed highlighting.
+- UI: graph visualization in mermaid.
 - Export: graph (PNG/SVG) and ontology JSON.
 
 ## Constraints
@@ -81,9 +62,10 @@ Users need deterministic generation and visualization of ontologies inside a thr
 - Prompts scoped to artifact. No PII logging. Secrets never exposed client-side.
 
 ## Links
-- Tech Plan: `./tech_plan.md#ontology-agent`
-- Tasks: `./tasks.yaml#ontology`+ cat
+- Tech Plan: `./tech_plan.md#ai-chat`
+- Tasks: `./tasks.yaml#ai-chat`+ cat
 spec/spec-existing-application.md
+
 # Feature Specification: AI Dashboard Application (Existing)
 
 **Feature Branch**: [n/a — documentation]  
@@ -92,8 +74,9 @@ spec/spec-existing-application.md
 **Input**: Existing codebase review and active routes/components
 
 ## Execution Flow (main)
+
 ```
-1. User selects an agent from the sidebar or from the top-bar(Domain, Ontology, Model/IRTV, Modelview, Prompt, Chat) .
+1. User selects an module from the sidebar or from the top-bar(Domain, Model, Modelview) .
 2. User adds/edit Markdown context via Document Panel and picks model + temperature
 3. For exploratory text → call POST /api/vercel-ai/generate
    → Route normalizes provider output (OpenAI, Mistral, DeepSeek)
@@ -101,7 +84,7 @@ spec/spec-existing-application.md
    → Route streams/buffers JSON and validates/repairs into target schema
 5. UI incrementally parses/validates JSON and renders preview (cards/tables/graph/markdown)
 6. User saves to library (Redux slice) or applies to current domain/ontology/model
-7. Optional export (markdown, SVG/PNG for graphs), and navigation to other agents
+7. Optional export (markdown, SVG/PNG for graphs), and navigation to other modules
 ```
 
 ---
@@ -184,10 +167,9 @@ As a modeller, I can use focused agents to produce and refine domain artifacts (
 
 ---
 
-## Appendix A — Agents
-- Ontology Builder: Enrich and apply ontology; graph diff visualization and export.
-- IRTV Builder: Generate `ObjectSchema` (IR/TV) from prompts/context; preview and save.
-- Modelview Builder: Generate `ModelviewSchema` from prompts/context; preview and save.
+## Appendix A — Modules
+- Model Builder: Generate `ObjectSchema` (POPS, IRTV, META) from prompts/context; preview and save.
+- Modelview Builder: Generate `ModelviewSchema` from prompts/modelcontext; preview and save.
 - Domain Builder: Curate domain name/description/presentation and persist.
 - Prompt Builder: Draft and reuse prompts/templates.
 - AI Chat: Gateway‑based free‑form chat with model controls and templates.
@@ -206,9 +188,8 @@ As a modeller, I can use focused agents to produce and refine domain artifacts (
 
 ```
 Key file references (for maintainers):
-- Ontology page: src/app/ontology-builder/page.tsx
-- IRTV page: src/app/irtv-builder/page.tsx
-- Ontology graph: src/components/ontology-graph.tsx
+- AI-Chat src/app/ai-chat/page.tsx
+- Model page: src/app/model-builder/page.tsx
 - Gateway route/helper: src/app/api/vercel-ai/generate/route.ts, src/lib/ai/generate.ts
 - Genmodel route/helper: src/app/api/genmodel/route.ts, src/lib/ai/genmodel.ts
 - Model mapping: src/lib/ai/modelMap.ts

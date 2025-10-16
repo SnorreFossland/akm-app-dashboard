@@ -1,35 +1,23 @@
-# Agents Guide
+# Pages and Modules Guide
 
-This document explains how "agents" are structured and used in this app, and how to build new ones quickly and safely.
+This document explains how pages and modules are structured and used in this app, and how to build new ones quickly and safely.
 
 ## Overview
-- Purpose: Task-focused UIs that orchestrate LLMs to produce structured artifacts (domain writeups, ontologies, model views, IR/TV specs, prompts) with shared chat tooling.
-- Primary agents:
-  - **AI Chat** (`/ai-chat`): Multi-mode interface with three modes:
-    - **View Mode**: Document viewing and library management with preview and metadata.
-    - **Edit Mode**: Focused document editing with live preview and metadata controls.
-    - **Chat Mode**: AI chat with General (basic) and Advanced (multi-model, experiments) sub-modes.
-  - **Domain Builder** (`/domain-builder`): Domain name/description/presentation curation with header controls for editing and AI assistance.
-  - **Model Builder**: Builds Model structures based on a Metamodel similarly via the genmodel endpoint.
-  - **Modelview Builder**: Produces schema-constrained model views of the model objects and relships from prompts and context.
-  - **Ontology Builder** (`/ontology-builder`): Full-featured agent with Current Domain, Current Ontology, Add. Context tabs (left), AI Ontology Chat (middle), and Suggested Ontology with graph controls (right). Supports multi-select, filters, graph modals, and selection sets.
-  - Prompt Builder: Iterates on reusable prompts/templates.
+- Purpose: Task-focused UIs that orchestrate LLMs to produce structured artifacts (domain writeups, models, modelviews, Metamodel specs, prompts) with shared chat tooling.
 
 ## Architecture
-- UI layer (pages): Each agent has its own Next.js route under `src/app/<agent>/page.tsx` to assemble panels, wire state, and mount the agent component(s).
+- UI layer (pages): Each page has its own Next.js route under `src/app/<modules>/page.tsx` to assemble panels, wire state, and mount the module component(s).
 - Orchestrator components:
-  - Ontology agent: `src/components/ontology-builder/ChatComponent.tsx` issues two kinds of calls:
     - Free-form generation via gateway: `POST /api/vercel-ai/generate` (normalization of output text/choices).
-    - Schema-constrained generation: `POST /api/genmodel` with prompts + context to get JSON adhering to a target schema (e.g., `OntologySchema`).
-  - Modelview + others follow a similar pattern: UI collects prompt, temperature, max tokens, and context → call `/api/genmodel` and parse streamed or buffered JSON into UI state.
+    - Schema-constrained generation: `POST /api/genmodel` with prompts + context to get JSON adhering to a target schema.
+  - Models + others follow a similar pattern: UI collects prompt, temperature, max tokens, and context → call `/api/genmodel` and parse streamed or buffered JSON into UI state.
 - Shared chat infra: `src/components/ai-chat/ChatComponent.tsx` implements message history, streaming handling, gateway fallback, model/temperature controls, and document-context injection.
 - Shared panels & controls:
   - `src/components/ai-chat/DocumentPanel.tsx`: edit/attach Markdown context.
   - `src/components/FileOperations.tsx`: load/save files and library integration.
-  - `src/components/ThreePanelLayout.tsx`: left/middle/right layout used across agents. Supports both tab objects (`{ tabs: [...], defaultTab: '...' }`) and plain JSX (React.ReactNode) for panels.
-- Prompts & guardrails (ontology): `src/app/ontology-builder/prompts.ts` defines system prompt, behavior guidelines, and user prompt scaffolding used by the genmodel calls.
+  - `src/components/ThreePanelLayout.tsx`: left/middle/right layout used across s. Supports both tab objects (`{ tabs: [...], defaultTab: '...' }`) and plain JSX (React.ReactNode) for panels.
 
-## Domain Builder Agent
+## Domain Builder 
 
 ### Architecture
 - **Single-page design:** One route (`/domain-builder`) with three-panel layout.
@@ -102,37 +90,9 @@ This document explains how "agents" are structured and used in this app, and how
 - **ChatComponent (domain-specific):** Handles AI-powered domain generation with model selection
 - **DiffModal:** Shows line-by-line diff before saving to library
 
-### Migration Notes
-- **Old pattern:** Floating buttons at bottom-right (z-index: 40) - REMOVED
-- **New pattern:** Header buttons in `middlePanelHeader` with mode system - CURRENT
-- **Breaking change:** No visual change for users, but complete code restructure
-- **Rationale:** Consistency with AI Chat, no z-index conflicts, better accessibility, mode-based workflow
 
-## Ontology Builder Agents
 
-### Simplified Agent (`/ontology-builder`)
-- **Purpose:** Quick access to domain description editing and project plan management with basic ontology chat.
-- **Left panel:** Two tabs — "Domain Description" (edits `domain.presentation` in Redux) and "Project Plan" (Redux-backed `project-plan` document via `saveMarkdownDocument`).
-- **Middle panel:** Plain JSX for "Current Ontology" chat (no tabs). Uses `ChatComponent` with `projectContent` as context.
-- **Right panel:** Plain JSX for ontology preview via `OntologyCard`.
-- **Floating buttons:** ⚠️ **PLANNED MIGRATION** - Same pattern as Domain Builder
-  - "Open AI Assistant" → navigates to `/ontology-builder/aiAssistant` (full-featured agent).
-  - "Edit Document" → opens left panel (user clicks Project Plan tab).
-- **State management:** Local state for `projectDocId`/`projectContent`, Redux for domain and documents.
-- **Future:** Will migrate to header pattern like Domain Builder and AI Chat.
-
-### Full-Featured Agent (`/ontology-builder/aiAssistant`)
-- **Purpose:** Advanced ontology building with graph visualization, multi-select, filters, and selection sets.
-- **Left panel:** Three tabs — "Current Domain", "Current Ontology" (with graph modal), "Add. Context" (DocumentPanel).
-- **Middle panel:** Multiple tabs — "Current Ontology", "AIOB_old", "AIOC tmp" (experimental).
-- **Right panel:** "Suggested Ontology" tab with graph controls (single/multi-select, filter to selection, open graph modal, save/load/export/import selection sets).
-- **Graph modals:** Left and right panels can open full-screen graph modals with zoom/pan, lasso selection, and detail views.
-- **Selection sets:** Persist concept/relationship selections to localStorage, export/import as JSON.
-- **Floating buttons:** ⚠️ **PLANNED MIGRATION** - "Open AI Assistant" (modal), "Edit Document" (opens left panel + switches to Project tab).
-- **State management:** Complex state for graph selections, filters, multi-select, saved sets, and modal visibility.
-- **Future:** Will migrate to header pattern like Domain Builder and AI Chat.
-
-## AI Chat Agent (Multi-Mode)
+## AI Chat Component (Multi-Mode)
 
 ### Architecture
 - **Single-page multi-mode design:** One route (`/ai-chat`) with three modes controlled by state and URL params.
@@ -241,7 +201,7 @@ This document explains how "agents" are structured and used in this app, and how
     - `userInput`: user’s instruction/topic.
     - `contextItems`: Markdown context from Document Panel.
     - Optional: `contextOntology`, `contextMetamodel` for alignment.
-  - Response: JSON (streamed or buffered) with typed fields consumed by the agent UI.
+  - Response: JSON (streamed or buffered) with typed fields consumed by the module UI.
 
 ## Prompt Conventions (Ontology)
 - System prompt: Expert role, narrow scope, and explicit “no domain advice” guidance.
@@ -250,29 +210,28 @@ This document explains how "agents" are structured and used in this app, and how
 - Location: `src/app/ontology-builder/prompts.ts:1` for system message, further exports for behavior and user prompts.
 
 ## State & Data Flow
-- Agents keep local UI state (prompt, temperature, tokens, progress) and may persist outputs into the Redux model-universe slice when appropriate (e.g., saving suggested ontology to library).
-- Example: Ontology builder holds `suggestedOntologyData`, validates uniqueness, then dispatches to store for persistence and preview.
-- **Project Plan persistence:** Both ontology agents use `saveMarkdownDocument(doc)` to create/update the Redux-backed `project-plan` document. The document is found/created on mount via `documents.find(d => d.type === 'project-plan')`.
+- Modules keep local UI state (prompt, temperature, tokens, progress) and may persist outputs into the Redux model-universe slice when appropriate (e.g., saving suggested ontology to library).
 
-## Adding a New Agent
+## Adding a New Module
 1) Create a route:
-   - Add `src/app/<agent-name>/page.tsx` using `ThreePanelLayout` with left (context), middle (chat/generation), and right (preview) panels.
+   - Add `src/app/<module-name>/page.tsx` using `ThreePanelLayout` with left (context), middle (chat/generation), and right (preview) panels.
 2) Create an orchestrator component:
-   - Under `src/components/<agent-name>/`, build a React component that collects prompt + parameters and calls `/api/vercel-ai/generate` for free-form text or `/api/genmodel` for structured output.
+   - Under `src/components/<module-name>/`, build a React component that collects prompt + parameters and calls `/api/vercel-ai/generate` for free-form text or `/api/genmodel` for structured output.
 3) Reuse shared panels:
    - Use `DocumentPanel` for Markdown context, and `FileOperations` for file/library actions.
 4) Define prompts & schema:
-   - Add a `prompts.ts` alongside the page if the agent needs role/guideline/user scaffolding.
+   - The goal is to have a prompt array in Redux store, so users can edit their own prompts.
    - If using `/api/genmodel`, define `schemaName` and ensure the UI can parse/validate the JSON it returns.
 5) Navigation:
-   - Add a link in `src/components/nav-main.tsx` so the agent is reachable in the sidebar.
+   - Add a link in `src/components/nav-main.tsx` so the module is reachable in the sidebar.
+   - The link is also added to the top-bar as tabs.
 6) Persistence & preview:
    - Decide what to persist in Redux and what to render in a preview panel (Markdown, cards, tables, diagrams, etc.).
 
 ## Model Controls
 - Selection: Components commonly expose a `model` selector (e.g., `gpt-5-mini`, `mistral`, `deepseek-chat`).
 - Temperature: Saved to localStorage (`aiDashboard_temperature`) and used on requests.
-- Tokens: `max_completion_tokens` and other limits are user-configurable per agent.
+- Tokens: `max_completion_tokens` and other limits are user-configurable per module.
 
 ## Safety & Guardrails
 - Prompts explicitly restrict scope (e.g., ontology modeling only) and enforce naming/uniqueness rules.
@@ -312,5 +271,5 @@ This document explains how "agents" are structured and used in this app, and how
 - **Default tab initialization:** Use lazy state initialization for active tabs: `useState(() => panelContent.defaultTab || panelContent.tabs[0]?.key)`.
 - **Mode switching:** Use URL params for bookmarkable states, localStorage for persistence, both managed by `useAIChatMode` hook.
 - **Focus project workflow:** Set focus project in View mode library, access in Edit mode left panel for quick reference while editing other documents.
-- **Header pattern migration:** When adding action buttons to agents, use `middlePanelHeader` prop instead of floating buttons for consistency and accessibility.
+- **Header pattern migration:** When adding action buttons to modules, use `middlePanelHeader` prop instead of floating buttons for consistency and accessibility.
 

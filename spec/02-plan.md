@@ -1,43 +1,14 @@
-+ cat
-+ printf
-
-
-%s
-
-
-## Stack
-+ cat
-spec/tech-stack.md
-+ printf
-
-
-See: spec/appendix-endpoints.md
-
-+ printf
-
-
-%s
-
-
-## Technical Plan (migrated)
-
-
-## Technical Plan (migrated)
-
-+ cat
-spec/tech_plan.md
 # Technical Plan
 
 ## Meta
 - Project: AI Dashboard
-- Agent: ontology
+- Module: ai-chat
 - Phase: plan
 - This document governs HOW. It must satisfy `product_spec.md`.
 
 ## Architecture
 - Next.js App Router.
-- Page: `src/app/ontology-builder/page.tsx` using `ThreePanelLayout`.
-- Orchestrator: `src/components/ontology/Orchestrator.tsx`.
+- Page: `src/app/ai-chat/page.tsx` using `ThreePanelLayout`.
 - Shared panels: `DocumentPanel`, `FileOperations`.
 - State: Redux slice `model-universe`.
 
@@ -45,8 +16,7 @@ spec/tech_plan.md
 1. User edits Document Panel.
 2. Orchestrator calls `streamGenmodel` with `mapModelId(model)` and `schemaName="OntologySchema"`.
 3. Stream validated incrementally; UI shows diff; throttle updates.
-4. On success, commit to `model-universe` with ontology dedupe.
-5. Graph view renders with zoom/pan/lasso.
+4. Graph view renders mermaid
 
 ## Endpoints
 ### POST `/api/genmodel`
@@ -57,11 +27,11 @@ spec/tech_plan.md
   - `temperature?: number`
   - `maxTokens?: number`
 - Response:
-  - `data: OntologySchema`
+  - `data: ModelSchema`
   - `usage: { promptTokens: number; completionTokens: number }`
   - `error?: { code: string; message: string }`
 
-### POST `/api/vercel-ai/generate` (fallback)
+### POST `/api/vercel-ai/generate`
 - Request:
   - `modelId: string`
   - `prompt: string`
@@ -95,20 +65,12 @@ spec/tech_plan.md
 - Keep `docs/endpoint-contracts.md` synchronized with the above shapes.
 
 ## Files to Touch
-- `src/app/ontology/page.tsx`
-- `src/components/ontology/Orchestrator.tsx`
-- `src/schemas/ontology.ts`
-- `src/store/modelUniverseSlice.ts`
-- `docs/endpoint-contracts.md` (amend if shape changes)
+
 
 ## Test Plan
-- Unit: `mapModelId`, `callGateway`, `streamGenmodel`.
-- Contract: zod parse success/failure cases.
-- UI smoke: render page, run keyboard nav, simulate stream.
 
 ## Rollback
-- Feature flag `FEATURE_ONTOLOGY_AGENT`.+ cat
-spec/tech-stack.md
+
 # Tech Stack
 
 This document captures the **current technology baseline** for the AI Dashboard App.  
@@ -120,7 +82,7 @@ Changes here do not require constitutional amendments, but every change must upd
 ## 1. Frameworks and Runtime
 - **Next.js (App Router)**  
   - Routing and server components.  
-  - Agent pages live under `src/app/<agent>/page.tsx`.  
+  - Module pages live under `src/app/<module>/page.tsx`.  
 
 - **React 18**  
   - UI rendering.  
@@ -134,7 +96,7 @@ Changes here do not require constitutional amendments, but every change must upd
 
 ## 2. State Management
 - **Redux Toolkit**  
-  - Centralized state for agents.  
+  - Centralized state for modules.  
   - Slice: `model-universe` for ontology and schema artifacts.  
   - Persistence configured where structured outputs are committed.  
 
@@ -143,7 +105,7 @@ Changes here do not require constitutional amendments, but every change must upd
 ## 3. UI Library
 - **ShadCN UI**  
   - Shared components: panels, buttons, dialogs, inputs.  
-  - Style consistency across agents.  
+  - Style consistency across modules.  
   - Accessible by default with ARIA roles/labels.  
 
 ---
@@ -178,7 +140,7 @@ Changes here do not require constitutional amendments, but every change must upd
 ---
 
 ## 6. Visualization
-- **React Flow or D3 (TBD by implementation)**  
+- **Mermaid**  
   - Graph diff and ontology visualization.  
   - Features: zoom/pan, lasso select, highlighting, and export.  
 

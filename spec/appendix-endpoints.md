@@ -1,17 +1,3 @@
-+ cat
-+ printf
-
-
-%s
-
-
-## Endpoint Contracts (migrated)
-
-
-## Endpoint Contracts (migrated)
-
-+ cat
-spec/endpoint-contracts.md
 # Endpoint Contracts
 
 This document describes the normalized request/response shapes used by the AI endpoints and the shared helpers.

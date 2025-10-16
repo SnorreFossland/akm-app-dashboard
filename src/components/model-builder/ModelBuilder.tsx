@@ -227,19 +227,36 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
     // ---------- Auto-prompt generation when curmod or curMetamodel changes ----------
     useEffect(() => {
         if (!curmod || !curMetamodel) return;
+        // Find relevant models for context (POPS and IRTV)
         const popsmodel = data?.phData?.metis?.models?.find((m: any) => m.name.includes("POPS"));
         const popsProcesses = popsmodel?.objects?.filter((o: any) => o.typeName === "Process") || [];
         const popsProcessesNames = popsProcesses.map((p: any) => p.name);
+        const irtvmodel = data?.phData?.metis?.models?.find((m: any) => m.name.includes("IRTV"));
+        const irtvObjectNames = irtvmodel?.objects
+            ?.filter((o: any) => ["Information", "Role", "Task", "View"].includes(o.typeName) && o.name)
+            .map((o: any) => o.name) || [];
+        const irtvRelNames = irtvmodel?.relships
+            .map((p: any) => p.name)
+            .filter((name: string, idx: number, arr: string[]) => arr.indexOf(name) === idx) || [];
+
         let types = (curMetamodel.objecttypes || [])
             .filter((o: any) => o.name !== "EntityType")
             .filter((o: any) => o.name !== "Gateway")
+            .filter((o: any) => o.name !== "Element")
+            .filter((o: any) => o.name !== "Generic")
+            .filter((o: any) => o.name !== "Label")
             .map((o: any) => o.name + ', ');
         let nextAutoPrompt = "";
         // const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
         switch (curMetamodel.name) {
             case "IRTV_META":
+                types = (curMetamodel.objecttypes || [])
+                    .filter((o: any) => o.name !== "Element")
+                    .filter((o: any) => o.name !== "Generic")
+                    .filter((o: any) => o.name !== "Label")
+                    .map((o: any) => o.name + ', ');
 
-                nextAutoPrompt = `Create an IRTV Workspace for the the following Processes ${popsProcessesNames.join(", ")}.
+                nextAutoPrompt = `Create an IRTV Workspace for the the following Processes: ${popsProcessesNames.join(", ")}.
 Create a Container for each process and add Information objects with vital Properties, 
 then add Views, Tasks and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} Use the Domain definition as context.
 `;
@@ -264,28 +281,35 @@ Start with creating an object of type Metamodel with a relship "contains" to all
                     .filter((o: any) => o.name !== "EntityType")
                     .filter((o: any) => o.name !== "Geobody")
                     .filter((o: any) => o.name !== "Material")
-                    .filter((o: any) => o.name !== "DistributionNetwork")
+                    .filter((o: any) => o.name !== "DistributNetwork")
                     .filter((o: any) => o.name !== "Device")
                     .filter((o: any) => o.name !== "Label")
                     .filter((o: any) => o.name !== "Generic")
                     .filter((o: any) => o.name !== "Equipment")
                     .filter((o: any) => o.name !== "Facility")
-                    .filter((o: any) => o.name !== "DistributionNetwork")
                     .filter((o: any) => o.name !== "Event")
+                    .filter((o: any) => o.name !== "Element")
                     .map((o: any) => o.name + ', ');
 
                 nextAutoPrompt =
-                    "Build a POPS model based on the Domain definition in Context below. Create objects and relationships using the following object types: " +
-                (types.length ? types.join(" ") + " Focus on Processes and Products. Processes may have a hierarchy of multiple 'sub-processes'." : "");
+`Build a POPS model based on the Domain definition in the #Context below.
+Create objects and relationships using the following object types:  ${
+(types.length ? types.join(" ") : "")}
+`;
                 break;
             case "BPMN_META":
                 types = (curMetamodel.objecttypes || [])
                     .filter((o: any) => o.name !== "EntityType")
                     .filter((o: any) => o.name !== "Gateway")
+                    .filter((o: any) => o.name !== "Element")
+                    .filter((o: any) => o.name !== "Generic")
+                    .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
                 nextAutoPrompt =
-                    "Create a BPMN model using the following object types: " +
-                    (types.length ? types.join(" ") + " based on the Domain definition. " : "");
+`Create a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the #Context below.
+Evaluate where BPMN pools and lanes are appropriate and ensure logical consistency. Remove any type-names in the name of objects.
+${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
+`;
                 break;
         }
 
@@ -733,7 +757,14 @@ ${filteredRelTypes
     // ----------  Prompts ----------
     const finalSystemPrompt = `
 You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling.
-Your task is to build a model from the provided 'Existing Context', conforming to the provided Metamodel.
+Your task is to build a model from the provided 'Existing Context' and Domain definition, conforming to the provided Metamodel.
+Do not add the objects typenames in the object names.
+Use the Metamodel object types and relationship types as defined in the Metamodel.
+Ensure logical consistency and relationship principles.
+Always use valid UUID strings for all ids.
+Always use the provided metamodel typeRef for object typeRef and relationship typeRef.
+Do not make up new object types or relationship types.
+If the Domain definition is missing or insufficient, respond with suggestions for improvement.
 `;
 
     let finalDeveloperPrompt = ''

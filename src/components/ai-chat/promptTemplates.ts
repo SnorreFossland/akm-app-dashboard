@@ -66,20 +66,28 @@ const RAW_PROMPT_TEMPLATES: PromptTemplate[] = [
         title: "Domain Definition",
         category: "Domain Definition / Business / Analysis / Plan",
         usage: "Domain Definition",
-        content: `Help me define and scope the domain described below and in the context.
-Use the following format:
-Domain name: [Insert concise and specific name] 
-Domain description: [Provide a clear, concise summary (2-3 sentences) of the domain.]
-Domain definition:
-In-scope: include this list: [List elements, activities, or areas included within the domain] but you can also add elements if you think they are relevant.
-Out-of-scope: [Clearly specify what aspects are explicitly excluded from the domain.]
-Key Domain Concepts and Terms
-Primary objectives
-Identify and categorize stakeholders by their roles or involvement
-Current limitations and Boundaries
-Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-Success criteria 
-Define clear, measurable, and achievable indicators of success
+        content: `Help me make a comprehensive definition and scope of the domain:
+Name: [ Insert concise and specific name ] 
+Description: [ Description of the domain. ]
+Include context if available in the #Context section below.
+
+Include the following sections:
+    Domain name: concise and specific name 
+    Domain description: brief overview of the domain's purpose and scope.
+    Domain definition:
+    In-scope include elements if you think they are relevant.
+    Out-of-scope elements if you think they are relevant.
+    Key Processes and Workflows
+    Describe the main processes and workflows within the domain.
+    Key Entities and Relationships
+    Identify the primary entities (e.g., customers, products, services) and their relationships.
+    Key Domain Concepts and Terms
+    Primary objectives
+    Identify and categorize stakeholders by their roles or involvement
+    Current limitations and Boundaries
+    Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
+    Success criteria 
+    Define clear, measurable, and achievable indicators of success
 `
     },
     {
@@ -152,7 +160,7 @@ Identify the challenges, current gaps, and opportunities for improvement or inno
 | **Instance Modeling** | ORIM (Objects-Relationships-Instances-States) |
 | **Specification** | Spec-Kit or structured requirement templates |
 | **Implementation planning** | Architectural design and technology stack selection |
-| **Implementation** | Code Generation** | AI-assisted or rule-based generation (CODEX or equivalent) |
+| **Implementation** | Code Generation** | AI-assisted or rule-based generation |
 | **Quality Assurance** | Verification, validation, and model consistency checks |
 
 ---
@@ -160,28 +168,32 @@ Identify the challenges, current gaps, and opportunities for improvement or inno
 ### **2.4 Project Phases**
 
 #### **Initiation**
+Based on the Domain Definition, define the project scope and objectives (SMART).
+create the Project Charter and identify stakeholders.
 - [ ] Define the problem statement and expected outcomes
 - [ ] Identify key stakeholders and domain experts
 - [ ] Approve project charter and funding
 
 #### **Planning**
+1. Define Processes and Workspaces
 - [ ] Define Process and Sub-process Modeling (POPS)
 - [ ] Define Workspace Modeling (IRTV) for each process
+2. Develop Metamodels and Instance Models
 - [ ] Conduct Detailed Metamodeling (TYPE)
 - [ ] Develop Object Relationship Instance Models (ORIM)
+3. Prepare Specifications and Implementation Plans
 - [ ] Generate Specification Kit (Spec-Kit)
 - [ ] Plan Implementation Architecture
-- [ ] Implement AI-assisted Code Generation (CODEX)
-- [ ] Prepare Testing and QA procedures
-- [ ] Define Deployment strategy
-- [ ] Plan Training and Support
-- [ ] Plan Maintenance and Updates
 
 #### **Implementation**
-- [ ] Develop and test process and workspace models
-- [ ] Execute AI-assisted code generation
-- [ ] Perform integration testing and validation
-- [ ] Deploy working prototype or final product
+- [ ] Implement AI-assisted Code Generation
+- [ ] Prepare Testing and QA procedures
+- [ ] Deploy initial working prototype or final product
+
+#### **Testing**
+- [ ] Conduct Verification and Validation
+- [ ] Perform User Acceptance Testing (UAT)
+- [ ] Finalize QA reports and documentation
 
 #### **Evaluation**
 - [ ] Validate project outcomes against SMART objectives
@@ -215,20 +227,6 @@ Identify the challenges, current gaps, and opportunities for improvement or inno
 
 ---
 
-## **3. Key Stakeholders**
-
-| Role | Name / Group | Responsibility |
-|------|----------------|----------------|
-| Project Sponsor |  | Strategic oversight and funding |
-| Project Manager |  | Coordination, scheduling, reporting |
-| Domain Expert |  | Subject matter knowledge |
-| Model Architect |  | POPS-IRTV-TYPE-ORIM design |
-| Developer |  | CODEX implementation and automation |
-| QA Lead |  | Verification and validation |
-| End Users |  | Acceptance testing and feedback |
-
----
-
 ## **4. Timeline (Phases and Milestones as Mermaid Diagram)**
 
 ## Example
@@ -249,6 +247,22 @@ gantt
     section Evaluation
     Final Review & Reporting      : a8, 2025-07-02, 2025-07-15
 \`\`\`
+
+---
+
+## **3. Key Stakeholders**
+
+| Role | Name / Group | Responsibility |
+|------|----------------|----------------|
+| Project Sponsor |  | Strategic oversight and funding |
+| Project Manager |  | Coordination, scheduling, reporting |
+| Domain Expert |  | Subject matter knowledge |
+| Model Architect |  | POPS-IRTV-TYPE-ORIM design |
+| Developer |  | AI Code implementation and automation |
+| QA Lead |  | Verification and validation |
+| End Users |  | Acceptance testing and feedback |
+
+---
 `
     },
     {
