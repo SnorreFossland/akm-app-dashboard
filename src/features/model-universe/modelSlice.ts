@@ -630,26 +630,26 @@ const modelSlice = createSlice({
       }
 
       // Ensure saved domain doc's category is tracked in the domainCategories list
-      try {
-        if (doc.domainCategory) {
-          if (!state.phData.domainCategories) state.phData.domainCategories = DOMAIN_CATEGORIES.slice();
-          if (!state.phData.domainCategories.includes(doc.domainCategory)) {
-            state.phData.domainCategories.push(doc.domainCategory);
-          }
-        }
+      // try {
+      //   if (doc.domainCategory) {
+      //     if (!state.phData.domainCategories) state.phData.domainCategories = DOMAIN_CATEGORIES.slice();
+      //     if (!state.phData.domainCategories.includes(doc.domainCategory)) {
+      //       state.phData.domainCategories.push(doc.domainCategory);
+      //     }
+      //   }
 
-        if ((doc.type || '').toLowerCase() === 'domain') {
-          state.phData.domain = state.phData.domain || ({} as any);
-          if (typeof doc.content === 'string' && doc.content.trim() !== '') {
-            state.phData.domain.presentation = doc.content;
-          }
-          if (doc.domainCategory) {
-            state.phData.domain.domainCategory = doc.domainCategory;
-          }
-        }
-      } catch (e) {
-        console.warn('saveMarkdownDocument: domain propagation failed', e);
-      }
+      //   if ((doc.type || '').toLowerCase() === 'domain') {
+      //     state.phData.domain = state.phData.domain || ({} as any);
+      //     if (typeof doc.content === 'string' && doc.content.trim() !== '') {
+      //       state.phData.domain.presentation = doc.content;
+      //     }
+      //     if (doc.domainCategory) {
+      //       state.phData.domain.domainCategory = doc.domainCategory;
+      //     }
+      //   }
+      // } catch (e) {
+      //   console.warn('saveMarkdownDocument: domain propagation failed', e);
+      // }
     },
     deleteMarkdownDocument: (state, action: PayloadAction<string>) => {
       // Ensure documents array exists before filtering

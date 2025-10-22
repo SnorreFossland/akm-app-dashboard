@@ -5,6 +5,7 @@ import { saveMarkdownDocument, deleteMarkdownDocument, setDomainData, MarkdownDo
 import extractDomainNameAndDescription from './docExtraction';
 import { ChevronDown, ChevronRight, Upload, Search, X, Plus } from 'lucide-react';
 import { Check } from 'lucide-react';
+import { toast } from "sonner";
 
 interface MarkdownLibraryProps {
   onSelect: (content: string, name: string, docMeta?: MarkdownDocument) => void;
@@ -36,7 +37,8 @@ const MarkdownLibrary = ({
   const [searchTerm, setSearchTerm] = useState('');
   const [expandedDocId, setExpandedDocId] = useState<string | null>(null);
   const [expandedDocName, setExpandedDocName] = useState<string>('');
-  
+  const [expandedDocType, setExpandedDocType] = useState<string>('');
+
   const [showImportDialog, setShowImportDialog] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const expandedContentRef = useRef<HTMLDivElement>(null);
@@ -65,7 +67,7 @@ const MarkdownLibrary = ({
     const uniqueDocCats = Array.from(new Set(docCats));
 
     // Use categories from the slice when available; otherwise fall back to legacy defaults.
-    const legacyDefaults = ['Personal','Business', 'Technical', 'Organizational', 'Educational','Research', 'Design', 'Operations', 'Product', 'Public','Other'];
+    const legacyDefaults = ['Personal', 'Business', 'Technical', 'Organizational', 'Educational', 'Research', 'Design', 'Operations', 'Product', 'Public', 'Other'];
     const sourceDefaults = Array.isArray(sliceDomainCategories) && sliceDomainCategories.length > 0
       ? sliceDomainCategories
       : legacyDefaults;
@@ -199,11 +201,24 @@ const MarkdownLibrary = ({
     }
   };
 
-  const handleSaveAsDomain = (content: string, name: string, e: React.MouseEvent) => {
+  const handleSaveAsDomain = (content: string, name: string, type: string, e: React.MouseEvent) => {
     e.stopPropagation();
     const trimmedDocName = name?.trim() || '';
     const { name: extractedName, description } = extractDomainNameAndDescription(content);
     const domainName = trimmedDocName || extractedName;
+
+    if (type !== 'domain') {
+      toast.error(
+        <div className="flex items-start gap-3 p-2">
+          <span className="inline-block mt-0.5 w-3 h-3 rounded-full bg-red-500 ring-2 ring-red-600/40" />
+          <div className="text-sm">
+            <div className="font-semibold text-red-500">Invalid document type</div>
+            <div className="text-xs">Only documents of type <span className="font-medium">Domain</span> can be saved as domain data.</div>
+          </div>
+        </div>
+      );
+      return;
+    }
     dispatch(setDomainData({
       name: domainName,
       description: description || '',
@@ -211,22 +226,39 @@ const MarkdownLibrary = ({
       prompt: '',
       additionalContext: ''
     }));
+    toast.success(`Domain data "${domainName}" saved from document.`);
   };
 
   const handleSetFocusProject = (doc: MarkdownDocument, e: React.MouseEvent) => {
     e.stopPropagation();
+    if (doc.type !== 'project-plan') {
+      toast.error(
+        <div className="flex items-start gap-3 p-2">
+          <span className="inline-block mt-0.5 w-3 h-3 rounded-full bg-red-500 ring-2 ring-red-600/40" />
+          <div className="text-sm">
+            <div className="font-semibold text-red-500">Invalid action</div>
+            <div className="text-xs">Only documents of type <span className="font-medium">project-plan</span> can be set as the focus project.</div>
+          </div>
+        </div>
+      );
+      return;
+    }
+
     dispatch(updateProjectInfo({
       id: doc.id,
       name: doc.name,
     }));
+
+    toast.success(`Project "${doc.name}" set as focus`);
   };
+
   const beginEditMetadata = (doc: MarkdownDocument, e: React.MouseEvent) => {
     e.stopPropagation();
     setEditingDocId(doc.id);
     setEditName(doc.name);
     setEditType(doc.type || 'markdown');
     setEditContent(doc.content || '');
-    setEditDomainCategory(doc.domainCategory || '');
+    // setEditDomainCategory(doc.domainCategory || '');
     setMetadataMessage(null);
     setMetadataError(null);
   };
@@ -252,7 +284,7 @@ const MarkdownLibrary = ({
       name: trimmedName,
       type: normalizedType,
       content: editContent,
-      domainCategory: (editDomainCategory as DomainCategory) || undefined,
+      // domainCategory: (editDomainCategory as DomainCategory) || undefined,
       updatedAt: new Date().toISOString(),
     };
 
@@ -262,10 +294,13 @@ const MarkdownLibrary = ({
     setMetadataMessage('Document details updated.');
     setTimeout(() => setMetadataMessage(null), 2000);
 
-    if (onSetCurrentDocument && currentDocument && currentDocument === doc.content) {
-      onSetCurrentDocument(updatedDoc.content, updatedDoc.name, updatedDoc);
-    }
+    // Intentionally do not call onSetCurrentDocument here.
+    // Notifying the parent caused the Library to close / switch tabs in the parent.
+    // If you want to notify the parent without forcing a view change, add a separate
+    // optional prop like `onDocumentUpdated?: (doc: MarkdownDocument) => void` and call it here.
   };
+
+
   return (
     <div className="flex flex-col gap-2 w-full h-full p-2 bg-background rounded-lg overflow-hidden">
       <input
@@ -413,47 +448,63 @@ const MarkdownLibrary = ({
                         className="border-t border-gray-600 bg-gray-800"
                       >
                         <div className="p-2">
-                          <button
-                            onClick={(e) => beginEditMetadata(doc, e)}
-                            disabled={editingDocId === doc.id}
+                          <div
+                            role="button"
+                            tabIndex={editingDocId === doc.id ? -1 : 0}
+                            onClick={(e) => {
+                              if (editingDocId === doc.id) {
+                                e.stopPropagation();
+                                return;
+                              }
+                              beginEditMetadata(doc, e as unknown as React.MouseEvent);
+                            }}
+                            onKeyDown={(e) => {
+                              if (editingDocId === doc.id) return;
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault();
+                                beginEditMetadata(doc, e as unknown as React.MouseEvent);
+                              }
+                            }}
+                            aria-disabled={editingDocId === doc.id}
                             className={`flex w-full items-center justify-between gap-1 text-[0.65rem] px-2 py-1 rounded 
                                ${editingDocId === doc.id
                                 ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                 : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
                           >
                             <span className="flex items-center justify-between w-full gap-1">
-                              {editingDocId === doc.id
-                                ? (
-                                  <span>Editing…</span>
-                                ) : (
+                              {editingDocId === doc.id ? (
+                                <span>Editing…</span>
+                              ) : (
+                                <>
+                                  <span>{doc.name}</span>
                                   <>
-                                    <span>{doc.name}</span>
-                                    <>
-                                      {doc.type && (
-                                        <span className="text-blue-300">({displayType})</span>
-                                      )}
-                                      <button
-                                        className="ms-auto px-2 py-1 text-xs bg-gray-700 rounded hover:bg-blue-900 transition-colors"
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        onClick={(e) => handleExportToFile(doc.content, doc.name, e)}
-                                        className="text-[0.65rem] bg-green-800 hover:bg-green-700 text-white px-1.5 py-0.5 rounded"
-                                      >
-                                        Export
-                                      </button>
-                                      <button
-                                        onClick={(e) => handleDelete(doc.id, e)}
-                                        className="text-[0.65rem] bg-red-800 hover:bg-red-700 text-white px-1.5 py-0.5 rounded"
-                                      >
-                                        Delete
-                                      </button>
-                                    </>
+                                    {doc.type && <span className="text-blue-300">({displayType})</span>}
+                                    <button
+                                      className="ms-auto px-2 py-1 text-xs bg-gray-700 rounded hover:bg-blue-900 transition-colors"
+                                      onClick={(e) => { e.stopPropagation(); beginEditMetadata(doc, e as unknown as React.MouseEvent); }}
+                                      type="button"
+                                    >
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleExportToFile(doc.content, doc.name, e); }}
+                                      className="text-[0.65rem] bg-green-800 hover:bg-green-700 text-white px-1.5 py-0.5 rounded"
+                                      type="button"
+                                    >
+                                      Export
+                                    </button>
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); handleDelete(doc.id, e); }}
+                                      className="text-[0.65rem] bg-red-800 hover:bg-red-700 text-white px-1.5 py-0.5 rounded"
+                                      type="button"
+                                    >
+                                      Delete
+                                    </button>
                                   </>
-                                )}
+                                </>
+                              )}
                             </span>
-                          </button>
+                          </div>
                           {editingDocId === doc.id && (
                             <div className="mt-3 space-y-3 rounded-md border border-gray-600 bg-gray-900/70 p-3">
                               <div className="grid gap-2 md:grid-cols-2">
@@ -588,13 +639,13 @@ const MarkdownLibrary = ({
                                 className="flex items-center gap-1 text-[0.65rem] bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded"
                                 title="Set as focus project"
                               >
-                                Set Project Plan
+                                Set as Project Plan
                               </button>
                               <button
-                                onClick={(e) => handleSaveAsDomain(doc.content, doc.name, e)}
+                                onClick={(e) => handleSaveAsDomain(doc.content, doc.name, doc.type ?? 'markdown', e)}
                                 className="flex items-center gap-1 text-[0.65rem] bg-purple-700 hover:bg-purple-600 text-white px-2 py-1 rounded"
                               >
-                                Set Domain Definition
+                                Set as Domain
                               </button>
                             </div>
                           </div>

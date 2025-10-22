@@ -68,9 +68,10 @@ export function ViewModeMiddlePanel({
                         <MarkdownPreview mdPreview={currentDocument} variant="default" />
                     ) : (
                         <div className="text-center text-gray-400 p-8">
-                            <p className="text-sm">No document selected</p>
-                            <p className="text-xs mt-2">
-                                Select a document from the library to view it here
+                            <p className="text-sm">No document to view</p>
+                            <p className="text-sm text-green-400 mt-2">
+                                Use the AI Chat tab above to generate a new document,<br />
+                                or select an existing document from the library (in the left panel), to view it here.
                             </p>
                         </div>
                     )}

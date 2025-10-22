@@ -45,7 +45,7 @@ const RAW_PROMPT_TEMPLATES: PromptTemplate[] = [
         title: "Brainstorming Ideas",
         category: "Brainstorming",
         usage: "Business",
-        content: "Generate ideas for the topic described in the text below or in the #Context section."
+        content: "Generate ideas for the [ topic ]."
     },
     {
         id: 'refine-text',

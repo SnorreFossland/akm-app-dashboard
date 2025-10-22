@@ -172,7 +172,7 @@ export function ModalThreePanelLayout({
                             {localShowLeft && finalLeft && (
                                 <div className="flex flex-col bg-gray-800 border-r border-gray-600 overflow-hidden w-80 flex-shrink-0">
                                     <div className="flex justify-between items-center p-2 border-b border-gray-600">
-                                        <h3 className="text-sm font-medium text-gray-300">Input</h3>
+                                        <h3 className="text-sm font-medium text-gray-300">Input / Context</h3>
                                         <button
                                             onClick={handleToggleLeftPanel}
                                             className="text-gray-400 hover:text-white"
@@ -219,7 +219,7 @@ export function ModalThreePanelLayout({
                             {localShowRight && finalRight && (
                                 <div className="flex flex-col bg-gray-800 border-l border-gray-600 overflow-hidden w-80 flex-shrink-0">
                                     <div className="flex justify-between items-center p-2 border-b border-gray-600">
-                                        <h3 className="text-sm font-medium text-gray-300">Output</h3>
+                                        <h3 className="text-sm font-medium text-gray-300">AICaht / Output Reports</h3>
                                         <button
                                             onClick={handleToggleRightPanel}
                                             className="text-gray-400 hover:text-white"

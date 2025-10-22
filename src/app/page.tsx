@@ -30,7 +30,7 @@ export default function Home() {
   // State for panel management
   const [activeTab, setActiveTab] = useState("ai-chat");
   const [activeSubTab, setActiveSubTab] = useState("overview");
-  const [showLeftPanel, setShowLeftPanel] = useState(true);
+  const [showLeftPanel, setShowLeftPanel] = useState(false);
   const [showRightPanel, setShowRightPanel] = useState(false);
   const [leftPanelWidth, setLeftPanelWidth] = useState(400);
   const [rightPanelWidth, setRightPanelWidth] = useState(400);
@@ -414,7 +414,7 @@ export default function Home() {
       </div>
       {/* )} */}
       <ThreePanelLayout
-        moduleOperations={<FileOperations />}
+        moduleOperations={<></>}
         leftPanelContent={leftPanelContent}
         rightPanelContent={rightPanelContent}
         showLeftPanel={showLeftPanel}
@@ -425,7 +425,7 @@ export default function Home() {
       >
         <Tabs defaultValue="overview" className="flex flex-col flex-1">
           {/* Main Tabs */}
-          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto pt-2 z-20">
+          <TabsList className="grid w-full grid-cols-4 max-w-lg mx-auto pt-1 mb-2 z-20">
             <TabsTrigger value="overview">AI Chat</TabsTrigger>
             <TabsTrigger value="model">Current Universe</TabsTrigger>
             <TabsTrigger value="about">About</TabsTrigger>

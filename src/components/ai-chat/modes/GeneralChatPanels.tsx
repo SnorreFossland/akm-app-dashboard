@@ -175,7 +175,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                             gettingStartedGuide={
                                 <div className="text-center text-gray-400">
                                     <h3 className="text-lg font-semibold mb-2">Welcome to AI Chat</h3>
-                                    <p className="text-sm">Start a conversation with the AI assistant.</p>
+                                    <p className="text-sm">Start a conversation with the AI assistant or select a prompt template to get started.</p>
                                     <p className="text-xs mt-2">Use Context Docs to provide background information.</p>
                                 </div>
                             }

@@ -491,37 +491,55 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     // Function to select and jump to a placeholder
     const selectTemplatePlaceholder = (idx: number) => {
-        if (!textareaRef.current) return;
+        // Ensure we have a native textarea element
+        const ta = textareaRef.current as HTMLTextAreaElement | null;
+        if (!ta) return;
 
         const placeholder = templatePlaceholders[idx];
         if (!placeholder) return;
 
-        // Focus the textarea
-        textareaRef.current.focus();
-
-        // Set selection range to highlight the placeholder
-        textareaRef.current.setSelectionRange(
-            placeholder.start,
-            placeholder.end
-        );
-
-        // Scroll the placeholder into view if needed
-        const textarea = textareaRef.current;
-
-        // Get character position information
-        const charInfo = getCaretCoordinates(textarea, placeholder.start);
-
-        // Calculate scroll position
-        if (charInfo) {
-            const scrollTop = textarea.scrollTop;
-            const offsetTop = charInfo.top;
-            const textareaHeight = textarea.clientHeight;
-
-            // Adjust scroll if needed to ensure the placeholder is visible
-            if (offsetTop < scrollTop || offsetTop > scrollTop + textareaHeight - 30) {
-                textarea.scrollTop = Math.max(0, offsetTop - textareaHeight / 2);
-            }
+        // Focus the textarea first
+        try {
+            ta.focus();
+        } catch (err) {
+            // Defensive: ignore focus errors
+            console.warn('Could not focus textarea before selecting placeholder', err);
         }
+
+        // Run selection and scroll in next animation frame so focus is applied
+        requestAnimationFrame(() => {
+            try {
+                // Set selection range to highlight the placeholder
+                if (typeof ta.setSelectionRange === 'function') {
+                    ta.setSelectionRange(placeholder.start, placeholder.end);
+                } else {
+                    // Fallback: move cursor to start index
+                    ta.selectionStart = placeholder.start;
+                    ta.selectionEnd = placeholder.end;
+                }
+
+                // Scroll the placeholder into view if needed
+                const charInfo = getCaretCoordinates(ta, placeholder.start);
+                if (charInfo) {
+                    const scrollTop = ta.scrollTop;
+                    const offsetTop = charInfo.top;
+                    const textareaHeight = ta.clientHeight;
+
+                    if (offsetTop < scrollTop || offsetTop > scrollTop + textareaHeight - 30) {
+                        ta.scrollTop = Math.max(0, offsetTop - textareaHeight / 2);
+                    }
+                } else {
+                    // Fallback: try to ensure the selection is visible by setting scrollTop
+                    // approximate line count up to placeholder
+                    const upTo = ta.value.substring(0, placeholder.start);
+                    const lines = upTo.split('\n').length;
+                    const approxLineHeight = parseFloat(window.getComputedStyle(ta).lineHeight || '18') || 18;
+                    ta.scrollTop = Math.max(0, lines * approxLineHeight - (ta.clientHeight / 2));
+                }
+            } catch (err) {
+                console.error('Error while selecting template placeholder:', err);
+            }
+        });
     };
 
     // Helper function to get caret coordinates in a textarea

@@ -229,40 +229,54 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
         if (!curmod || !curMetamodel) return;
         // Find relevant models for context (POPS and IRTV)
         const popsmodel = data?.phData?.metis?.models?.find((m: any) => m.name.includes("POPS"));
-        const popsProcesses = popsmodel?.objects?.filter((o: any) => o.typeName === "Process") || [];
+        const popsProcesses = popsmodel?.objects?.filter((o: any) => o.typeName === "Process") || []; // all processes in POPS for use in IRTV
         const popsProcessesNames = popsProcesses.map((p: any) => p.name);
+
         const irtvmodel = data?.phData?.metis?.models?.find((m: any) => m.name.includes("IRTV"));
+
         const irtvObjectNames = irtvmodel?.objects
             ?.filter((o: any) => ["Information", "Role", "Task", "View"].includes(o.typeName) && o.name)
             .map((o: any) => o.name) || [];
-        const irtvRelNames = irtvmodel?.relships
+        const irtvRelNames = irtvmodel?.relships // filter only Information relationships for CORE_META
             .map((p: any) => p.name)
             .filter((name: string, idx: number, arr: string[]) => arr.indexOf(name) === idx) || [];
+        const irtvInfoObjects = irtvmodel?.objects // filter only Information objects for CORE_META
+            ?.filter((o: any) => o.typeName === "Information" && o.name)
+            .map((o: any) => o.name) || [];
+        // const irtvInfoRelationships = irtvmodel?.relships
+        //     ?.filter((r: any) => (r.fromObjectRef && r.toObjectRef)
+        //     .map((r: any) => r.name) || [];
+        const irtvInfoRelationships = [""]; // Placeholder for now
+        let types: string[] = [];
+        let nextAutoPrompt = "";
 
-        let types = (curMetamodel.objecttypes || [])
+        // Basic filtering for relevant types (not used?)
+        types = (curMetamodel.objecttypes || []) // filter out no relevant types
             .filter((o: any) => o.name !== "EntityType")
             .filter((o: any) => o.name !== "Gateway")
             .filter((o: any) => o.name !== "Element")
             .filter((o: any) => o.name !== "Generic")
             .filter((o: any) => o.name !== "Label")
             .map((o: any) => o.name + ', ');
-        let nextAutoPrompt = "";
-        // const nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
+        nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
+
         switch (curMetamodel.name) {
             case "IRTV_META":
-                types = (curMetamodel.objecttypes || [])
+                types = (curMetamodel.objecttypes || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "Element")
                     .filter((o: any) => o.name !== "Generic")
                     .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
 
-                nextAutoPrompt = `Create an IRTV Workspace for the the following Processes: ${popsProcessesNames.join(", ")}.
-Create a Container for each process and add Information objects with vital Properties, 
-then add Views, Tasks and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} Use the Domain definition as context.
+                nextAutoPrompt = `Build IRTV Workspaces for the the following Processes: ${popsProcessesNames.join(", ")}. and the Domain definition in the #Context below.
+Create a Container for each process and add Information objects with vital Properties. 
+Then add Views, Tasks and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} 
+Create a hasMember relationship from the Process Container to each IRTV objects it uses.
+Do not repeate type-names in the name of objects.
 `;
                 break;
             case "CORE_META":
-                types = (curMetamodel.objecttypes || [])
+                types = (curMetamodel.objecttypes || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "InputPattern")
                     .filter((o: any) => o.name !== "Details")
                     .filter((o: any) => o.name !== "Method")
@@ -271,13 +285,16 @@ then add Views, Tasks and Roles related to the Information objects, using the me
                     .filter((o: any) => o.name !== "Fieldtype")
                     .filter((o: any) => o.name !== "Type")
                     .map((o: any) => o.name + ', ');
-                nextAutoPrompt = `Create a Type model with focus on defining types and their relationships, using the following object types: 
-${(types.length ? types.join(" ") : "")}  
+                nextAutoPrompt = `Build a TYPE model based on IRTV Information objects: ${irtvInfoObjects.join(", ")} and relationships: ${irtvInfoRelationships.join(", ")},  
+and the Domain definition in the #Context below.
+Evaluate the Information objects with Properties and Relationships for logical consistency.
+Do not repeat type-names in the name of objects. Remove any IRTV type-names in the name of objects. The Information objects should be represented as EntityType objects.
+${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
 Start with creating an object of type Metamodel with a relship "contains" to all objects of type EntityType.
 `
                 break;
             case "POPS_META":
-                types = (curMetamodel.objecttypes || [])
+                types = (curMetamodel.objecttypes || []) //
                     .filter((o: any) => o.name !== "EntityType")
                     .filter((o: any) => o.name !== "Geobody")
                     .filter((o: any) => o.name !== "Material")
@@ -306,8 +323,10 @@ Create objects and relationships using the following object types:  ${
                     .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
                 nextAutoPrompt =
-`Create a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the #Context below.
-Evaluate where BPMN pools and lanes are appropriate and ensure logical consistency. Remove any type-names in the name of objects.
+`Build a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the #Context below.
+Evaluate where BPMN pools and lanes are appropriate and ensure logical consistency. 
+Do not use type-names in the name of objects. Remove any IRTV type-names in the name of objects. The Information objects should be represented as EntityType objects.
+
 ${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
 `;
                 break;

@@ -453,31 +453,29 @@ const AIChatPage = () => {
             createdAt: nowIso,
             updatedAt: nowIso,
             // if the template is a domain template, carry over current UI category (optional)
-            ...(normalizedType === 'domain' ? { domainCategory: documentCategory } : {})
+            // ...(normalizedType === 'domain' ? { domainCategory: documentCategory } : {})
         };
 
         dispatch(saveMarkdownDocument(templateDoc));
-        dispatch(setFocusDoc({ id: templateDoc.id }));
-        if (templateDoc.type === 'domain') {
-            // keep live domain slice in sync
-            dispatch(setDomainCategory((templateDoc as any).domainCategory ?? documentCategory));
-        }
-
+        dispatch(setFocusDoc({ id: templateDoc.id, name: templateDoc.name }));
+        // if (templateDoc.type === 'domain') {
+        //     // keep live domain slice in sync
+        //     dispatch(setDomainCategory((templateDoc as any).domainCategory ?? documentCategory));
+        // }
         setSelectedDocument(templateDoc);
         setDocumentName(template.name);
         setDocumentType(normalizedType);
         setPreviewContent(template.content);
         setOriginalContent(template.content);
         setChatMdPreview(template.content);
-        setCurrentDocument(template.content);
-
-        updateProjectFromDocument(templateDoc);
+        // setCurrentDocument(template.content);
+        // updateProjectFromDocument(templateDoc);
         closeLibrary();
         setShowTemplateSelector(false);
     }, [
         dispatch,
         normalizeDocumentType,
-        updateProjectFromDocument,
+        // updateProjectFromDocument,
         setSelectedDocument,
         setDocumentName,
         setDocumentType,
@@ -708,7 +706,7 @@ const AIChatPage = () => {
     const middlePanelProp = (() => {
         const mp = panelConfigs.middlePanelContent;
         if (mp && typeof mp === 'object' && 'tabs' in mp) return mp as any;
-        return undefined;
+        return { tabs: [{ key: 'chat', label: 'AI Chat', content: mp as React.ReactElement }], defaultTab: 'chat' };
     })();
 
     const rightPanelProp = (() => {

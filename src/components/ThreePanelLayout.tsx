@@ -403,7 +403,7 @@ export function ThreePanelLayout({
                         <div className="flex flex-col bg-gray-800 border-r border-gray-600 overflow-hidden flex-shrink-0"
                             style={{ width: `${leftPanelWidth}px` }}>
                             <div className="flex justify-between items-center p-2 border-b border-gray-600">
-                                <h3 className="text-sm font-medium text-gray-300">Input</h3>
+                                <h3 className="text-sm font-medium text-gray-300">Input / Context</h3>
                                 <button onClick={() => setShowLeftPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
                                     <ChevronLeft className="h-4 w-4" />
                                 </button>
@@ -508,7 +508,7 @@ export function ThreePanelLayout({
                         <div className="flex flex-col bg-gray-800 border-l border-gray-600 overflow-hidden flex-shrink-0"
                             style={{ width: `${rightPanelWidth}px` }}>
                             <div className="flex justify-between items-center p-2 border-b border-gray-600">
-                                <h3 className="text-sm font-medium text-gray-300">Output</h3>
+                                <h3 className="text-sm font-medium text-gray-300">AIChat / Output Reports</h3>
                                 <button onClick={() => setShowRightPanel(false)} className="text-gray-400 hover:text-white" title="Close panel">
                                     <ChevronRight className="h-4 w-4" />
                                 </button>

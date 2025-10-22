@@ -61,7 +61,7 @@ const UniverseComponent: React.FC = () => {
         <div className="h-full bg-background text-gray-100">
             <Tabs defaultValue="domain" value={activeTab} onValueChange={setActiveTab} className="flex flex-col flex-1 group">
                 {/* <div className="border-b border-gray-600 bg-gray-800/50"> */}
-                <TabsList className="grid w-full grid-cols-3 max-w-lg my-0 mx-auto pt-2 z-20">
+                <TabsList className="grid w-full grid-cols-3 max-w-lg my-0 mx-auto pt-2 mb-2 z-20">
                     <TabsTrigger
                         value="domain"
                         className="flex items-center gap-2 group-data-[state=active]:bg-blue-600/20 group-data-[state=active]:text-blue-400"

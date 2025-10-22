@@ -5,6 +5,7 @@ import ReduxProvider from '../providers/ReduxProvider';
 import { AppSidebar } from "@/components/app-sidebar";
 import { SidebarTrigger, SidebarProvider } from "@/components/ui/sidebar";
 import { PanelLeft } from 'lucide-react';
+import { Toaster } from '@/components/ui/sonner';
 
 import { AppHeader } from "@/components/AppHeader";
 
@@ -56,6 +57,7 @@ export default async function RootLayout({
                 {/* <AppHeader /> */}
                 <div className="flex-1 overflow-y-auto">
                   {children}
+                  <Toaster />
                 </div>
               </main>
             </SidebarProvider>
