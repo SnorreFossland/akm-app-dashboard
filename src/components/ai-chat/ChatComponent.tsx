@@ -237,7 +237,8 @@ Do not use its contents as contextual input for other questions--I want it impro
 
     // If Context Include Domain remove all text in templates with text in square brackets
     const filteredTemplates = filteredTemplatesOrig.map(template => {
-        if (includeDomainContext) {
+        if (includeDomainContext && hasDomainPresentation) { // only if domain context is actually included
+
             return {
                 ...template,
                 content: template.content.replace(/\[[^\]]*\]/g, '')
@@ -809,9 +810,9 @@ Do not use its contents as contextual input for other questions--I want it impro
         let userMessageContent = input;
 
         if (docRefine) {
-            userMessageContent = `${userMessageContent} #Content:\n ${currentDocument} #Context:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} \n ${(currentDocument) && `#Content: ${currentDocument}`} \n ${(mdContent) && `#Context: ${mdContent}`}`;
         } else {
-            userMessageContent = `${userMessageContent} #Context:\n ${mdContent}`;
+            userMessageContent = `${userMessageContent} \n ${(mdContent) && `#Context: ${mdContent}`}`;
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };

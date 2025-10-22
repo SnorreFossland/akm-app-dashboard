@@ -119,7 +119,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                 <div className="bg-gray-800 rounded border border-green-900 ms-1 px-1  text-xs text-orange-400 flex-shrink-0">
                     <span className="text-orange-300">{pathname}</span>
                 </div>
-                <span className="text-gray-500  whitespace-nowrap flex-shrink-0">Universe:</span>
+                <span className="text-gray-500  whitespace-nowrap flex-shrink-0">Domain Library:</span>
                 <input
                     type="text"
                     value={displayUniverseName}

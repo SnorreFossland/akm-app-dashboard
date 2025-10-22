@@ -120,18 +120,18 @@ const AIChatPage = () => {
         oldContent: string;
     } | null>(null);
 
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const storedContext = localStorage.getItem('aiChat_context');
-        const storedAdditionalContext = localStorage.getItem('aiChat_additionalContext');
-        const storedFocusDocId = localStorage.getItem('aiChat_focusDocId');
+    // useEffect(() => {
+    //     if (typeof window === 'undefined') return;
+    //     const storedContext = localStorage.getItem('aiChat_context');
+    //     const storedAdditionalContext = localStorage.getItem('aiChat_additionalContext');
+    //     const storedFocusDocId = localStorage.getItem('aiChat_focusDocId');
 
-        if (storedContext) setContextContent(storedContext);
-        if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
-        // if (storedFocusDocId) {
-        //     dispatch(setFocusDoc({ id: storedFocusDocId }));
-        // }
-    }, [dispatch]);
+    //     if (storedContext) setContextContent(storedContext);
+    //     if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
+    //     // if (storedFocusDocId) {
+    //     //     dispatch(setFocusDoc({ id: storedFocusDocId }));
+    //     // }
+    // }, [dispatch]);
 
     useEffect(() => {
         if (typeof window === 'undefined') return;

@@ -128,7 +128,7 @@ export function buildLeftPanelTabs(opts: BuildLeftPanelOptions) {
     if (includeAdditional) {
         const additionalTab = {
             key: 'additional',
-            label: 'Additional Context',
+            label: 'Add. Context',
             content: (
                 <div className="h-full flex flex-col overflow-hidden">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">

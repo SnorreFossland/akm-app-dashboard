@@ -287,7 +287,7 @@ export default function Home() {
               <p>You can add additional context by loading a file, or by typing or pasting text, lists etc.</p>
             </div>
             <div className="bg-gray-700/50 p-4 rounded-lg">
-              <h3 className="text-lg font-semibold text-white mb-2">Additional Context</h3>
+              <h3 className="text-lg font-semibold text-white mb-2">Add. Context</h3>
               <p className="text-sm text-gray-300 mb-4">
                 is the context you add to your work. It can be:
               </p>

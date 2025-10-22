@@ -43,7 +43,7 @@ export default function GlobalCurrentDomainDialog() {
 
                             {domain?.additionalContext && (
                                 <div>
-                                    <div className="font-semibold mb-1">Additional Context</div>
+                                    <div className="font-semibold mb-1">Add. Context</div>
                                     <pre className="max-h-64 overflow-auto rounded bg-muted p-2 text-sm">
                                         {domain.additionalContext}
                                     </pre>

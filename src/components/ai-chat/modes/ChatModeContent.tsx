@@ -5,8 +5,6 @@ import { AdvancedChatPanels } from './AdvancedChatPanels';
 import type { ChatSubMode } from '@/types/aiChatModes';
 import type { DomainData } from '@/features/model-universe/modelSlice';
 
-import type { MarkdownDocument } from '@/types/MarkdownDocument';
-
 interface ChatModeContentParams {
     subMode: 'general' | 'advanced';
     domain: DomainData | null;
