@@ -873,10 +873,12 @@ Relships:
         // Use the provided userText if available; otherwise fall back to inputMessage
         const finalUserPrompt = `${userText} \n ${context.presentation}`;
 
-        if (!debug) console.log('724 Prompts: ', selectedModel, '\n\n',
-            'finalSystemPrompt:', finalSystemPrompt, '\n\n',
-            'finalDeveloperPrompt:', finalDeveloperPrompt, '\n\n',
-            'finalUserPrompt:', finalUserPrompt);
+        if (!debug) console.log(
+            `877 Prompts: selectedModel: ${selectedModel}\n\n` +
+            `finalSystemPrompt: ${finalSystemPrompt}\n\n` +
+            `finalDeveloperPrompt: ${finalDeveloperPrompt}\n\n` +
+            `finalUserPrompt: ${finalUserPrompt}`
+        );
 
         try {
             const payload = {

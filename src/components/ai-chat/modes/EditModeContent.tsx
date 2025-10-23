@@ -1,6 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useEffect, useRef } from 'react';
+import matter from 'gray-matter';
 import { useSelector } from 'react-redux';
 import { RootState } from '@/store';
 import { DOMAIN_CATEGORIES } from '@/features/model-universe/modelSlice';
@@ -30,6 +31,8 @@ interface EditModeContentProps {
     documentCategory?: DomainCategory;
     // Allow clearing the category (undefined) when user selects "None"
     setDocumentCategory?: (c?: DomainCategory) => void;
+    // Optional setter to allow setting the document id/focus from parsed frontmatter
+    setDocumentId?: (id?: string) => void;
 }
 
 function EditModeLeftPanel({
@@ -95,6 +98,7 @@ function EditModeMiddlePanel({
     // Add category props here so the header can render the selector
     documentCategory,
     setDocumentCategory,
+    setDocumentId,
 }: {
     documentName: string;
     setDocumentName: (name: string) => void;
@@ -105,7 +109,73 @@ function EditModeMiddlePanel({
     // New props for category
     documentCategory?: DomainCategory;
     setDocumentCategory?: (c?: DomainCategory) => void;
+    setDocumentId?: (id?: string) => void;
 }) {
+    // Parse frontmatter from the current document and map common fields to setters.
+    // This effect belongs in the React component so hooks order remains stable.
+    const frontmatterAppliedRef = useRef(false);
+    const lastAppliedTypeRef = useRef<string | null>(null);
+
+    useEffect(() => {
+        // Only apply frontmatter parsing once per mount/content initial load
+        if (frontmatterAppliedRef.current) return;
+        const md = currentDocument || '';
+        if (!md) return;
+        try {
+            const { data } = matter(md);
+            if (!data || typeof data !== 'object') return;
+
+            const fmId = (data.id || data.uuid || data.ID || data.uid) as string | undefined;
+            const fmTitle = (data.title || data.name) as string | undefined;
+            const fmType = (data.type || data.documentType || data.docType) as string | undefined;
+            const fmCategory = (data.category || data.domainCategory || data.documentCategory) as string | undefined;
+
+            if (fmTitle && setDocumentName && fmTitle !== documentName) {
+                setDocumentName(String(fmTitle));
+            }
+            if (fmType && setDocumentType) {
+                // Normalize to lower-case token matching the app's document type options
+                const normalizedType = String(fmType).trim().toLowerCase();
+                // Only set if different (case-insensitive)
+                if (normalizedType !== String(documentType || '').trim().toLowerCase()) {
+                    setDocumentType(normalizedType);
+                }
+            }
+            if (fmCategory && setDocumentCategory) {
+                setDocumentCategory(fmCategory as DomainCategory);
+            }
+            if (fmId && setDocumentId) {
+                setDocumentId(String(fmId));
+            }
+        } catch (err) {
+            // ignore parse errors
+            // eslint-disable-next-line no-console
+            console.warn('Failed to parse frontmatter in EditModeMiddlePanel', err);
+        }
+        frontmatterAppliedRef.current = true;
+    }, [currentDocument]);
+
+    // If the user changes the documentType in the UI, update the YAML frontmatter in the document
+    useEffect(() => {
+        // Only write back after frontmatter was initially applied to avoid overwriting user edits
+        if (!frontmatterAppliedRef.current) return;
+        if (!documentType) return;
+        // Avoid repeating the same write
+        if (lastAppliedTypeRef.current === documentType) return;
+
+        try {
+            const parsed = matter(currentDocument || '');
+            const newData = { ...(parsed.data || {}), type: String(documentType).trim().toLowerCase() };
+            const newContent = matter.stringify(parsed.content || '', newData);
+            if (newContent !== currentDocument) {
+                handleSetCurrentDocument(newContent);
+                lastAppliedTypeRef.current = documentType;
+            }
+        } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn('Failed to write type to frontmatter', err);
+        }
+    }, [documentType]);
     return (
         <div className="h-full flex flex-col overflow-hidden border-l-4 border-r-4 border-orange-600/80">
             {/* Document Metadata Header */}
@@ -275,6 +345,7 @@ export function EditModeContent(params: EditModeContentProps) {
                 // Forward the category state/handler into the middle panel header
                 documentCategory={params.documentCategory}
                 setDocumentCategory={params.setDocumentCategory}
+                setDocumentId={params.setDocumentId}
             />
         ),
         rightPanel: (

@@ -120,7 +120,9 @@ export default function ChatComponent({
     setIncludeDomainContext,
     onSavePreviewToLibrary,
     currentDocumentType, // <-- add this line
-    currentDocumentCategory // <-- add this line if needed
+    currentDocumentCategory, // <-- add this line if needed
+    additionalContext,
+    setAdditionalContext,
 }: ChatComponentProps) {
     const dispatch = useDispatch();
 
@@ -146,6 +148,7 @@ export default function ChatComponent({
     const [topHeight, setTopHeight] = useState<number>(600); // 
 
     const [showDigitalRain, setShowDigitalRain] = useState(false);
+    const [showPromptModal, setShowPromptModal] = useState(false);
     const inactivityTimerRef = useRef<NodeJS.Timeout | null>(null);
     const retryInProgress = useRef(false);
     // Context file state
@@ -811,17 +814,24 @@ Do not use its contents as contextual input for other questions--I want it impro
 
         let userMessageContent = input;
 
-        const additionalContext = mdContent;
+        // Prefer the left-panel `additionalContext` prop; fall back to mdContent if empty
+        const additionalCtxValue = (typeof additionalContext === 'string' && additionalContext.trim())
+            ? additionalContext.trim()
+            : (typeof mdContent === 'string' && mdContent.trim() ? mdContent.trim() : '');
 
-        // Append mdContent/currentDocument as before, and include any free-text Additional Context
-        const additionalCtxPart = (typeof additionalContext === 'string' && additionalContext.trim())
-            ? `\n#AdditionalContext:\n${additionalContext.trim()}`
-            : '';
+        const additionalCtxPart = additionalCtxValue ? `\n#AdditionalContext:\n${additionalCtxValue}` : '';
 
         if (docRefine) {
-            userMessageContent = `${userMessageContent} \n ${(currentDocument) && `#Content: ${currentDocument}`} \n ${(mdContent) && `#Context: ${mdContent}`}${additionalCtxPart}`;
+            const contentPart = currentDocument ? `#Content: ${currentDocument}` : '';
+            const contextPart = mdContent ? `#Context: ${mdContent}` : '';
+            userMessageContent = [userMessageContent, contentPart, contextPart, additionalCtxPart]
+                .filter(Boolean)
+                .join(' \n ');
         } else {
-            userMessageContent = `${userMessageContent} \n ${(mdContent) && `#Context: ${mdContent}`}${additionalCtxPart}`;
+            const contextPart = mdContent ? `#Context: ${mdContent}` : '';
+            userMessageContent = [userMessageContent, contextPart, additionalCtxPart]
+                .filter(Boolean)
+                .join(' \n ');
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };
@@ -837,6 +847,35 @@ Do not use its contents as contextual input for other questions--I want it impro
         setInput(''); // Clear the input field after submission
         onResponseChange(''); // Clear parent state if needed
         setShowDigitalRain(false); // Turn OFF digital rain when sending a message
+    };
+
+    // Build the assembled prompt (same logic as handleSubmit) for previewing
+    const buildAssembledPrompt = () => {
+        if (!input?.trim()) return '';
+
+        let userMessageContent = input;
+
+        // Prefer the left-panel `additionalContext` prop; fall back to mdContent if empty
+        const additionalCtxValue = (typeof additionalContext === 'string' && additionalContext.trim())
+            ? additionalContext.trim()
+            : (typeof mdContent === 'string' && mdContent.trim() ? mdContent.trim() : '');
+
+        const additionalCtxPart = additionalCtxValue ? `\n#AdditionalContext:\n${additionalCtxValue}` : '';
+
+        if (docRefine) {
+            const contentPart = currentDocument ? `#Content: ${currentDocument}` : '';
+            const contextPart = mdContent ? `#Context: ${mdContent}` : '';
+            userMessageContent = [userMessageContent, contentPart, contextPart, additionalCtxPart]
+                .filter(Boolean)
+                .join(' \n ');
+        } else {
+            const contextPart = mdContent ? `#Context: ${mdContent}` : '';
+            userMessageContent = [userMessageContent, contextPart, additionalCtxPart]
+                .filter(Boolean)
+                .join(' \n ');
+        }
+
+        return userMessageContent;
     };
 
     const handleCopyMessage = (content: string, index: number) => {
@@ -1260,7 +1299,7 @@ Do not use its contents as contextual input for other questions--I want it impro
 
                                 {/* Include Domain Context checkbox */}
                                 <label className="flex items-center gap-2 cursor-pointer">
-                                    Context:
+                                    Include Context:
                                     <input
                                         type="checkbox"
                                         checked={includeDomainContextEffective}
@@ -1298,29 +1337,32 @@ Do not use its contents as contextual input for other questions--I want it impro
                                         )}
                                     </div>
                                     <span className={`text-gray-500 ${(!setIncludeDomainContext || !hasDomainPresentation) ? 'opacity-50' : ''}`}>
-                                        {!hasDomainPresentation ? ' (no domain context)' : 'Include Domain context'}
+                                        {!hasDomainPresentation ? ' (no domain context)' : 'Domain'}
                                     </span>
                                 </label>
 
                                 {/* Refine document checkbox */}
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={docRefine}
-                                        disabled={!currentDocument || isLoading}
-                                        onChange={() => {
-                                            const newRefineState = !docRefine;
-                                            setDocRefine(newRefineState);
-                                        }}
-                                        className="sr-only"
-                                    />
-                                    <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
-                                        {docRefine && currentDocument && (
-                                            <div className="h-2 w-2 bg-white rounded-full"></div>
-                                        )}
-                                    </div>
-                                    <span className="text-gray-500">{currentDocument ? `Refine current doc.: ${documentName} (${documentType})` : `No document`} {``}</span>
-                                </label>
+                                {(currentDocument) && (
+                                    <label className="flex items-center gap-2 cursor-pointer">
+                                        <input
+                                            type="checkbox"
+                                            checked={docRefine}
+                                            disabled={!currentDocument || isLoading}
+                                            onChange={() => {
+                                                const newRefineState = !docRefine;
+                                                setDocRefine(newRefineState);
+                                            }}
+                                            className="sr-only"
+                                        />
+                                        <div className={`h-5 w-5 border ${docRefine && currentDocument ? 'bg-blue-500 border-blue-600' : 'border-gray-600'} rounded flex items-center justify-center`}>
+                                            {docRefine && currentDocument && (
+                                                <div className="h-2 w-2 bg-white rounded-full"></div>
+                                            )}
+                                        </div>
+                                        <span className="text-gray-500">{currentDocument ? `Refine current doc.` : ``}</span>
+                                        {/* <span className="text-gray-500">{currentDocument ? `Refine current doc.: ${documentName} (${documentType})` : `No document`} {``}</span> */}
+                                    </label>
+                                )}
                             </div>
 
                             <div className="flex items-center gap-2">
@@ -1465,7 +1507,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                         maxRows={12}
                         disabled={isLoading}
                     />
-                    <div className="flex justify-between">
+                    <div className="flex justify-between items-center">
                         <div className="flex items-center gap-2"></div>
                         <div className="flex items-center text-foreground gap-1">
                             <ModelSelector
@@ -1500,10 +1542,20 @@ Do not use its contents as contextual input for other questions--I want it impro
                             </div>
                         </div>
 
-                        <div className="flex justify-between px-2">
+                        <div className="flex justify-between items-center px-2">
+                            <div className="flex items-center text-xs gap-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowPromptModal(true)}
+                                    className="flex items-center bg-gray-700 rounded-full px-2 text-gray-200 hover:bg-gray-600"
+                                    title="Show assembled prompt"
+                                >
+                                    Show total Prompt
+                                </button>
+                            </div>
                             <button
                                 type="submit"
-                                className="flex items-center bg-gray-800 rounded-full px-2 mb-3 text-blue-300 hover:text-blue-800"
+                                className="flex items-center bg-gray-800 rounded-full px-2 py-1 text-blue-300 hover:text-blue-800"
                                 disabled={isLoading || !input?.trim()}
                                 title="Send your question"
                             >
@@ -1514,7 +1566,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
                                     strokeWidth={2}
-                                    className="w-8 h-8"
+                                    className="w-6 h-6"
                                 >
                                     <path strokeLinecap="round" strokeLinejoin="round" d="M12 17V7m0 0l-5 5m5-5l5 5" />
                                 </svg>
@@ -1522,6 +1574,34 @@ Do not use its contents as contextual input for other questions--I want it impro
                         </div>
                     </div>
                 </form>
+                {showPromptModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-black/60" onClick={() => setShowPromptModal(false)} />
+                        <div className="relative bg-popover rounded-lg w-full max-w-3xl max-h-[80vh] overflow-auto p-4 z-10">
+                            <div className="flex items-center justify-between mb-2">
+                                <h3 className="text-lg font-semibold">Assembled Prompt</h3>
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => {
+                                            const txt = buildAssembledPrompt();
+                                            navigator.clipboard.writeText(txt || '');
+                                        }}
+                                        className="px-2 py-1 bg-blue-600 text-white rounded text-sm"
+                                    >
+                                        Copy
+                                    </button>
+                                    <button
+                                        onClick={() => setShowPromptModal(false)}
+                                        className="px-2 py-1 bg-gray-600 text-white rounded text-sm"
+                                    >
+                                        Close
+                                    </button>
+                                </div>
+                            </div>
+                            <pre className="whitespace-pre-wrap text-sm bg-gray-900 text-gray-200 p-3 rounded">{buildAssembledPrompt()}</pre>
+                        </div>
+                    </div>
+                )}
             </div >
         </div >
     )

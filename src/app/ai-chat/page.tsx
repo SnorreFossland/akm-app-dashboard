@@ -267,7 +267,7 @@ const AIChatPage = () => {
         } else if (libraryTarget === 'document') {
             setCurrentDocument(content);
             if (doc) {
-                dispatch(setFocusDoc({ id: doc.id , name: doc.name }));
+                dispatch(setFocusDoc({ id: doc.id, name: doc.name }));
                 setSelectedDocument(doc);
                 setDocumentName(doc.name);
                 setDocumentType(doc.type || 'markdown');
@@ -432,6 +432,13 @@ const AIChatPage = () => {
         setShowDiffModal(false);
         setPendingSave(null);
     }, []);
+
+    // Allow EditModeContent to set document id (focus) from frontmatter
+    const setDocumentId = useCallback((id?: string) => {
+        if (!id) return;
+        // dispatch to set focus doc so the rest of the app treats it as selected
+        dispatch(setFocusDoc({ id, name: '' }));
+    }, [dispatch]);
 
     // Chat mode state (shared across both General and Advanced)
     const [chatInput, setChatInput] = useState('');
@@ -680,6 +687,8 @@ const AIChatPage = () => {
                 setDocumentCategory: (c?: DomainCategory | undefined) => {
                     if (c !== undefined) setDocumentCategory(c);
                 },
+                // allow EditModeContent to set document id from frontmatter
+                setDocumentId,
             });
 
             return {

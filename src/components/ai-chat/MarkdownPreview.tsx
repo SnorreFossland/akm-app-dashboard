@@ -7,6 +7,7 @@ import { atomDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import rehypeRaw from 'rehype-raw';
 import remarkGfm from 'remark-gfm';
 import mermaid from 'mermaid';
+import matter from 'gray-matter';
 
 interface MarkdownPreviewProps {
     mdPreview: string;
@@ -89,6 +90,7 @@ function applyWhiteTextToSVG(svg: SVGSVGElement | null) {
 
 const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 'default' }) => {
     const containerRef = useRef<HTMLDivElement | null>(null);
+    const { data: meta, content: body } = matter(mdPreview || "");
 
     // existing re-init on markdown change
     useLayoutEffect(() => {
@@ -234,11 +236,13 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 
         return <div className="text-gray-400 p-2 text-xs leading-tight">No content to display</div>;
     }
 
+
+
     // Clean up extra newlines before tables and remove trailing spaces
     // const cleanedMdPreview = mdPreview.replace(/(\r\n|\n|\r){2,}/g, '\n\n');
 
     const baseClasses =
-        'markdown-preview prose prose-invert custom-markdown bg-transparent text-primary rounded-md overflow-auto whitespace-normal break-words';
+        'markdown markdown-preview prose prose-sm dark:prose-invert custom-markdown bg-transparent text-primary rounded-md overflow-auto whitespace-normal break-words';
 
     const variantClasses =
         variant === 'compact'
@@ -274,13 +278,27 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 
     // collapse stray blank lines, esp. before tables
     const cleanedMdPreview = mdPreview
         .replace(/(\r\n|\n|\r){3,}/g, '\n\n')
-        .replace(/(?:^|\n)\s*\n(?=\|.*\|)/g, '\n');
+        .replace(/(?:^|\n)\s*\n(?=\|.*\|)/g, '\n')
+        .replace(/^---[\s\S]*?---/, '');;
+
 
     const sanitizedContent = sanitizeMarkdown(cleanedMdPreview);
 
 
     return (
         <div className={`${baseClasses} ${variantClasses}`} ref={containerRef}>
+            {meta?.title || meta?.author || meta?.date ? (
+                <div className="mb-3 text-sm text-gray-600">
+                    {meta.title && <div><strong>{meta.title}</strong></div>}
+                    {(meta.author || meta.date) && (
+                        <div>
+                            {meta.author && meta.author}
+                            {meta.author && meta.date && " — "}
+                            {meta.date && meta.date}
+                        </div>
+                    )}
+                </div>
+            ) : null}
             <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 rehypePlugins={[rehypeRaw]}
@@ -306,24 +324,25 @@ const MarkdownPreview: React.FC<MarkdownPreviewProps> = ({ mdPreview, variant = 
                             </code>
                         );
                     },
-                    // Explicit heading renderers to ensure consistent spacing and avoid margin-collapse oddities
-                    h1: ({ node, children, ...props }: any) => (
-                        <h1 {...props} style={{ marginTop: '1.0rem', marginBottom: '0.35rem' }}>{children}</h1>
+
+                    // Unified heading overrides with consistent smaller typography
+                    h1: ({ children, ...props }: any) => (
+                        <h1 {...props} className="text-2xl font-semibold mt-4 mb-2">{children}</h1>
                     ),
-                    h2: ({ node, children, ...props }: any) => (
-                        <h2 {...props} style={{ marginTop: '1.0rem', marginBottom: '0.35rem' }}>{children}</h2>
+                    h2: ({ children, ...props }: any) => (
+                        <h2 {...props} className="text-xl font-semibold mt-3 mb-1.5">{children}</h2>
                     ),
-                    h3: ({ node, children, ...props }: any) => (
-                        <h3 {...props} style={{ marginTop: '0.95rem', marginBottom: '0.32rem' }}>{children}</h3>
+                    h3: ({ children, ...props }: any) => (
+                        <h3 {...props} className="text-lg font-medium mt-2.5 mb-1">{children}</h3>
                     ),
-                    h4: ({ node, children, ...props }: any) => (
-                        <h4 {...props} style={{ marginTop: '0.85rem', marginBottom: '0.28rem' }}>{children}</h4>
+                    h4: ({ children, ...props }: any) => (
+                        <h4 {...props} className="text-base font-medium mt-2 mb-1">{children}</h4>
                     ),
-                    h5: ({ node, children, ...props }: any) => (
-                        <h5 {...props} style={{ marginTop: '0.75rem', marginBottom: '0.25rem' }}>{children}</h5>
+                    h5: ({ children, ...props }: any) => (
+                        <h5 {...props} className="text-sm font-medium mt-1.5 mb-0.5">{children}</h5>
                     ),
-                    h6: ({ node, children, ...props }: any) => (
-                        <h6 {...props} style={{ marginTop: '0.65rem', marginBottom: '0.22rem' }}>{children}</h6>
+                    h6: ({ children, ...props }: any) => (
+                        <h6 {...props} className="text-sm font-normal mt-1 mb-0.5 text-gray-700">{children}</h6>
                     ),
                 }}
             >

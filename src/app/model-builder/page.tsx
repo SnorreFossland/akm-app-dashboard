@@ -112,6 +112,25 @@ export default function ModelBuilderPage() {
   const leftPanelContent = {
     tabs: [
       {
+        key: 'domain',
+        label: 'Current Domain',
+        content: (
+          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+            {data.phData.domain ? (
+              <div className="p-2 bg-gray-800 rounded">
+                <MarkdownPreview
+                  mdPreview={data.phData.domain.presentation || 'No domain definition available'}
+                />
+              </div>
+            ) : (
+              <div className="p-2 bg-gray-800 rounded">
+                <div className="text-sm text-gray-400">No domain found</div>
+              </div>
+            )}
+          </div>
+        )
+      },
+      {
         key: 'project',
         label: 'Project Document',
         content: (
@@ -132,25 +151,7 @@ export default function ModelBuilderPage() {
           />
         )
       },
-      {
-        key: 'current-domain',
-        label: 'Current Domain',
-        content: (
-          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            {data.phData.domain ? (
-              <div className="p-2 bg-gray-800 rounded">
-                <MarkdownPreview
-                  mdPreview={data.phData.domain.presentation || 'No domain definition available'}
-                />
-              </div>
-            ) : (
-              <div className="p-2 bg-gray-800 rounded">
-                <div className="text-sm text-gray-400">No domain found</div>
-              </div>
-            )}
-          </div>
-        )
-      },
+
       // {
       //   key: 'ontology',
       //   label: 'Current Ontology',
@@ -198,7 +199,7 @@ export default function ModelBuilderPage() {
         )
       }
     ],
-    defaultTab: 'ontology'
+    defaultTab: 'domain'
   };
 
   // Middle panel

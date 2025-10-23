@@ -58,7 +58,7 @@ export function DocumentMetadataHeader({
     }, [storeDomainCategories, documentCategory]);
 
     // Document types: prefer values provided by modelSlice (phData.documentTypes); fall back to legacy list.
-    const storeDocumentTypes = DOCUMENT_TYPES 
+    const storeDocumentTypes = DOCUMENT_TYPES
     const documentTypeOptions = useMemo(() => {
         const fallback = [
             'markdown',
@@ -72,7 +72,12 @@ export function DocumentMetadataHeader({
         const source = Array.isArray(storeDocumentTypes) && storeDocumentTypes.length > 0
             ? storeDocumentTypes
             : fallback;
-        return Array.from(new Set(source.map(s => String(s).trim()).filter(Boolean)));
+        const opts = Array.from(new Set(source.map(s => String(s).trim()).filter(Boolean)));
+        // Ensure current documentType is present so the select displays the frontmatter value
+        if (documentType && !opts.some(o => o.toLowerCase() === documentType.toLowerCase())) {
+            opts.unshift(documentType);
+        }
+        return opts;
     }, [storeDocumentTypes]);
 
     const selectedValue = useMemo(() => {

@@ -1,23 +1,16 @@
-// New: structured template type (add fields; keep legacy 'usage' for compatibility)
+// Unified PromptTemplate interface (merge legacy and new fields)
 export interface PromptTemplate {
-    id: string;
+    id?: string;
     title: string;
-    usage?: string; // legacy category / usage string
+    category?: string;
+    usage?: "Personal" | "Business" | string; // always optional for compatibility
     content: string;
     applicableDocumentTypes?: string[];         // e.g. ['markdown','project-plan']
-    applicableDomainCategories?: (DomainCategory | 'any')[]; // e.g. ['Business','Technical'] or ['any']
+    applicableDomainCategories?: (string | 'any')[]; // e.g. ['Business','Technical'] or ['any']
     priority?: number;   // higher => show earlier
     weight?: number;     // scoring multiplier
     tags?: string[];     // free-form tags for heuristics
     createdAt?: string;
-}
-
-// Define the template interface
-export interface PromptTemplate {
-    title: string;
-    category: string;
-    usage: "Personal" | "Business" | string;
-    content: string;
 }
 
 // New: normalize template content to reduce excessive blank lines and collapse many empty rows before table headers
@@ -287,6 +280,7 @@ create the Project Charter and identify stakeholders.
 ## **4. Timeline (Phases and Milestones as Mermaid Diagram)**
 
 ## Example
+
 \`\`\`mermaid
 gantt
     title Generic Project Timeline
@@ -320,6 +314,7 @@ gantt
 | End Users |  | Acceptance testing and feedback |
 
 ---
+
 `
     },
     {
