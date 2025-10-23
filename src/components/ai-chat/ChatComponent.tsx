@@ -55,6 +55,8 @@ export interface ChatComponentProps {
     onAddMD?: () => void;
     currentDocument?: string;
     setCurrentDocument?: (doc: string) => void; // Add this line to the destructuring
+    additionalContext?: string;
+    setAdditionalContext?: (content: string) => void;
     documentName?: string;
     documentType?: string;
     mdPreview: string;
@@ -201,7 +203,7 @@ export default function ChatComponent({
 
     const [systemPrompt, setSystemPrompt] = useState<string>(`You are a Domain Expert in the domain supplied by the user. 
 Your task is to help the user define a specific domain of interest clearly, comprehensively, and in a structured way. 
-Enhance the given Domain Name if necessary.
+Enhance the given Domain Name if necessary. When the word "model" is used, it refers to a conceptual and concrete model within the specified domain, NOT a general AI model (LLM).
 `);
 
     const refinePrompt = (
@@ -697,7 +699,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 finalPromptText += '=== END OF DOMAIN AND CONTEXT ===\n\n';
 
                 // Add explicit instruction to use the context
-                finalPromptText += 'Please use the domain and context information provided above to inform your response.\n\n';
+                finalPromptText += 'Please use the domain and context information provided above to improve your response.\n\n';
             }
 
             // Log the final prompt structure (truncated for readability)
@@ -809,10 +811,17 @@ Do not use its contents as contextual input for other questions--I want it impro
 
         let userMessageContent = input;
 
+        const additionalContext = mdContent;
+
+        // Append mdContent/currentDocument as before, and include any free-text Additional Context
+        const additionalCtxPart = (typeof additionalContext === 'string' && additionalContext.trim())
+            ? `\n#AdditionalContext:\n${additionalContext.trim()}`
+            : '';
+
         if (docRefine) {
-            userMessageContent = `${userMessageContent} \n ${(currentDocument) && `#Content: ${currentDocument}`} \n ${(mdContent) && `#Context: ${mdContent}`}`;
+            userMessageContent = `${userMessageContent} \n ${(currentDocument) && `#Content: ${currentDocument}`} \n ${(mdContent) && `#Context: ${mdContent}`}${additionalCtxPart}`;
         } else {
-            userMessageContent = `${userMessageContent} \n ${(mdContent) && `#Context: ${mdContent}`}`;
+            userMessageContent = `${userMessageContent} \n ${(mdContent) && `#Context: ${mdContent}`}${additionalCtxPart}`;
         }
 
         const userMessage: Message = { role: 'user', content: userMessageContent };

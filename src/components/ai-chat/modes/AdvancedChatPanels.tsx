@@ -179,6 +179,8 @@ export function AdvancedChatPanels(props: AdvancedChatPanelsProps) {
                             setMdContent={setContextContent}
                             currentDocument={currentDocument}
                             setCurrentDocument={handleSetCurrentDocument}
+                            additionalContext={undefined}
+                            setAdditionalContext={undefined}
                             mdPreview={chatMdPreview}
                             setMdPreview={setChatMdPreview}
                             setCurrentMessages={setChatMessages}

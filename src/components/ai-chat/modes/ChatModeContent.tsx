@@ -47,6 +47,8 @@ export function ChatModeContent(params: ChatModeContentParams) {
         domain: params.domain,
         contextContent: params.contextContent,
         setContextContent: params.setContextContent,
+        additionalContext: params.additionalContext,
+        setAdditionalContext: params.setAdditionalContext,
         currentDocument: params.currentDocument,
         previewContent: params.previewContent ?? '',
         isLibraryOpen: params.isLibraryOpen,

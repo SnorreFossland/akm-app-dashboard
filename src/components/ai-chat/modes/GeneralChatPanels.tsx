@@ -165,6 +165,8 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                             setMdContent={setContextContent}
                             currentDocument={currentDocument}
                             setCurrentDocument={handleSetCurrentDocument}
+                            additionalContext={additionalContext}
+                            setAdditionalContext={setAdditionalContext}
                             documentName={props.documentName}
                             documentType={props.documentType}
                             mdPreview={chatMdPreview}

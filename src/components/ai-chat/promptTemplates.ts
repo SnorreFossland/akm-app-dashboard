@@ -69,25 +69,81 @@ const RAW_PROMPT_TEMPLATES: PromptTemplate[] = [
         content: `Help me make a comprehensive definition and scope of the domain:
 Name: [ Insert concise and specific name ] 
 Description: [ Description of the domain. ]
-Include context if available in the #Context section below.
 
-Include the following sections:
-    Domain name: concise and specific name 
-    Domain description: brief overview of the domain's purpose and scope.
-    Domain definition:
-    In-scope include elements if you think they are relevant.
-    Out-of-scope elements if you think they are relevant.
-    Key Processes and Workflows
-    Describe the main processes and workflows within the domain.
-    Key Entities and Relationships
-    Identify the primary entities (e.g., customers, products, services) and their relationships.
-    Key Domain Concepts and Terms
-    Primary objectives
-    Identify and categorize stakeholders by their roles or involvement
-    Current limitations and Boundaries
-    Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational)
-    Success criteria 
-    Define clear, measurable, and achievable indicators of success
+Follow this detailed template:
+---
+title: "Generic Domain Definition Template"
+author: "Domain Owner"
+type: "Domain Definition"
+version: "1.0"
+date: "YYYY-MM-DD"
+---
+
+# **Domain Definition Template**
+
+---
+
+## **1. Domain Overview**
+
+Provide a concise overview of the domain.
+Describe the purpose, context, and importance of the domain within the organization or industry.
+Identify the challenges, current gaps, and opportunities for improvement or innovation.
+
+---
+
+## **2. Domain Definition and Scope**
+
+### **2.1 Domain Name and Description**
+
+- **Domain Name:** [Insert concise and specific name]
+- **Domain Description:** [Brief overview of the domain's purpose and scope.]
+
+### **2.2 In-Scope and Out-of-Scope Elements**
+
+- **In-Scope:**
+    - [List elements, processes, systems, or components that are included within the domain's focus.]
+- **Out-of-Scope:**
+    - [List elements, processes, systems, or components that are explicitly excluded from the domain's focus.]
+
+### **2.3 Key Processes and Workflows**
+
+Describe the main processes and workflows within the domain.
+Identify any sub-processes or related workflows that are relevant to the domain's operations.
+
+### **2.4 Key Entities and Relationships**
+
+Identify the primary entities (e.g., customers, products, services) and their relationships.
+Describe how these entities interact within the domain.
+
+### **2.5 Key Domain Concepts and Terms**
+
+Define important concepts, terminologies, and definitions that are specific to the domain.
+Provide clear explanations to ensure a common understanding among stakeholders.
+
+### **2.6 Primary Objectives**
+
+Outline the main objectives and goals of the domain.
+Explain how these objectives align with the broader organizational strategy.
+
+### **2.7 Stakeholders**
+
+Identify and categorize stakeholders by their roles or involvement in the domain.
+Describe their interests, responsibilities, and influence on domain-related activities.
+
+### **2.8 Current Limitations and Boundaries**
+
+Outline existing constraints, limitations, and boundaries (technical, organizational, financial, regulatory, or operational) that impact the domain.
+Discuss any challenges or risks associated with these limitations.
+
+### **2.9 Success Criteria**
+Define clear, measurable, and achievable indicators of success for the domain.
+Describe how progress and performance will be monitored and evaluated.
+
+---
+
+## **3. Additional Notes**     
+
+Include context if available in the #Context section below.
 `
     },
     {
@@ -108,7 +164,8 @@ Follow this detailed template:
 
 ---
 title: "Generic Project Plan Template"
-author: "Project Owner"
+author: [Project Owner]
+type: "Project Plan"
 version: "1.0"
 date: "YYYY-MM-DD"
 ---
