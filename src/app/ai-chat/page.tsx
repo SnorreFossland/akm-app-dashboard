@@ -112,6 +112,8 @@ const AIChatPage = () => {
     // Panel visibility state
     const [showLeftPanel, setShowLeftPanel] = useState(true);
     const [showRightPanel, setShowRightPanel] = useState(true);
+    // Local inline modal state for middle-panel modal
+    const [showAIChatInlineModal, setShowAIChatInlineModal] = useState(false);
 
     // Diff modal state
     const [showDiffModal, setShowDiffModal] = useState(false);
@@ -705,6 +707,18 @@ const AIChatPage = () => {
         };
     })();
 
+    // Helper to safely extract renderable content from a PanelGroup or plain JSX
+    const getPanelContent = (panel: any) => {
+        if (!panel) return null;
+        if (typeof panel === 'object' && 'tabs' in panel) {
+            // prefer defaultTab if present, otherwise first tab
+            const key = panel.defaultTab || panel.tabs?.[0]?.key;
+            const found = panel.tabs?.find((t: any) => t.key === key) || panel.tabs?.[0];
+            return found ? found.content : null;
+        }
+        return panel;
+    };
+
     // Precompute panel prop values to avoid large inline ternaries in JSX (prevents parser/hydration errors).
     const leftPanelProp = (() => {
         const lp = panelConfigs.leftPanelContent;
@@ -714,8 +728,15 @@ const AIChatPage = () => {
 
     const middlePanelProp = (() => {
         const mp = panelConfigs.middlePanelContent;
-        if (mp && typeof mp === 'object' && 'tabs' in mp) return mp as any;
-        return { tabs: [{ key: 'chat', label: 'AI Chat', content: mp as React.ReactElement }], defaultTab: 'chat' };
+
+        // If panel is a tabs object, remove any 'chat' tab so the AI Chat tab is moved into the modal
+        if (mp && typeof mp === 'object' && 'tabs' in mp) {
+            const filteredTabs = (mp.tabs || []).filter((t: any) => t.key !== 'chat');
+            return { ...mp, tabs: filteredTabs, defaultTab: filteredTabs.length > 0 ? (mp.defaultTab || filteredTabs[0]?.key) : undefined } as any;
+        }
+
+        // Default: provide a single placeholder tab (no chat)
+        return { tabs: [{ key: 'main', label: 'Main', content: mp as React.ReactElement }], defaultTab: 'main' };
     })();
 
     const rightPanelProp = (() => {
@@ -737,6 +758,11 @@ const AIChatPage = () => {
             onModeChange={switchMode}
             onChatSubModeChange={switchChatSubMode}
             showFileOperations={true}
+            onOpenAIChat={() => {
+                // Only open the inline AI Chat modal when we're in View mode
+                if (mode === 'view') setShowAIChatInlineModal(true);
+            }}
+            aiChatOpen={showAIChatInlineModal}
         />
     );
 
@@ -763,6 +789,61 @@ const AIChatPage = () => {
                     {panelConfigs.middlePanelContent && !(typeof panelConfigs.middlePanelContent === 'object' && 'tabs' in panelConfigs.middlePanelContent)
                         ? <div className="h-full">{panelConfigs.middlePanelContent}</div>
                         : null}
+                    {/* Inline AI Chat modal: positioned inside middle panel and anchored to right edge */}
+                    {showAIChatInlineModal && mode === 'view' && (
+                        <div
+                            className="absolute right-0 z-50"
+                            style={{ width: '66%', maxWidth: '66%', top: 'calc(var(--header-height,56px) + 8px)', bottom: 0 }}
+                        >
+                            {/* Reuse ModalThreePanelLayout inline rendering - full height */}
+                            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col">
+                                {/* header / title / close row */}
+                                <div className="flex items-center justify-between p-2 border-b border-gray-700 flex-shrink-0">
+                                    <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Chat</h3>
+                                    <button onClick={() => setShowAIChatInlineModal(false)} className="text-gray-400 hover:text-white p-1">Close</button>
+                                </div>
+                                {/* content area - fill remaining height; let the chat component itself handle scrolling for messages */}
+                                <div className="p-4 flex-1 overflow-hidden min-h-0">
+                                    <div className="h-full min-h-0 flex flex-col">
+                                        {getPanelContent(ChatModeContent({
+                                            subMode: chatSubMode,
+                                            domain,
+                                            ontology,
+                                            contextContent,
+                                            setContextContent,
+                                            additionalContext,
+                                            setAdditionalContext,
+                                            currentDocument,
+                                            previewContent,
+                                            isLibraryOpen,
+                                            libraryTarget,
+                                            openLibraryFor,
+                                            closeLibrary,
+                                            handleSetCurrentDocument,
+                                            chatInput,
+                                            setChatInput,
+                                            chatSelectedModel,
+                                            setChatSelectedModel,
+                                            chatMdPreview,
+                                            setChatMdPreview,
+                                            chatShowLeftPanel,
+                                            setChatShowLeftPanel,
+                                            chatShowRightPanel,
+                                            setChatShowRightPanel,
+                                            chatMessages,
+                                            setChatMessages,
+                                            includeDomainContext,
+                                            setIncludeDomainContext,
+                                            documentName,
+                                            documentType,
+                                            onSavePreviewToLibrary: handleSavePreviewToLibrary,
+                                            onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+                                        }).middlePanelContent)}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
                 </ThreePanelLayout>
             </div>
 

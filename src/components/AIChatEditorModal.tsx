@@ -55,6 +55,7 @@ export default function AIChatEditorModal({
             showRightPanel={showRightPanel}
             setShowRightPanel={setShowRightPanel}
             className={className}
+            inline={false}
         />
     );
 }

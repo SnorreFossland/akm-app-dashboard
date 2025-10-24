@@ -119,7 +119,7 @@ export function AppSidebar({ ...props }) {
           </SidebarGroup>
           <hr className="border-gray-600" />
           <SidebarGroup className="sidebar-group">
-            {shouldShowText && <SidebarGroupLabel className="text-gray-300">AI Chat</SidebarGroupLabel>}
+            {shouldShowText && <SidebarGroupLabel className="text-gray-300">Documents</SidebarGroupLabel>}
             <div className="text-white">
               <NavMain
                 items={navigationData.navMain}

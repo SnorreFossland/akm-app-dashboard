@@ -994,7 +994,7 @@ Do not use its contents as contextual input for other questions--I want it impro
     };
 
     return (
-        <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative border-l-4 border-r-4 border-orange-800/80`}>
+        <div className={`flex flex-col  ${isMobile ? 'max-h-[calc(100vh-26rem)]' : 'max-h-[calc(100vh-7rem)]'} min-w-0 rounded-lg overflow-hidden relative border-t-4 border-b-4 border-l-4 border-r-4 border-orange-800/80`}>
             {/* Guide Sidebar and Main Chat Container - Side by Side */}
             <div className="flex-1 flex flex-col h-0 bg-secondary/40">
                 {/* Guide Sidebar */}

@@ -302,7 +302,7 @@ export function ThreePanelLayout({
 
     if (isMobile) {
         return (
-            <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
+            <div style={{ ['--right-panel-width' as any]: `${rightPanelWidth}px`, ['--left-panel-width' as any]: `${leftPanelWidth}px` } as React.CSSProperties} className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
                 {showAppHeader && (
                     // ensure the header itself can shrink (min-w-0)
                     <div className="min-w-0 w-full">
@@ -395,7 +395,7 @@ export function ThreePanelLayout({
     }
 
     return (
-        <div className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
+        <div style={{ ['--right-panel-width' as any]: `${rightPanelWidth}px`, ['--left-panel-width' as any]: `${leftPanelWidth}px` } as React.CSSProperties} className={`h-full min-w-0 bg-background text-gray-100 overflow-hidden ${className}`}>
             <div className="flex flex-col h-full overflow-auto">
                 <div className="flex h-full overflow-hidden">
                     {/* Left Panel (Input) */}
@@ -444,7 +444,7 @@ export function ThreePanelLayout({
 
                     {/* Main content area - RENDER MIDDLE PANEL CONTENT HERE */}
                     <div
-                        className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden min-w-0"
+                        className="flex flex-col flex-grow bg-background text-gray-100 overflow-hidden min-w-0 relative"
                         style={{ minWidth: `${MIN_MIDDLE_WIDTH}px` }}
                     >
                         {showAppHeader && (
@@ -478,7 +478,7 @@ export function ThreePanelLayout({
                                         }
                                     </TabsList>
 
-                                    <div className="h-full">
+                                    <div className="h-full overflow-visible">
                                         {Array.isArray(finalMiddlePanelContent?.tabs) && finalMiddlePanelContent.tabs.length > 0
                                             ? finalMiddlePanelContent.tabs.map((tab: any) => (
                                                 <TabsContent key={tab.key} value={tab.key} className="h-full">
@@ -487,6 +487,9 @@ export function ThreePanelLayout({
                                             ))
                                             : null
                                         }
+                                        {/* Render any children (e.g. inline modals) inside the middle panel so absolutely-positioned
+                                            children are positioned relative to this container. */}
+                                        {children}
                                     </div>
                                 </Tabs>
                             </div>

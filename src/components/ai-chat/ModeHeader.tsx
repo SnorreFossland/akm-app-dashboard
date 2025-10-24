@@ -13,6 +13,8 @@ interface ModeHeaderProps {
     onModeChange: (mode: AIChatMode) => void;
     onChatSubModeChange: (subMode: ChatSubMode) => void;
     showFileOperations?: boolean;
+    onOpenAIChat?: () => void;
+    aiChatOpen?: boolean;
 }
 
 export function ModeHeader({
@@ -21,28 +23,12 @@ export function ModeHeader({
     onModeChange,
     onChatSubModeChange,
     showFileOperations = false,
+    onOpenAIChat,
+    aiChatOpen,
 }: ModeHeaderProps) {
     return (
-        <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/50">
-            <div className="flex items-center gap-2">
-                {/* Hide left panel toggle button */}
-            </div>
-
-            <div className="flex items-center gap-2">
-                <ModeSwitcher currentMode={mode} onModeChange={onModeChange} />
-
-                {/* HIDE ChatSubModeToggle - Comment out or remove this block */}
-                {/* {mode === 'chat' && (
-                    <ChatSubModeToggle
-                        currentSubMode={chatSubMode}
-                        onSubModeChange={onChatSubModeChange}
-                    />
-                )} */}
-            </div>
-
-            <div className="flex items-center gap-2">
-                {/* Hide right panel toggle button */}
-            </div>
+        <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/50 w-full">
+            <ModeSwitcher currentMode={mode} onModeChange={onModeChange} onOpenAIChat={onOpenAIChat} aiChatOpen={aiChatOpen} />
         </div>
     );
 }
