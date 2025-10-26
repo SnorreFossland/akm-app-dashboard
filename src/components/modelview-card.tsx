@@ -259,7 +259,7 @@ export const ModelviewCard = ({ modelview }: { modelview: Modelview }) => {
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
                                 {/* <CardContent className="max-h-[calc(100vh-9rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800"> */}
-                                {modelview && <ObjectTable data={modelview.objectviews.map((objview: any) => ({
+                                {modelview && <ObjectTable modelId={modelview.modelRef} data={modelview.objectviews.map((objview: any) => ({
                                     ...objview
                                 }))} />}
                             </CardContent>

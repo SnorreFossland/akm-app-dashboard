@@ -13,6 +13,7 @@ import { FileOperations } from '@/components/FileOperations';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import ModelBuilderComponent from '@/components/model-builder/ModelBuilder';
+import ModelBuilderModal from '@/components/model-builder/ModelBuilderModal';
 import OutputPanel from '@/components/model-builder/OutputPanel';
 import GettingStartedGuide from '@/components/model-builder/GettingStartedGuide';
 import Guide from '@/components/model-builder/Guide';
@@ -23,10 +24,12 @@ import { setFocusModel, Model } from '@/features/model-universe/modelSlice';
 import next from 'next/dist/server/next';
 
 type ModelConversation = { id: string; title: string; messages: any[]; timestamp: number };
+const debug = false;
 
 export default function ModelBuilderPage() {
   const dispatch = useDispatch();
   const data = useSelector((state: RootState) => state.modelUniverse);
+  if (debug) console.log('31 ModelBuilderPage data:', data);
   const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
   const domain = useSelector((state: { modelUniverse: any }) => data.phData.domain);
   const ontology = useSelector((state: { modelUniverse: any }) => data.phData.domain?.ontology);
@@ -152,7 +155,7 @@ export default function ModelBuilderPage() {
         )
       },
 
-      // {
+      // { // Not needed; ontology view will be a model in the middle panel
       //   key: 'ontology',
       //   label: 'Current Ontology',
       //   content: (
@@ -171,33 +174,33 @@ export default function ModelBuilderPage() {
       //     </div>
       //   )
       // },
-      {
-        key: 'model',
-        label: 'Model',
-        content: (
-          <div className="space-y-4">
-            {currentModel && (
-              <ObjectCard model={{
-                id: currentModel.id,
-                name: currentModel.name,
-                description: currentModel.description,
-                objects: currentModel.objects?.map((obj: any) => ({
-                  id: obj.id || '',
-                  name: obj.name || '',
-                  description: obj.description || '',
-                  proposedType: obj.proposedType || '',
-                  typeRef: obj.typeRef || '',
-                  typeName: obj.typeName || '',
-                  category: obj.category || ''
-                })) || [],
-                relships: currentModel.relships || [],
-                metamodelRef: currentModel.metamodelRef,
-                modelviews: currentModel.modelviews
-              }} />
-            )}
-          </div>
-        )
-      }
+      // { // Not needed; model view is in middle panel
+      //   key: 'model',
+      //   label: 'Model',
+      //   content: (
+      //     <div className="space-y-4">
+      //       {currentModel && (
+      //         <ObjectCard model={{
+      //           id: currentModel.id,
+      //           name: currentModel.name,
+      //           description: currentModel.description,
+      //           objects: currentModel.objects?.map((obj: any) => ({
+      //             id: obj.id || '',
+      //             name: obj.name || '',
+      //             description: obj.description || '',
+      //             proposedType: obj.proposedType || '',
+      //             typeRef: obj.typeRef || '',
+      //             typeName: obj.typeName || '',
+      //             category: obj.category || ''
+      //           })) || [],
+      //           relships: currentModel.relships || [],
+      //           metamodelRef: currentModel.metamodelRef,
+      //           modelviews: currentModel.modelviews
+      //         }} />
+      //       )}
+      //     </div>
+      //   )
+      // }
     ],
     defaultTab: 'domain'
   };
@@ -205,32 +208,7 @@ export default function ModelBuilderPage() {
   // Middle panel
   const middlePanelContent = {
     tabs: [
-      {
-        key: 'ai-model',
-        label: 'AI Modelling Assistant',
-        content: (
-          <div className="flex flex-col gap-2">
-            <ModelBuilderComponent
-              input={mdContent}
-              setInput={setMdContent}
-              selectedModel={selectedAiModel}
-              setSelectedModel={setSelectedAiModel}
-              onResponseChange={() => { }}
-              onViewInPreview={(s: string) => setModelPreview(s)}
-              onViewInMarkdown={handleViewInMarkdown}
-              setShowLeftPanel={setShowLeftPanel}
-              onAddContent={(content: string) => setModelContent(content)}
-              modelContent={modelContent}
-              setModelContent={setModelContent}
-              modelPreview={modelPreview}
-              setModelPreview={setModelPreview}
-              setCurrentMessages={setCurrentMessages}
-              gettingStartedGuide={<GettingStartedGuide />}
-              guide={<Guide />}
-            />
-          </div>
-        )
-      },
+      // AI Modeller moved into a modal. See `modelModalMiddlePanelContent` below.
       {
         key: 'suite',
         label: (
@@ -293,8 +271,43 @@ export default function ModelBuilderPage() {
         )
       }
     ],
+    defaultTab: 'suite'
+  };
+
+  // The content originally used inline for the 'ai-model' tab — now used by the modal.
+  const modelModalMiddlePanelContent = {
+    tabs: [
+      {
+        key: 'ai-model',
+        label: 'AI Modelling Assistant',
+        content: (
+          <div className="flex flex-col gap-2">
+            <ModelBuilderComponent
+              input={mdContent}
+              setInput={setMdContent}
+              selectedModel={selectedAiModel}
+              setSelectedModel={setSelectedAiModel}
+              onResponseChange={() => { }}
+              onViewInPreview={(s: string) => setModelPreview(s)}
+              onViewInMarkdown={handleViewInMarkdown}
+              setShowLeftPanel={setShowLeftPanel}
+              onAddContent={(content: string) => setModelContent(content)}
+              modelContent={modelContent}
+              setModelContent={setModelContent}
+              modelPreview={modelPreview}
+              setModelPreview={setModelPreview}
+              setCurrentMessages={setCurrentMessages}
+              gettingStartedGuide={<GettingStartedGuide />}
+              guide={<Guide />}
+            />
+          </div>
+        )
+      }
+    ],
     defaultTab: 'ai-model'
   };
+
+  const [isModelModalOpen, setIsModelModalOpen] = useState(false);
 
   // Right panel
   const rightPanelContent = {
@@ -326,25 +339,28 @@ export default function ModelBuilderPage() {
   };
 
   const moduleOperations = (
-    <div className="flex justify-between items-center justify-center bg-gray-800 text-xs">
+    <div className="flex justify-between items-center gap-4 bg-gray-800 text-xs w-full h-10 border-b border-gray-700">
       <div className="px-1">
         <span className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</span>
-        <span className="text-gray-300">{metis?.name}</span>
+        <span className="text-gray-300 mx-1">{metis?.name}</span>
       </div>
       <div className="px-1">
         <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
-        <select id="model-select" className="ps-2 text-xl font-bold inline-block bg-gray-900 text-orange-400" onChange={handleModelChange} value={currentModel?.name}>
+        <select id="model-select" className="font-bold inline-block bg-dark text-orange-500 border rounded border-gray-500" onChange={handleModelChange} value={currentModel?.name}>
           {metis?.models.map((m: { name: string }) => (
-            <option key={m.name} value={m.name} className="ps-2 text-xl font-bold inline-block bg-gray-900 text-orange-400">{m.name}</option>
+            <option key={m.name} value={m.name} className="ps-2 text-xl font-bold inline-block bg-gray-900 text-gray-400">{m.name}</option>
           ))}
         </select>
       </div>
-      <div className="px-1 me-auto">
+      <div className="px-1">
         <span className="text-gray-400">{curMetamodel?.name || 'Default'}</span>
       </div>
-      <h3 className="flex ms-1 pl-1 font-bold text-gray-400">No.ofObj:
+      <h3 className="flex items-center font-bold text-gray-400">No.ofObj:
         <span className="px-1 inline-block bg-gray-900">{currentModel?.objects?.length}</span>
       </h3>
+      <div className="m-0 p-0">
+        <Button size="sm" className="h-6 px-2 py-0 text-xs text-white bg-orange-700/80 " onClick={() => setIsModelModalOpen(true)}>Open AI Modeller</Button>
+      </div>
     </div>
   );
 
@@ -364,7 +380,26 @@ export default function ModelBuilderPage() {
         setShowRightPanel={setShowRightPanel}
         className="h-full min-w-0 bg-background text-gray-100"
       >
-        <></>
+        {/* Inline modal anchored to the right of the middle panel (AI-Chat style) */}
+        {isModelModalOpen && (
+          <div
+            className="fixed right-0 z-50"
+            style={{ width: '50%', maxWidth: '50%', top: 'calc(var(--header-height,56px) + 8px)', bottom: '8px' }}
+          >
+            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col">
+              <div className="flex items-center justify-between p-2 border-b border-gray-700 flex-shrink-0">
+                <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Modeller</h3>
+                <button onClick={() => setIsModelModalOpen(false)} className="text-gray-400 hover:text-white p-1">Close</button>
+              </div>
+              <div className="p-4 flex-1 overflow-auto min-h-0">
+                <div className="h-full min-h-0 flex flex-col">
+                  {/* Render the ai-model tab content from the prepared modelModalMiddlePanelContent */}
+                  {modelModalMiddlePanelContent?.tabs?.[0]?.content}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </ThreePanelLayout>
 
       {/* Context Document Library Modal */}

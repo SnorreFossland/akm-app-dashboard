@@ -116,6 +116,9 @@ export interface Model {
     typeRef: string,
     typeName: string,
     category: string,
+    // optional flags for UI state management
+    modified?: boolean,
+    markedAsDeleted?: boolean,
   }[],
   relships: {
     id: string,
@@ -125,6 +128,8 @@ export interface Model {
     nameFrom: string,
     toobjectRef: string,
     nameTo: string,
+    // optional flags for UI state management
+    markedAsDeleted?: boolean,
   }[],
   modelviews: Modelview[]
 }
@@ -408,6 +413,108 @@ const modelSlice = createSlice({
           }
         });
       }
+    },
+    deleteObject(state, action: PayloadAction<string | { modelId?: string; id: string }>) {
+      // Soft-delete an object by id (set markedAsDeleted=true) on the specified model or the currently focused model
+      const payload = action.payload as any;
+      const objectId = typeof payload === 'string' ? payload : payload.id;
+      const modelId = typeof payload === 'string' ? undefined : payload.modelId;
+
+      let currentModel = modelId
+        ? state.phData.metis.models.find(model => model.id === modelId)
+        : state.phData.metis.models.find(model => model.id === state.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.phData.metis.models[0];
+      if (!currentModel || !currentModel.objects) return;
+
+      const idx = currentModel.objects.findIndex(o => o.id === objectId);
+      if (idx === -1) {
+        console.debug('[modelSlice] deleteObject: object not found', { modelId: currentModel?.id, objectId });
+        return;
+      }
+
+      // Mark object as deleted instead of removing it so we keep history / allow undo
+      const obj = currentModel.objects[idx];
+      console.debug('[modelSlice] deleteObject: before', { modelId: currentModel?.id, objectId, before: obj });
+      currentModel.objects[idx] = {
+        ...obj,
+        markedAsDeleted: true,
+      };
+      console.debug('[modelSlice] deleteObject: after', { modelId: currentModel?.id, objectId, after: currentModel.objects[idx] });
+
+      // If the deleted object was the focused object, clear focusObject
+      if (state.phFocus && state.phFocus.focusObject && state.phFocus.focusObject.id === objectId) {
+        state.phFocus.focusObject = { id: '', name: '' } as any;
+      }
+    },
+    restoreObject(state, action: PayloadAction<string | { modelId?: string; id: string }>) {
+      const payload = action.payload as any;
+      const objectId = typeof payload === 'string' ? payload : payload.id;
+      const modelId = typeof payload === 'string' ? undefined : payload.modelId;
+
+      let currentModel = modelId
+        ? state.phData.metis.models.find(model => model.id === modelId)
+        : state.phData.metis.models.find(model => model.id === state.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.phData.metis.models[0];
+      if (!currentModel || !currentModel.objects) return;
+      const idx = currentModel.objects.findIndex(o => o.id === objectId);
+      if (idx === -1) {
+        console.debug('[modelSlice] restoreObject: object not found', { modelId: currentModel?.id, objectId });
+        return;
+      }
+      const obj = currentModel.objects[idx];
+      console.debug('[modelSlice] restoreObject: before', { modelId: currentModel?.id, objectId, before: obj });
+      currentModel.objects[idx] = {
+        ...obj,
+        markedAsDeleted: false,
+      };
+      console.debug('[modelSlice] restoreObject: after', { modelId: currentModel?.id, objectId, after: currentModel.objects[idx] });
+    },
+    deleteRelship(state, action: PayloadAction<string | { modelId?: string; id: string }>) {
+      const payload = action.payload as any;
+      const relId = typeof payload === 'string' ? payload : payload.id;
+      const modelId = typeof payload === 'string' ? undefined : payload.modelId;
+
+      let currentModel = modelId
+        ? state.phData.metis.models.find(model => model.id === modelId)
+        : state.phData.metis.models.find(model => model.id === state.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.phData.metis.models[0];
+      if (!currentModel || !currentModel.relships) return;
+
+      const idx = currentModel.relships.findIndex(r => r.id === relId);
+      if (idx === -1) {
+        console.debug('[modelSlice] deleteRelship: relationship not found', { modelId: currentModel?.id, relId });
+        return;
+      }
+      const rel = currentModel.relships[idx] as any;
+      console.debug('[modelSlice] deleteRelship: before', { modelId: currentModel?.id, relId, before: rel });
+      currentModel.relships[idx] = {
+        ...rel,
+        markedAsDeleted: true,
+      } as any;
+      console.debug('[modelSlice] deleteRelship: after', { modelId: currentModel?.id, relId, after: currentModel.relships[idx] });
+    },
+    restoreRelship(state, action: PayloadAction<string | { modelId?: string; id: string }>) {
+      const payload = action.payload as any;
+      const relId = typeof payload === 'string' ? payload : payload.id;
+      const modelId = typeof payload === 'string' ? undefined : payload.modelId;
+
+      let currentModel = modelId
+        ? state.phData.metis.models.find(model => model.id === modelId)
+        : state.phData.metis.models.find(model => model.id === state.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.phData.metis.models[0];
+      if (!currentModel || !currentModel.relships) return;
+      const idx = currentModel.relships.findIndex(r => r.id === relId);
+      if (idx === -1) {
+        console.debug('[modelSlice] restoreRelship: relationship not found', { modelId: currentModel?.id, relId });
+        return;
+      }
+      const rel = currentModel.relships[idx] as any;
+      console.debug('[modelSlice] restoreRelship: before', { modelId: currentModel?.id, relId, before: rel });
+      currentModel.relships[idx] = {
+        ...rel,
+        markedAsDeleted: false,
+      } as any;
+      console.debug('[modelSlice] restoreRelship: after', { modelId: currentModel?.id, relId, after: currentModel.relships[idx] });
     },
     // ToDo: rename setRelationships to setRelships
     setRelationships(state, action: PayloadAction<DataType['phData']['metis']['models'][number]['relships'][number][]>) {
@@ -727,6 +834,10 @@ export const {
   // new exports
   setDomainCategories,
   addDomainCategory,
+  restoreObject,
+  deleteObject,
+  restoreRelship,
+  deleteRelship,
 } = modelSlice.actions;
 
 export default modelSlice.reducer;

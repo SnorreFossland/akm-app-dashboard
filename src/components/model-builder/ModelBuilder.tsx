@@ -268,13 +268,14 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
                     .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
 
-                nextAutoPrompt = `Build IRTV Workspaces for the the following Processes: ${popsProcessesNames.join(", ")}. and the Domain definition in the #Context below.
-Create a Container for each process and add Information objects with vital Properties. 
-Then add Views, Tasks and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} 
+                nextAutoPrompt = `Build IRTV Workspaces for the the following Processes: ${popsProcessesNames.join(", ")}.
+Create a Container for each process and add Tasks and Information objects with vital Properties. 
+Then add Views and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} 
 Create a hasMember relationship from the Process Container to each IRTV objects it uses.
-Do not repeate type-names in the name of objects.
+Do not repeat type-names in the name of objects. Consider also the #Context below.
 `;
                 break;
+
             case "CORE_META":
                 types = (curMetamodel.objecttypes || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "InputPattern")
@@ -293,6 +294,7 @@ ${types.length ? `Create objects and relationships using the following object ty
 Start with creating an object of type Metamodel with a relship "contains" to all objects of type EntityType.
 `
                 break;
+
             case "POPS_META":
                 types = (curMetamodel.objecttypes || []) //
                     .filter((o: any) => o.name !== "EntityType")
@@ -314,6 +316,7 @@ Create objects and relationships using the following object types:  ${
 (types.length ? types.join(" ") : "")}
 `;
                 break;
+
             case "BPMN_META":
                 types = (curMetamodel.objecttypes || [])
                     .filter((o: any) => o.name !== "EntityType")
@@ -776,7 +779,7 @@ ${filteredRelTypes
     // ----------  Prompts ----------
     const finalSystemPrompt = `
 You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling.
-Your task is to build a model from the provided 'Existing Context' and Domain definition, conforming to the provided Metamodel.
+Your task is to build a model from the provided "Existing Context" and Domain definition, conforming to the provided Metamodel.
 Do not add the objects typenames in the object names.
 Use the Metamodel object types and relationship types as defined in the Metamodel.
 Ensure logical consistency and relationship principles.
@@ -788,8 +791,7 @@ If the Domain definition is missing or insufficient, respond with suggestions fo
 
     let finalDeveloperPrompt = ''
 
-    finalDeveloperPrompt =
-`### Developer Instructions
+    finalDeveloperPrompt = `### Developer Instructions
 Model:
 - Required: id, name, description, objects[], relships[].
 - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
@@ -801,6 +803,8 @@ Objects:
 - All ids should be unique UUID strings.
 - TypeName and typeRef must match a valid object type from the Metamodel.
 - Use the ontology Concept names to name objects, but use the metamodel typeRef for typeRef.
+- Do not include the object typeName in the object name.
+- Do not use generic objectypes like "Generic", "Element" or "EntityType".
 
 Relships:
 - Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
@@ -811,6 +815,7 @@ Relships:
 - Ensure fromobjectRef and toobjectRef reference valid object ids defined in the objects[] array.
 - Ensure typeRef aligns with the Metamodel relshiptype.
 - Dont repeat the fromName and toName in the relationship name.
+- Do not use generic relationship types like "generic", "relatedTo" or "associatesWith".
 `;
 
     if (curMetamodel?.name === "CORE_META") (

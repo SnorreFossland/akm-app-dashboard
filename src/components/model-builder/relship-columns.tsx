@@ -65,42 +65,88 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
 // ActionsCell Component
 const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
     const dispatch = useDispatch();
+    const id = row?.original?.id;
+    const isDeleted = !!row?.original?.markedAsDeleted;
 
-    function deleteRelationship(id: string) {
-        return {
-            type: 'relationships/deleteRelationship',
-            payload: id,
-        };
-    }
+    // table meta handlers (relship-table sets onDelete/onRestore/onEdit in meta)
+    const meta = (row?.table?.options?.meta ?? {}) as any;
+
+    const handleDelete = () => {
+        if (!id) return;
+        if (meta?.onDelete) return meta.onDelete(id);
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { deleteRelship } = require('@/features/model-universe/modelSlice');
+            dispatch(deleteRelship({ id }));
+        } catch (e) {
+            console.warn('deleteRelship fallback failed', e);
+        }
+    };
+
+    const handleRestore = () => {
+        if (!id) return;
+        if (meta?.onRestore) return meta.onRestore(id);
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { restoreRelship } = require('@/features/model-universe/modelSlice');
+            dispatch(restoreRelship({ id }));
+        } catch (e) {
+            console.warn('restoreRelship fallback failed', e);
+        }
+    };
+
+    const handleEdit = () => {
+        if (!id) return;
+        if (meta?.onEdit) return meta.onEdit(id);
+        dispatch(editRelationship({ ...row.original }));
+    };
 
     return (
-        <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-                <Button variant="ghost" className="h-8 w-8 p-0">
-                    <span className="sr-only">Open menu</span>
-                    {/* Replace with an appropriate icon */}
-                    ⋮
-                </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => {
-                    // Optionally handle edit via actions menu
-                    console.log('Edit action clicked for:', row.original.id);
-                    // Trigger editing by setting a global editing state if needed
-                    // For inline editing, double-click is used
-                }}>
-                    Double-Click on Name text to Edit
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                    console.log('Delete action clicked for:', row.original.id);
-                    dispatch(deleteRelationship(row.original.id));
-                }}>
-                    Delete
-                </DropdownMenuItem>
-            </DropdownMenuContent>
-        </DropdownMenu>
+        <div className="flex items-center gap-2">
+            {!isDeleted ? (
+                <button
+                    title="Delete"
+                    onClick={(e) => { e.stopPropagation(); handleDelete(); }}
+                    className="h-7 w-7 rounded-md flex items-center justify-center text-sm bg-red-600/10 hover:bg-red-600/20 text-red-600"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
+            ) : (
+                <button
+                    title="Restore"
+                    onClick={(e) => { e.stopPropagation(); handleRestore(); }}
+                    className="h-7 w-7 rounded-md flex items-center justify-center text-sm bg-green-600/10 hover:bg-green-600/20 text-green-600"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" /><path d="M3.51 9a9 9 0 0116.98 0" /></svg>
+                </button>
+            )}
+
+            <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" className="h-8 w-8 p-0">
+                        <span className="sr-only">Open menu</span>
+                        {/* keep simple vertical dots */}
+                        ⋮
+                    </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end">
+                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={() => { handleEdit(); }}>
+                        Double-Click on Name to Edit
+                    </DropdownMenuItem>
+                    {!isDeleted ? (
+                        <DropdownMenuItem onClick={() => { handleDelete(); }}>
+                            Delete
+                        </DropdownMenuItem>
+                    ) : (
+                        <DropdownMenuItem onClick={() => { handleRestore(); }}>
+                            Restore
+                        </DropdownMenuItem>
+                    )}
+                </DropdownMenuContent>
+            </DropdownMenu>
+        </div>
     );
 };
 
@@ -119,18 +165,18 @@ export const columns: ColumnDef<Relationship>[] = [
         },
     },
     {
-        accessorKey: "name",
-        header: () => <span>Name</span>,
-        cell: ({ row }) => <NameCell row={row} />,
-    },
-    {
         accessorKey: "nameFrom",
-        header: () => <span>Name from</span>,
+        header: () => <span>From</span>,
         cell: ({ row }) => row.original.nameFrom,
     },
     {
+        accessorKey: "name",
+        header: () => <span>Rel Name</span>,
+        cell: ({ row }) => <NameCell row={row} />,
+    },
+    {
         accessorKey: "nameTo",
-        header: () => <span>Name to</span>,
+        header: () => <span>To</span>,
         cell: ({ row }) => row.original.nameTo,
     },
     {

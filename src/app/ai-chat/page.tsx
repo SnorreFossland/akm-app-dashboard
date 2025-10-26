@@ -30,7 +30,7 @@ const AIChatPage = () => {
     const focusDoc = useSelector((state: RootState) => state.modelUniverse?.phFocus?.focusDoc);
     const focusProject = useSelector((state: RootState) => state.modelUniverse?.phFocus?.focusProj);
     const [projectDocument, setProjectDocument] = useState<MarkdownDocument | null>(null);
-    const ontology = useSelector((state: RootState) => state.modelUniverse?.phData?.domain.ontology);
+    const ontology = useSelector((state: RootState) => state.modelUniverse?.phData?.domain?.ontology);
 
     // Shared state across all modes
     const [contextContent, setContextContent] = useState('');

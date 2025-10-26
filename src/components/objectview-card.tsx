@@ -30,20 +30,20 @@ export const ObjectviewCard = ({ modelview }: { modelview: Modelview }) => {
         mermaidRef.current = mm.default || mm;
         mermaidRef.current.initialize({
           startOnLoad: false,
-      theme: 'base',
-      themeVariables: {
-        primaryColor: '#97e499ff',
-        edgeLabelBackground: '#21313c15',
-        secondaryColor: '#8888ff',
-        tertiaryColor: '#dddddd',
-        primaryTextColor: '#ffffff',
-        secondaryTextColor: '#ccffcc',
-        tertiaryTextColor: '#0000ff',
-        lineColor: '#dddddd',
-        background: '#ffffff',
-        nodeBorderRadius: '5px',
-      },
-      securityLevel: 'loose',
+          theme: 'base',
+          themeVariables: {
+            primaryColor: '#97e499ff',
+            edgeLabelBackground: '#21313c15',
+            secondaryColor: '#8888ff',
+            tertiaryColor: '#dddddd',
+            primaryTextColor: '#ffffff',
+            secondaryTextColor: '#ccffcc',
+            tertiaryTextColor: '#0000ff',
+            lineColor: '#dddddd',
+            background: '#ffffff',
+            nodeBorderRadius: '5px',
+          },
+          securityLevel: 'loose',
         });
       } catch (e) {
         console.error('Failed to load mermaid dynamically:', e);
@@ -192,6 +192,7 @@ export const ObjectviewCard = ({ modelview }: { modelview: Modelview }) => {
               <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
                 {modelview && (
                   <ObjectTable
+                    modelId={modelview.modelRef}
                     data={(modelview.objectviews || []).map((ov: any) => ({
                       id: ov.id,
                       name: ov.name,

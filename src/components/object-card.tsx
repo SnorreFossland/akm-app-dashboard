@@ -232,7 +232,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                     <TabsContent value="objects" className="rounded w-full mt-0 min-w-0">
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
-                                {model && <ObjectTable data={model.objects.map(obj => ({ ...obj, typeId: obj.typeRef, typeName: obj.typeName || obj.proposedType || obj.typeRef || '' }))} />}
+                                {model && <ObjectTable modelId={model.id} data={model.objects.map(obj => ({ ...obj, typeId: obj.typeRef, typeName: obj.typeName || obj.proposedType || obj.typeRef || '' }))} />}
                             </CardContent>
                         </Card>
                     </TabsContent>
@@ -240,7 +240,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                     <TabsContent value="relationships" className="rounded w-full mt-0 min-w-0">
                         <Card className="pt-1">
                             <CardContent className="max-h-[calc(100vh-14rem)] overflow-hidden">
-                                {model && <RelshipTable data={model.relships.map(rel => ({ ...rel, description: '' }))} />}
+                                {model && <RelshipTable modelId={model.id} data={model.relships.map(rel => ({ ...rel, description: '' }))} />}
                             </CardContent>
                         </Card>
                     </TabsContent>
