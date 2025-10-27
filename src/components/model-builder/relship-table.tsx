@@ -84,6 +84,10 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => 
         return showDeleted ? effectiveData : effectiveData.filter((d: any) => !d.markedAsDeleted);
     }, [effectiveData, showDeleted]);
 
+    const deletedCount = React.useMemo(() => {
+        return Array.isArray(effectiveData) ? effectiveData.filter((d: any) => !!d.markedAsDeleted).length : 0;
+    }, [effectiveData]);
+
     // Selection state for relationships
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
     const selectedCount = React.useMemo(() => Object.keys(selectedIds).length, [selectedIds]);
@@ -231,6 +235,26 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => 
                         className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-green-800 text-white dark:bg-green-700 dark:text-white hover:bg-green-700`}
                     >
                         Restore selected
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            try {
+                                // eslint-disable-next-line no-restricted-globals
+                                const ok = confirm(`Purge ${deletedCount} deleted relationship(s) and corresponding deleted objects for this model? This is permanent.`);
+                                if (!ok) return;
+                            } catch (e) { }
+                            try {
+                                // eslint-disable-next-line @typescript-eslint/no-var-requires
+                                const { purgeModel } = require('@/features/model-universe/modelSlice');
+                                dispatch(purgeModel({ modelId: modelId ?? undefined } as any));
+                            } catch (e) {
+                                console.warn('Failed to dispatch purgeModel', e);
+                            }
+                        }}
+                        disabled={deletedCount === 0}
+                        className={`text-xs px-2 py-1 rounded ${deletedCount === 0 ? 'opacity-50 cursor-not-allowed bg-red-400' : 'bg-red-700 hover:bg-red-600'} text-white`}
+                    >
+                        Purge{deletedCount > 0 ? ` (${deletedCount})` : ''}
                     </Button>
                 </div>
 

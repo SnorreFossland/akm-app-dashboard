@@ -261,7 +261,7 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
         nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
 
         switch (curMetamodel.name) {
-            case "IRTV_META":
+            case "IRTV_META": // IRTV model generation
                 types = (curMetamodel.objecttypes || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "Element")
                     .filter((o: any) => o.name !== "Generic")
@@ -276,7 +276,7 @@ Do not repeat type-names in the name of objects. Consider also the #Context belo
 `;
                 break;
 
-            case "CORE_META":
+            case "CORE_META": // TYPE model generation
                 types = (curMetamodel.objecttypes || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "InputPattern")
                     .filter((o: any) => o.name !== "Details")
@@ -295,8 +295,8 @@ Start with creating an object of type Metamodel with a relship "contains" to all
 `
                 break;
 
-            case "POPS_META":
-                types = (curMetamodel.objecttypes || []) //
+            case "POPS_META": // POPS model generation
+                types = (curMetamodel.objecttypes || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "EntityType")
                     .filter((o: any) => o.name !== "Geobody")
                     .filter((o: any) => o.name !== "Material")
@@ -311,13 +311,14 @@ Start with creating an object of type Metamodel with a relship "contains" to all
                     .map((o: any) => o.name + ', ');
 
                 nextAutoPrompt =
-`Build a POPS model based on the Domain definition in the #Context below.
-Create objects and relationships using the following object types:  ${
+`Build a POPS model with Processes, Organizations, Products and Services/Systems based on the Domain defined in the #Context below.
+Create Processes with relevant subprocesses and link to Organizations that perform them. The Products are outComes and usedIn Processes. Processes. uses Services/Systems to deliver Products.
+Create objects and relationships using the following object and relationship types:  ${
 (types.length ? types.join(" ") : "")}
 `;
                 break;
 
-            case "BPMN_META":
+            case "BPMN_META": // BPMN model generation
                 types = (curMetamodel.objecttypes || [])
                     .filter((o: any) => o.name !== "EntityType")
                     .filter((o: any) => o.name !== "Gateway")

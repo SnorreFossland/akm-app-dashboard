@@ -155,6 +155,10 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
         return showDeleted ? effectiveData : effectiveData.filter((d: any) => !d.markedAsDeleted);
     }, [effectiveData, showDeleted]);
 
+    // Count of items marked as deleted (for purge button)
+    const deletedCount = React.useMemo(() => {
+        return Array.isArray(effectiveData) ? effectiveData.filter((d: any) => !!d.markedAsDeleted).length : 0;
+    }, [effectiveData]);
     // Selection state for rows (ids)
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
 
@@ -339,6 +343,26 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
                         >
                             Restore selected
                         </Button>
+                        <Button
+                            onClick={() => {
+                                try {
+                                    // eslint-disable-next-line no-restricted-globals
+                                    const ok = confirm(`Purge ${deletedCount} deleted object(s) and corresponding deleted relationships for this model? This is permanent.`);
+                                    if (!ok) return;
+                                } catch (e) { }
+                                try {
+                                    // eslint-disable-next-line @typescript-eslint/no-var-requires
+                                    const { purgeModel } = require('@/features/model-universe/modelSlice');
+                                    dispatch(purgeModel({ modelId: modelId ?? undefined } as any));
+                                } catch (e) {
+                                    console.warn('Failed to dispatch purgeModel', e);
+                                }
+                            }}
+                            disabled={deletedCount === 0}
+                            className={`text-xs px-2 py-1 rounded ${deletedCount === 0 ? 'opacity-50 cursor-not-allowed bg-red-400' : 'bg-red-700 hover:bg-red-600'} text-white`}
+                        >
+                            Purge{deletedCount > 0 ? ` (${deletedCount})` : ''}
+                        </Button>
                     </div>
 
                     <DropdownMenu>
@@ -418,45 +442,45 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
                                     >
                                         {flexRender(cell.column.columnDef.cell, cell.getContext())}
                                     </td>
+                                ))}
+                            </tr>
                         ))}
-                    </tr>
-                        ))}
-                </tbody>
-            </table>
-        </div>
-            {/* Pagination */ }
-    <div className="flex justify-between items-center py-4">
-        <Button
-            onClick={() => table.previousPage()}
-            disabled={!table.getCanPreviousPage()}
-        >
-            Previous
-        </Button>
-        <span>
-            Page {table.getState().pagination.pageIndex + 1} of{' '}
-            {table.getPageCount()}
-        </span>
-        <select
-            className='bg-transparent'
-            value={pageSize}
-            onChange={(e) => {
-                setPageSize(Number(e.target.value));
-                table.setPageSize(Number(e.target.value));
-            }}
-        >
-            {[10, 20, 30, 40, 50].map((size) => (
-                <option key={size} value={size}>
-                    Show {size} rows
-                </option>
-            ))}
-        </select>
-        <Button
-            onClick={() => table.nextPage()}
-            disabled={!table.getCanNextPage()}
-        >
-            Next
-        </Button>
-    </div>
+                    </tbody>
+                </table>
+            </div>
+            {/* Pagination */}
+            <div className="flex justify-between items-center py-4">
+                <Button
+                    onClick={() => table.previousPage()}
+                    disabled={!table.getCanPreviousPage()}
+                >
+                    Previous
+                </Button>
+                <span>
+                    Page {table.getState().pagination.pageIndex + 1} of{' '}
+                    {table.getPageCount()}
+                </span>
+                <select
+                    className='bg-transparent'
+                    value={pageSize}
+                    onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        table.setPageSize(Number(e.target.value));
+                    }}
+                >
+                    {[10, 20, 30, 40, 50].map((size) => (
+                        <option key={size} value={size}>
+                            Show {size} rows
+                        </option>
+                    ))}
+                </select>
+                <Button
+                    onClick={() => table.nextPage()}
+                    disabled={!table.getCanNextPage()}
+                >
+                    Next
+                </Button>
+            </div>
         </div >
     );
 };

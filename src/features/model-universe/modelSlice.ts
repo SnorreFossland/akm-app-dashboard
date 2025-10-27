@@ -686,6 +686,39 @@ const modelSlice = createSlice({
       }
       return state;
     },
+    // Permanently remove (empty) objects, relships and modelviews for a model.
+    purgeModel(state, action: PayloadAction<string | { modelId?: string } | undefined>) {
+      const payload = action.payload as any;
+      const modelId = typeof payload === 'string' ? payload : payload?.modelId;
+
+      let currentModel = modelId
+        ? state.phData.metis.models.find(model => model.id === modelId)
+        : state.phData.metis.models.find(model => model.id === state.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.phData.metis.models[0];
+      if (!currentModel) return;
+
+      // Permanently remove only items that were previously soft-deleted (markedAsDeleted === true)
+      if (currentModel.objects) {
+        const beforeObjects = currentModel.objects.length;
+        currentModel.objects = currentModel.objects.filter((o: any) => !o.markedAsDeleted);
+        const removedObjects = beforeObjects - currentModel.objects.length;
+        if (removedObjects > 0 && state.phFocus && state.phFocus.focusObject && state.phFocus.focusObject.id) {
+          // If the focused object was removed, clear focusObject
+          const stillExists = currentModel.objects.find(o => o.id === state.phFocus.focusObject?.id);
+          if (!stillExists) state.phFocus.focusObject = { id: '', name: '' } as any;
+        }
+      }
+
+      if (currentModel.relships) {
+        const beforeRel = currentModel.relships.length;
+        currentModel.relships = currentModel.relships.filter((r: any) => !r.markedAsDeleted);
+        const removedRel = beforeRel - currentModel.relships.length;
+        if (removedRel > 0 && state.phFocus && state.phFocus.focusRelship && state.phFocus.focusRelship.id) {
+          const stillExists = currentModel.relships.find(r => r.id === state.phFocus.focusRelship?.id);
+          if (!stillExists) state.phFocus.focusRelship = { id: '', name: '' } as any;
+        }
+      }
+    },
     clearStore() {
       return initialState;  //ToDo: should be only objects and relationships and modelviews so that the user dont have to reload the data from file
     },
@@ -838,6 +871,7 @@ export const {
   deleteObject,
   restoreRelship,
   deleteRelship,
+  purgeModel,
 } = modelSlice.actions;
 
 export default modelSlice.reducer;
