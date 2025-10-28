@@ -10,6 +10,22 @@ import { Model } from '@/features/model-universe/modelSlice';
 
 const debug = false;
 
+const normalizeMermaidSvg = (svg: string) => {
+    if (!svg) return svg;
+
+    const injectedStyles = `\n  <style>\n    .edgePath path {\n      stroke: #38bdf8 !important;\n      stroke-width: 2px !important;\n    }\n    .edgeLabel, .edgeLabel tspan {\n      fill: #f8fafc !important;\n      color: #f8fafc !important;\n      font-weight: 600;\n    }\n    .edgeLabel rect {\n      fill: rgba(15, 23, 42, 0.85) !important;\n      stroke: #38bdf8 !important;\n      stroke-width: 0.75px !important;\n      rx: 6px;\n      ry: 6px;\n    }\n    .node rect, .node polygon, .node circle, .node ellipse {\n      stroke: #3b82f6 !important;\n      stroke-width: 2px !important;\n      fill: rgba(15, 23, 42, 0.92) !important;\n    }\n    .node text {\n      fill: #f8fafc !important;\n      font-weight: 600;\n    }\n  </style>\n`;
+
+    return svg.replace(/<svg([^>]*)>/, (_match, attrs) => {
+        const cleanedAttrs = attrs
+            .replace(/\swidth="[^"]*"/g, '')
+            .replace(/\sheight="[^"]*"/g, '')
+            .replace(/\sstyle="[^"]*"/g, '')
+            .replace(/\spreserveAspectRatio="[^"]*"/g, '');
+
+        return `<svg${cleanedAttrs} preserveAspectRatio="xMidYMid meet" style="display:block;height:auto;max-width:none;">${injectedStyles}`;
+    });
+};
+
 export const ObjectCard = ({ model }: { model: Model }) => {
     const [mermaidDiagram, setMermaidDiagram] = useState('');
     const [renderedSvg, setRenderedSvg] = useState('');
@@ -19,6 +35,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
     const [zoom, setZoom] = useState(1);
     const [isZoomMode, setZoomMode] = useState(false);
     const mermaidRef = useRef<any>(null);
+    const baseDiagramSizeRef = useRef<{ width: number; height: number } | null>(null);
 
     // Initialize Mermaid once
     useEffect(() => {
@@ -67,7 +84,13 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         .replace(/_+/g, '_')
                         .replace(/^_|_$/g, '') || `object_${index}`;
                     const nodeName = object.name.replace(/"/g, "'");
-                    diagram += `    ${nodeId}["${nodeName}"];\n`;
+                    const rawType = (object as any).typeName
+                        || (object as any).proposedType
+                        || '';
+                    const typeLine = rawType
+                        ? `<br/>(${String(rawType).replace(/"/g, "'")})`
+                        : '';
+                    diagram += `    ${nodeId}["${nodeName}${typeLine}"];\n`;
                     validNodes.add(object.name);
                 }
             });
@@ -131,7 +154,12 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         return;
                     }
                     const { svg } = await mm.render(diagramId, mermaidDiagram);
-                    setRenderedSvg(svg);
+                    const themedSvg = svg
+                        .replace(/fill:\s*#4CAF50/gi, 'fill:#0f172a')
+                        .replace(/stroke:\s*#4CAF50/gi, 'stroke:#3b82f6');
+                    baseDiagramSizeRef.current = null;
+                    setRenderedSvg(normalizeMermaidSvg(themedSvg));
+                    setZoom(1);
                 } catch (error) {
                     console.error('Error rendering Mermaid diagram:', error);
                     setRenderedSvg(`<div class="p-4 text-center text-red-400">Error rendering diagram: ${error}</div>`);
@@ -174,6 +202,107 @@ export const ObjectCard = ({ model }: { model: Model }) => {
         };
     }, [isZoomMode]);
 
+    useEffect(() => {
+        if (!isZoomMode) setZoom(1);
+    }, [isZoomMode]);
+
+    useEffect(() => {
+        if (!renderedSvg) return;
+
+        const raf = requestAnimationFrame(() => {
+            const container = containerRef.current;
+            if (!container) return;
+
+            const svgElement = container.querySelector('svg');
+            if (!svgElement) return;
+
+            let baseSize = baseDiagramSizeRef.current;
+
+            if (!baseSize) {
+                try {
+                    const bbox = svgElement.getBBox();
+                    if (bbox?.width && bbox?.height) {
+                        baseSize = { width: bbox.width, height: bbox.height };
+                    }
+                } catch {
+                    /* noop */
+                }
+
+                if (!baseSize) {
+                    const widthAttr = parseFloat(svgElement.getAttribute('width') || '0');
+                    const heightAttr = parseFloat(svgElement.getAttribute('height') || '0');
+                    if (widthAttr && heightAttr) {
+                        baseSize = { width: widthAttr, height: heightAttr };
+                    } else {
+                        baseSize = {
+                            width: svgElement.clientWidth || container.clientWidth,
+                            height: svgElement.clientHeight || container.clientHeight,
+                        };
+                    }
+                }
+
+                if (baseSize) {
+                    const containerWidth = container.clientWidth || baseSize.width;
+                    const paddingAllowance = 32; // mirror padding on wrapper
+                    const maxWidth = Math.max(containerWidth - paddingAllowance, 1);
+                    const fitScale = baseSize.width > maxWidth ? maxWidth / baseSize.width : 1;
+                    baseDiagramSizeRef.current = {
+                        width: Math.max(baseSize.width * fitScale, 1),
+                        height: Math.max(baseSize.height * fitScale, 1),
+                    };
+                    baseSize = baseDiagramSizeRef.current;
+                }
+            }
+
+            if (baseSize) {
+                const baseWidth = Math.max(baseSize.width, 1);
+                const baseHeight = Math.max(baseSize.height, 1);
+                const scaledWidth = Math.max(baseWidth * zoom, baseWidth);
+                const scaledHeight = Math.max(baseHeight * zoom, baseHeight);
+
+                const wrapper = svgElement.parentElement as HTMLElement | null;
+                if (wrapper) {
+                    wrapper.style.position = 'relative';
+                    wrapper.style.width = `${baseWidth}px`;
+                    wrapper.style.height = `${baseHeight}px`;
+                    wrapper.style.maxWidth = '100%';
+                    wrapper.style.maxHeight = 'none';
+                    wrapper.style.display = 'block';
+                }
+
+                let placeholder: HTMLElement | null = null;
+                if (wrapper) {
+                    placeholder = wrapper.querySelector<HTMLElement>('[data-diagram-placeholder="true"]');
+                    if (!placeholder) {
+                        placeholder = document.createElement('div');
+                        placeholder.dataset.diagramPlaceholder = 'true';
+                        placeholder.style.position = 'absolute';
+                        placeholder.style.top = '0';
+                        placeholder.style.left = '0';
+                        placeholder.style.pointerEvents = 'none';
+                        placeholder.style.zIndex = '0';
+                        wrapper.appendChild(placeholder);
+                    }
+                    placeholder.style.width = `${scaledWidth}px`;
+                    placeholder.style.height = `${scaledHeight}px`;
+                }
+
+                svgElement.style.position = 'absolute';
+                svgElement.style.top = '0';
+                svgElement.style.left = '0';
+                svgElement.style.width = `${scaledWidth}px`;
+                svgElement.style.height = `${scaledHeight}px`;
+                svgElement.style.maxWidth = 'none';
+                svgElement.style.maxHeight = 'none';
+                svgElement.style.transform = '';
+                svgElement.style.transformOrigin = '';
+                svgElement.style.zIndex = '1';
+            }
+        });
+
+        return () => cancelAnimationFrame(raf);
+    }, [renderedSvg, zoom]);
+
     const handleAuxClick = (e: React.MouseEvent<HTMLDivElement>) => {
         if (e.button === 1) {
             setZoomMode((prev) => !prev);
@@ -190,11 +319,10 @@ export const ObjectCard = ({ model }: { model: Model }) => {
             // remove forced min width. make this an inline-block so it can be scrolled horizontally inside the container
             return (
                 <div
-                    className="inline-block min-w-0"
+                    className="block"
                     style={{
-                        transform: `scale(${zoom})`,
-                        transformOrigin: '0 0',
-                        margin: '10px'
+                        margin: 0,
+                        padding: '8px'
                     }}
                     onAuxClick={handleAuxClick}
                     dangerouslySetInnerHTML={{ __html: renderedSvg }}
@@ -245,7 +373,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                         </Card>
                     </TabsContent>
 
-                    <TabsContent value="diagram" className="rounded w-full mt-0 min-w-0">
+                    <TabsContent value="diagram" className="rounded w-full mt-0 min-w-0 overflow-hidden">
                         <Card className="w-full h-full">
                             <CardContent className="p-0">
                                 <div className="flex justify-between items-center m-1 py-1">
@@ -276,6 +404,7 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                                             value={zoom}
                                             onChange={(e) => setZoom(Number(e.target.value))}
                                             className="w-32"
+                                            disabled={!isZoomMode}
                                         />
                                     </div>
                                 </div>
@@ -283,12 +412,12 @@ export const ObjectCard = ({ model }: { model: Model }) => {
                                 {/* Scrollable container: allow horizontal scroll but don't let the element force parent width */}
                                 <div
                                     ref={containerRef}
-                                    className="h-[calc(100vh-13rem)] overflow-auto bg-background rounded border relative min-w-0"
+                                    className="w-full h-[calc(100vh-13rem)] overflow-auto bg-background rounded border relative min-w-0"
                                     style={{
                                         maxWidth: '100%',
                                     }}
                                 >
-                                    <div className="text-xs text-gray-400 ml-2">
+                                    <div className="text-xs text-gray-400 ml-2 diagram-hint">
                                         {isZoomMode ? 'Use wheel to zoom' : 'Hold Shift+wheel for horizontal scrolling'}
                                     </div>
 

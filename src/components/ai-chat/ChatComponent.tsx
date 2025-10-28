@@ -906,6 +906,17 @@ Do not use its contents as contextual input for other questions--I want it impro
         setTimeout(() => setStatusMsg(''), 3000);
     }, [dispatch]);
 
+    useEffect(() => {
+        if (!mdPreview) return;
+        if (setShowRightPanel) {
+            setShowRightPanel(true);
+        }
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('threepanel:openRight'));
+            window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
+        }
+    }, [mdPreview, setShowRightPanel]);
+
     // Add this function for the thinking animation
     const ThinkingAnimation = () => {
         return (
@@ -1132,6 +1143,10 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                                 if (setShowRightPanel) {
                                                                     setShowRightPanel(true);
                                                                 }
+                                                                if (typeof window !== 'undefined') {
+                                                                    window.dispatchEvent(new CustomEvent('threepanel:openRight'));
+                                                                    window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
+                                                                }
                                                                 // Toggle preview state locally
                                                                 if (previewMessageIndex === index) {
                                                                     setPreviewMessageIndex(null);
@@ -1179,6 +1194,10 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                             onViewInMarkdown(message.content);
                                                             if (setShowRightPanel) {
                                                                 setShowRightPanel(true);
+                                                            }
+                                                            if (typeof window !== 'undefined') {
+                                                                window.dispatchEvent(new CustomEvent('threepanel:openRight'));
+                                                                window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
                                                             }
                                                             // Toggle preview state locally
                                                             if (previewMessageIndex === index) {

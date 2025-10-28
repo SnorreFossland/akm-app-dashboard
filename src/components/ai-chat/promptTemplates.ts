@@ -156,8 +156,8 @@ Create a comprehensive project plan for the project described in the context bel
 Follow this detailed template:
 
 ---
-title: "Generic Project Plan Template"
-author: [Project Owner]
+title: "Title of the Project Plan"
+author: "Project Owner"
 type: "Project Plan"
 version: "1.0"
 date: "YYYY-MM-DD"

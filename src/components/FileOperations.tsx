@@ -22,7 +22,7 @@ interface FileOperationsProps {
 
 export function FileOperations({ className = "" }: FileOperationsProps) {
     const phSource = useAppSelector((state) => state.modelUniverse.phSource);
-    const data = useAppSelector((state) => state.modelUniverse); 
+    const data = useAppSelector((state) => state.modelUniverse);
     const domain = data.phData.domain;
     const dispatch = useAppDispatch();
     const pathname = usePathname();
@@ -112,8 +112,69 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
         }
     };
 
+    const documents = Array.isArray(data?.phData?.documents) ? data.phData.documents : [];
+    const metisModels = Array.isArray(data?.phData?.metis?.models) ? data.phData.metis.models : [];
+
+    const hasDomainDefinition = Boolean(
+        (domain?.name && domain.name.trim()) ||
+        (domain?.presentation && domain.presentation.trim()) ||
+        (domain?.description && domain.description.trim())
+    );
+
+    const hasProjectPlan = documents.some((doc) =>
+        (doc.type && doc.type.toLowerCase() === 'project-plan') ||
+        (doc.name && /project\s*plan/i.test(doc.name))
+    );
+
+    const hasModelContent = (keyword: string) => {
+        const lowerKeyword = keyword.toLowerCase();
+        const match = metisModels.find((model: any) =>
+            typeof model?.name === 'string' && model.name.toLowerCase().includes(lowerKeyword)
+        );
+
+        if (!match) return false;
+        const hasObjects = Array.isArray(match.objects) && match.objects.length > 0;
+        const hasRelships = Array.isArray(match.relships) && match.relships.length > 0;
+        return hasObjects || hasRelships;
+    };
+
+    const hasTypeModel = metisModels.some((model: any) => {
+        const name = typeof model?.name === 'string' ? model.name.toLowerCase().trim() : '';
+        return ['type model', 'type-model', 'type'].includes(name) || name.includes('type model');
+    }) && hasModelContent('type');
+
+    const statusItems = [
+        { label: 'Domain is defined', complete: hasDomainDefinition },
+        { label: 'Project plan is set', complete: hasProjectPlan },
+        { label: 'POPS model is populated', complete: hasModelContent('pops') },
+        { label: 'IRTV model is populated', complete: hasModelContent('irtv') },
+        { label: 'BPMN model is populated', complete: hasModelContent('bpmn') },
+        { label: 'TYPE model is populated', complete: hasTypeModel },
+    ];
+
     return (
-        <div className={`flex md:flex-row items-center justify-between w-full ${className}`}>
+        <div className={`w-full ${className}`}>
+            <div className="flex flex-wrap justify-center items-center gap-1 mb-1 text-[10px] leading-tight">
+                {statusItems.map((item) => (
+                    <div
+                        key={item.label}
+                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded border transition-colors ${
+                            item.complete
+                                ? 'border-green-600 bg-green-900/30 text-green-200'
+                                : 'border-gray-700 bg-gray-800/70 text-gray-400'
+                        }`}
+                        title={item.complete ? 'Completed' : 'Pending'}
+                    >
+                        <span
+                            className={`inline-block w-1.5 h-1.5 rounded-full ${
+                                item.complete ? 'bg-green-400' : 'bg-gray-500'
+                            }`}
+                        />
+                        <span className="whitespace-nowrap">{item.label}</span>
+                    </div>
+                ))}
+            </div>
+            <div className="flex md:flex-row items-center justify-between w-full">
             <div className="flex items-center gap-2 w-full justify-between">
 
                 <div className="bg-gray-800 rounded border border-green-900 ms-1 px-1  text-xs text-orange-400 flex-shrink-0">
@@ -157,11 +218,11 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                 <div className="flex-1 justify-around items-center gap-1 overflow-x-auto pr-2">
                     {[
                         // { label: 'Dashboard', href: '/dashboard' },
-                        { label: 'AI Chat', href: '/ai-chat' },
+                        { label: 'Documents', href: '/ai-chat' },
                         // { label: 'Domain', href: '/domain-builder' },
                         // { label: 'Ontology', href: '/ontology-builder' },
-                        { label: 'Model', href: '/model-builder' },
-                        { label: 'Modelview', href: '/modelview-builder' },
+                        { label: 'Models', href: '/model-builder' },
+                        { label: 'Modelviews', href: '/modelview-builder' },
                         // { label: 'Prompt', href: '/prompt-builder' },
                         // { label: 'Roadmap', href: '/roadmap' },
                     ].map((item) => {
@@ -180,6 +241,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                         );
                     })}
                 </div>
+                
                 <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {(displayUniverseName || 'untitled')}.json</div>
                 <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
 
@@ -235,6 +297,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                         {!isMobile && "Clear"}
                     </Button>
                 </div>
+            </div>
             </div>
         </div>
     );

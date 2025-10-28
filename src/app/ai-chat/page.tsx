@@ -613,6 +613,10 @@ const AIChatPage = () => {
             previewContent,
             projectDocument,
             onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+            additionalContext,
+            setAdditionalContext,
+            chatMdPreview,
+            onSavePreviewToLibrary: handleSavePreviewToLibrary,
         });
 
         if (mode === 'view') return viewPanels;
@@ -651,6 +655,7 @@ const AIChatPage = () => {
                 documentType,
                 onSavePreviewToLibrary: handleSavePreviewToLibrary,
                 onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+                onSelectDocument: handleSelectDocument,
             });
 
             const chatLeftPanel = buildLeftPanelTabs({
@@ -659,7 +664,7 @@ const AIChatPage = () => {
                 currentDocument,
                 onSelectDocument: handleSelectDocument,
                 onCreateDocumentFromTemplate: handleOpenTemplateSelector,
-                includeLibrary: true,
+                includeLibrary: false,
                 includeAdditional: true,
                 additionalContext,
                 setAdditionalContext,
@@ -838,6 +843,7 @@ const AIChatPage = () => {
                                             documentType,
                                             onSavePreviewToLibrary: handleSavePreviewToLibrary,
                                             onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+                                            onSelectDocument: handleSelectDocument,
                                         }).middlePanelContent)}
                                     </div>
                                 </div>
@@ -870,6 +876,7 @@ const AIChatPage = () => {
                                     if (doc) handleSelectDocument(doc);
                                     else handleSetCurrentDocument(content);
                                 }}
+                                onSetAdditionalContext={setAdditionalContext}
                                 currentDocument={currentDocument}
                                 onCreateFromTemplate={handleOpenTemplateSelector}
                             />

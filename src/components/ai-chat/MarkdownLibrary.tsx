@@ -10,16 +10,18 @@ import { toast } from "sonner";
 interface MarkdownLibraryProps {
   onSelect: (content: string, name: string, docMeta?: MarkdownDocument) => void;
   hideExportLibraryButton?: boolean;
-  onShowInLeftPanel?: (content: string, name: string, docMeta?: MarkdownDocument) => void; // New prop for showing in left panel
-  onSetCurrentDocument?: (content: string, name: string, docMeta?: MarkdownDocument) => void; // New prop for setting current document
-  currentDocument?: string; // Add this missing prop
+  onShowInLeftPanel?: (content: string, name: string, docMeta?: MarkdownDocument) => void;
+  onSetCurrentDocument?: (content: string, name: string, docMeta?: MarkdownDocument) => void;
+  onSetAdditionalContext?: (content: string, docMeta?: MarkdownDocument) => void;
+  currentDocument?: string;
   onCreateFromTemplate?: () => void;
 }
 const MarkdownLibrary = ({
   onSelect,
   hideExportLibraryButton,
   onShowInLeftPanel,
-  onSetCurrentDocument, // Add this parameter
+  onSetCurrentDocument,
+  onSetAdditionalContext,
   currentDocument,
   onCreateFromTemplate,
 }: MarkdownLibraryProps) => {
@@ -59,6 +61,9 @@ const MarkdownLibrary = ({
     'prompt',
     'specification',
     'requirements',
+    'report',
+    'context',
+
   ];
 
   // Category options: gather existing categories from documents and append defaults
@@ -445,7 +450,7 @@ const MarkdownLibrary = ({
                     {expandedDocId === doc.id && (
                       <div
                         ref={expandedContentRef}
-                        className="border-t border-gray-600 bg-gray-800"
+                        className="border-t border-gray-600 bg-gray-700"
                       >
                         <div className="p-2">
                           <div
@@ -466,19 +471,19 @@ const MarkdownLibrary = ({
                               }
                             }}
                             aria-disabled={editingDocId === doc.id}
-                            className={`flex w-full items-center justify-between gap-1 text-[0.65rem] px-2 py-1 rounded 
+                            className={`flex w-full items-center justify-between gap-1 text-[0.65rem] p-1 rounded 
                                ${editingDocId === doc.id
                                 ? 'bg-gray-700 text-gray-400 cursor-not-allowed'
                                 : 'bg-gray-600 hover:bg-gray-500 text-white'}`}
                           >
-                            <span className="flex items-center justify-between w-full gap-1">
+                            <span className="flex items-center justify-between w-full bg-gray-700 gap-1">
                               {editingDocId === doc.id ? (
                                 <span>Editing…</span>
                               ) : (
                                 <>
-                                  <span>{doc.name}</span>
+                                  {/* <span>{doc.name}</span> */}
                                   <>
-                                    {doc.type && <span className="text-blue-300">({displayType})</span>}
+                                    {/* {doc.type && <span className="text-blue-300">({displayType})</span>} */}
                                     <button
                                       className="ms-auto px-2 py-1 text-xs bg-gray-700 rounded hover:bg-blue-900 transition-colors"
                                       onClick={(e) => { e.stopPropagation(); beginEditMetadata(doc, e as unknown as React.MouseEvent); }}
@@ -575,6 +580,7 @@ const MarkdownLibrary = ({
                                   onChange={(event) => setEditContent(event.target.value)}
                                   className="bg-gray-800 text-gray-100 text-sm px-2 py-1 rounded border border-gray-600 focus:outline-none focus:ring-1 focus:ring-blue-400 min-h-[160px]"
                                   placeholder="Edit document content"
+                                  rows={16}
                                 />
                               </label>
                               {metadataError && (
@@ -597,8 +603,8 @@ const MarkdownLibrary = ({
                             </div>
                           )}
                           {editingDocId !== doc.id && (
-                            <div className="bg-gray-800 rounded p-2 mb-2 max-h-60 overflow-y-auto">
-                              <pre className="whitespace-pre-wrap text-xs text-gray-300 font-mono">
+                            <div className="bg-gray-800/80 rounded p-2 mb-2 max-h-[calc(100vh-25rem)] overflow-y-auto">
+                              <pre className="whitespace-pre-wrap text-xs text-gray-300 font-mono overflow-y-auto">
                                 {doc.content}
                               </pre>
                             </div>
@@ -612,7 +618,12 @@ const MarkdownLibrary = ({
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
-                                  onSelect(doc.content, doc.name, doc);
+                                  if (onSetAdditionalContext) {
+                                    onSetAdditionalContext(doc.content, doc);
+                                    toast.success('Additional context updated');
+                                  } else {
+                                    onSelect(doc.content, doc.name, doc);
+                                  }
                                 }}
                                 className="flex items-center gap-1 text-[0.65rem] bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
                               >

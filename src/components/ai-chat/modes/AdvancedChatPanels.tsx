@@ -418,6 +418,8 @@ export function AdvancedChatPanels(props: AdvancedChatPanelsProps) {
                                             <option value="prompt">Prompt</option>
                                             <option value="specification">Specification</option>
                                             <option value="requirements">Requirements</option>
+                                            <option value="context">Notes</option>
+                                            <option value="other">Other</option>
                                         </select>
                                     </div>
                                     <textarea

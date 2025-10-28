@@ -1,6 +1,8 @@
 'use client';
 
 import ChatComponent from '@/components/ai-chat/ChatComponent';
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
+import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { buildLeftPanelTabs } from './sharedPanelBuilders';
 import type { DomainData, MarkdownDocument } from '@/features/model-universe/modelSlice';
@@ -41,6 +43,7 @@ interface GeneralChatPanelsProps {
     // New optional free-text additional context for General chat (no library)
     additionalContext?: string;
     setAdditionalContext?: (content: string) => void;
+    onSelectDocument?: (doc: MarkdownDocument) => void;
 }
 
 export function GeneralChatPanels(props: GeneralChatPanelsProps) {
@@ -75,6 +78,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
         onSavePreviewToLibrary,
         onCreateDocumentFromTemplate,
         projectDocument,
+        onSelectDocument,
     } = props;
 
     const handleResponseChange = (response: string) => {
@@ -89,6 +93,13 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
             // Optionally: expose a setter for previewName via props or context
             // For this file, use window event as a workaround
             window.dispatchEvent(new CustomEvent('aiChat_setPreviewName', { detail: { previewName: firstLine } }));
+        }
+        if (setChatShowRightPanel) {
+            setChatShowRightPanel(true);
+        }
+        if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('threepanel:openRight'));
+            window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
         }
     };
 
@@ -105,22 +116,105 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
         setAdditionalContext: setAdditionalContext,
     });
 
-    const documentTab = {
-        key: 'document',
-        label: 'Current Document',
-        content: (
-            <div className="h-full overflow-auto px-4 py-4">
-                <MarkdownPreview mdPreview={currentDocument} variant="default" />
-            </div>
-        ),
-    };
-
     const leftPanelContent = {
         ...baseLeftPanel,
-        // Ensure the Current Document tab is available in General chat
-        tabs: [...(baseLeftPanel.tabs || []), documentTab],
         defaultTab: baseLeftPanel.defaultTab || 'domain',
     };
+
+    const middleTabs = [
+        {
+            key: 'chat',
+            label: 'AI Chat',
+            content: (
+                <ChatComponent
+                    input={chatInput}
+                    setInput={setChatInput}
+                    selectedModel={chatSelectedModel}
+                    setSelectedModel={setChatSelectedModel}
+                    onResponseChange={handleResponseChange}
+                    onViewInMarkdown={handleViewInMarkdown}
+                    showLeftPanel={chatShowLeftPanel}
+                    setShowLeftPanel={setChatShowLeftPanel}
+                    showRightPanel={chatShowRightPanel}
+                    setShowRightPanel={setChatShowRightPanel}
+                    mdContent={contextContent}
+                    setMdContent={setContextContent}
+                    currentDocument={currentDocument}
+                    setCurrentDocument={handleSetCurrentDocument}
+                    additionalContext={additionalContext}
+                    setAdditionalContext={setAdditionalContext}
+                    documentName={props.documentName}
+                    documentType={props.documentType}
+                    mdPreview={chatMdPreview}
+                    setMdPreview={setChatMdPreview}
+                    setCurrentMessages={setChatMessages}
+                    includeDomainContext={includeDomainContext}
+                    setIncludeDomainContext={setIncludeDomainContext}
+                    gettingStartedGuide={
+                        <div className="text-center text-gray-400">
+                            <h3 className="text-lg font-semibold mb-2">Welcome to AI Chat</h3>
+                            <p className="text-sm">Start a conversation with the AI assistant or select a prompt template to get started.</p>
+                            <p className="text-xs mt-2">Use Context Docs to provide background information.</p>
+                        </div>
+                    }
+                />
+            ),
+        },
+        {
+            key: 'document',
+            label: 'Current Document',
+            content: (
+                <div className="h-full overflow-hidden">
+                    <DocumentPanel
+                        mdContent={currentDocument}
+                        setMdContent={handleSetCurrentDocument}
+                        setIsLibraryOpen={(open: boolean) => {
+                            if (open) openLibraryFor('document');
+                            else closeLibrary();
+                        }}
+                        isLibraryOpen={isLibraryOpen && libraryTarget === 'document'}
+                        panelType="middle"
+                        showLibraryButton={false}
+                        documentName={documentName}
+                        documentType={documentType}
+                        onSelect={(content, _name, doc) => {
+                            handleSetCurrentDocument(content);
+                            if (doc && onSelectDocument) {
+                                onSelectDocument(doc);
+                            }
+                        }}
+                    />
+                </div>
+            ),
+        },
+        {
+            key: 'library',
+            label: 'Library',
+            content: (
+                <div className="h-full overflow-auto px-2 py-2">
+                    <MarkdownLibrary
+                        onSelect={(content, name, doc) => {
+                            if (doc && onSelectDocument) {
+                                onSelectDocument(doc);
+                            } else {
+                                handleSetCurrentDocument(content);
+                            }
+                        }}
+                        hideExportLibraryButton={false}
+                        onSetCurrentDocument={(content, name, doc) => {
+                            if (doc && onSelectDocument) {
+                                onSelectDocument(doc);
+                            }
+                            handleSetCurrentDocument(content);
+                        }}
+                        onSetAdditionalContext={setAdditionalContext}
+                        currentDocument={currentDocument}
+                        onCreateFromTemplate={onCreateDocumentFromTemplate}
+                    />
+                </div>
+            ),
+        },
+    ];
 
     // Right panel: only Preview kept for General chat (library removed so the document list is hidden)
     const rightPanelContent = {
@@ -145,46 +239,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
     return {
         leftPanelContent,
         middlePanelContent: {
-            tabs: [
-                {
-                    key: 'chat',
-                    label: 'AI Chat',
-                    content: (
-                        <ChatComponent
-                            input={chatInput}
-                            setInput={setChatInput}
-                            selectedModel={chatSelectedModel}
-                            setSelectedModel={setChatSelectedModel}
-                            onResponseChange={handleResponseChange}
-                            onViewInMarkdown={handleViewInMarkdown}
-                            showLeftPanel={chatShowLeftPanel}
-                            setShowLeftPanel={setChatShowLeftPanel}
-                            showRightPanel={chatShowRightPanel}
-                            setShowRightPanel={setChatShowRightPanel}
-                            mdContent={contextContent}
-                            setMdContent={setContextContent}
-                            currentDocument={currentDocument}
-                            setCurrentDocument={handleSetCurrentDocument}
-                            additionalContext={additionalContext}
-                            setAdditionalContext={setAdditionalContext}
-                            documentName={props.documentName}
-                            documentType={props.documentType}
-                            mdPreview={chatMdPreview}
-                            setMdPreview={setChatMdPreview}
-                            setCurrentMessages={setChatMessages}
-                            includeDomainContext={includeDomainContext}
-                            setIncludeDomainContext={setIncludeDomainContext}
-                            gettingStartedGuide={
-                                <div className="text-center text-gray-400">
-                                    <h3 className="text-lg font-semibold mb-2">Welcome to AI Chat</h3>
-                                    <p className="text-sm">Start a conversation with the AI assistant or select a prompt template to get started.</p>
-                                    <p className="text-xs mt-2">Use Context Docs to provide background information.</p>
-                                </div>
-                            }
-                        />
-                    ),
-                },
-            ],
+            tabs: middleTabs,
             defaultTab: 'chat',
         },
         rightPanelContent,
@@ -386,6 +441,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                             <option value="prompt">Prompt</option>
                                             <option value="specification">Specification</option>
                                             <option value="requirements">Requirements</option>
+                                            <option value="context">Context</option>
                                             <option value="report">Report</option>
                                         </select>
                                     </div>

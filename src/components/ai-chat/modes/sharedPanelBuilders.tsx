@@ -183,6 +183,7 @@ export function buildLeftPanelTabs(opts: BuildLeftPanelOptions) {
                         }}
                         hideExportLibraryButton={false}
                         onSetCurrentDocument={onSetCurrentDocument}
+                        onSetAdditionalContext={setAdditionalContext}
                         currentDocument={currentDocument}
                         onCreateFromTemplate={onCreateDocumentFromTemplate}
                     />

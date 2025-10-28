@@ -3,7 +3,7 @@
 import { GeneralChatPanels } from './GeneralChatPanels';
 import { AdvancedChatPanels } from './AdvancedChatPanels';
 import type { ChatSubMode } from '@/types/aiChatModes';
-import type { DomainData } from '@/features/model-universe/modelSlice';
+import type { DomainData, MarkdownDocument } from '@/features/model-universe/modelSlice';
 
 interface ChatModeContentParams {
     subMode: 'general' | 'advanced';
@@ -39,6 +39,7 @@ interface ChatModeContentParams {
     onSavePreviewToLibrary?: (content: string, name?: string, type?: string, options?: { forceNew?: boolean }) => void;
     onCreateDocumentFromTemplate?: () => void;
     projectDocument?: MarkdownDocument | null;
+    onSelectDocument?: (doc: MarkdownDocument) => void;
 }
 
 export function ChatModeContent(params: ChatModeContentParams) {
@@ -75,6 +76,7 @@ export function ChatModeContent(params: ChatModeContentParams) {
         onSavePreviewToLibrary: params.onSavePreviewToLibrary,
         onCreateDocumentFromTemplate: params.onCreateDocumentFromTemplate,
         projectDocument: params.projectDocument,
+        onSelectDocument: params.onSelectDocument,
     });
 
     // const advancedPanels = AdvancedChatPanels({
