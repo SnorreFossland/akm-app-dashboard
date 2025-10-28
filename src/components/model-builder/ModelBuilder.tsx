@@ -1197,7 +1197,7 @@ Relships:
             </div>
 
             {/* Input Area */}
-            <div className="sticky bottom-24 left-0 right-0 bg-popover/95 backdrop-blur supports-[backdrop-filter]:bg-popover/80 border-t border-gray-700 rounded-t-lg z-10">
+            <div className="flex-shrink-0 bg-popover/95 backdrop-blur supports-[backdrop-filter]:bg-popover/80 border-t border-gray-700 rounded-t-lg z-10">
                 <form onSubmit={handleSubmit} className="p-1 bg-transparent rounded-lg" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 6px)' }}>
                     <TextareaAutosize
                         ref={textareaRef}

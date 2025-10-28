@@ -281,7 +281,7 @@ export default function ModelBuilderPage() {
         key: 'ai-model',
         label: 'AI Modelling Assistant',
         content: (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col h-[calc(100vh-11rem)] gap-2">
             <ModelBuilderComponent
               input={mdContent}
               setInput={setMdContent}
@@ -383,16 +383,15 @@ export default function ModelBuilderPage() {
         {/* Inline modal anchored to the right of the middle panel (AI-Chat style) */}
         {isModelModalOpen && (
           <div
-            className="fixed right-0 z-50"
-            style={{ width: '50%', maxWidth: '50%', top: 'calc(var(--header-height,56px) + 8px)', bottom: '8px' }}
+            className="absolute inset-y-8 right-0 z-50 flex justify-end"
           >
-            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col">
+            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col w-[600px] h-[calc(100vh-1rem)] border border-gray-700">
               <div className="flex items-center justify-between p-2 border-b border-gray-700 flex-shrink-0">
                 <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Modeller</h3>
                 <button onClick={() => setIsModelModalOpen(false)} className="text-gray-400 hover:text-white p-1">Close</button>
               </div>
-              <div className="p-4 flex-1 overflow-auto min-h-0">
-                <div className="h-full min-h-0 flex flex-col">
+              <div className="p-4 flex-1 min-h-0 overflow-auto">
+                <div className="flex-1 flex flex-col">
                   {/* Render the ai-model tab content from the prepared modelModalMiddlePanelContent */}
                   {modelModalMiddlePanelContent?.tabs?.[0]?.content}
                 </div>
