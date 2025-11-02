@@ -2,13 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { X } from 'lucide-react';
+import { Eye, EyeOff, X } from 'lucide-react';
 
 import { RootState } from '@/store';
 import { FileOperations } from '@/components/FileOperations';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
-import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import { ModeHeader } from '@/components/ai-chat/ModeHeader';
 import { ViewModeContent } from '@/components/ai-chat/modes/ViewModeContent';
 import { ChatModeContent } from '@/components/ai-chat/modes/ChatModeContent';
@@ -20,6 +19,7 @@ import { useAIChatMode } from '@/hooks/useAIChatMode';
 import { MODE_CONFIGS } from '@/types/aiChatModes';
 import DiffModal from '@/components/ai-chat/DiffModal';
 import { buildLeftPanelTabs } from '@/components/ai-chat/modes/sharedPanelBuilders';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 
 const AIChatPage = () => {
     const dispatch = useDispatch();
@@ -111,9 +111,11 @@ const AIChatPage = () => {
 
     // Panel visibility state
     const [showLeftPanel, setShowLeftPanel] = useState(true);
-    const [showRightPanel, setShowRightPanel] = useState(true);
+    const [showRightPanel, setShowRightPanel] = useState(false);
     // Local inline modal state for middle-panel modal
     const [showAIChatInlineModal, setShowAIChatInlineModal] = useState(false);
+    const [showChatPreviewPanel, setShowChatPreviewPanel] = useState(true);
+    const [showEditPreviewPanel, setShowEditPreviewPanel] = useState(true);
 
     // Diff modal state
     const [showDiffModal, setShowDiffModal] = useState(false);
@@ -583,25 +585,72 @@ const AIChatPage = () => {
     }, [selectedDocument]);
 
     // Compute panels directly per-mode. Left panels are delegated to the shared builder where appropriate.
-    const panelConfigs = (() => {
-        // Use shared builder for the edit-mode left panel (Domain, Project Plan, Context)
-        const editLeftPanel = buildLeftPanelTabs({
-            domain,
-            projectDocument,
-            currentDocument,
-            onSelectDocument: handleSelectDocument,
-            onCreateDocumentFromTemplate: handleOpenTemplateSelector,
-            includeLibrary: false,
-            includeContext: true, // show Context Docs (DocumentPanel)
-            contextContent,
-            setContextContent,
-            isLibraryOpen,
-            libraryTarget,
-            openLibraryFor,
-            closeLibrary,
-            onSetCurrentDocument: handleSetCurrentDocument,
-        });
+    const editPanels = EditModeContent({
+        documentName,
+        setDocumentName,
+        documentType,
+        setDocumentType,
+        currentDocument,
+        handleSetCurrentDocument,
+        isLibraryOpen,
+        libraryTarget,
+        openLibraryFor,
+        closeLibrary,
+        previewContent: currentDocument,
+        setPreviewContent,
+        domain,
+        contextContent,
+        setContextContent,
+        documentCategory,
+        setDocumentCategory: (c?: DomainCategory | undefined) => {
+            if (c !== undefined) setDocumentCategory(c);
+        },
+        setDocumentId,
+        onChatWithDocument: handleChatWithDocument,
+        onClearDocument: handleClearCurrentDocument,
+        showPreviewPanel: showEditPreviewPanel,
+        onTogglePreviewPanel: () => setShowEditPreviewPanel((prev) => !prev),
+    });
 
+    const chatModalPanels = ChatModeContent({
+        subMode: chatSubMode,
+        domain,
+        ontology,
+        contextContent,
+        setContextContent,
+        additionalContext,
+        setAdditionalContext,
+        currentDocument,
+        previewContent,
+        isLibraryOpen,
+        libraryTarget,
+        openLibraryFor,
+        closeLibrary,
+        handleSetCurrentDocument,
+        chatInput,
+        setChatInput,
+        chatSelectedModel,
+        setChatSelectedModel,
+        chatMdPreview,
+        setChatMdPreview,
+        chatShowLeftPanel,
+        setChatShowLeftPanel,
+        chatShowRightPanel,
+        setChatShowRightPanel,
+        chatMessages,
+        setChatMessages,
+        includeDomainContext,
+        setIncludeDomainContext,
+        documentName,
+        documentType,
+        onSavePreviewToLibrary: handleSavePreviewToLibrary,
+        onCreateDocumentFromTemplate: handleOpenTemplateSelector,
+        onSelectDocument: handleSelectDocument,
+        includePreviewPanel: showAIChatInlineModal,
+        includeDocumentTabs: !showAIChatInlineModal,
+    });
+
+    const panelConfigs = (() => {
         const viewPanels = ViewModeContent({
             domain,
             currentDocument,
@@ -615,49 +664,13 @@ const AIChatPage = () => {
             onCreateDocumentFromTemplate: handleOpenTemplateSelector,
             additionalContext,
             setAdditionalContext,
-            chatMdPreview,
-            onSavePreviewToLibrary: handleSavePreviewToLibrary,
         });
 
-        if (mode === 'view') return viewPanels;
+        const baseMode = mode === 'edit' ? (showAIChatInlineModal ? 'chat' : 'view') : mode;
 
-        if (mode === 'chat') {
-            const chatPanels = ChatModeContent({
-                subMode: chatSubMode,
-                domain,
-                ontology,
-                contextContent,
-                setContextContent,
-                additionalContext,
-                setAdditionalContext,
-                currentDocument,
-                previewContent,
-                isLibraryOpen,
-                libraryTarget,
-                openLibraryFor,
-                closeLibrary,
-                handleSetCurrentDocument,
-                chatInput,
-                setChatInput,
-                chatSelectedModel,
-                setChatSelectedModel,
-                chatMdPreview,
-                setChatMdPreview,
-                chatShowLeftPanel,
-                setChatShowLeftPanel,
-                chatShowRightPanel,
-                setChatShowRightPanel,
-                chatMessages,
-                setChatMessages,
-                includeDomainContext,
-                setIncludeDomainContext,
-                documentName,
-                documentType,
-                onSavePreviewToLibrary: handleSavePreviewToLibrary,
-                onCreateDocumentFromTemplate: handleOpenTemplateSelector,
-                onSelectDocument: handleSelectDocument,
-            });
+        if (baseMode === 'view') return viewPanels;
 
+        if (baseMode === 'chat') {
             const chatLeftPanel = buildLeftPanelTabs({
                 domain,
                 projectDocument,
@@ -671,45 +684,10 @@ const AIChatPage = () => {
                 onSetCurrentDocument: handleSetCurrentDocument,
             });
 
-            return { ...chatPanels, leftPanelContent: chatLeftPanel };
+            return { ...chatModalPanels, leftPanelContent: chatLeftPanel };
         }
 
-        if (mode === 'edit') {
-            const editPanels = EditModeContent({
-                documentName,
-                setDocumentName,
-                documentType,
-                setDocumentType,
-                currentDocument,
-                handleSetCurrentDocument,
-                isLibraryOpen,
-                libraryTarget,
-                openLibraryFor,
-                closeLibrary,
-                previewContent: currentDocument,
-                setPreviewContent,
-                onSaveToLibrary: handleSaveToLibrary,
-                // pass the category state so the editor UI can display/edit it
-                documentCategory,
-                setDocumentCategory: (c?: DomainCategory | undefined) => {
-                    if (c !== undefined) setDocumentCategory(c);
-                },
-                // allow EditModeContent to set document id from frontmatter
-                setDocumentId,
-            });
-
-            return {
-                leftPanelContent: viewPanels?.leftPanelContent || editLeftPanel,
-                middlePanelContent: editPanels.middlePanel,
-                rightPanelContent: editPanels.rightPanel,
-            };
-        }
-
-        return {
-            leftPanelContent: editLeftPanel,
-            middlePanelContent: <div>Unknown mode</div>,
-            rightPanelContent: <div>Unknown mode</div>,
-        };
+        return viewPanels;
     })();
 
     // Helper to safely extract renderable content from a PanelGroup or plain JSX
@@ -722,6 +700,32 @@ const AIChatPage = () => {
             return found ? found.content : null;
         }
         return panel;
+    };
+
+    const renderPanelTabs = (panel: any) => {
+        if (!panel || typeof panel !== 'object' || !Array.isArray(panel.tabs)) return panel;
+        const defaultValue = panel.defaultTab || panel.tabs[0]?.key;
+        return (
+            <Tabs defaultValue={defaultValue} className="flex flex-col h-full">
+                <TabsList
+                    className="grid w-full pt-0"
+                    style={{ gridTemplateColumns: `repeat(${panel.tabs.length}, minmax(0, 1fr))` }}
+                >
+                    {panel.tabs.map((tab: any) => (
+                        <TabsTrigger key={tab.key} value={tab.key} className="text-[12px] py-1">
+                            {tab.label}
+                        </TabsTrigger>
+                    ))}
+                </TabsList>
+                <div className="flex-1 min-h-0 overflow-hidden">
+                    {panel.tabs.map((tab: any) => (
+                        <TabsContent key={tab.key} value={tab.key} className="h-full">
+                            {tab.content}
+                        </TabsContent>
+                    ))}
+                </div>
+            </Tabs>
+        );
     };
 
     // Precompute panel prop values to avoid large inline ternaries in JSX (prevents parser/hydration errors).
@@ -737,7 +741,9 @@ const AIChatPage = () => {
         // If panel is a tabs object, remove any 'chat' tab so the AI Chat tab is moved into the modal
         if (mp && typeof mp === 'object' && 'tabs' in mp) {
             const filteredTabs = (mp.tabs || []).filter((t: any) => t.key !== 'chat');
-            return { ...mp, tabs: filteredTabs, defaultTab: filteredTabs.length > 0 ? (mp.defaultTab || filteredTabs[0]?.key) : undefined } as any;
+            // Use defaultTab only if it exists on mp, otherwise fallback to first filtered tab's key
+            const defaultTab = (mp as any).defaultTab ?? (filteredTabs.length > 0 ? filteredTabs[0]?.key : undefined);
+            return { ...mp, tabs: filteredTabs, defaultTab } as any;
         }
 
         // Default: provide a single placeholder tab (no chat)
@@ -764,10 +770,18 @@ const AIChatPage = () => {
             onChatSubModeChange={switchChatSubMode}
             showFileOperations={true}
             onOpenAIChat={() => {
-                // Only open the inline AI Chat modal when we're in View mode
-                if (mode === 'view') setShowAIChatInlineModal(true);
+                if (mode !== 'view') {
+                    switchMode('view');
+                }
+                setShowChatPreviewPanel(true);
+                setShowAIChatInlineModal(true);
+                return true;
             }}
             aiChatOpen={showAIChatInlineModal}
+            onCloseAIChat={() => {
+                setShowChatPreviewPanel(true);
+                setShowAIChatInlineModal(false);
+            }}
         />
     );
 
@@ -803,48 +817,90 @@ const AIChatPage = () => {
                             {/* Reuse ModalThreePanelLayout inline rendering - full height */}
                             <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col">
                                 {/* header / title / close row */}
-                                <div className="flex items-center justify-between p-2 border-b border-gray-700 flex-shrink-0">
+                                <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
                                     <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Chat</h3>
-                                    <button onClick={() => setShowAIChatInlineModal(false)} className="text-gray-400 hover:text-white p-1">Close</button>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={() => setShowChatPreviewPanel((prev) => !prev)}
+                                            className="flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-600 text-gray-200 hover:bg-gray-800 transition-colors"
+                                        >
+                                            {showChatPreviewPanel ? (
+                                                <>
+                                                    <EyeOff className="h-3.5 w-3.5" />
+                                                    Hide Preview
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <Eye className="h-3.5 w-3.5" />
+                                                    Show Preview
+                                                </>
+                                            )}
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowChatPreviewPanel(true);
+                                                setShowAIChatInlineModal(false);
+                                            }}
+                                            className="text-gray-400 hover:text-white p-1"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
                                 </div>
                                 {/* content area - fill remaining height; let the chat component itself handle scrolling for messages */}
-                                <div className="p-4 flex-1 overflow-hidden min-h-0">
-                                    <div className="h-full min-h-0 flex flex-col">
-                                        {getPanelContent(ChatModeContent({
-                                            subMode: chatSubMode,
-                                            domain,
-                                            ontology,
-                                            contextContent,
-                                            setContextContent,
-                                            additionalContext,
-                                            setAdditionalContext,
-                                            currentDocument,
-                                            previewContent,
-                                            isLibraryOpen,
-                                            libraryTarget,
-                                            openLibraryFor,
-                                            closeLibrary,
-                                            handleSetCurrentDocument,
-                                            chatInput,
-                                            setChatInput,
-                                            chatSelectedModel,
-                                            setChatSelectedModel,
-                                            chatMdPreview,
-                                            setChatMdPreview,
-                                            chatShowLeftPanel,
-                                            setChatShowLeftPanel,
-                                            chatShowRightPanel,
-                                            setChatShowRightPanel,
-                                            chatMessages,
-                                            setChatMessages,
-                                            includeDomainContext,
-                                            setIncludeDomainContext,
-                                            documentName,
-                                            documentType,
-                                            onSavePreviewToLibrary: handleSavePreviewToLibrary,
-                                            onCreateDocumentFromTemplate: handleOpenTemplateSelector,
-                                            onSelectDocument: handleSelectDocument,
-                                        }).middlePanelContent)}
+                                <div className="p-0 flex-1 overflow-hidden min-h-0">
+                                    <div className="h-full min-h-0 flex overflow-hidden bg-background">
+                                        <div className="flex-1 min-w-0 h-full overflow-hidden">
+                                            {getPanelContent(chatModalPanels.middlePanelContent)}
+                                        </div>
+                                        {showChatPreviewPanel && chatModalPanels.rightPanelContent && (
+                                            <div className="w-[30%] min-w-[220px] h-full overflow-auto bg-gray-900/70 border-l border-gray-700">
+                                                {renderPanelTabs(chatModalPanels.rightPanelContent)}
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                    {mode === 'edit' && (
+                        <div
+                            className="absolute right-0 z-50"
+                            style={{ width: '66%', maxWidth: '66%', top: 'calc(var(--header-height,56px) + 8px)', bottom: 0 }}
+                        >
+                            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col border border-orange-700/60">
+                                <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
+                                    <h3 className="text-sm font-semibold text-orange-400 ms-2">
+                                        Edit Document: <span className="text-white">{documentName || 'Untitled Document'}</span>
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={handleSaveToLibrary}
+                                            className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded transition-colors"
+                                        >
+                                            Save to Library
+                                        </button>
+                                        <button
+                                            onClick={() => {
+                                                setShowEditPreviewPanel(true);
+                                                switchMode('view');
+                                            }}
+                                            className="text-gray-400 hover:text-white p-1"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                </div>
+                                <div className="p-0 flex-1 overflow-hidden min-h-0">
+                                    <div className="h-full min-h-0 flex overflow-hidden bg-background">
+                                        <div className="flex-1 min-w-0 h-full overflow-hidden">
+                                            {editPanels.middlePanel}
+                                        </div>
+                                        {showEditPreviewPanel && (
+                                            <div className="w-[30%] min-w-[220px] h-full overflow-auto bg-gray-900/70 border-l border-gray-700">
+                                                {editPanels.rightPanel}
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
                             </div>

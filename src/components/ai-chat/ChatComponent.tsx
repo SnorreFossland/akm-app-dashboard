@@ -907,10 +907,8 @@ Do not use its contents as contextual input for other questions--I want it impro
     }, [dispatch]);
 
     useEffect(() => {
-        if (!mdPreview) return;
-        if (setShowRightPanel) {
-            setShowRightPanel(true);
-        }
+        if (!mdPreview || !setShowRightPanel) return;
+        setShowRightPanel(true);
         if (typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('threepanel:openRight'));
             window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
@@ -1142,10 +1140,10 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                                 onViewInMarkdown(message.content);
                                                                 if (setShowRightPanel) {
                                                                     setShowRightPanel(true);
-                                                                }
-                                                                if (typeof window !== 'undefined') {
-                                                                    window.dispatchEvent(new CustomEvent('threepanel:openRight'));
-                                                                    window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
+                                                                    if (typeof window !== 'undefined') {
+                                                                        window.dispatchEvent(new CustomEvent('threepanel:openRight'));
+                                                                        window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
+                                                                    }
                                                                 }
                                                                 // Toggle preview state locally
                                                                 if (previewMessageIndex === index) {
@@ -1156,7 +1154,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                             }}
                                                             className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                         >
-                                                            Show Preview
+                                                            Show Preview 1
                                                         </button>
                                                     </>
                                                 )}
@@ -1194,10 +1192,10 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                             onViewInMarkdown(message.content);
                                                             if (setShowRightPanel) {
                                                                 setShowRightPanel(true);
-                                                            }
-                                                            if (typeof window !== 'undefined') {
-                                                                window.dispatchEvent(new CustomEvent('threepanel:openRight'));
-                                                                window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
+                                                                if (typeof window !== 'undefined') {
+                                                                    window.dispatchEvent(new CustomEvent('threepanel:openRight'));
+                                                                    window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
+                                                                }
                                                             }
                                                             // Toggle preview state locally
                                                             if (previewMessageIndex === index) {
@@ -1208,7 +1206,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                                                         }}
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
-                                                        Show Preview
+                                                        Show Preview 2
                                                     </button>
                                                 </>
                                             )}

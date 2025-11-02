@@ -1134,7 +1134,7 @@ Your task is to help the user define a specific domain of interest clearly, comp
                                                             }}
                                                             className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                         >
-                                                            Show Preview
+                                                            Show Preview domain-builder 1
                                                         </button>
                                                     </>
                                                 )}
@@ -1175,7 +1175,7 @@ Your task is to help the user define a specific domain of interest clearly, comp
                                                         }}
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
-                                                        Show Preview
+                                                        Show Preview domain-builder 2
                                                         {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                     </button>
                                                 </>

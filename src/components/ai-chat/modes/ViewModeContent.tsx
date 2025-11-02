@@ -1,14 +1,13 @@
 'use client';
 
-import { useMemo } from 'react';
-import { BookmarkPlus } from 'lucide-react';
-import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import { useState } from 'react';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { ViewModeMiddlePanel } from './ViewModeMiddlePanel';
 import type { MarkdownDocument } from '@/features/model-universe/modelSlice';
 // Update the import path to the correct location of Domain type
 import type { DomainData } from '@/features/model-universe/modelSlice';
 import { buildLeftPanelTabs } from './sharedPanelBuilders';
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 // If Domain is not exported from modelSlice, update to the correct file where Domain is defined.
 
 const debug = false
@@ -25,8 +24,6 @@ interface ViewModeContentProps {
     onCreateDocumentFromTemplate?: () => void;
     additionalContext: string;
     setAdditionalContext: (content: string) => void;
-    chatMdPreview?: string;
-    onSavePreviewToLibrary?: (content: string, name?: string, type?: string, options?: { forceNew?: boolean }) => void;
 }
 
 export function ViewModeContent({
@@ -42,8 +39,6 @@ export function ViewModeContent({
     onCreateDocumentFromTemplate,
     additionalContext,
     setAdditionalContext,
-    chatMdPreview,
-    onSavePreviewToLibrary,
 }: ViewModeContentProps) {
     // Debug logging
     if (debug) console.log('ViewModeContent render:', {
@@ -65,6 +60,20 @@ export function ViewModeContent({
         additionalContext,
         setAdditionalContext,
     });
+
+    // State for library panel
+    const [isLibraryOpen, setIsLibraryOpen] = useState(false);
+    const [libraryTarget, setLibraryTarget] = useState<string | null>(null);
+
+    const openLibraryFor = (target: string) => {
+        setLibraryTarget(target);
+        setIsLibraryOpen(true);
+    };
+
+    const closeLibrary = () => {
+        setIsLibraryOpen(false);
+        setLibraryTarget(null);
+    };
 
     // Create middle panel content - wrap in a div to ensure it renders
     const middlePanelContent = {
@@ -174,48 +183,9 @@ export function ViewModeContent({
         },
     ];
 
-    const previewTitle = useMemo(() => {
-        if (!chatMdPreview) return 'AI Response';
-        const firstLine = chatMdPreview.split('\n')[0]?.replace(/^#+\s*/, '').trim();
-        return firstLine || 'AI Response';
-    }, [chatMdPreview]);
-
-    if (chatMdPreview) {
-        rightTabs.unshift({
-            key: 'preview',
-            label: 'Preview',
-            content: (
-                <div className="h-full flex flex-col overflow-hidden">
-                    <div className="flex items-center justify-between px-4 py-3 border-b border-gray-700 bg-gray-800/50">
-                        <div className="flex flex-col gap-1 flex-1 min-w-0">
-                            <h3 className="text-base font-semibold text-gray-200 truncate">
-                                {previewTitle}
-                            </h3>
-                            <span className="text-xs text-gray-400">AI Response</span>
-                        </div>
-                    </div>
-                    <div className="flex items-center justify-end gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/30">
-                        <button
-                            className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded"
-                            onClick={() => onSavePreviewToLibrary?.(chatMdPreview, previewTitle, 'ai-response')}
-                            disabled={!onSavePreviewToLibrary}
-                            title={onSavePreviewToLibrary ? 'Save preview to library' : 'Saving disabled'}
-                        >
-                            <BookmarkPlus className="h-3 w-3" />
-                            Save to Library
-                        </button>
-                    </div>
-                    <div className="flex-1 overflow-auto px-4 py-4">
-                        <MarkdownPreview mdPreview={chatMdPreview} variant="default" />
-                    </div>
-                </div>
-            ),
-        });
-    }
-
     const rightPanelContent = {
         tabs: rightTabs,
-        defaultTab: chatMdPreview ? 'preview' : 'info',
+        defaultTab: 'info',
     };
 
     const result = {

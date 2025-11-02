@@ -40,9 +40,14 @@ interface ChatModeContentParams {
     onCreateDocumentFromTemplate?: () => void;
     projectDocument?: MarkdownDocument | null;
     onSelectDocument?: (doc: MarkdownDocument) => void;
+    includePreviewPanel?: boolean;
+    includeDocumentTabs?: boolean;
 }
 
 export function ChatModeContent(params: ChatModeContentParams) {
+    const includePreview = params.includePreviewPanel !== false;
+    const includeDocumentTabs = params.includeDocumentTabs !== false;
+
     // Get panels for both sub-modes
     const generalPanels = GeneralChatPanels({
         domain: params.domain,
@@ -77,6 +82,8 @@ export function ChatModeContent(params: ChatModeContentParams) {
         onCreateDocumentFromTemplate: params.onCreateDocumentFromTemplate,
         projectDocument: params.projectDocument,
         onSelectDocument: params.onSelectDocument,
+        enablePreviewPanel: includePreview,
+        includeDocumentTabs,
     });
 
     // const advancedPanels = AdvancedChatPanels({
@@ -122,7 +129,7 @@ export function ChatModeContent(params: ChatModeContentParams) {
                 : null, //advancedPanels.middlePanelContent.tabs,
         },
 
-        rightPanelContent: params.subMode === 'general'
+        rightPanelContent: includePreview && params.subMode === 'general'
             ? generalPanels.rightPanelContent
             : null, //advancedPanels.rightPanelContent,
     };

@@ -1362,7 +1362,7 @@ export default function ChatComponent({
                                                             }}
                                                             className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                         >
-                                                            Show Preview
+                                                            Show Preview old 1
                                                         </button>
                                                     </>
                                                 )}
@@ -1403,7 +1403,7 @@ export default function ChatComponent({
                                                         }}
                                                         className="text-xs ms-4 text-blue-400 hover:text-blue-200 flex items-center gap-1"
                                                     >
-                                                        Show Preview
+                                                        Show Preview old 2
                                                         {/* {previewMessageIndex === index ? "Show Plain Text" : "Markdown Preview"} */}
                                                     </button>
                                                 </>

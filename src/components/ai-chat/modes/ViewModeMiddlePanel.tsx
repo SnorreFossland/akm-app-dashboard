@@ -28,36 +28,32 @@ export function ViewModeMiddlePanel({
 
     return (
         <div className="h-full flex flex-col overflow-hidden">
-            {/* Document Header with Name and Type */}
             <div className="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-transparent">
-                <div className="flex items-center justify-between gap-2 flex-1">
-                    <div className="flex items-center space-x-2">
-                        <span className="font-semibold text-gray-200 break-words whitespace-pre-line">
-                            {document?.name || 'Current Document'}
-                        </span>
-                        <span className="ml-4 px-2 py-0.5 rounded bg-gray-700 text-xs text-gray-400">
-                            {document?.type || 'Markdown'}
-                        </span>
-                    </div>
-                    {onDelete && (
-                        <button
-                            type="button"
-                            className="ml-2 px-2 py-1 rounded bg-red-600/60 hover:bg-red-500 text-xs text-white flex items-center"
-                            title="Clear document"
-                            onClick={onDelete}
+                <div className="flex items-center space-x-2">
+                    <button
+                        type="button"
+                        onClick={onChatWithDoc}
+                        className="flex items-center gap-1 px-2 py-0.5 rounded bg-blue-700/80 hover:bg-blue-600 text-[11px] text-white transition-colors"
+                    >
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="w-4 h-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            strokeWidth={2}
                         >
-                            <svg
-                                className="h-4 w-4 mr-1"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth={2}
-                                viewBox="0 0 24 24"
-                            >
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                            Clear
-                        </button>
-                    )}
+                            <path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 12h16M4 18h7" />
+                        </svg>
+                    </button>
+                    <span className="font-semibold text-gray-200 break-words whitespace-pre-line">
+                        {document?.name || 'Current Document'}
+                    </span>
+                    <span className="ml-4 px-2 py-0.5 rounded bg-gray-700 text-xs text-gray-400">
+                        {document?.type || 'Markdown'}
+                    </span>
+                </div>
+                <div className="flex items-center gap-1.5">
                 </div>
             </div>
 

@@ -15,6 +15,7 @@ interface ModeHeaderProps {
     showFileOperations?: boolean;
     onOpenAIChat?: () => void;
     aiChatOpen?: boolean;
+    onCloseAIChat?: () => void;
 }
 
 export function ModeHeader({
@@ -25,10 +26,24 @@ export function ModeHeader({
     showFileOperations = false,
     onOpenAIChat,
     aiChatOpen,
+    onCloseAIChat,
 }: ModeHeaderProps) {
+    const handleOpenAIChat = () => {
+        if (typeof onOpenAIChat === 'function') {
+            return onOpenAIChat();
+        }
+        return false;
+    };
+
     return (
         <div className="flex items-center justify-between gap-2 px-4 py-2 border-b border-gray-700 bg-gray-800/50 w-full">
-            <ModeSwitcher currentMode={mode} onModeChange={onModeChange} onOpenAIChat={onOpenAIChat} aiChatOpen={aiChatOpen} />
+            <ModeSwitcher
+                currentMode={mode}
+                onModeChange={onModeChange}
+                onOpenAIChat={handleOpenAIChat}
+                aiChatOpen={aiChatOpen}
+                onCloseAIChat={onCloseAIChat}
+            />
         </div>
     );
 }

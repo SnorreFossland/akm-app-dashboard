@@ -11,7 +11,7 @@ import DiffModal from './DiffModal';
 
 interface DocumentPanelProps {
     mdContent: string;
-    setMdContent: (content: string) => void;
+    setMdContent?: (content: string) => void;
     onEdit?: () => void;
     onPaste?: () => void;
     onLibrary?: () => void;
@@ -39,7 +39,7 @@ interface DocumentPanelProps {
 
 export default function DocumentPanel({
     mdContent,
-    setMdContent,
+    setMdContent = () => { },
     onSelect = () => { },
     onEdit = () => { },
     onPaste = () => { },
@@ -98,6 +98,11 @@ export default function DocumentPanel({
         setIsDocumentListVisible(effectiveShowDocumentList);
     }, [effectiveShowDocumentList]);
 
+
+    useEffect(() => {
+        setIsDocumentListVisible(false)
+    }, []);
+    
     // Function to detect placeholders in the format [placeholder]
     useEffect(() => {
         if (!editContent) {
@@ -285,7 +290,7 @@ export default function DocumentPanel({
             updatedAt: nowIso,
         }));
 
-        dispatch(setFocusDoc({ id: idToUse }));
+        dispatch(setFocusDoc({ id: idToUse, name: resolvedName }));
         onFocusDocChange?.(idToUse);
 
         // Update the currentDocument state in the parent component
@@ -468,19 +473,38 @@ export default function DocumentPanel({
             return trimmed.charAt(0).toUpperCase() + trimmed.slice(1);
         };
 
-        // For middle and right panels, show document name and type if available
-        if ((panelType === 'middle' || panelType === 'right') && (documentName || documentType)) {
+        if (panelType === 'middle') {
             const parts = [
-                documentName || 'Untitled',
+                documentName || 'Current Document',
                 formatType(documentType)
             ].filter(Boolean);
-            return parts.length > 0 ? parts.join(' • ') : (panelType === 'middle' ? 'Current Document' : 'Markdown Preview');
+            const label = parts.length > 0 ? parts.join(' • ') : 'Current Document';
+            return (
+                <span className="flex items-center gap-1">
+                    {allowDocumentList && !isDocumentListVisible && (
+                        <button
+                            onClick={() => setIsDocumentListVisible(true)}
+                            className="p-1 border border-gray-700 bg-gray-800 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded-md"
+                            title="Show document list"
+                        >
+                            <ChevronLeft className="h-4 w-4" />
+                        </button>
+                    )}
+                    {label}
+                </span>
+            );
         }
 
-        // For left panel or when no name/type
-        const baseLabel = (panelType === 'left' ? 'Current text' : (panelType === 'middle' ? 'Current Document' : 'Markdown Preview'));
-        return baseLabel;
-    }, [panelType, documentName, documentType]);
+        if (panelType === 'right') {
+            const parts = [
+                documentName || 'Preview',
+                formatType(documentType)
+            ].filter(Boolean);
+            return parts.length > 0 ? parts.join(' • ') : 'Markdown Preview';
+        }
+
+        return undefined;
+    }, [panelType, documentName, documentType, allowDocumentList, isDocumentListVisible]);
 
     return (
         <div className="p-2 flex h-full">
@@ -488,7 +512,7 @@ export default function DocumentPanel({
             {allowDocumentList && isDocumentListVisible && (
                 <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b border-gray-600">
-                        <h3 className="text-sm font-medium text-gray-300">Documents</h3>
+                        <h3 className="text-sm font-medium text-gray-300">Document list</h3>
                         {onNewDocument && (
                             <button
                                 onClick={onNewDocument}
@@ -498,13 +522,6 @@ export default function DocumentPanel({
                                 <Plus className="h-5 w-5" />
                             </button>
                         )}
-                        <button
-                            onClick={() => setIsLibraryOpen(true)}
-                            className="text-gray-400 hover:text-blue-400 hover:bg-gray-700 p-1 rounded"
-                            title="Open library modal"
-                        >
-                            <Library className="h-4 w-4" />
-                        </button>
                         <button
                             onClick={() => setIsDocumentListVisible(false)}
                             className="text-gray-400 hover:text-white"
@@ -638,13 +655,13 @@ export default function DocumentPanel({
                                 >
                                     {copiedIndex === 1 ? 'Copied!' : 'Copy'}
                                 </button>
-                                <button
+                                {/* <button
                                     onClick={handleSaveToLibrary}
                                     className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
                                     title="Save to library"
                                 >
                                     <BookmarkPlus className="h-4 w-4" />
-                                </button>
+                                </button> */}
                             </>
                         ) : (
                             <>

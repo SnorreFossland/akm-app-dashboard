@@ -1,8 +1,9 @@
 'use client';
 
 import React, { useEffect, useMemo, useState } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
+import { useDispatch } from 'react-redux';
 import { useSearchParams } from 'next/navigation';
+import { Eye, EyeOff } from 'lucide-react';
 import { RootState } from '@/store';
 import { DOMAIN_CATEGORIES, DOCUMENT_TYPES, setDomainCategory, addDomainCategory, DomainCategory } from '@/features/model-universe/modelSlice';
 
@@ -14,6 +15,10 @@ interface DocumentMetadataHeaderProps {
     currentDocument: string;
     documentCategory?: DomainCategory;
     setDocumentCategory?: (c?: DomainCategory) => void;
+    onChatWithDocument?: () => void;
+    onClearDocument?: () => void;
+    showPreviewPanel?: boolean;
+    onTogglePreviewPanel?: () => void;
 }
 
 export function DocumentMetadataHeader({
@@ -24,10 +29,15 @@ export function DocumentMetadataHeader({
     currentDocument,
     documentCategory,
     setDocumentCategory,
+    onChatWithDocument,
+    onClearDocument,
+    showPreviewPanel,
+    onTogglePreviewPanel,
 }: DocumentMetadataHeaderProps) {
     const dispatch = useDispatch();
     const searchParams = useSearchParams();
     const isEditMode = (searchParams?.get?.('mode') ?? '') === 'edit';
+
 
     const [hasUserSetName, setHasUserSetName] = useState(Boolean(documentName));
 
@@ -126,70 +136,112 @@ export function DocumentMetadataHeader({
 
     return (
         <div className="flex flex-col gap-2 px-4 py-3 border-b border-gray-700 bg-gray-800/50">
-            {/* Name, Type and Category on the same line */}
-            <div className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                    <label className="block text-xs text-gray-400 mb-1">Document Name</label>
-                    <input
-                        type="text"
-                        value={documentName}
-                        onChange={(e) => {
-                            setHasUserSetName(true);
-                            setDocumentName(e.target.value);
-                        }}
-                        className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
-                        placeholder="Document name (auto-filled from first line)"
-                    />
-                </div>
-
-                <div className="w-48">
-                    <label className="block text-xs text-gray-400 mb-1">Type</label>
-                    <select
-                        value={documentType}
-                        onChange={(e) => setDocumentType(e.target.value)}
-                        className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
-                    >
-                        {documentTypeOptions.map((type) => (
-                            <option key={type} value={type}>
-                                {type.charAt(0).toUpperCase() + type.slice(1)}
-                            </option>
-                        ))}
-                    </select>
-                </div>
-
-                {/* Category placed inline with label above the select */}
-                <div className="w-44">
-                    <label className="block text-xs text-gray-400 mb-1">Category</label>
-                    <select
-                        id="meta-category"
-                        data-testid="document-metadata-category"
-                        value={effectiveValue}
-                        onChange={handleCategoryChange}
-                        className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
-                        disabled={!setDocumentCategory && !isEditMode}
-                    >
-                        <option value="">None</option>
-                        {categoryOptions.length > 0 ? (
-                            categoryOptions.map(cat => <option key={cat} value={cat}>{cat}</option>)
-                        ) : (
-                            <option value="" disabled>No categories defined</option>
-                        )}
-                    </select>
-
-                    {/* Compact hint below the control */}
-                    {!setDocumentCategory && !isEditMode && (
-                        <div className="text-xs text-gray-400 mt-1">Read-only</div>
+            {(onTogglePreviewPanel || onChatWithDocument || onClearDocument) && (
+                <div className="flex flex-wrap items-center justify-end gap-1.5">
+                    {onTogglePreviewPanel && (
+                        <button
+                            onClick={onTogglePreviewPanel}
+                            className="flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-600 text-gray-200 hover:bg-gray-800 transition-colors"
+                        >
+                            {showPreviewPanel ? (
+                                <>
+                                    <EyeOff className="h-3.5 w-3.5" />
+                                    Hide Preview
+                                </>
+                            ) : (
+                                <>
+                                    <Eye className="h-3.5 w-3.5" />
+                                    Show Preview 3
+                                </>
+                            )}
+                        </button>
                     )}
-                    {/* {!setDocumentCategory && isEditMode && (
+                    {/* {onChatWithDocument && (
+                        <button
+                            type="button"
+                            onClick={onChatWithDocument}
+                            className="px-2.5 py-0.5 rounded bg-blue-700/80 hover:bg-blue-600 text-[11px] text-white transition-colors"
+                        >
+                            Chat with Document
+                        </button>
+                    )} */}
+                    {onClearDocument && (
+                        <button
+                            type="button"
+                            onClick={onClearDocument}
+                            className="px-2.5 py-0.5 rounded bg-red-600/70 hover:bg-red-500 text-[11px] text-white transition-colors"
+                        >
+                            Clear
+                        </button>
+                    )}
+                </div>
+            )}
+            <details className="w-full"><summary className="cursor-pointer text-sm font-medium text-gray-300 mb-1">Document Metadata</summary>
+                {/* Name, Type and Category on the same line */}
+                <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                        <label className="block text-xs text-gray-400 mb-1">Document Name</label>
+                        <input
+                            type="text"
+                            value={documentName}
+                            onChange={(e) => {
+                                setHasUserSetName(true);
+                                setDocumentName(e.target.value);
+                            }}
+                            className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
+                            placeholder="Document name (auto-filled from first line)"
+                        />
+                    </div>
+
+                    <div className="w-48">
+                        <label className="block text-xs text-gray-400 mb-1">Type</label>
+                        <select
+                            value={documentType}
+                            onChange={(e) => setDocumentType(e.target.value)}
+                            className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
+                        >
+                            {documentTypeOptions.map((type) => (
+                                <option key={type} value={type}>
+                                    {type.charAt(0).toUpperCase() + type.slice(1)}
+                                </option>
+                            ))}
+                        </select>
+                    </div>
+
+                    {/* Category placed inline with label above the select */}
+                    <div className="w-44">
+                        <label className="block text-xs text-gray-400 mb-1">Category</label>
+                        <select
+                            id="meta-category"
+                            data-testid="document-metadata-category"
+                            value={effectiveValue}
+                            onChange={handleCategoryChange}
+                            className="w-full px-2 py-1 text-sm bg-gray-700 border border-gray-600 rounded focus:border-blue-500 focus:outline-none text-gray-200"
+                            disabled={!setDocumentCategory && !isEditMode}
+                        >
+                            <option value="">None</option>
+                            {categoryOptions.length > 0 ? (
+                                categoryOptions.map(cat => <option key={cat} value={cat}>{cat}</option>)
+                            ) : (
+                                <option value="" disabled>No categories defined</option>
+                            )}
+                        </select>
+
+                        {/* Compact hint below the control */}
+                        {!setDocumentCategory && !isEditMode && (
+                            <div className="text-xs text-gray-400 mt-1">Read-only</div>
+                        )}
+                        {/* {!setDocumentCategory && isEditMode && (
                         <div className="text-xs text-green-400 mt-1">Editable (edit mode)</div>
                     )} */}
+                    </div>
                 </div>
-            </div>
 
-            {/* Character count */}
-            <div className="text-xs text-gray-400">
-                {currentDocument?.length || 0} characters
-            </div>
+                {/* Character count */}
+                <div className="text-xs text-gray-400">
+                    {currentDocument?.length || 0} characters
+                </div>
+            </details>
         </div>
     );
 }

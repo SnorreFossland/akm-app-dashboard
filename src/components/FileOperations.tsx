@@ -7,6 +7,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faDownload, faUpload, faTrash } from '@fortawesome/free-solid-svg-icons';
 import { usePathname } from 'next/navigation';
 import Link from 'next/link';
+import { Menu } from 'lucide-react';
 import { handleSaveToLocalFile } from '@/features/model-universe/components/HandleSaveToLocalFile';
 import { handleGetLocalFile } from '@/features/model-universe/components/HandleGetLocalFile';
 import { handleGetDefaultFile, handleGetPublicFile } from '@/features/model-universe/components/HandleGetDefaultFile';
@@ -27,6 +28,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     const dispatch = useAppDispatch();
     const pathname = usePathname();
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const menuRef = useRef<HTMLDivElement>(null);
     const rawDomainName = typeof domain?.name === 'string' ? domain.name : '';
     const cleanedDomainName = rawDomainName.trim();
     const rawSource = data.phSource || '';
@@ -36,6 +38,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     const isTemplateSource = rawSource.includes('-Template');
     const currentMenuItemDescription = getCurrentMenuItemDescription(pathname);
     const [isMobile, setIsMobile] = useState(false);
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
 
     useEffect(() => {
         const checkScreenSize = () => {
@@ -54,6 +57,19 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     useEffect(() => {
         console.debug('FileOperations observed phSource change:', phSource);
     }, [phSource]);
+
+    useEffect(() => {
+        if (!isMenuOpen) return;
+
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsMenuOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [isMenuOpen]);
 
     const onFileSelected = (event: React.ChangeEvent<HTMLInputElement>) => {
         handleGetLocalFile(event, dispatch, data);
@@ -144,106 +160,150 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     }) && hasModelContent('type');
 
     const statusItems = [
-        { label: 'Domain is defined', complete: hasDomainDefinition },
-        { label: 'Project plan is set', complete: hasProjectPlan },
-        { label: 'POPS model is populated', complete: hasModelContent('pops') },
-        { label: 'IRTV model is populated', complete: hasModelContent('irtv') },
-        { label: 'BPMN model is populated', complete: hasModelContent('bpmn') },
-        { label: 'TYPE model is populated', complete: hasTypeModel },
+        { label: 'Domain', complete: hasDomainDefinition },
+        { label: 'Project plan', complete: hasProjectPlan },
+        { label: 'POPS model', complete: hasModelContent('pops') },
+        { label: 'IRTV model', complete: hasModelContent('irtv') },
+        { label: 'BPMN model', complete: hasModelContent('bpmn') },
+        { label: 'TYPE model', complete: hasModelContent('core') },
+        { label: 'META model', complete: hasTypeModel },
     ];
 
     return (
         <div className={`w-full ${className}`}>
-            <div className="flex flex-wrap justify-center items-center gap-1 mb-1 text-[10px] leading-tight">
-                {statusItems.map((item) => (
-                    <div
-                        key={item.label}
-                        className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded border transition-colors ${
-                            item.complete
-                                ? 'border-green-600 bg-green-900/30 text-green-200'
-                                : 'border-gray-700 bg-gray-800/70 text-gray-400'
-                        }`}
-                        title={item.complete ? 'Completed' : 'Pending'}
-                    >
-                        <span
-                            className={`inline-block w-1.5 h-1.5 rounded-full ${
-                                item.complete ? 'bg-green-400' : 'bg-gray-500'
-                            }`}
-                        />
-                        <span className="whitespace-nowrap">{item.label}</span>
-                    </div>
-                ))}
-            </div>
+
             <div className="flex md:flex-row items-center justify-between w-full">
-            <div className="flex items-center gap-2 w-full justify-between">
+                <div className="flex items-center gap-2 w-full justify-between">
+                    <div className="relative" ref={menuRef}>
+                        <Button
+                            variant="ghost"
+                            size={isMobile ? 'icon' : 'sm'}
+                            onClick={() => setIsMenuOpen((prev) => !prev)}
+                            className="flex items-center"
+                            title="File actions"
+                        >
+                            <Menu className="w-4 h-4" />
+                        </Button>
+                        {isMenuOpen && (
+                            <div className="absolute left-0 mt-1 w-40 rounded-md border border-gray-700 bg-gray-900 shadow-lg z-50">
+                                <button
+                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+                                    onClick={() => {
+                                        fileInputRef.current?.click();
+                                        setIsMenuOpen(false);
+                                    }}
+                                >
+                                    <FontAwesomeIcon icon={faUpload} className="w-3.5" />
+                                    <span>Load</span>
+                                </button>
+                                <button
+                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-gray-200 hover:bg-gray-800"
+                                    onClick={() => {
+                                        onSaveFile();
+                                        setIsMenuOpen(false);
+                                    }}
+                                >
+                                    <FontAwesomeIcon icon={faDownload} className="w-3.5" />
+                                    <span>Save</span>
+                                </button>
+                                <button
+                                    className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-300 hover:bg-gray-800"
+                                    onClick={() => {
+                                        setIsMenuOpen(false);
+                                        onClearModel();
+                                    }}
+                                >
+                                    <FontAwesomeIcon icon={faTrash} className="w-3.5" />
+                                    <span>Clear</span>
+                                </button>
+                            </div>
+                        )}
+                    </div>
 
-                <div className="bg-gray-800 rounded border border-green-900 ms-1 px-1  text-xs text-orange-400 flex-shrink-0">
-                    <span className="text-orange-300">{pathname}</span>
-                </div>
-                <span className="text-gray-500  whitespace-nowrap flex-shrink-0">Domain Library:</span>
-                <input
-                    type="text"
-                    value={displayUniverseName}
-                    onChange={(e) => {
-                        // If the current source is a template, update the domain name (so the shown value changes)
-                        // and also keep phSource with the '-Template' suffix. For non-template sources, update phSource only.
-                        const templateSuffix = '-Template';
-                        const rawValue = (e.target.value || '');
-                        const newValue = rawValue; // preserve user's input (we'll trim when storing source)
+                    {/* <div className="bg-gray-800 rounded border border-green-900 ms-1 px-1 text-xs text-orange-400 flex-shrink-0">
+                       <span className="text-orange-300">{pathname}</span>
+                    </div> */}
+                    <span className="text-gray-500  whitespace-nowrap flex-shrink-0">Domain Library:</span>
+                    <input
+                        type="text"
+                        value={displayUniverseName}
+                        onChange={(e) => {
+                            // If the current source is a template, update the domain name (so the shown value changes)
+                            // and also keep phSource with the '-Template' suffix. For non-template sources, update phSource only.
+                            const templateSuffix = '-Template';
+                            const rawValue = (e.target.value || '');
+                            const newValue = rawValue; // preserve user's input (we'll trim when storing source)
 
-                        if (isTemplateSource) {
-                            // Update domain.name so the displayed value reflects the edit
-                            const domainName = newValue.replace(new RegExp(`${templateSuffix}$`), '').trim();
-                            // setDomainData expects a full DomainData object; preserve other fields from current domain
-                            dispatch(setDomainData({
-                                name: domainName,
-                                description: domain?.description ?? '',
-                                presentation: domain?.presentation ?? '',
-                                prompt: domain?.prompt ?? '',
-                            }));
+                            if (isTemplateSource) {
+                                // Update domain.name so the displayed value reflects the edit
+                                const domainName = newValue.replace(new RegExp(`${templateSuffix}$`), '').trim();
+                                // setDomainData expects a full DomainData object; preserve other fields from current domain
+                                dispatch(setDomainData({
+                                    name: domainName,
+                                    description: domain?.description ?? '',
+                                    presentation: domain?.presentation ?? '',
+                                    prompt: domain?.prompt ?? '',
+                                }));
 
-                            // Ensure phSource keeps the suffix when non-empty
-                            const hasSuffix = newValue.endsWith(templateSuffix);
-                            const sourceName = newValue.trim();
-                            const newSource = sourceName ? (hasSuffix ? sourceName : `${sourceName}${templateSuffix}`) : '';
-                            dispatch(setSource(newSource));
-                        } else {
-                            dispatch(setSource(newValue.trimStart()));
-                        }
-                    }}
-                    className={`bg-gray-800 px-2 rounded text-white min-w-0 flex-1 ${isTemplateSource ? 'animate-pulse placeholder:text-orange-400' : ''}`}
-                    placeholder="Type your Universe/file name here"
-                />
-                {/* App quick-nav buttons */}
-                <div className="flex-1 justify-around items-center gap-1 overflow-x-auto pr-2">
-                    {[
-                        // { label: 'Dashboard', href: '/dashboard' },
-                        { label: 'Documents', href: '/ai-chat' },
-                        // { label: 'Domain', href: '/domain-builder' },
-                        // { label: 'Ontology', href: '/ontology-builder' },
-                        { label: 'Models', href: '/model-builder' },
-                        { label: 'Modelviews', href: '/modelview-builder' },
-                        // { label: 'Prompt', href: '/prompt-builder' },
-                        // { label: 'Roadmap', href: '/roadmap' },
-                    ].map((item) => {
-                        const isActive = pathname?.startsWith(item.href);
-                        return (
-                            <Button
-                                key={item.href}
-                                asChild
-                                size={isMobile ? 'icon' : 'sm'}
-                                variant={isActive ? 'secondary' : 'ghost'}
-                                className={`whitespace-nowrap ${isActive ? 'text-orange-400 bg-orange-900/20 border-orange-800' : ''}`}
-                                title={item.label}
+                                // Ensure phSource keeps the suffix when non-empty
+                                const hasSuffix = newValue.endsWith(templateSuffix);
+                                const sourceName = newValue.trim();
+                                const newSource = sourceName ? (hasSuffix ? sourceName : `${sourceName}${templateSuffix}`) : '';
+                                dispatch(setSource(newSource));
+                            } else {
+                                dispatch(setSource(newValue.trimStart()));
+                            }
+                        }}
+                        className={`bg-gray-800 px-2 rounded text-white min-w-0 flex-1 ${isTemplateSource ? 'animate-pulse placeholder:text-orange-400' : ''}`}
+                        placeholder="Type your Universe/file name here"
+                    />
+                    {/* App quick-nav buttons */}
+                    <div className="flex-1 justify-around items-center gap-1 overflow-x-auto pr-2">
+                        {[
+                            // { label: 'Dashboard', href: '/dashboard' },
+                            { label: 'Documents', href: '/ai-chat' },
+                            // { label: 'Domain', href: '/domain-builder' },
+                            // { label: 'Ontology', href: '/ontology-builder' },
+                            { label: 'Models', href: '/model-builder' },
+                            { label: 'Modelviews', href: '/modelview-builder' },
+                            // { label: 'Prompt', href: '/prompt-builder' },
+                            // { label: 'Roadmap', href: '/roadmap' },
+                        ].map((item) => {
+                            const isActive = pathname?.startsWith(item.href);
+                            return (
+                                <Button
+                                    key={item.href}
+                                    asChild
+                                    size={isMobile ? 'icon' : 'sm'}
+                                    variant={isActive ? 'secondary' : 'ghost'}
+                                    className={`whitespace-nowrap ${isActive ? 'text-orange-400 bg-orange-900/20 border-orange-800' : ''}`}
+                                    title={item.label}
+                                >
+                                    <Link href={item.href}>{!isMobile ? item.label : item.label.charAt(0)}</Link>
+                                </Button>
+                            );
+                        })}
+                    </div>
+                    <div className="flex flex-wrap justify-center items-center gap-1 mb-1 text-[10px] bg-gray-700 leading-tight">Status:
+                        {statusItems.map((item) => (
+                            <div
+                                key={item.label}
+                                className={`flex items-center gap-1.5 px-1.5 py-0.5 rounded border transition-colors ${item.complete
+                                    ? 'border-green-600 bg-green-900/30 text-green-200'
+                                    : 'border-gray-700 bg-gray-800/70 text-gray-400'
+                                    }`}
+                                title={item.complete ? 'Completed' : 'Pending'}
                             >
-                                <Link href={item.href}>{!isMobile ? item.label : item.label.charAt(0)}</Link>
-                            </Button>
-                        );
-                    })}
-                </div>
-                
-                <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {(displayUniverseName || 'untitled')}.json</div>
-                <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
+                                <span
+                                    className={`inline-block w-1.5 h-1.5 rounded-full ${item.complete ? 'bg-green-400' : 'bg-gray-500'
+                                        }`}
+                                />
+                                <span className="whitespace-nowrap">{item.label}</span>
+                            </div>
+                        ))}
+                    </div>
+                    {/* <div className="text-xs text-gray-500 whitespace-nowrap flex-shrink-0">File: {(displayUniverseName || 'untitled')}.json</div> */}
+                    {/* <div className="flex items-center gap-2 text-xs text-gray-500 flex-shrink-0">
 
                     <input
                         ref={fileInputRef}
@@ -263,18 +323,6 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                         <FontAwesomeIcon icon={faUpload} className="h-2 w-2" />
                         {!isMobile && "Load"}
                     </Button>
-
-                    {/* <Button
-                        variant="outline"
-                        size={isMobile ? "icon" : "sm"}
-                        onClick={onLoadMimris}
-                        className="flex items-center gap-1"
-                        title="Load Mimris-Template_PR.json from /public"
-                    >
-                        <FontAwesomeIcon icon={faUpload} className="h-2 w-2" />
-                        {!isMobile && "Mimris"}
-                    </Button> */}
-
                     <Button
                         variant="outline"
                         size={isMobile ? "icon" : "sm"}
@@ -296,8 +344,8 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
                         <FontAwesomeIcon icon={faTrash} className="h-2 w-2" />
                         {!isMobile && "Clear"}
                     </Button>
+                </div> */}
                 </div>
-            </div>
             </div>
         </div>
     );

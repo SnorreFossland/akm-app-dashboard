@@ -271,7 +271,7 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
                 nextAutoPrompt = `Build IRTV Workspaces for the the following Processes: ${popsProcessesNames.join(", ")}.
 Create a Container for each process and add Tasks and Information objects with vital Properties. 
 Then add Views and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} 
-Create a hasMember relationship from the Process Container to each IRTV objects it uses.
+Create a contains relationship from the Process Container to each IRTV objects it uses.
 Do not repeat type-names in the name of objects. Consider also the #Context below.
 `;
                 break;
@@ -311,10 +311,12 @@ Start with creating an object of type Metamodel with a relship "contains" to all
                     .map((o: any) => o.name + ', ');
 
                 nextAutoPrompt =
-`Build a POPS model with Processes, Organizations, Products and Services/Systems based on the Domain defined in the #Context below.
-Create Processes with relevant subprocesses and link to Organizations that perform them. The Products are outComes and usedIn Processes. Processes. uses Services/Systems to deliver Products.
-Create objects and relationships using the following object and relationship types:  ${
+`Build a POPS model with Processes, Organizations, Products and Services/Systems based on the Domain definition in the #Context below.
+Focus on Processes structures (subprocesses) and sequences. Organization that perform Processes. Processes produces Products and Products are usedIn Processes.
+Processes uses Services/Systems.
+Create objects and relationships using the following objects:  ${
 (types.length ? types.join(" ") : "")}
+The objects and relationships must be according to the POPS metamodel defined in #Metamodel. Container contains all other objects.
 `;
                 break;
 
@@ -329,9 +331,11 @@ Create objects and relationships using the following object and relationship typ
                 nextAutoPrompt =
 `Build a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the #Context below.
 Evaluate where BPMN pools and lanes are appropriate and ensure logical consistency. 
-Do not use type-names in the name of objects. Remove any IRTV type-names in the name of objects. The Information objects should be represented as EntityType objects.
-
-${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
+Do not use type-names in the name of objects. Do not use type-names in the name of objects. 
+The Information objects should be represented as EntityType objects.
+Roles should be represented as Lanes and Tasks as Activities. Views should be represented as DataObjects.
+${types.length ? `Create objects and relationships using the following IRTV types: ${types.join(" ")}` : ""}
+The objects and relationships must be according to the BPMN metamodel defined in #Metamodel.
 `;
                 break;
         }
@@ -665,7 +669,7 @@ Ensure logical consistency and relationship principles.`
             "relationships": [
                 {
                     "id": "UUID",
-                    "name": "hasOutcome",
+                    "name": "produces",
                     "typeRef": "Relationship Type uuid",
                     "fromobjectRef": "Process uuid",
                     "nameFrom": "Process",
@@ -859,7 +863,7 @@ Relships:
 - Use Devices to represent tools or equipment used in processes.
 - Use DistributionNetworks to represent channels through which products/services are delivered.
 - Process triggers Process with "triggers" relationship.
-- Process hasOutcome Product with "hasOutcome" relationship.
+- Process produces Product with "produces" relationship.
 - Process uses Services and Systems.
 - Process input and output to Data.
 - Organizations owns Processes and Products with "owns" relationship.

@@ -44,6 +44,8 @@ interface GeneralChatPanelsProps {
     additionalContext?: string;
     setAdditionalContext?: (content: string) => void;
     onSelectDocument?: (doc: MarkdownDocument) => void;
+    enablePreviewPanel?: boolean;
+    includeDocumentTabs?: boolean;
 }
 
 export function GeneralChatPanels(props: GeneralChatPanelsProps) {
@@ -79,6 +81,8 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
         onCreateDocumentFromTemplate,
         projectDocument,
         onSelectDocument,
+        enablePreviewPanel = true,
+        includeDocumentTabs = true,
     } = props;
 
     const handleResponseChange = (response: string) => {
@@ -94,10 +98,10 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
             // For this file, use window event as a workaround
             window.dispatchEvent(new CustomEvent('aiChat_setPreviewName', { detail: { previewName: firstLine } }));
         }
-        if (setChatShowRightPanel) {
+        if (enablePreviewPanel && setChatShowRightPanel) {
             setChatShowRightPanel(true);
         }
-        if (typeof window !== 'undefined') {
+        if (enablePreviewPanel && typeof window !== 'undefined') {
             window.dispatchEvent(new CustomEvent('threepanel:openRight'));
             window.dispatchEvent(new CustomEvent('threepanel:setRightTab', { detail: { key: 'preview' } }));
         }
@@ -160,12 +164,16 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                 />
             ),
         },
-        {
-            key: 'document',
-            label: 'Current Document',
-            content: (
-                <div className="h-full overflow-hidden">
-                    <DocumentPanel
+    ];
+
+    if (includeDocumentTabs) {
+        middleTabs.push(
+            {
+                key: 'document',
+                label: 'Current Document',
+                content: (
+                    <div className="h-full overflow-hidden">
+                        <DocumentPanel
                         mdContent={currentDocument}
                         setMdContent={handleSetCurrentDocument}
                         setIsLibraryOpen={(open: boolean) => {
@@ -186,55 +194,58 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                     />
                 </div>
             ),
-        },
-        {
-            key: 'library',
-            label: 'Library',
-            content: (
-                <div className="h-full overflow-auto px-2 py-2">
-                    <MarkdownLibrary
-                        onSelect={(content, name, doc) => {
-                            if (doc && onSelectDocument) {
-                                onSelectDocument(doc);
-                            } else {
-                                handleSetCurrentDocument(content);
-                            }
-                        }}
-                        hideExportLibraryButton={false}
-                        onSetCurrentDocument={(content, name, doc) => {
-                            if (doc && onSelectDocument) {
-                                onSelectDocument(doc);
-                            }
-                            handleSetCurrentDocument(content);
-                        }}
-                        onSetAdditionalContext={setAdditionalContext}
-                        currentDocument={currentDocument}
-                        onCreateFromTemplate={onCreateDocumentFromTemplate}
-                    />
-                </div>
-            ),
-        },
-    ];
-
-    // Right panel: only Preview kept for General chat (library removed so the document list is hidden)
-    const rightPanelContent = {
-        tabs: [
+            },
             {
-                key: 'preview',
-                label: 'Preview',
+                key: 'library',
+                label: 'Library',
                 content: (
-                    <PreviewPanel
-                        chatMdPreview={chatMdPreview}
-                        setChatMdPreview={setChatMdPreview}
-                        onSavePreviewToLibrary={props.onSavePreviewToLibrary}
-                        documentName={props.documentName}
-                        documentType={props.documentType}
-                    />
+                    <div className="h-full overflow-auto px-2 py-2">
+                        <MarkdownLibrary
+                            onSelect={(content, name, doc) => {
+                                if (doc && onSelectDocument) {
+                                    onSelectDocument(doc);
+                                } else {
+                                    handleSetCurrentDocument(content);
+                                }
+                            }}
+                            hideExportLibraryButton={false}
+                            onSetCurrentDocument={(content, name, doc) => {
+                                if (doc && onSelectDocument) {
+                                    onSelectDocument(doc);
+                                }
+                                handleSetCurrentDocument(content);
+                            }}
+                            onSetAdditionalContext={setAdditionalContext}
+                            currentDocument={currentDocument}
+                            onCreateFromTemplate={onCreateDocumentFromTemplate}
+                        />
+                    </div>
                 ),
             },
-        ],
-        defaultTab: 'preview',
-    };
+        );
+    }
+
+    // Right panel: only Preview kept for General chat (library removed so the document list is hidden)
+    const rightPanelContent = enablePreviewPanel
+        ? {
+            tabs: [
+                {
+                    key: 'preview',
+                    label: 'Preview',
+                    content: (
+                        <PreviewPanel
+                            chatMdPreview={chatMdPreview}
+                            setChatMdPreview={setChatMdPreview}
+                            onSavePreviewToLibrary={props.onSavePreviewToLibrary}
+                            documentName={props.documentName}
+                            documentType={props.documentType}
+                        />
+                    ),
+                },
+            ],
+            defaultTab: 'preview',
+        }
+        : null;
 
     return {
         leftPanelContent,
