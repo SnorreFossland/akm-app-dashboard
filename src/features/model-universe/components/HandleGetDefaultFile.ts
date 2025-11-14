@@ -1,10 +1,10 @@
 // src/features/model-universe/components/HandleGetDefaultFile.ts
 import { setFileData, setSource } from '../modelSlice';
-import { AppDispatch } from '@/store/store';
+import { AppDispatch, persistor } from '@/store/store';
 
 // Existing default loader
 export const handleGetDefaultFile = (event: React.ChangeEvent<HTMLInputElement>, dispatch: AppDispatch) => {
-  const fileUrl = '/AKM-Core-Template_PR.json';
+  const fileUrl = '/Mimris-template_PR.json';
   fetch(fileUrl)
     .then(r => r.blob())
     .then(blob => {
@@ -37,6 +37,11 @@ export const handleGetPublicFile = async (
     const data = await res.json();
     dispatch(setFileData(data));
     if (sourceName) dispatch(setSource(sourceName));
+
+    // Persist immediately to ensure the new template is saved
+    if (typeof persistor !== 'undefined' && persistor.persist) {
+      persistor.persist();
+    }
   } catch (error) {
     console.error(`Error fetching ${fileUrl}:`, error);
   }

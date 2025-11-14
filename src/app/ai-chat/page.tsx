@@ -812,12 +812,12 @@ const AIChatPage = () => {
                     {showAIChatInlineModal && mode === 'view' && (
                         <div
                             className="absolute right-0 z-50"
-                            style={{ width: '66%', maxWidth: '66%', top: 'calc(var(--header-height,56px) + 8px)', bottom: 0 }}
+                            style={{ width: '86%', maxWidth: '96%', top: 'calc(var(--header-height,56px) + 0px)', bottom: 2 }}
                         >
                             {/* Reuse ModalThreePanelLayout inline rendering - full height */}
                             <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col">
                                 {/* header / title / close row */}
-                                <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
+                                <div className="flex items-center justify-between gap-2 px-2 border-b border-gray-700 flex-shrink-0">
                                     <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Chat</h3>
                                     <div className="flex items-center gap-2">
                                         <button
@@ -848,7 +848,7 @@ const AIChatPage = () => {
                                     </div>
                                 </div>
                                 {/* content area - fill remaining height; let the chat component itself handle scrolling for messages */}
-                                <div className="p-0 flex-1 overflow-hidden min-h-0">
+                                <div className="p- flex-1 overflow-hidden min-h-0">
                                     <div className="h-full min-h-0 flex overflow-hidden bg-background">
                                         <div className="flex-1 min-w-0 h-full overflow-hidden">
                                             {getPanelContent(chatModalPanels.middlePanelContent)}
@@ -866,7 +866,7 @@ const AIChatPage = () => {
                     {mode === 'edit' && (
                         <div
                             className="absolute right-0 z-50"
-                            style={{ width: '66%', maxWidth: '66%', top: 'calc(var(--header-height,56px) + 8px)', bottom: 0 }}
+                            style={{ width: '86%', maxWidth: '96%', top: 'calc(var(--header-height,56px) + 0px)', bottom: 0 }}
                         >
                             <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col border border-orange-700/60">
                                 <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">

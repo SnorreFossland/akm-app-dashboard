@@ -1,12 +1,12 @@
 "use client";
 
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Card, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
-import { Network, Package, FileText } from 'lucide-react';
+import { Network, Package, FileText, Eye, EyeOff } from 'lucide-react';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 
 import { FileOperations } from '@/components/FileOperations';
@@ -25,6 +25,18 @@ import next from 'next/dist/server/next';
 
 type ModelConversation = { id: string; title: string; messages: any[]; timestamp: number };
 const debug = false;
+
+type ContainerReportEntry = {
+  containerName: string;
+  information: string[];
+  roles: string[];
+  tasks: string[];
+  views: string[];
+  processes: string[];
+  organisations: string[];
+  products: string[];
+  systems: string[];
+};
 
 export default function ModelBuilderPage() {
   const dispatch = useDispatch();
@@ -53,6 +65,7 @@ export default function ModelBuilderPage() {
 
   const [currentModel, setCurrentModel] = useState<Model | null>(null);
   const [curMetamodel, setCurMetamodel] = useState<any>(null);
+  const [containerCopyState, setContainerCopyState] = useState<'idle' | 'copied' | 'error'>('idle');
 
   // Persisted AI model selection for the builder
   const [selectedAiModel, setSelectedAiModel] = useState<'dummy' | 'deepseek-chat' | 'mistral' | 'gpt-5' | 'gpt-5-mini'>('dummy');
@@ -84,6 +97,7 @@ export default function ModelBuilderPage() {
     const nextMeta = metamodels.find((mm) => mm.id === currentModel.metamodelRef) || null;
     setCurMetamodel((prev: any) => (prev?.id === nextMeta?.id ? prev : nextMeta));
   }, [currentModel?.metamodelRef, data?.phData?.metis?.metamodels]);
+
 
   const handleViewInMarkdown = (response: string) => {
     const cleaned = response
@@ -308,27 +322,300 @@ export default function ModelBuilderPage() {
   };
 
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
+  const [showModelPreviewPanel, setShowModelPreviewPanel] = useState(true);
+
+  useEffect(() => {
+    if (!isModelModalOpen) {
+      setShowModelPreviewPanel(true);
+    }
+  }, [isModelModalOpen]);
+
+  const {
+    report: containerProcessReport,
+    markdown: containerReportMarkdown,
+    isPOPSMetamodel,
+  } = useMemo(() => {
+    const metamodelName = (curMetamodel?.name || '').toLowerCase();
+    const isPOPS = metamodelName.includes('pops');
+
+    const sourceModel =
+      modelContent && typeof modelContent === 'object' && 'objects' in (modelContent as any) && Array.isArray((modelContent as any).objects)
+        ? (modelContent as Model | { objects: any[]; relships: any[] })
+        : currentModel;
+
+    if (!sourceModel || !Array.isArray((sourceModel as any).objects) || !Array.isArray((sourceModel as any).relships)) {
+      return {
+        report: [] as ContainerReportEntry[],
+        markdown: '',
+        isPOPSMetamodel: isPOPS,
+      };
+    }
+
+    const normalize = (value?: string | null) => (value ?? '').trim().toLowerCase();
+    const categorize = (object: any) => {
+      const typeString = normalize(object?.typeName || object?.proposedType);
+      if (!debug) console.log('339 :', object.name, typeString);
+
+      if (!typeString) return '';
+      if (typeString.includes('container')) return 'container';
+      if (typeString.includes('information') || typeString.includes('info')) return 'information';
+      if (typeString.includes('role')) return 'role';
+      if (typeString.includes('task')) return 'task';
+      if (typeString.includes('view')) return 'view';
+      if (typeString.includes('process')) return 'process';
+      if (typeString.includes('organisation')) return 'organisation';
+      if (typeString.includes('product')) return 'product';
+      if (typeString.includes('system')) return 'system';
+      return '';
+    };
+
+    const objectsById = new Map<string, any>();
+    (sourceModel as any).objects.forEach((obj: any) => {
+      if (obj?.id) {
+        objectsById.set(String(obj.id), obj);
+      }
+    });
+
+    const containsRelationships = ((sourceModel as any).relships || []).filter(
+      (rel: any) => normalize(rel?.name) === 'contains'
+    );
+
+    if (!containsRelationships.length) {
+      return {
+        report: [] as ContainerReportEntry[],
+        markdown: '',
+        isPOPSMetamodel: isPOPS,
+      };
+    }
+
+    const membershipMap = new Map<string, Set<string>>();
+    containsRelationships.forEach((rel: any) => {
+      const fromId = rel?.fromobjectRef ? String(rel.fromobjectRef) : null;
+      const toId = rel?.toobjectRef ? String(rel.toobjectRef) : null;
+      if (!fromId || !toId) return;
+      if (!membershipMap.has(fromId)) {
+        membershipMap.set(fromId, new Set<string>());
+      }
+      membershipMap.get(fromId)!.add(toId);
+    });
+
+    const toUniqueNames = (items: Set<string>) =>
+      Array.from(items).filter(Boolean).filter((value, index, array) => array.indexOf(value) === index);
+
+    const report: ContainerReportEntry[] = [];
+
+    (sourceModel as any).objects
+      .filter((obj: any) => categorize(obj) === 'container')
+      .forEach((container: any) => {
+        const containedIds = membershipMap.get(String(container.id));
+        const informationSet = new Set<string>();
+        const roleSet = new Set<string>();
+        const taskSet = new Set<string>();
+        const viewSet = new Set<string>();
+        const processSet = new Set<string>();
+        const organisationSet = new Set<string>();
+        const productSet = new Set<string>();
+        const systemSet = new Set<string>();
+
+        if (containedIds && containedIds.size > 0) {
+          containedIds.forEach((memberId) => {
+            const member = objectsById.get(memberId);
+            if (!member) return;
+            const category = categorize(member);
+            const name = member?.name?.trim?.() || member?.description?.trim?.() || '';
+            if (!category) return;
+
+            if (category === 'information') {
+              if (name) informationSet.add(name);
+            } else if (category === 'role') {
+              if (name) roleSet.add(name);
+            } else if (category === 'task') {
+              if (name) taskSet.add(name);
+            } else if (category === 'view') {
+              if (name) viewSet.add(name);
+            } else if (category === 'process') {
+              if (name) processSet.add(name);
+            } else if (category === 'organisation') {
+              if (name) organisationSet.add(name);
+            } else if (category === 'product') {
+              if (name) productSet.add(name);
+            } else if (category === 'system') {
+              if (name) systemSet.add(name);
+            }
+          });
+        }
+
+        const containerName = container?.name?.trim?.() || 'Untitled Container';
+        const information = informationSet.size > 0 ? toUniqueNames(informationSet) : ['None'];
+        const roles = roleSet.size > 0 ? toUniqueNames(roleSet) : ['None'];
+        const tasks = taskSet.size > 0 ? toUniqueNames(taskSet) : ['None'];
+        const views = viewSet.size > 0 ? toUniqueNames(viewSet) : ['None'];
+        const processes = processSet.size > 0 ? toUniqueNames(processSet) : ['None'];
+        const organisations = organisationSet.size > 0 ? toUniqueNames(organisationSet) : ['None'];
+        const products = productSet.size > 0 ? toUniqueNames(productSet) : ['None'];
+        const systems = systemSet.size > 0 ? toUniqueNames(systemSet) : ['None'];
+
+        report.push({
+          containerName,
+          information,
+          roles,
+          tasks,
+          views,
+          processes,
+          organisations,
+          products,
+          systems,
+        });
+      });
+
+    const markdownLines: string[] = [];
+    report.forEach((entry) => {
+      markdownLines.push(`### ${entry.containerName}`);
+      if (isPOPS) {
+        markdownLines.push(`- **Processes:** ${entry.processes.join(', ')}`);
+        markdownLines.push(`- **Organisations:** ${entry.organisations.join(', ')}`);
+        markdownLines.push(`- **Products:** ${entry.products.join(', ')}`);
+        markdownLines.push(`- **Systems:** ${entry.systems.join(', ')}`);
+      } else {
+        markdownLines.push(`- **Information:** ${entry.information.join(', ')}`);
+        markdownLines.push(`- **Roles:** ${entry.roles.join(', ')}`);
+        markdownLines.push(`- **Tasks:** ${entry.tasks.join(', ')}`);
+        markdownLines.push(`- **Views:** ${entry.views.join(', ')}`);
+      }
+      markdownLines.push('');
+    });
+
+    return {
+      report,
+      markdown: markdownLines.join('\n').trim(),
+      isPOPSMetamodel: isPOPS,
+    };
+  }, [currentModel, modelContent, curMetamodel]);
 
   // Right panel
   const rightPanelContent = {
     tabs: [
       {
-        key: 'preview',
-        label: 'Model Preview',
+        key: 'info',
+        label: 'Model Info',
         content: (
-          <OutputPanel
-            modelPreview={modelPreview}
-            setModelPreview={setModelPreview}
-            modelContent={modelContent}
-            setModelContent={setModelContent}
-            setIsLibraryOpen={setIsLibraryOpen}
-            isLibraryOpen={isLibraryOpen}
-            panelType="right"
-          />
+          <div className="h-full overflow-auto px-4 py-4 space-y-4 text-sm text-gray-200">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h3 className="text-sm font-semibold text-gray-300">Container Report</h3>
+                <p className="text-xs text-gray-500">
+                  Derived from container <span className="italic">&ldquo;contains&rdquo;</span> relationships in the current model.
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => {
+                    if (!containerReportMarkdown) {
+                      setContainerCopyState('error');
+                      setTimeout(() => setContainerCopyState('idle'), 2000);
+                      return;
+                    }
+
+                    if (typeof navigator === 'undefined' || !navigator.clipboard?.writeText) {
+                      setContainerCopyState('error');
+                      setTimeout(() => setContainerCopyState('idle'), 2000);
+                      return;
+                    }
+
+                    navigator.clipboard.writeText(containerReportMarkdown)
+                      .then(() => {
+                        setContainerCopyState('copied');
+                        setTimeout(() => setContainerCopyState('idle'), 2000);
+                      })
+                      .catch(() => {
+                        setContainerCopyState('error');
+                        setTimeout(() => setContainerCopyState('idle'), 2000);
+                      });
+                  }}
+                  disabled={!containerReportMarkdown}
+                  className="px-2 py-1 text-xs rounded border border-gray-600 text-gray-200 hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                >
+                  Copy Markdown
+                </button>
+                {containerCopyState === 'copied' && (
+                  <span className="text-xs text-green-400">Copied!</span>
+                )}
+                {containerCopyState === 'error' && (
+                  <span className="text-xs text-red-400">Copy failed</span>
+                )}
+              </div>
+            </div>
+            {containerProcessReport.length === 0 ? (
+              <p className="text-sm text-gray-400">
+                No containers were found. Generate or select a model to populate this report.
+              </p>
+            ) : (
+              containerProcessReport.map((entry, index) => (
+                <div
+                  key={`${entry.containerName}-${index}`}
+                  className="space-y-3 rounded-md border border-gray-800 bg-gray-900/40 p-3"
+                >
+                  <h4 className="text-base font-semibold text-gray-200">{entry.containerName}</h4>
+                  <div className="space-y-1 text-sm text-gray-200">
+                    {isPOPSMetamodel ? (
+                      <>
+                        {entry.processes.length ? (
+                          <p>
+                            Processes:{' '}
+                            {entry.processes.join(', ')}
+                          </p>
+                        ) : null}
+
+                        {entry.organisations.length ? (
+                          <p>
+                            Organisations:{' '}
+                            {entry.organisations.join(', ')}
+                          </p>
+                        ) : null}
+
+                        {entry.products.length ? (
+                          <p>
+                            Products:{' '}
+                            {entry.products.join(', ')}
+                          </p>
+                        ) : null}
+
+                        {entry.systems.length ? (
+                          <p>
+                            Systems:{' '}
+                            {entry.systems.join(', ')}
+                          </p>
+                        ) : null}
+                      </>
+                    ) : (
+                      <>
+                        <p>
+                          Information:{' '}
+                          {entry.information.length ? entry.information.join(', ') : 'None'}
+                        </p>
+                        <p>
+                          Roles:{' '}
+                          {entry.roles.length ? entry.roles.join(', ') : 'None'}
+                        </p>
+                        <p>
+                          Tasks:{' '}
+                          {entry.tasks.length ? entry.tasks.join(', ') : 'None'}
+                        </p>
+                        <p>
+                          Views:{' '}
+                          {entry.views.length ? entry.views.join(', ') : 'None'}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         )
       }
     ],
-    defaultTab: 'preview'
+    defaultTab: 'info'
   };
 
   // Model suite selector for top bar
@@ -383,17 +670,61 @@ export default function ModelBuilderPage() {
         {/* Inline modal anchored to the right of the middle panel (AI-Chat style) */}
         {isModelModalOpen && (
           <div
-            className="absolute inset-y-8 right-0 z-50 flex justify-end"
+            className="absolute right-0 z-50"
+            style={{ width: '94%', maxWidth: '96%', top: 'calc(var(--header-height,56px) + 8px)', bottom: 0 }}
           >
-            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col w-[600px] h-[calc(100vh-1rem)] border border-gray-700">
-              <div className="flex items-center justify-between p-2 border-b border-gray-700 flex-shrink-0">
+            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col border border-gray-700">
+              <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
                 <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Modeller</h3>
-                <button onClick={() => setIsModelModalOpen(false)} className="text-gray-400 hover:text-white p-1">Close</button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowModelPreviewPanel((prev) => !prev)}
+                    className="flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-600 text-gray-200 hover:bg-gray-800 transition-colors"
+                  >
+                    {showModelPreviewPanel ? (
+                      <>
+                        <EyeOff className="h-3.5 w-3.5" />
+                        Hide Preview
+                      </>
+                    ) : (
+                      <>
+                        <Eye className="h-3.5 w-3.5" />
+                        Show Preview
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowModelPreviewPanel(true);
+                      setIsModelModalOpen(false);
+                    }}
+                    className="text-gray-400 hover:text-white p-1"
+                  >
+                    Close
+                  </button>
+                </div>
               </div>
-              <div className="p-4 flex-1 min-h-0 overflow-auto">
-                <div className="flex-1 flex flex-col">
-                  {/* Render the ai-model tab content from the prepared modelModalMiddlePanelContent */}
-                  {modelModalMiddlePanelContent?.tabs?.[0]?.content}
+              <div className="p-0 flex-1 min-h-0 overflow-hidden">
+                <div className="h-full min-h-0 flex overflow-hidden bg-background">
+                  <div className="flex-1 min-w-0 h-full overflow-auto p-4">
+                    <div className="flex-1 flex flex-col min-h-full">
+                      {/* Render the ai-model tab content from the prepared modelModalMiddlePanelContent */}
+                      {modelModalMiddlePanelContent?.tabs?.[0]?.content}
+                    </div>
+                  </div>
+                  {showModelPreviewPanel && (
+                    <div className="w-[30%] min-w-[220px] h-full overflow-auto bg-gray-900/70 border-l border-gray-700">
+                      <OutputPanel
+                        modelPreview={modelPreview}
+                        setModelPreview={setModelPreview}
+                        modelContent={modelContent}
+                        setModelContent={setModelContent}
+                        setIsLibraryOpen={setIsLibraryOpen}
+                        isLibraryOpen={isLibraryOpen}
+                        panelType="right"
+                      />
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

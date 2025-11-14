@@ -225,7 +225,7 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => 
                     <Button
                         onClick={deleteSelected}
                         disabled={selectedCount === 0}
-                        className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-gray-800 text-white dark:bg-gray-700 dark:text-white hover:bg-gray-700`}
+                        className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
                     >
                         Delete selected
                     </Button>

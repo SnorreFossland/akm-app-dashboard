@@ -230,18 +230,18 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
         // Find relevant models for context (POPS and IRTV)
         const popsmodel = data?.phData?.metis?.models?.find((m: any) => m.name.includes("POPS"));
         const popsProcesses = popsmodel?.objects?.filter((o: any) => o.typeName === "Process") || []; // all processes in POPS for use in IRTV
-        const popsProcessesNames = popsProcesses.map((p: any) => p.name);
+        const popsProcessesInfo = popsProcesses.map((p: any) => p && `${p.name}: ${p.description}`);
 
         const irtvmodel = data?.phData?.metis?.models?.find((m: any) => m.name.includes("IRTV"));
 
         const irtvObjectNames = irtvmodel?.objects
-            ?.filter((o: any) => ["Information", "Role", "Task", "View"].includes(o.typeName) && o.name)
+            ?.filter((o: any) => ["Information", "Role", "Task", "View", "Property"].includes(o.typeName) && o.name)
             .map((o: any) => o.name) || [];
         const irtvRelNames = irtvmodel?.relships // filter only Information relationships for CORE_META
             .map((p: any) => p.name)
             .filter((name: string, idx: number, arr: string[]) => arr.indexOf(name) === idx) || [];
         const irtvInfoObjects = irtvmodel?.objects // filter only Information objects for CORE_META
-            ?.filter((o: any) => o.typeName === "Information" && o.name)
+            ?.filter((o: any) => ["Information", "Property"].includes(o.typeName) && o.name)
             .map((o: any) => o.name) || [];
         // const irtvInfoRelationships = irtvmodel?.relships
         //     ?.filter((r: any) => (r.fromObjectRef && r.toObjectRef)
@@ -251,7 +251,7 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
         let nextAutoPrompt = "";
 
         // Basic filtering for relevant types (not used?)
-        types = (curMetamodel.objecttypes || []) // filter out no relevant types
+        types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
             .filter((o: any) => o.name !== "EntityType")
             .filter((o: any) => o.name !== "Gateway")
             .filter((o: any) => o.name !== "Element")
@@ -262,22 +262,21 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
 
         switch (curMetamodel.name) {
             case "IRTV_META": // IRTV model generation
-                types = (curMetamodel.objecttypes || []) // filter out no relevant types
+                types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "Element")
                     .filter((o: any) => o.name !== "Generic")
                     .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
 
-                nextAutoPrompt = `Build IRTV Workspaces for the the following Processes: ${popsProcessesNames.join(", ")}.
-Create a Container for each process and add Tasks and Information objects with vital Properties. 
-Then add Views and Roles related to the Information objects, using the metamodel-types:  ${types.length ? types.join(" ") : ""} 
-Create a contains relationship from the Process Container to each IRTV objects it uses.
-Do not repeat type-names in the name of objects. Consider also the #Context below.
+                nextAutoPrompt = `Build an IRTV model with Workspaces for the the following Processes: ${popsProcessesInfo.join(", ")}.
+Create a Container for each process with a contains relationship to all Roles, Tasks, Views and Information objects with vital Properties for each process.
+The objects and relationships must be according to the IRTV metamodel defined in #Metamodel.
+Do not repeat type-names in the name or description of objects. Consider also the #Context below.
 `;
                 break;
 
             case "CORE_META": // TYPE model generation
-                types = (curMetamodel.objecttypes || []) // filter out no relevant types
+                types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "InputPattern")
                     .filter((o: any) => o.name !== "Details")
                     .filter((o: any) => o.name !== "Method")
@@ -290,17 +289,15 @@ Do not repeat type-names in the name of objects. Consider also the #Context belo
 and the Domain definition in the #Context below.
 Evaluate the Information objects with Properties and Relationships for logical consistency.
 Do not repeat type-names in the name of objects. Remove any IRTV type-names in the name of objects. The Information objects should be represented as EntityType objects.
-${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
 Start with creating an object of type Metamodel with a relship "contains" to all objects of type EntityType.
+The objects and relationships must be created according to the TYPE metamodel defined in #Metamodel.
+${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
 `
                 break;
 
             case "POPS_META": // POPS model generation
-                types = (curMetamodel.objecttypes || []) // filter out no relevant types
+                types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
                     .filter((o: any) => o.name !== "EntityType")
-                    .filter((o: any) => o.name !== "Geobody")
-                    .filter((o: any) => o.name !== "Material")
-                    .filter((o: any) => o.name !== "DistributNetwork")
                     .filter((o: any) => o.name !== "Device")
                     .filter((o: any) => o.name !== "Label")
                     .filter((o: any) => o.name !== "Generic")
@@ -311,17 +308,25 @@ Start with creating an object of type Metamodel with a relship "contains" to all
                     .map((o: any) => o.name + ', ');
 
                 nextAutoPrompt =
-`Build a POPS model with Processes, Organizations, Products and Services/Systems based on the Domain definition in the #Context below.
-Focus on Processes structures (subprocesses) and sequences. Organization that perform Processes. Processes produces Products and Products are usedIn Processes.
-Processes uses Services/Systems.
-Create objects and relationships using the following objects:  ${
-(types.length ? types.join(" ") : "")}
-The objects and relationships must be according to the POPS metamodel defined in #Metamodel. Container contains all other objects.
+                    `Build a POPS model based on the Domain definition in the #Context below.
+Focus on Processes, Process structures Main processes contain sub-processes and down to leaf-processes that has trigger or isFollowedBy sequence relationships.
+Make detailed leaf processes.
+Add Organization units that performs or manages Processes.
+Add Products that are produced or used in Processes.
+Add Services or Systems that are used by Processes. 
+Add Data as output and input to/form Processes.
+Add detailed descriptions to all objects.
+Create Relationships between all objects for logical consistency.
+Do not create duplicate objects or relationships.
+Do not repeat typenames in the name or description of objects.
+The objects and relationships must be created according to the POPS metamodel defined in #Metamodel.
+${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
+Consider also - if provided - the #Context below.
 `;
                 break;
 
             case "BPMN_META": // BPMN model generation
-                types = (curMetamodel.objecttypes || [])
+                types = (curMetamodel.objecttypes0 || [])
                     .filter((o: any) => o.name !== "EntityType")
                     .filter((o: any) => o.name !== "Gateway")
                     .filter((o: any) => o.name !== "Element")
@@ -329,13 +334,13 @@ The objects and relationships must be according to the POPS metamodel defined in
                     .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
                 nextAutoPrompt =
-`Build a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the #Context below.
+                    `Build a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the #Context below.
 Evaluate where BPMN pools and lanes are appropriate and ensure logical consistency. 
 Do not use type-names in the name of objects. Do not use type-names in the name of objects. 
 The Information objects should be represented as EntityType objects.
 Roles should be represented as Lanes and Tasks as Activities. Views should be represented as DataObjects.
-${types.length ? `Create objects and relationships using the following IRTV types: ${types.join(" ")}` : ""}
 The objects and relationships must be according to the BPMN metamodel defined in #Metamodel.
+${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
 `;
                 break;
         }
@@ -595,12 +600,12 @@ Ensure logical consistency and relationship principles.`
             // console.log('316 metatypesString', metatypesString);
             exampleString += `
 {
-    "models: [
+    "models": [
         {
-            id: "UUID",
+            "id": "UUID",
             "name": "FoodProduction",
             "description": "A model representing food production processes and products.",
-            "metamodelRef": "POPS_META uuid",
+            "metamodelRef": "CORE_META uuid",
             "modelviews": [
                 {
                     "name": "Main",
@@ -608,8 +613,8 @@ Ensure logical consistency and relationship principles.`
                     "objects": [
                         {
                             "id": "UUID",
-                            "name": "Bike",
-                            "description": "A two-wheeled vehicle that is powered by pedaling.",
+                            "name": "FoodProcess",
+                            "description": "Captures the steps performed during food production.",
                             "typeRef": "Process uuid",
                             "typeName": "Process"
                         }
@@ -617,10 +622,10 @@ Ensure logical consistency and relationship principles.`
                     "relationships": [
                         {
                             "id": "UUID",
-                            "name": "approves",
+                            "name": "produces",
                             "typeRef": "Relationship Type uuid",
                             "fromobjectRef": "Process uuid",
-                            "toobjectRef": "Property uuid",
+                            "toobjectRef": "Property uuid"
                         }
                     ]
                 }
@@ -628,7 +633,7 @@ Ensure logical consistency and relationship principles.`
         }
     ]
 }
-        `;
+                        `;
         } else if (curMetamodel.name === "POPS_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating POPS models. Create a POPS model based on the provided ontology concept types and relationships. Ensure consistency with Active Knowledge Modeling principles.`
@@ -650,21 +655,28 @@ Ensure logical consistency and relationship principles.`
                 .join("\n");
 
             exampleString += `
-{ 
-    "models: [
-        { 
-            id: "UUID",
+{
+    "models": [
+        {
+            "id": "UUID",
             "name": "FoodProduction",
             "description": "A model representing food production processes and products.",
             "metamodelRef": "POPS_META uuid",
             "objects": [
                 {
                     "id": "UUID",
-                    "name": "Produce",
-                    "description": "A two-wheeled vehicle that is powered by pedaling.",
+                    "name": "HarvestProcess",
+                    "description": "Describes the harvesting of raw food materials.",
                     "typeRef": "Process uuid",
                     "typeName": "Process"
                 },
+                {
+                    "id": "UUID",
+                    "name": "FoodProduct",
+                    "description": "Represents the finished food product ready for delivery.",
+                    "typeRef": "Product uuid",
+                    "typeName": "Product"
+                }
             ],
             "relationships": [
                 {
@@ -672,9 +684,9 @@ Ensure logical consistency and relationship principles.`
                     "name": "produces",
                     "typeRef": "Relationship Type uuid",
                     "fromobjectRef": "Process uuid",
-                    "nameFrom": "Process",
+                    "nameFrom": "HarvestProcess",
                     "toobjectRef": "Product uuid",
-                    "nameTo": "Product"
+                    "nameTo": "FoodProduct"
                 }
             ]
         }
@@ -742,8 +754,9 @@ Ensure logical consistency and relationship principles.`
     }, [curMetamodel, data?.phData?.metis, dispatch, curmod]);
 
     function serializeTypes(mm: any) {
-        const objectTypes = Array.isArray(mm.objecttypes) ? mm.objecttypes : [];
-        const relshipTypes = Array.isArray(mm.relshiptypes) ? mm.relshiptypes : [];
+        console.log('751 serializeTypes input mm', mm);
+        const objectTypes = Array.isArray(mm.objecttypes0) ? mm.objecttypes0 : [];
+        const relshipTypes = Array.isArray(mm.relshiptypes0) ? mm.relshiptypes0 : [];
 
         // Build a non-mutating copy where we ensure nameFrom/nameTo are resolved
         const relshipTypesWithNames = relshipTypes.map((reltype: any) => {
@@ -791,7 +804,8 @@ Ensure logical consistency and relationship principles.
 Always use valid UUID strings for all ids.
 Always use the provided metamodel typeRef for object typeRef and relationship typeRef.
 Do not make up new object types or relationship types.
-If the Domain definition is missing or insufficient, respond with suggestions for improvement.
+DO NOT change the typeName; always use the metamodel typeName.
+If the Domain definition is missing or insufficient, respond with your best suggestions.
 `;
 
     let finalDeveloperPrompt = ''
@@ -810,6 +824,8 @@ Objects:
 - Use the ontology Concept names to name objects, but use the metamodel typeRef for typeRef.
 - Do not include the object typeName in the object name.
 - Do not use generic objectypes like "Generic", "Element" or "EntityType".
+- Do not change the typeName; always use the metamodel typeName.
+- Ensure the object names are unique within the model.
 
 Relships:
 - Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
@@ -825,7 +841,7 @@ Relships:
 
     if (curMetamodel?.name === "CORE_META") (
         finalDeveloperPrompt +=
-`
+        `
 # Evaluate the domain then build a TYPE definition model.
 ## When building the model, follow these principles:
 - Make one Metamodel object representing the Domain. The name should reflect the domain (e.g., "HealthcareMetamodel", "FinanceMetamodel").
@@ -843,7 +859,7 @@ Relships:
 `)
     if (curMetamodel?.name === "IRTV_META") (
         finalDeveloperPrompt +=
-`
+        `
 # Evaluate the domain then build a IRTV Workplace model.
 ## When building the model, follow these principles:
 - Make key Actors and Roles into Role objects.
@@ -856,18 +872,16 @@ Relships:
         `
 # Evaluate the domain then build a POPS model.
 ## When building the model, follow these principles:
-- Make key Activities and Processes into Process objects.
-- Make key Products into Product objects.
-- Make key Services into Service objects.
-- Use Geobodies to represent physical locations or structures.
-- Use Devices to represent tools or equipment used in processes.
-- Use DistributionNetworks to represent channels through which products/services are delivered.
-- Process triggers Process with "triggers" relationship.
-- Process produces Product with "produces" relationship.
-- Process uses Services and Systems.
-- Process input and output to Data.
-- Organizations owns Processes and Products with "owns" relationship.
 `)
+// - Make key Activities and Processes into Process objects.
+// - Make key Products into Product objects.
+// - Make key Services into Service objects.
+// - Use Devices to represent tools or equipment used in processes.
+// - Process triggers Process with "triggers" relationship.
+// - Process produces Product with "produces" relationship.
+// - Process uses Services and Systems.
+// - Process input and output to Data.
+// - Organizations owns Processes and Products with "owns" relationship.
     finalDeveloperPrompt += `${contextMetamodel} \n`
 
 

@@ -55,7 +55,7 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
     }, []);
 
     useEffect(() => {
-        console.debug('FileOperations observed phSource change:', phSource);
+        console.debug('58 FileOperations observed phSource change:', phSource, data);
     }, [phSource]);
 
     useEffect(() => {
@@ -175,6 +175,13 @@ export function FileOperations({ className = "" }: FileOperationsProps) {
             <div className="flex md:flex-row items-center justify-between w-full">
                 <div className="flex items-center gap-2 w-full justify-between">
                     <div className="relative" ref={menuRef}>
+                        <input
+                            ref={fileInputRef}
+                            type="file"
+                            accept=".json,application/json"
+                            className="hidden"
+                            onChange={onFileSelected}
+                        />
                         <Button
                             variant="ghost"
                             size={isMobile ? 'icon' : 'sm'}
