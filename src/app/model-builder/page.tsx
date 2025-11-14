@@ -670,10 +670,13 @@ export default function ModelBuilderPage() {
         {/* Inline modal anchored to the right of the middle panel (AI-Chat style) */}
         {isModelModalOpen && (
           <div
-            className="absolute right-0 z-50"
-            style={{ width: '94%', maxWidth: '96%', top: 'calc(var(--header-height,56px) + 8px)', bottom: 0 }}
+            className="fixed top-[calc(var(--header-height,56px)+0.5rem)] right-4 z-50"
+            style={{ width: 'min(840px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
           >
-            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col border border-gray-700">
+            <div
+              className="bg-popover rounded-md shadow-lg overflow-hidden flex flex-col border-2 border-orange-400/70"
+              style={{ height: '100%', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
+            >
               <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
                 <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Modeller</h3>
                 <div className="flex items-center gap-2">

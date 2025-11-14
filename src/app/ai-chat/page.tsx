@@ -811,11 +811,14 @@ const AIChatPage = () => {
                     {/* Inline AI Chat modal: positioned inside middle panel and anchored to right edge */}
                     {showAIChatInlineModal && mode === 'view' && (
                         <div
-                            className="absolute right-0 z-50"
-                            style={{ width: '86%', maxWidth: '96%', top: 'calc(var(--header-height,56px) + 0px)', bottom: 2 }}
+                            className="fixed top-[calc(var(--header-height,56px)+0.5rem)] right-4 z-50"
+                            style={{ width: 'min(840px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
                         >
                             {/* Reuse ModalThreePanelLayout inline rendering - full height */}
-                            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col">
+                            <div
+                                className="bg-popover rounded-md shadow-lg overflow-hidden flex flex-col border-2 border-orange-400/70"
+                                style={{ height: '100%', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
+                            >
                                 {/* header / title / close row */}
                                 <div className="flex items-center justify-between gap-2 px-2 border-b border-gray-700 flex-shrink-0">
                                     <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Chat</h3>
@@ -865,10 +868,13 @@ const AIChatPage = () => {
                     )}
                     {mode === 'edit' && (
                         <div
-                            className="absolute right-0 z-50"
-                            style={{ width: '86%', maxWidth: '96%', top: 'calc(var(--header-height,56px) + 0px)', bottom: 0 }}
+                            className="fixed top-[calc(var(--header-height,56px)+0.5rem)] right-4 z-50"
+                            style={{ width: 'min(840px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
                         >
-                            <div className="bg-popover rounded-md shadow-lg overflow-hidden h-full flex flex-col border border-orange-700/60">
+                            <div
+                                className="bg-popover rounded-md shadow-lg overflow-hidden flex flex-col border-2 border-orange-400/70"
+                                style={{ height: '100%', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
+                            >
                                 <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
                                     <h3 className="text-sm font-semibold text-orange-400 ms-2">
                                         Edit Document: <span className="text-white">{documentName || 'Untitled Document'}</span>
