@@ -24,8 +24,11 @@ export default function Home() {
   const documents = useSelector((state: RootState) => data.phData.documents);
   const dispatch = useDispatch();
   const router = useRouter();
-  const [currentModel, setCurrentModel] = useState<Model | null>(null);
-  const [focusModel, setFocusModel] = useState<{ id: string; name: string } | null>(null);
+  const focusModelId = data.phFocus?.focusModel?.id;
+  const focusObjectIds = data.phFocus?.focusObjectIds ?? [];
+  const focusRelshipIds = data.phFocus?.focusRelshipIds ?? [];
+  const focusSelectionExists = focusObjectIds.length > 0 || focusRelshipIds.length > 0;
+  const currentModel = data.phData?.metis?.models?.find((model) => model.id === focusModelId) || data.phData?.metis?.models?.[0] || null;
 
   // State for panel management
   const [activeTab, setActiveTab] = useState("ai-chat");
@@ -55,13 +58,6 @@ export default function Home() {
   // Panel sizing constants
   const MIN_PANEL_WIDTH = 300;
   const MAX_PANEL_WIDTH = () => window.innerWidth * 0.6;
-
-  useEffect(() => {
-    if (data.phFocus) {
-      setFocusModel(data.phFocus.focusModel);
-      setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModel?.id) || null);
-    }
-  }, [data.phFocus, data.phData.metis, focusModel?.id]);
 
   // Update refs when state changes
   useEffect(() => {
@@ -360,23 +356,31 @@ export default function Home() {
   // Define right panel content without the Model tab
   const rightPanelContent = {
     tabs: [
-      // {
-      //   key: 'document',
-      //   label: 'Preview',
-      //   content: (
-      //     <DocumentPanel
-      //       mdContent={mdContent}
-      //       setMdContent={setMdContent}
-      //       onSave={(content: string) => handleSaveDocument(content, docName)}
-      //       isLibraryOpen={isLibraryOpen}
-      //       setIsLibraryOpen={setIsLibraryOpen}
-      //       panelType='right'
-      //     />
-      //   )
-      // },
+      {
+        key: 'model',
+        label: 'Model Diagram',
+        content: (
+          <div className="p-2 h-full">
+            {currentModel ? (
+              <ObjectCard
+                model={currentModel}
+                showListTabs={false}
+                focusObjectIds={focusObjectIds}
+                focusRelshipIds={focusRelshipIds}
+                filterToSelection={focusSelectionExists}
+              />
+            ) : (
+              <div className="h-full flex flex-col justify-center items-center text-sm text-gray-300 space-y-2">
+                <p>No model selected.</p>
+                <p className="text-xs text-gray-500">Select or build a model to see its diagram here.</p>
+              </div>
+            )}
+          </div>
+        )
+      },
       {
         key: 'help',
-        label: '...',
+        label: 'Output Help',
         content: (
           <div className="p-4">
             <div className="space-y-4">
@@ -403,7 +407,7 @@ export default function Home() {
         )
       }
     ],
-    defaultTab: 'help'
+    defaultTab: 'model'
   };
 
   return (

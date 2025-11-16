@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ColumnDef, TableMeta } from '@tanstack/react-table';
 import {
@@ -39,6 +39,7 @@ interface ObjectTableProps {
     data: Object[];
     // optional model id so delete/restore target the correct model when table is used standalone
     modelId?: string;
+    onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 export interface ObjectTableMeta extends TableMeta<Object> { // Exported Interface
@@ -74,7 +75,7 @@ const selectionColumn: ColumnDef<Object, any> = {
 const columnsWithRowNumberBase: ColumnDef<Object, any>[] = [selectionColumn, rowNumberColumn, ...(columns as ColumnDef<Object, any>[])];
 
 // Actions column removed here; ActionsCell from `object-columns.tsx` provides the actions column centrally.
-export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
+export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelectionChange }) => {
     const dispatch = useDispatch();
 
     // If a modelId is provided prefer reading the live objects from the redux store so
@@ -161,6 +162,12 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
     }, [effectiveData]);
     // Selection state for rows (ids)
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
+
+    React.useEffect(() => {
+        if (onSelectionChange) {
+            onSelectionChange(Object.keys(selectedIds));
+        }
+    }, [selectedIds, onSelectionChange]);
 
     const selectedCount = React.useMemo(() => Object.keys(selectedIds).length, [selectedIds]);
 
@@ -340,11 +347,14 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
             onRestore,
         } as ObjectTableMeta,
         onSortingChange: setSorting,
-        onPaginationChange: (updater) => {
-            const newState = typeof updater === 'function' ? updater({ pageIndex, pageSize }) : updater;
-            setPageIndex(newState.pageIndex);
-            setPageSize(newState.pageSize);
-        },
+        onPaginationChange: useCallback((updater) => {
+            setPageIndex((prevPageIndex) => {
+                const currentState = { pageIndex: prevPageIndex, pageSize };
+                const nextState = typeof updater === 'function' ? updater(currentState) : updater;
+                setPageSize(nextState.pageSize);
+                return nextState.pageIndex;
+            });
+        }, [pageSize]),
     });
 
     return (

@@ -47,6 +47,9 @@ export default function ModelBuilderPage() {
   const ontology = useSelector((state: { modelUniverse: any }) => data.phData.domain?.ontology);
   const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
   const focusProject = useSelector((state: RootState) => state.modelUniverse.phFocus.focusProj);
+  const focusObjectIds = data?.phFocus?.focusObjectIds ?? [];
+  const focusRelshipIds = data?.phFocus?.focusRelshipIds ?? [];
+  const focusSelectionExists = focusObjectIds.length > 0 || focusRelshipIds.length > 0;
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
@@ -658,6 +661,28 @@ export default function ModelBuilderPage() {
                   </div>
                 </div>
               ))
+            )}
+          </div>
+        )
+      },
+      {
+        key: 'preview',
+        label: 'Preview Diagram',
+        content: (
+          <div className="p-2 h-full">
+            {currentModel ? (
+              <ObjectCard
+                model={currentModel}
+                showListTabs={false}
+                focusObjectIds={focusObjectIds}
+                focusRelshipIds={focusRelshipIds}
+                filterToSelection={focusSelectionExists}
+              />
+            ) : (
+              <div className="h-full flex flex-col justify-center items-center text-sm text-gray-300 space-y-2">
+                <p>No model selected.</p>
+                <p className="text-xs text-gray-500">Select or build a model to see its diagram here.</p>
+              </div>
             )}
           </div>
         )

@@ -142,13 +142,16 @@ export function ThreePanelLayout({
     }, [middlePanelContent]);
 
     useEffect(() => {
-        if (rightPanelContent && typeof rightPanelContent === 'object' && 'tabs' in rightPanelContent) {
-            const defaultKey = rightPanelContent.defaultTab || (rightPanelContent.tabs[0]?.key);
+        if (!isPanelTabs(rightPanelContent)) return;
+        const tabs = rightPanelContent.tabs || [];
+        const activeExists = tabs.some((tab: any) => tab?.key === activeRightTab);
+        if (!activeExists) {
+            const defaultKey = rightPanelContent.defaultTab || tabs[0]?.key;
             if (defaultKey) {
                 setActiveRightTab(defaultKey);
             }
         }
-    }, [rightPanelContent]);
+    }, [rightPanelContent, activeRightTab]);
 
     // Helper to check if panel is a tabs object
     const isPanelTabs = (panel: any): boolean => {
@@ -505,7 +508,6 @@ export function ThreePanelLayout({
                             onTouchStart={(e) => handleMouseDown(e, 'right')}
                         />
                     )}
-
                     {/* Right Panel (Output) */}
                     {showRightPanel && (
                         <div className="flex flex-col bg-gray-800 border-l border-gray-600 overflow-hidden flex-shrink-0"

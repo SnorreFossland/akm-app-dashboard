@@ -44,11 +44,12 @@ const columnsWithRowNumber: ColumnDef<Relationship, any>[] = [rowNumberColumn, .
 interface RelshipTableProps {
     data: Relationship[];
     modelId?: string;
+    onSelectionChange?: (selectedIds: string[]) => void;
 }
 
 
 
-export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => {
+export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId, onSelectionChange }) => {
     const dispatch = useDispatch();
 
     // If modelId provided, prefer live relships from the store so UI reflects soft-deletes immediately
@@ -90,6 +91,12 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => 
 
     // Selection state for relationships
     const [selectedIds, setSelectedIds] = React.useState<Record<string, boolean>>({});
+
+    React.useEffect(() => {
+        if (onSelectionChange) {
+            onSelectionChange(Object.keys(selectedIds));
+        }
+    }, [selectedIds, onSelectionChange]);
     const selectedCount = React.useMemo(() => Object.keys(selectedIds).length, [selectedIds]);
     const toggleSelection = (id: string, value?: boolean) => {
         setSelectedIds((prev) => {

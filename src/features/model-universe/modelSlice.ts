@@ -77,6 +77,8 @@ export interface DataType {
       id: string;
       name: string;
     };
+    focusObjectIds: string[];
+    focusRelshipIds: string[];
     focusProj: {
       id: string;
       name: string;
@@ -254,6 +256,8 @@ export const initialState: DataType = {
     focusObjectview: { id: '', name: '' },
     focusRelship: { id: '', name: '' },
     focusRelshipview: { id: '', name: '' },
+    focusObjectIds: [],
+    focusRelshipIds: [],
     focusProj: { id: '', name: '', description: '' },
     focusDoc: { id: null },
   },
@@ -594,15 +598,26 @@ const modelSlice = createSlice({
     },
     setFocusModel(state, action: PayloadAction<DataType['phFocus']['focusModel']>) {
       console.log('344 action.payload', action.payload, state);
+      state.phFocus.focusObjectIds = [];
+      state.phFocus.focusRelshipIds = [];
       state.phFocus.focusModel = action.payload;
     },
     setPhFocus(state, action: PayloadAction<DataType['phFocus']>) {
       console.log('344 action.payload', action.payload, state);
-      state.phFocus = action.payload;
+      state.phFocus = {
+        ...state.phFocus,
+        ...action.payload,
+      };
     },
     setFocusModelview(state, action: PayloadAction<DataType['phFocus']['focusModelview']>) {
       console.log('344 action.payload', action.payload, state);
       state.phFocus.focusModelview = action.payload;
+    },
+    setFocusObjectIds(state, action: PayloadAction<string[]>) {
+      state.phFocus.focusObjectIds = action.payload || [];
+    },
+    setFocusRelshipIds(state, action: PayloadAction<string[]>) {
+      state.phFocus.focusRelshipIds = action.payload || [];
     },
     setFocusDoc(state, action: PayloadAction<{ id: string | null, name: string | null }>) {
       state.phFocus.focusDoc = action.payload;
@@ -883,6 +898,8 @@ export const {
   setNewModelview,
   setFocusModel,
   setFocusModelview,
+  setFocusObjectIds,
+  setFocusRelshipIds,
   setPhFocus,
   setSource,
   setDomainPrompt,
