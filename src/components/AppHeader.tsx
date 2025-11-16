@@ -44,7 +44,7 @@ export function AppHeader({
 
     return (
         <header className="flex items-center justify-between bg-background border-b border-gray-600 h-30 text-gray-100">
-            <div className="flex items-center ">
+            <div className="flex items-center">
                 {onToggleLeftPanel && (
                     <Button
                         variant="ghost"
@@ -63,7 +63,7 @@ export function AppHeader({
                 )}
             </div>
 
-            <div className="w-full flex flex-col items-center justify-center space-x-4">
+            <div className="flex-1 flex items-center justify-between px-4">
                 {moduleOperations}
             </div>
 

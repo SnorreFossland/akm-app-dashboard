@@ -152,7 +152,7 @@ Include context if available in the #Context section below.
         category: "Planning / Project Management / Business",
         usage: "Planning",
         content: `
-Create a comprehensive project plan for the project described in the context below.
+Create a comprehensive project plan for the domain/topic described in the context below.
 Follow this detailed template:
 
 ---

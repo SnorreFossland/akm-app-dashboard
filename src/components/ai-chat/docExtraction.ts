@@ -13,7 +13,7 @@ export function extractDomainNameAndDescription(content: string) {
     };
 
     // Try to capture the content between "Domain Name" and "Domain Description" (supports same-line or block-style)
-    const nameBetweenRegex = /Domain\s*Name\s*[:\-]?\s*(?:\n\s*)?([\s\S]*?)\s*(?=\n\s*(?:Domain\s*Description\b|$))/i;
+    const nameBetweenRegex = /(?:#+\s*)?Domain\s*Name\s*[:\-]?\s*(?:\n\s*)?([\s\S]*?)\s*(?=\n\s*(?:#+\s*)?Domain\s*Description\b|$)/i;
     const nameMatch = content.match(nameBetweenRegex);
     if (nameMatch && nameMatch[1]) {
         firstLine = sanitizeSingleLine(nameMatch[1]);
@@ -24,13 +24,15 @@ export function extractDomainNameAndDescription(content: string) {
     }
 
     // Try to capture a domain description block after "Domain Description"
-    const descRegex = /Domain\s*Description\s*[:\-]?\s*(?:\n\s*)?([\s\S]*?)\s*(?=\n\s*(?:Domain\s*Presentation\b|$))/i;
+    const descRegex = /(?:#+\s*)?Domain\s*Description\s*[:\-]?\s*(?:\n\s*)?([\s\S]*?)\s*(?=\n\s*(?:#+\s*)?Domain\s*Presentation\b|$)/i;
     const descMatch = content.match(descRegex);
     if (descMatch && descMatch[1]) {
         secondLine = sanitizeSingleLine(descMatch[1]);
     } else {
-        const descLine = lines.find(line => /Domain\s*Description/i.test(line)) || lines[1] || '';
-        secondLine = sanitizeSingleLine(descLine.replace(/Domain\s*Description[:\-\s]*/i, ''));
+        const descLine = lines.find(line => /Domain\s*Description/i.test(line));
+        if (descLine) {
+            secondLine = sanitizeSingleLine(descLine.replace(/Domain\s*Description[:\-\s]*/i, ''));
+        }
     }
 
     // Fallback to first line of content if extraction failed

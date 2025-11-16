@@ -9,6 +9,7 @@ interface Relationship {
     nameFrom: string;
     nameTo: string;
     color?: string;
+    description?: string;
 }
 import {
     DropdownMenu,
@@ -33,6 +34,7 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
             console.log('Name cannot be empty.');
             return;
         }
+
         console.log('Saving name for:', row.original.id, name);
         dispatch(editRelationship({ ...row.original, name }));
         setIsEditing(false);
@@ -61,6 +63,81 @@ const NameCell: React.FC<{ row: any }> = ({ row }) => {
     );
 };
 
+
+const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
+    const dispatch = useDispatch();
+    const [isEditing, setIsEditing] = useState(false);
+    const [description, setDescription] = useState<string>(row.original.description || '');
+    const [expanded, setExpanded] = useState(false);
+
+    const handleSave = () => {
+        if (!row.original || description.trim() === '' || description === row.original.description) {
+            setIsEditing(false);
+            return;
+        }
+        dispatch(editRelationship({ ...row.original, description }));
+        setIsEditing(false);
+    };
+
+    if (isEditing) {
+        return (
+            <textarea
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={handleSave}
+                onKeyDown={(e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        handleSave();
+                    }
+                }}
+                autoFocus
+                className="border rounded px-2 py-1 bg-background w-full"
+            />
+        );
+    }
+
+    const maxLen = 35;
+    const needsTruncate = description && description.length > maxLen;
+    const previewText = needsTruncate ? description.slice(0, maxLen) : (description || '');
+
+    return (
+        <div className="flex items-center">
+            <span
+                className={`text-sm font-medium cursor-pointer w-full ${expanded ? 'max-w-[22rem] whitespace-normal break-words' : 'whitespace-nowrap truncate'} ${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'}`}
+                onClick={() => setExpanded((prev) => !prev)}
+                onDoubleClick={() => setIsEditing(true)}
+                title={description}
+            >
+                {expanded ? (description || '') : previewText}
+            </span>
+            {needsTruncate && !expanded && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded(true);
+                    }}
+                    className="ml-1 pb-1 text-xl text-blue-400 hover:underline align-middle"
+                    aria-label="Show more"
+                >
+                    ...
+                </button>
+            )}
+            {needsTruncate && expanded && (
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        setExpanded(false);
+                    }}
+                    className="ml-auto text-xs text-blue-400 hover:underline"
+                    aria-label="Show less"
+                >
+                    show less
+                </button>
+            )}
+        </div>
+    );
+};
 
 // ActionsCell Component
 const ActionsCell: React.FC<{ row: any }> = ({ row }) => {
@@ -173,6 +250,11 @@ export const columns: ColumnDef<Relationship>[] = [
         accessorKey: "name",
         header: () => <span>Rel Name</span>,
         cell: ({ row }) => <NameCell row={row} />,
+    },
+    {
+        accessorKey: "description",
+        header: () => <span>Description</span>,
+        cell: ({ row }) => <DescriptionCell row={row} />,
     },
     {
         accessorKey: "nameTo",

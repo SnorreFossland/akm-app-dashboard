@@ -116,6 +116,13 @@ const AIChatPage = () => {
     const [showAIChatInlineModal, setShowAIChatInlineModal] = useState(false);
     const [showChatPreviewPanel, setShowChatPreviewPanel] = useState(true);
     const [showEditPreviewPanel, setShowEditPreviewPanel] = useState(true);
+    const [modalToolTab, setModalToolTab] = useState<'ai' | 'edit'>('ai');
+    const [chatPreviewWidthRatio, setChatPreviewWidthRatio] = useState(0.3);
+    const [isChatPreviewResizing, setIsChatPreviewResizing] = useState(false);
+    const chatPreviewContainerRef = useRef<HTMLDivElement>(null);
+    const [editPreviewWidthRatio, setEditPreviewWidthRatio] = useState(0.3);
+    const [isEditPreviewResizing, setIsEditPreviewResizing] = useState(false);
+    const editPreviewContainerRef = useRef<HTMLDivElement>(null);
 
     // Diff modal state
     const [showDiffModal, setShowDiffModal] = useState(false);
@@ -134,91 +141,6 @@ const AIChatPage = () => {
     //     if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
     //     // if (storedFocusDocId) {
     //     //     dispatch(setFocusDoc({ id: storedFocusDocId }));
-    //     // }
-    // }, [dispatch]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        if (focusDoc?.id) {
-            localStorage.setItem('aiChat_focusDocId', focusDoc.id);
-        } else {
-            localStorage.removeItem('aiChat_focusDocId');
-        }
-    }, [focusDoc]);
-
-    useEffect(() => {
-        if (!focusDoc?.id) {
-            setSelectedDocument(undefined);
-            setCurrentDocument('');
-            return;
-        }
-
-        const doc = documents?.find(d => d.id === focusDoc.id);
-        if (doc) {
-            setSelectedDocument(doc);
-            setDocumentName(doc.name);
-            setDocumentType(doc.type || 'markdown');
-            setPreviewContent(doc.content);
-            setOriginalContent(doc.content);
-            setCurrentDocument(doc.content);
-            // initialize category from doc (if present) or fallback to live domain
-            setDocumentCategory((doc as any).domainCategory ?? domain?.domainCategory ?? 'Organizational');
-        }
-    }, [focusDoc, documents, domain]);
-
-    // Ref to track previous document value
-    const previousDocumentRef = useRef<string | null>(null);
-
-    useEffect(() => {
-        if (focusProject) {
-            const matchingDoc = documents?.find(doc => doc.id === focusProject.id);
-            setProjectDocument(matchingDoc || null);
-        } else {
-            setProjectDocument(null);
-        }
-    }, [focusProject, documents]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        const storedContext = localStorage.getItem('aiChat_context');
-        const storedAdditionalContext = localStorage.getItem('aiChat_additionalContext');
-        const storedFocusDocId = localStorage.getItem('aiChat_focusDocId');
-
-        if (storedContext) setContextContent(storedContext);
-        if (storedAdditionalContext) setAdditionalContext(storedAdditionalContext);
-        if (storedFocusDocId) {
-            dispatch(setFocusDoc({ id: storedFocusDocId, name: '' })); // name can be empty; will be set when doc is loaded
-        }
-    }, [dispatch]);
-
-    useEffect(() => {
-        if (typeof window === 'undefined') return;
-        if (focusDoc?.id) {
-            localStorage.setItem('aiChat_focusDocId', focusDoc.id);
-        } else {
-            localStorage.removeItem('aiChat_focusDocId');
-        }
-    }, [focusDoc]);
-
-    useEffect(() => {
-        if (!focusDoc?.id) {
-            setSelectedDocument(undefined);
-            setCurrentDocument('');
-            return;
-        }
-
-        const doc = documents?.find(d => d.id === focusDoc.id);
-        if (doc) {
-            setSelectedDocument(doc);
-            setDocumentName(doc.name);
-            setDocumentType(doc.type || 'markdown');
-            setPreviewContent(doc.content);
-            setOriginalContent(doc.content);
-            setCurrentDocument(doc.content);
-            // initialize category from doc (if present) or fallback to live domain
-            setDocumentCategory((doc as any).domainCategory ?? domain?.domainCategory ?? 'Organizational');
-        }
-    }, [focusDoc, documents, domain]);
 
     // Persist context to localStorage
     useEffect(() => {
@@ -319,10 +241,16 @@ const AIChatPage = () => {
         const confirmed = window.confirm(`Clear "${selectedDocument.name}"?`);
         if (confirmed) {
             setCurrentDocument('');
+            setSelectedDocument(undefined);
+            setDocumentName('');
+            setDocumentType('markdown');
+            setPreviewContent('');
+            setOriginalContent('');
+            dispatch(setFocusDoc({ id: null, name: '' }));
             // TODO: Implement delete in Redux
             console.log('Clear document:', selectedDocument.id);
         }
-    }, [selectedDocument]);
+    }, [dispatch, selectedDocument]);
 
     // Edit mode save handler
     const handleSaveToLibrary = useCallback(() => {
@@ -437,12 +365,199 @@ const AIChatPage = () => {
         setPendingSave(null);
     }, []);
 
+    const handleCloseEditModal = useCallback(() => {
+        setShowEditPreviewPanel(true);
+        setShowAIChatInlineModal(false);
+        setShowDiffModal(false);
+        setPendingSave(null);
+        switchMode('view');
+        if (selectedDocument) {
+            setCurrentDocument(selectedDocument.content);
+            setDocumentName(selectedDocument.name);
+            setDocumentType(selectedDocument.type || 'markdown');
+            setPreviewContent(selectedDocument.content);
+            setOriginalContent(selectedDocument.content);
+        }
+    }, [selectedDocument, switchMode]);
+
     // Allow EditModeContent to set document id (focus) from frontmatter
     const setDocumentId = useCallback((id?: string) => {
         if (!id) return;
         // dispatch to set focus doc so the rest of the app treats it as selected
         dispatch(setFocusDoc({ id, name: '' }));
     }, [dispatch]);
+
+    const getModalTabButtonClass = (active: boolean) =>
+        `px-3 py-0.5 text-[11px] rounded transition ${active
+            ? 'bg-orange-500 text-white shadow-sm'
+            : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-orange-500/70'
+        }`;
+
+    const handleSelectModalTab = useCallback((tab: 'ai' | 'edit') => {
+        setModalToolTab(tab);
+        if (tab === 'edit') {
+            switchMode('edit');
+            setShowAIChatInlineModal(false);
+            setShowEditPreviewPanel(true);
+        } else {
+            switchMode('view');
+            setShowAIChatInlineModal(true);
+            setShowChatPreviewPanel(true);
+        }
+    }, [switchMode]);
+
+    const renderModalTabButtons = () => (
+        <div className="flex items-center gap-2 px-2 pb-2">
+            <button
+                type="button"
+                className={getModalTabButtonClass(modalToolTab === 'ai')}
+                onClick={() => handleSelectModalTab('ai')}
+            >
+                AI Chat
+            </button>
+            <button
+                type="button"
+                className={getModalTabButtonClass(modalToolTab === 'edit')}
+                onClick={() => handleSelectModalTab('edit')}
+            >
+                Edit
+            </button>
+        </div>
+    );
+
+    useEffect(() => {
+        if (typeof window === 'undefined') return;
+        const handler = (event: Event) => {
+            const detail = (event as CustomEvent)?.detail;
+            if (!detail || detail.target !== 'ai-chat') return;
+            const preferred = detail.initialMode === 'edit' ? 'edit' : 'ai';
+            const action = detail.action || 'open';
+
+            if (action === 'toggle') {
+                setShowAIChatInlineModal((prev) => {
+                    const shouldOpen = !prev;
+                    if (shouldOpen) {
+                        handleSelectModalTab(preferred);
+                        setShowChatPreviewPanel(true);
+                    } else {
+                        setShowChatPreviewPanel(true);
+                    }
+                    return shouldOpen;
+                });
+                return;
+            }
+
+            if (action === 'close') {
+                setShowChatPreviewPanel(true);
+                setShowAIChatInlineModal(false);
+                return;
+            }
+
+            handleSelectModalTab(preferred);
+            if (preferred === 'ai') {
+                setShowAIChatInlineModal(true);
+                setShowChatPreviewPanel(true);
+            }
+        };
+        window.addEventListener('ai-tools:open', handler as EventListener);
+        return () => window.removeEventListener('ai-tools:open', handler as EventListener);
+    }, [handleSelectModalTab]);
+
+    const startChatPreviewResize = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+        if (typeof window === 'undefined') return;
+        if (!showChatPreviewPanel) return;
+        event.preventDefault();
+        setIsChatPreviewResizing(true);
+    };
+
+    const startEditPreviewResize = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+        if (typeof window === 'undefined') return;
+        if (!showEditPreviewPanel) return;
+        event.preventDefault();
+        setIsEditPreviewResizing(true);
+    };
+
+    useEffect(() => {
+        if (mode === 'edit') {
+            setModalToolTab('edit');
+        } else if (mode === 'view' && showAIChatInlineModal) {
+            setModalToolTab('ai');
+        }
+    }, [mode, showAIChatInlineModal]);
+
+    useEffect(() => {
+        if (!isChatPreviewResizing) return;
+        const container = chatPreviewContainerRef.current;
+        const clampRatio = (value: number) => Math.min(0.75, Math.max(0.25, value));
+        const updateWidth = (clientX: number) => {
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            const totalWidth = rect.width || 1;
+            const previewWidth = rect.right - clientX;
+            if (totalWidth <= 0) return;
+            setChatPreviewWidthRatio(clampRatio(previewWidth / totalWidth));
+        };
+
+        const handleMouseMove = (event: MouseEvent) => updateWidth(event.clientX);
+        const handleTouchMove = (event: TouchEvent) => {
+            if (!event.touches.length) return;
+            updateWidth(event.touches[0].clientX);
+        };
+        const stopResizing = () => setIsChatPreviewResizing(false);
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('touchmove', handleTouchMove);
+        window.addEventListener('mouseup', stopResizing);
+        window.addEventListener('touchend', stopResizing);
+        window.addEventListener('mouseleave', stopResizing);
+        window.addEventListener('touchcancel', stopResizing);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('mouseup', stopResizing);
+            window.removeEventListener('touchend', stopResizing);
+            window.removeEventListener('mouseleave', stopResizing);
+            window.removeEventListener('touchcancel', stopResizing);
+        };
+    }, [isChatPreviewResizing]);
+
+    useEffect(() => {
+        if (!isEditPreviewResizing) return;
+        const container = editPreviewContainerRef.current;
+        const clampRatio = (value: number) => Math.min(0.75, Math.max(0.25, value));
+        const updateWidth = (clientX: number) => {
+            if (!container) return;
+            const rect = container.getBoundingClientRect();
+            const totalWidth = rect.width || 1;
+            const previewWidth = rect.right - clientX;
+            if (totalWidth <= 0) return;
+            setEditPreviewWidthRatio(clampRatio(previewWidth / totalWidth));
+        };
+
+        const handleMouseMove = (event: MouseEvent) => updateWidth(event.clientX);
+        const handleTouchMove = (event: TouchEvent) => {
+            if (!event.touches.length) return;
+            updateWidth(event.touches[0].clientX);
+        };
+        const stopResizing = () => setIsEditPreviewResizing(false);
+
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('touchmove', handleTouchMove);
+        window.addEventListener('mouseup', stopResizing);
+        window.addEventListener('touchend', stopResizing);
+        window.addEventListener('mouseleave', stopResizing);
+        window.addEventListener('touchcancel', stopResizing);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('touchmove', handleTouchMove);
+            window.removeEventListener('mouseup', stopResizing);
+            window.removeEventListener('touchend', stopResizing);
+            window.removeEventListener('mouseleave', stopResizing);
+            window.removeEventListener('touchcancel', stopResizing);
+        };
+    }, [isEditPreviewResizing]);
 
     // Chat mode state (shared across both General and Advanced)
     const [chatInput, setChatInput] = useState('');
@@ -464,7 +579,7 @@ const AIChatPage = () => {
             createdAt: nowIso,
             updatedAt: nowIso,
             // if the template is a domain template, carry over current UI category (optional)
-            // ...(normalizedType === 'domain' ? { domainCategory: documentCategory } : {})
+            // ...(normalizedType === 'domain' ? {domainCategory: documentCategory } : { })
         };
 
         dispatch(saveMarkdownDocument(templateDoc));
@@ -761,6 +876,16 @@ const AIChatPage = () => {
         ? `flex flex-col h-screen max-h-screen overflow-hidden border-[16px] ${modeConfig.borderColor} rounded-lg shadow-xl`
         : 'flex flex-col h-screen max-h-screen overflow-hidden';
 
+    const chatPreviewColsVisible = showChatPreviewPanel && Boolean(chatModalPanels.rightPanelContent);
+    const normalizedChatPreviewWidthPct = Math.min(75, Math.max(25, chatPreviewWidthRatio * 100));
+    const chatPreviewWidthPct = chatPreviewColsVisible ? normalizedChatPreviewWidthPct : 0;
+    const chatContentWidthPct = chatPreviewColsVisible ? 100 - normalizedChatPreviewWidthPct : 100;
+
+    const editPreviewColsVisible = showEditPreviewPanel && Boolean(editPanels.rightPanel);
+    const normalizedEditPreviewWidthPct = Math.min(75, Math.max(25, editPreviewWidthRatio * 100));
+    const editPreviewWidthPct = editPreviewColsVisible ? normalizedEditPreviewWidthPct : 0;
+    const editContentWidthPct = editPreviewColsVisible ? 100 - normalizedEditPreviewWidthPct : 100;
+
     // Debug: Log what we're passing to ThreePanelLayout
     const modeHeaderComponent = (
         <ModeHeader
@@ -812,7 +937,7 @@ const AIChatPage = () => {
                     {showAIChatInlineModal && mode === 'view' && (
                         <div
                             className="fixed top-[calc(var(--header-height,56px)+0.5rem)] right-4 z-50"
-                            style={{ width: 'min(840px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
+                            style={{ width: 'min(1100px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
                         >
                             {/* Reuse ModalThreePanelLayout inline rendering - full height */}
                             <div
@@ -820,8 +945,8 @@ const AIChatPage = () => {
                                 style={{ height: '100%', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
                             >
                                 {/* header / title / close row */}
-                                <div className="flex items-center justify-between gap-2 px-2 border-b border-gray-700 flex-shrink-0">
-                                    <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Chat</h3>
+                                <div className="flex items-center justify-between gap-2 px-2 border-b border-gray-700 bg-orange-900/50 flex-shrink-0">
+                                    <h3 className="text-sm font-semibold text-gray-300 ms-2">AI Chat</h3>
                                     <div className="flex items-center gap-2">
                                         <button
                                             onClick={() => setShowChatPreviewPanel((prev) => !prev)}
@@ -851,13 +976,39 @@ const AIChatPage = () => {
                                     </div>
                                 </div>
                                 {/* content area - fill remaining height; let the chat component itself handle scrolling for messages */}
-                                <div className="p- flex-1 overflow-hidden min-h-0">
-                                    <div className="h-full min-h-0 flex overflow-hidden bg-background">
-                                        <div className="flex-1 min-w-0 h-full overflow-hidden">
+                                <div className="p-0 flex-1 overflow-hidden min-h-0">
+                                    <div
+                                        ref={chatPreviewContainerRef}
+                                        className="h-full min-h-0 flex overflow-hidden bg-background"
+                                    >
+                                        <div
+                                            className="flex-1 min-w-0 h-full overflow-hidden"
+                                            style={chatPreviewColsVisible ? {
+                                                flexBasis: `${chatContentWidthPct}%`,
+                                                maxWidth: `${chatContentWidthPct}%`
+                                            } : { flex: '1 1 100%' }}
+                                        >
                                             {getPanelContent(chatModalPanels.middlePanelContent)}
                                         </div>
-                                        {showChatPreviewPanel && chatModalPanels.rightPanelContent && (
-                                            <div className="w-[30%] min-w-[220px] h-full overflow-auto bg-gray-900/70 border-l border-gray-700">
+                                        {chatPreviewColsVisible && (
+                                            <div
+                                                className="relative w-4 flex justify-stretch justify-center cursor-col-resize"
+                                                onMouseDown={startChatPreviewResize}
+                                                onTouchStart={startChatPreviewResize}
+                                            >
+                                                <span className="absolute inset-y-0 w-1 h-full rounded-full bg-gradient-to-b from-orange-600/90 via-orange-500/80 to-yellow-400/70 border border-orange-300/50 shadow-[0_0_12px_rgba(255,159,0,0.45)]" />
+                                            </div>
+                                        )}
+                                        {chatPreviewColsVisible && (
+                                            <div
+                                                className="h-full overflow-auto bg-gray-900/70 border-l border-gray-700"
+                                                style={{
+                                                    width: `${chatPreviewWidthPct}%`,
+                                                    flexBasis: `${chatPreviewWidthPct}%`,
+                                                    maxWidth: `${chatPreviewWidthPct}%`,
+                                                    minWidth: '280px'
+                                                }}
+                                            >
                                                 {renderPanelTabs(chatModalPanels.rightPanelContent)}
                                             </div>
                                         )}
@@ -868,42 +1019,70 @@ const AIChatPage = () => {
                     )}
                     {mode === 'edit' && (
                         <div
-                            className="fixed top-[calc(var(--header-height,56px)+0.5rem)] right-4 z-50"
-                            style={{ width: 'min(840px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
+                            className="fixed top-[calc(var(--header-height,56px)+0.5rem)] h-full right-4 z-50"
+                            style={{ width: 'min(1100px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
                         >
                             <div
                                 className="bg-popover rounded-md shadow-lg overflow-hidden flex flex-col border-2 border-orange-400/70"
                                 style={{ height: '100%', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
                             >
-                                <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
-                                    <h3 className="text-sm font-semibold text-orange-400 ms-2">
-                                        Edit Document: <span className="text-white">{documentName || 'Untitled Document'}</span>
-                                    </h3>
-                                    <div className="flex items-center gap-2">
-                                        <button
-                                            onClick={handleSaveToLibrary}
-                                            className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded transition-colors"
-                                        >
-                                            Save to Library
-                                        </button>
-                                        <button
-                                            onClick={() => {
-                                                setShowEditPreviewPanel(true);
-                                                switchMode('view');
-                                            }}
-                                            className="text-gray-400 hover:text-white p-1"
-                                        >
-                                            Close
-                                        </button>
+                                <div className="flex flex-col border-b border-gray-700 bg-gray-900/70 flex-shrink-0">
+                                    <div className="flex items-center justify-between gap-2 p-2">
+                                        <h3 className="text-sm font-semibold text-orange-400 ms-2">
+                                            Edit Document: <span className="text-white">{documentName || 'Untitled Document'}</span>
+                                        </h3>
+                                        <div className="flex items-center gap-2">
+                                            <button
+                                                onClick={handleSaveToLibrary}
+                                                className="flex items-center gap-1 px-3 py-1 text-xs bg-green-600 hover:bg-green-500 text-white rounded transition-colors"
+                                            >
+                                                Save to Library
+                                            </button>
+                                            <button
+                                                onClick={() => {
+                                                    handleCloseEditModal();
+                                                }}
+                                                className="text-gray-400 hover:text-white p-1"
+                                            >
+                                                X
+                                            </button>
+                                        </div>
                                     </div>
+                                    {/* {renderModalTabButtons()} */}
                                 </div>
                                 <div className="p-0 flex-1 overflow-hidden min-h-0">
-                                    <div className="h-full min-h-0 flex overflow-hidden bg-background">
-                                        <div className="flex-1 min-w-0 h-full overflow-hidden">
+                                    <div
+                                        ref={editPreviewContainerRef}
+                                        className="h-full min-h-0 flex overflow-hidden bg-background"
+                                    >
+                                        <div
+                                            className="flex-1 min-w-0 h-full overflow-hidden"
+                                            style={editPreviewColsVisible ? {
+                                                flexBasis: `${editContentWidthPct}%`,
+                                                maxWidth: `${editContentWidthPct}%`
+                                            } : { flex: '1 1 100%' }}
+                                        >
                                             {editPanels.middlePanel}
                                         </div>
-                                        {showEditPreviewPanel && (
-                                            <div className="w-[30%] min-w-[220px] h-full overflow-auto bg-gray-900/70 border-l border-gray-700">
+                                        {editPreviewColsVisible && (
+                                            <div
+                                                className="h-full flex items-stretch justify-center cursor-col-resize"
+                                                onMouseDown={startEditPreviewResize}
+                                                onTouchStart={startEditPreviewResize}
+                                            >
+                                                <div className="h-full w-1 rounded-full bg-gradient-to-b from-orange-600/90 via-orange-500/80 to-yellow-400/70 border border-orange-300/50 shadow-[0_0_12px_rgba(255,159,0,0.45)]" />
+                                            </div>
+                                        )}
+                                        {editPreviewColsVisible && (
+                                            <div
+                                                className="h-full overflow-auto bg-gray-900/70 border-l border-gray-700"
+                                                style={{
+                                                    width: `${editPreviewWidthPct}%`,
+                                                    flexBasis: `${editPreviewWidthPct}%`,
+                                                    maxWidth: `${editPreviewWidthPct}%`,
+                                                    minWidth: '280px'
+                                                }}
+                                            >
                                                 {editPanels.rightPanel}
                                             </div>
                                         )}

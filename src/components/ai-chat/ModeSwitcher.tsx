@@ -44,7 +44,7 @@ export function ModeSwitcher({ currentMode, onModeChange, onOpenAIChat, aiChatOp
                     <Edit className="h-4 w-4 inline mr-1" />
                     Edit
                 </button>
-                <button
+                {/* <button
                     onClick={() => {
                         if (onCloseAIChat) onCloseAIChat();
                         if (typeof onOpenAIChat === 'function') {
@@ -64,7 +64,7 @@ export function ModeSwitcher({ currentMode, onModeChange, onOpenAIChat, aiChatOp
                 >
                     <MessageSquare className="h-4 w-4 inline mr-1" />
                     AI Chat
-                </button>
+                </button> */}
             </div>
         </div>
     );

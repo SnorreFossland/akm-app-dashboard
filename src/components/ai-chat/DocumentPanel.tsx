@@ -35,6 +35,7 @@ interface DocumentPanelProps {
     documentType?: string;
     onNewDocument?: () => void;
     onFocusDocChange?: (docId: string | null) => void;
+    onClearDocument?: () => void;
 }
 
 export default function DocumentPanel({
@@ -61,7 +62,8 @@ export default function DocumentPanel({
     documentName,
     documentType,
     onNewDocument,
-    onFocusDocChange,
+    onFocusDocChange = () => { },
+    onClearDocument,
 }: DocumentPanelProps) {
     const dispatch = useDispatch();
     const documents = useSelector((state: RootState) => state.modelUniverse.phData.documents);
@@ -102,7 +104,7 @@ export default function DocumentPanel({
     useEffect(() => {
         setIsDocumentListVisible(false)
     }, []);
-    
+
     // Function to detect placeholders in the format [placeholder]
     useEffect(() => {
         if (!editContent) {
@@ -351,6 +353,17 @@ export default function DocumentPanel({
         setIsEditing(false);
     };
 
+    const handleClearDocumentAction = () => {
+        if (onClearDocument) {
+            onClearDocument();
+            return;
+        }
+
+        setMdContent('');
+        setEditContent('');
+        setIsEditing(false);
+    };
+
     const handleCopyMessage = (content: string, index: number) => {
         navigator.clipboard.writeText(content)
             .then(() => {
@@ -478,10 +491,10 @@ export default function DocumentPanel({
                 documentName || 'Current Document',
                 formatType(documentType)
             ].filter(Boolean);
-            const label = parts.length > 0 ? parts.join(' • ') : 'Current Document';
+            // const label = parts.length > 0 ? parts.join(' • ') : 'Current Document'; //
             return (
                 <span className="flex items-center gap-1">
-                    {allowDocumentList && !isDocumentListVisible && (
+                    {/* {allowDocumentList && !isDocumentListVisible && (
                         <button
                             onClick={() => setIsDocumentListVisible(true)}
                             className="p-1 border border-gray-700 bg-gray-800 text-gray-400 hover:text-blue-400 hover:bg-gray-700 rounded-md"
@@ -489,8 +502,8 @@ export default function DocumentPanel({
                         >
                             <ChevronLeft className="h-4 w-4" />
                         </button>
-                    )}
-                    {label}
+                    )} */}
+                    {/* {label} */}
                 </span>
             );
         }
@@ -505,11 +518,10 @@ export default function DocumentPanel({
 
         return undefined;
     }, [panelType, documentName, documentType, allowDocumentList, isDocumentListVisible]);
-
     return (
         <div className="p-2 flex h-full">
             {/* Document List Sidebar */}
-            {allowDocumentList && isDocumentListVisible && (
+            {allowDocumentList && isDocumentListVisible ? (
                 <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b border-gray-600">
                         <h3 className="text-sm font-medium text-gray-300">Document list</h3>
@@ -560,13 +572,25 @@ export default function DocumentPanel({
                         )}
                     </div>
                 </div>
-            )}
+            )
+                :
+                (
+                    <div className="bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
+                        <button
+                            onClick={() => setIsDocumentListVisible(true)}
+                            className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
+                            title="Show document list"
+                        >
+                            <ChevronRight className="h-4 w-4" />
+                        </button>
+                    </div>
+                )}
 
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-2">
-                        {allowDocumentList && !isDocumentListVisible && (
+                        {/* {allowDocumentList && !isDocumentListVisible && (
                             <button
                                 onClick={() => setIsDocumentListVisible(true)}
                                 className="p-1.5 text-gray-400 hover:text-blue-400 hover:bg-gray-800 rounded-md"
@@ -574,7 +598,7 @@ export default function DocumentPanel({
                             >
                                 <ChevronRight className="h-4 w-4" />
                             </button>
-                        )}
+                        )} */}
                         {/* Add New Document button for all panels */}
                         {onNewDocument && (
                             <button
@@ -649,19 +673,19 @@ export default function DocumentPanel({
                             </>
                         ) : (panelType === 'middle') ? (
                             <>
-                                <button
+                                {/* <button
                                     onClick={() => handleCopyMessage(message.content, 1)}
                                     className="ms-2 text-xs text-gray-400 hover:text-gray-200"
                                 >
                                     {copiedIndex === 1 ? 'Copied!' : 'Copy'}
-                                </button>
-                                {/* <button
-                                    onClick={handleSaveToLibrary}
-                                    className="p-1.5 text-gray-400 hover:text-green-400 hover:bg-gray-800 rounded-md"
-                                    title="Save to library"
-                                >
-                                    <BookmarkPlus className="h-4 w-4" />
                                 </button> */}
+                                <button
+                                    onClick={handleClearDocumentAction}
+                                    className="p-1.5 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-md"
+                                    title="Clear current document"
+                                >
+                                    <X className="h-4 w-4" />
+                                </button>
                             </>
                         ) : (
                             <>
@@ -791,7 +815,7 @@ export default function DocumentPanel({
                         </button>
                     </div>
                 ) : (
-                    <div className="prose prose-invert prose-xs custom-markdown markdown-preview p-1 rounded-md overflow-auto max-h-[90vh] max-w-[60ch] whitespace-pre-wrap break-words [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm">
+                    <div className="prose prose-invert prose-xs custom-markdown markdown-preview px-1 rounded-md overflow-auto max-h-[90vh] max-w-[60ch] whitespace-pre-wrap break-words [&_h1]:text-lg [&_h2]:text-base [&_h3]:text-sm [&_p]:text-sm [&_li]:text-sm">
                         {mdContent ? (
                             <MarkdownPreview
                                 mdPreview={mdContent}

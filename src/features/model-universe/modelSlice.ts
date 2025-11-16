@@ -469,6 +469,26 @@ const modelSlice = createSlice({
       };
       console.debug('[modelSlice] restoreObject: after', { modelId: currentModel?.id, objectId, after: currentModel.objects[idx] });
     },
+    removeDuplicateObjects(state, action: PayloadAction<{ modelId?: string } | undefined>) {
+      const payload = action.payload as any;
+      const modelId = payload?.modelId;
+
+      let currentModel = modelId
+        ? state.phData.metis.models.find(model => model.id === modelId)
+        : state.phData.metis.models.find(model => model.id === state.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.phData.metis.models[0];
+      if (!currentModel || !currentModel.objects) return;
+
+      const seenIds = new Set<string>();
+      currentModel.objects = currentModel.objects.filter((obj) => {
+        if (!obj?.id) return true;
+        if (seenIds.has(obj.id)) {
+          return false;
+        }
+        seenIds.add(obj.id);
+        return true;
+      });
+    },
     deleteRelship(state, action: PayloadAction<string | { modelId?: string; id: string }>) {
       const payload = action.payload as any;
       const relId = typeof payload === 'string' ? payload : payload.id;
@@ -515,6 +535,26 @@ const modelSlice = createSlice({
         markedAsDeleted: false,
       } as any;
       console.debug('[modelSlice] restoreRelship: after', { modelId: currentModel?.id, relId, after: currentModel.relships[idx] });
+    },
+    removeDuplicateRelships(state, action: PayloadAction<{ modelId?: string } | undefined>) {
+      const payload = action.payload as any;
+      const modelId = payload?.modelId;
+
+      let currentModel = modelId
+        ? state.phData.metis.models.find(model => model.id === modelId)
+        : state.phData.metis.models.find(model => model.id === state.phFocus.focusModel.id);
+      if (!currentModel) currentModel = state.phData.metis.models[0];
+      if (!currentModel || !currentModel.relships) return;
+
+      const seen = new Set<string>();
+      currentModel.relships = currentModel.relships.filter((rel: any) => {
+        if (!rel?.id) return true;
+        if (seen.has(rel.id)) {
+          return false;
+        }
+        seen.add(rel.id);
+        return true;
+      });
     },
     // ToDo: rename setRelationships to setRelships
     setRelationships(state, action: PayloadAction<DataType['phData']['metis']['models'][number]['relships'][number][]>) {
@@ -869,6 +909,8 @@ export const {
   addDomainCategory,
   restoreObject,
   deleteObject,
+  removeDuplicateObjects,
+  removeDuplicateRelships,
   restoreRelship,
   deleteRelship,
   purgeModel,

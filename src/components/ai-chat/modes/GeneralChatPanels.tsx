@@ -342,7 +342,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                 </>
                             ) : (
                                 <>
-                                    <button
+                                    {/* <button
                                         onClick={() => {
                                             setPreviewEditContent(chatMdPreview);
                                             setIsEditingPreview(true);
@@ -360,8 +360,8 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                     >
                                         <X className="h-3 w-3" />
                                         Clear
-                                    </button>
-                                    <button
+                                    </button> */}
+                                    {/* <button
                                         onClick={() => {
                                             console.group('🔵 Preview Save Button Clicked');
                                             console.log('Current name/type:', {
@@ -388,7 +388,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                     >
                                         <BookmarkPlus className="h-3 w-3" />
                                         Save to Library
-                                    </button>
+                                    </button> */}
                                     <button
                                         onClick={() => {
                                             console.group('🆕 Preview Save-As-New Clicked');
@@ -411,7 +411,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                         title="Save preview as new library document"
                                     >
                                         <FilePlus className="h-3 w-3" />
-                                        Save as New
+                                        Save to Library
                                     </button>
                                 </>
                             )}

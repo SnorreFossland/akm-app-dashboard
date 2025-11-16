@@ -187,7 +187,7 @@ function EditModeMiddlePanel({
         }
     }, [documentType]);
     return (
-        <div className="h-full flex flex-col overflow-hidden border-l-4 border-r-4 border-orange-600/80">
+        <div className="h-full flex flex-col overflow-hidden border-l-4 border-r-4 border-gray-600/80">
             {/* Document Metadata Header */}
             <DocumentMetadataHeader
                 documentName={documentName}

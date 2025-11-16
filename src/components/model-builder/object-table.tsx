@@ -236,6 +236,44 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
         }
     };
 
+    const duplicateIdCount = React.useMemo(() => {
+        const seen = new Set<string>();
+        let duplicates = 0;
+        (effectiveData || []).forEach((obj: any) => {
+            const id = obj?.id;
+            if (!id) return;
+            if (seen.has(id)) {
+                duplicates += 1;
+                return;
+            }
+            seen.add(id);
+        });
+        return duplicates;
+    }, [effectiveData]);
+
+    const removeDuplicateEntries = () => {
+        if (duplicateIdCount === 0) {
+            console.info('[ObjectTable] No duplicate IDs detected.');
+            return;
+        }
+
+        try {
+            // eslint-disable-next-line no-restricted-globals
+            const ok = confirm(`Remove ${duplicateIdCount} duplicate object${duplicateIdCount === 1 ? '' : 's'} (keeps first occurrence of each ID)?`);
+            if (!ok) return;
+        } catch (e) {
+            // ignore confirm failure
+        }
+
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { removeDuplicateObjects } = require('@/features/model-universe/modelSlice');
+            dispatch(removeDuplicateObjects({ modelId: modelId ?? undefined }));
+        } catch (e) {
+            console.warn('Failed to dispatch removeDuplicateObjects action', e);
+        }
+    };
+
     // Debug: log data lengths and modelId to help troubleshoot why deleted rows still show
     React.useEffect(() => {
         try {
@@ -320,21 +358,39 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
                     }
                     className="max-w-sm"
                 />
-
+                <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                        <Button variant="outline">
+                            Columns
+                        </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                        {table
+                            .getAllColumns()
+                            .filter((column) => column.getCanHide())
+                            .map((column) => (
+                                <DropdownMenuCheckboxItem
+                                    key={column.id}
+                                    className="capitalize"
+                                    checked={column.getIsVisible()}
+                                    onCheckedChange={(value) =>
+                                        column.toggleVisibility(!!value)
+                                    }
+                                >
+                                    {column.id}
+                                </DropdownMenuCheckboxItem>
+                            ))}
+                    </DropdownMenuContent>
+                </DropdownMenu>
                 <div className="ml-auto flex items-center gap-2">
-                    <label className="inline-flex items-center gap-1 text-xs text-gray-400">
-                        <Checkbox checked={showDeleted} onCheckedChange={(v) => setShowDeleted(!!v)} />
-                        <span>Show deleted</span>
-                    </label>
-
                     <div className="inline-flex items-center gap-2">
                         <span className="text-xs text-gray-400">{selectedCount > 0 ? `${selectedCount} selected` : ''}</span>
                         <Button
-                            onClick={deleteSelected}
-                            disabled={selectedCount === 0}
-                            className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
+                            onClick={removeDuplicateEntries}
+                            disabled={duplicateIdCount === 0}
+                            className={`text-xs px-2 py-1 rounded ${duplicateIdCount === 0 ? 'opacity-50 cursor-not-allowed bg-yellow-500 text-white' : 'bg-yellow-700 hover:bg-yellow-600 text-white'}`}
                         >
-                            Delete selected
+                            Remove duplicates{duplicateIdCount > 0 ? ` (${duplicateIdCount})` : ''}
                         </Button>
                         <Button
                             onClick={restoreSelected}
@@ -342,6 +398,13 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
                             className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-green-800 text-white dark:bg-green-700 dark:text-white hover:bg-green-700`}
                         >
                             Restore selected
+                        </Button>
+                        <Button
+                            onClick={deleteSelected}
+                            disabled={selectedCount === 0}
+                            className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
+                        >
+                            Delete selected
                         </Button>
                         <Button
                             onClick={() => {
@@ -363,32 +426,11 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId }) => {
                         >
                             Purge{deletedCount > 0 ? ` (${deletedCount})` : ''}
                         </Button>
+                        <label className="inline-flex items-center gap-1 text-xs text-gray-400">
+                            <Checkbox checked={showDeleted} onCheckedChange={(v) => setShowDeleted(!!v)} />
+                            <span>Show deleted</span>
+                        </label>
                     </div>
-
-                    <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                            <Button variant="outline">
-                                Columns
-                            </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                            {table
-                                .getAllColumns()
-                                .filter((column) => column.getCanHide())
-                                .map((column) => (
-                                    <DropdownMenuCheckboxItem
-                                        key={column.id}
-                                        className="capitalize"
-                                        checked={column.getIsVisible()}
-                                        onCheckedChange={(value) =>
-                                            column.toggleVisibility(!!value)
-                                        }
-                                    >
-                                        {column.id}
-                                    </DropdownMenuCheckboxItem>
-                                ))}
-                        </DropdownMenuContent>
-                    </DropdownMenu>
                 </div>
             </div>
             {/* Render the table */}

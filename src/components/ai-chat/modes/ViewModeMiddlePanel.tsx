@@ -2,6 +2,7 @@
 
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import type { MarkdownDocument } from '@/features/model-universe/modelSlice';
+import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 
 interface ViewModeMiddlePanelProps {
     currentDocument: string;
@@ -58,20 +59,24 @@ export function ViewModeMiddlePanel({
             </div>
 
             {/* Document Content */}
-            <div className="flex-1 overflow-auto px-4 py-4">
-                <div className="mx-auto w-full max-w-3xl">
-                    {currentDocument ? (
-                        <MarkdownPreview mdPreview={currentDocument} variant="default" />
-                    ) : (
-                        <div className="text-center text-gray-400 p-8">
-                            <p className="text-sm">No document to view</p>
-                            <p className="text-sm text-green-400 mt-2">
-                                Use the AI Chat tab above to generate a new document,<br />
-                                or select an existing document from the library (in the left panel), to view it here.
-                            </p>
-                        </div>
-                    )}
-                </div>
+            <div className="flex-1 overflow-auto bg-background/50">
+                {/* <div className="mx-auto w-full max-w-3xl"> */}
+                {currentDocument ? (
+                    <DocumentPanel
+                        mdContent={currentDocument}
+                        onClearDocument={onDelete}
+                    />
+                    // <MarkdownPreview mdPreview={currentDocument} variant="default" />
+                ) : (
+                    <div className="text-center text-gray-400 p-8">
+                        <p className="text-sm">No document to view</p>
+                        <p className="text-sm text-green-400 mt-2">
+                            Use the AI Chat tab above to generate a new document,<br />
+                            or select an existing document from the library (in the left panel), to view it here.
+                        </p>
+                    </div>
+                )}
+                {/* </div> */}
             </div>
         </div>
     );

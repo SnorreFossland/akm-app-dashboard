@@ -104,9 +104,9 @@ const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
     const previewText = needsTruncate ? description.slice(0, maxLen) : (description || '');
 
     return (
-        <div className="flex  items-center whitespace-nowrap">
+        <div className="flex items-center">
             <span
-                className={`${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'} text-sm font-medium cursor-pointer w-full`}
+                className={`${row.original.color ? `text-${row.original.color}-500` : 'text-gray-200'} text-sm font-medium cursor-pointer w-full ${expanded ? 'max-w-[22rem] whitespace-normal break-words' : 'whitespace-nowrap truncate'}`}
                 onClick={() => setExpanded(prev => !prev)}
                 onDoubleClick={() => {
                     console.log('Entering edit mode for description:', row.original.name);
@@ -136,10 +136,10 @@ const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
                         e.stopPropagation();
                         setExpanded(false);
                     }}
-                    className="ml-2 text-xs text-blue-400 hover:underline"
+                    className="ml-auto text-xs text-blue-400 hover:underline"
                     aria-label="Show less"
                 >
-                    show less
+                    Show less
                 </button>
             )}
         </div>

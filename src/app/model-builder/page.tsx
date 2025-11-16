@@ -125,100 +125,6 @@ export default function ModelBuilderPage() {
     }
   }, [focusProject, documents]);
 
-  // Left panel
-  const leftPanelContent = {
-    tabs: [
-      {
-        key: 'domain',
-        label: 'Current Domain',
-        content: (
-          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
-            {data.phData.domain ? (
-              <div className="p-2 bg-gray-800 rounded">
-                <MarkdownPreview
-                  mdPreview={data.phData.domain.presentation || 'No domain definition available'}
-                />
-              </div>
-            ) : (
-              <div className="p-2 bg-gray-800 rounded">
-                <div className="text-sm text-gray-400">No domain found</div>
-              </div>
-            )}
-          </div>
-        )
-      },
-      {
-        key: 'project',
-        label: 'Project Document',
-        content: (
-          <DocumentPanel
-            mdContent={projectContent}
-            setMdContent={setProjectContent}
-            setIsLibraryOpen={setIsLibraryOpen}
-            isLibraryOpen={isLibraryOpen}
-            panelType='left'
-            showDocumentList={false}
-            documentId={projectDocId || undefined}
-            onSelect={(content, _name, doc) => {
-              setProjectContent(content);
-              if (doc?.id) {
-                setProjectDocId(doc.id);
-              }
-            }}
-          />
-        )
-      },
-
-      // { // Not needed; ontology view will be a model in the middle panel
-      //   key: 'ontology',
-      //   label: 'Current Ontology',
-      //   content: (
-      //     <div className="grid gap-4">
-      //       {ontology ? (
-      //         <OntologyCard domainData={domain} ontologyData={ontology} />
-      //       ) : (
-      //         <div className="text-center py-8">
-      //           <Network className="w-12 h-12 text-gray-500 mx-auto mb-4" />
-      //           <p className="text-gray-400">No ontologies defined yet</p>
-      //           <p className="text-sm text-gray-500 mt-2">
-      //             Use the Ontology Builder to create your first ontology
-      //           </p>
-      //         </div>
-      //       )}
-      //     </div>
-      //   )
-      // },
-      // { // Not needed; model view is in middle panel
-      //   key: 'model',
-      //   label: 'Model',
-      //   content: (
-      //     <div className="space-y-4">
-      //       {currentModel && (
-      //         <ObjectCard model={{
-      //           id: currentModel.id,
-      //           name: currentModel.name,
-      //           description: currentModel.description,
-      //           objects: currentModel.objects?.map((obj: any) => ({
-      //             id: obj.id || '',
-      //             name: obj.name || '',
-      //             description: obj.description || '',
-      //             proposedType: obj.proposedType || '',
-      //             typeRef: obj.typeRef || '',
-      //             typeName: obj.typeName || '',
-      //             category: obj.category || ''
-      //           })) || [],
-      //           relships: currentModel.relships || [],
-      //           metamodelRef: currentModel.metamodelRef,
-      //           modelviews: currentModel.modelviews
-      //         }} />
-      //       )}
-      //     </div>
-      //   )
-      // }
-    ],
-    defaultTab: 'domain'
-  };
-
   // Middle panel
   const middlePanelContent = {
     tabs: [
@@ -320,15 +226,157 @@ export default function ModelBuilderPage() {
     ],
     defaultTab: 'ai-model'
   };
-
   const [isModelModalOpen, setIsModelModalOpen] = useState(false);
   const [showModelPreviewPanel, setShowModelPreviewPanel] = useState(true);
+  const [modalToolTab, setModalToolTab] = useState<'ai' | 'edit'>('ai');
+  const [previewWidthRatio, setPreviewWidthRatio] = useState(0.4);
+  const [isPreviewResizing, setIsPreviewResizing] = useState(false);
+  const previewSplitContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isModelModalOpen) {
       setShowModelPreviewPanel(true);
     }
   }, [isModelModalOpen]);
+
+  const getModelModalTabButtonClass = (active: boolean) =>
+    `px-3 py-0.5 text-[11px] rounded transition ${active
+      ? 'bg-orange-500 text-white shadow-sm'
+      : 'bg-gray-800 text-gray-300 border border-gray-700 hover:border-orange-500/70'
+    }`;
+
+  const handleModelModalTabSelect = useCallback((tab: 'ai' | 'edit') => {
+    setModalToolTab(tab);
+    setShowModelPreviewPanel(tab === 'ai');
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const handler = (event: Event) => {
+      const detail = (event as CustomEvent)?.detail;
+      if (!detail || detail.target !== 'model-builder') return;
+      const preferred = detail.initialMode === 'edit' ? 'edit' : 'ai';
+      const action = detail.action || 'open';
+
+      if (action === 'toggle') {
+        setIsModelModalOpen((prev) => {
+          const shouldOpen = !prev;
+          if (shouldOpen) {
+            handleModelModalTabSelect(preferred as 'ai' | 'edit');
+          } else {
+            setShowModelPreviewPanel(true);
+          }
+          return shouldOpen;
+        });
+        return;
+      }
+
+      if (action === 'close') {
+        setShowModelPreviewPanel(true);
+        setIsModelModalOpen(false);
+        return;
+      }
+
+      handleModelModalTabSelect(preferred as 'ai' | 'edit');
+      setIsModelModalOpen(true);
+    };
+    window.addEventListener('ai-tools:open', handler as EventListener);
+    return () => window.removeEventListener('ai-tools:open', handler as EventListener);
+  }, [handleModelModalTabSelect]);
+
+  const startPreviewResize = (event: React.MouseEvent<HTMLDivElement> | React.TouchEvent<HTMLDivElement>) => {
+    if (typeof window === 'undefined') return;
+    if (modalToolTab !== 'ai' || !showModelPreviewPanel) return;
+    event.preventDefault();
+    setIsPreviewResizing(true);
+  };
+
+  useEffect(() => {
+    if (!isPreviewResizing) return;
+
+    const container = previewSplitContainerRef.current;
+    const clampRatio = (value: number) => Math.min(0.75, Math.max(0.25, value));
+
+    const updatePreviewWidth = (clientX: number) => {
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const totalWidth = rect.width || 1;
+      const previewWidth = rect.right - clientX;
+      if (totalWidth <= 0) return;
+      setPreviewWidthRatio(clampRatio(previewWidth / totalWidth));
+    };
+
+    const handleMouseMove = (event: MouseEvent) => updatePreviewWidth(event.clientX);
+    const handleTouchMove = (event: TouchEvent) => {
+      if (!event.touches.length) return;
+      updatePreviewWidth(event.touches[0].clientX);
+    };
+
+    const stopResizing = () => setIsPreviewResizing(false);
+
+    window.addEventListener('mousemove', handleMouseMove);
+    window.addEventListener('touchmove', handleTouchMove);
+    window.addEventListener('mouseup', stopResizing);
+    window.addEventListener('touchend', stopResizing);
+    window.addEventListener('mouseleave', stopResizing);
+    window.addEventListener('touchcancel', stopResizing);
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('mouseup', stopResizing);
+      window.removeEventListener('touchend', stopResizing);
+      window.removeEventListener('mouseleave', stopResizing);
+      window.removeEventListener('touchcancel', stopResizing);
+    };
+  }, [isPreviewResizing]);
+
+  // Left panel
+  const leftPanelContent = {
+    tabs: [
+      {
+        key: 'domain',
+        label: 'Current Domain',
+        content: (
+          <div className="space-y-4 px-2 max-h-[calc(100vh-10rem)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-500 scrollbar-track-gray-800">
+            {data.phData.domain ? (
+              <div className="p-2 bg-gray-800 rounded">
+                <MarkdownPreview
+                  mdPreview={data.phData.domain.presentation || 'No domain definition available'}
+                />
+              </div>
+            ) : (
+              <div className="p-2 bg-gray-800 rounded">
+                <div className="text-sm text-gray-400">No domain found</div>
+              </div>
+            )}
+          </div>
+        )
+      },
+      {
+        key: 'project',
+        label: 'Project Document',
+        content: (
+          <DocumentPanel
+            mdContent={projectContent}
+            setMdContent={setProjectContent}
+            setIsLibraryOpen={setIsLibraryOpen}
+            isLibraryOpen={isLibraryOpen}
+            panelType='left'
+            showDocumentList={false}
+            documentId={projectDocId || undefined}
+            onSelect={(content, _name, doc) => {
+              setProjectContent(content);
+              if (doc?.id) {
+                setProjectDocId(doc.id);
+              }
+            }}
+          />
+        )
+      },
+    ],
+    defaultTab: 'domain'
+  };
 
   const {
     report: containerProcessReport,
@@ -626,30 +674,47 @@ export default function ModelBuilderPage() {
   };
 
   const moduleOperations = (
-    <div className="flex justify-between items-center gap-4 bg-gray-800 text-xs w-full h-10 border-b border-gray-700">
-      <div className="px-1">
-        <span className="ms-1 font-bold text-gray-400 inline-block">ModelSuite:</span>
-        <span className="text-gray-300 mx-1">{metis?.name}</span>
+    <div className="flex items-center justify-between gap-4 bg-gray-800 text-xs w-full h-10 border-b border-gray-700 px-2">
+      <div className="flex flex-1 flex-wrap items-center gap-4">
+        <div className="flex items-center gap-2">
+          <span className="ms-1 font-bold text-gray-400">ModelSuite:</span>
+          <span className="text-gray-300">{metis?.name}</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <label htmlFor="model-select" className="me-1 font-bold text-gray-400">Current Model:</label>
+          <select id="model-select" className="font-bold inline-block bg-dark text-gray-100 border rounded border-gray-300" onChange={handleModelChange} value={currentModel?.name}>
+            {metis?.models.map((m: { name: string }) => (
+              <option key={m.name} value={m.name} className="ps-2 text-xl font-bold inline-block bg-gray-900 text-gray-400">{m.name}</option>
+            ))}
+          </select>
+        </div>
+        <div className="text-gray-400">
+          {curMetamodel?.name || 'Default'}
+        </div>
+        <div className="flex items-center gap-1 text-gray-400">
+          <span className="font-bold">No.ofObj:</span>
+          <span className="px-1 inline-block bg-gray-900">{currentModel?.objects?.length}</span>
+        </div>
       </div>
-      <div className="px-1">
-        <label htmlFor="model-select" className="me-1 font-bold text-gray-400 inline-block">Current Model:</label>
-        <select id="model-select" className="font-bold inline-block bg-dark text-orange-500 border rounded border-gray-500" onChange={handleModelChange} value={currentModel?.name}>
-          {metis?.models.map((m: { name: string }) => (
-            <option key={m.name} value={m.name} className="ps-2 text-xl font-bold inline-block bg-gray-900 text-gray-400">{m.name}</option>
-          ))}
-        </select>
-      </div>
-      <div className="px-1">
-        <span className="text-gray-400">{curMetamodel?.name || 'Default'}</span>
-      </div>
-      <h3 className="flex items-center font-bold text-gray-400">No.ofObj:
-        <span className="px-1 inline-block bg-gray-900">{currentModel?.objects?.length}</span>
-      </h3>
-      <div className="m-0 p-0">
-        <Button size="sm" className="h-6 px-2 py-0 text-xs text-white bg-orange-700/80 " onClick={() => setIsModelModalOpen(true)}>Open AI Modeller</Button>
-      </div>
+      {/* <div className="flex items-center gap-2">
+        <Button
+          size="sm"
+          className="h-6 px-2 py-0 text-xs text-white bg-orange-700/80"
+          onClick={() => {
+            handleModelModalTabSelect('ai');
+            setIsModelModalOpen(true);
+          }}
+        >
+          Open AI Modeller
+        </Button>
+      </div> */}
     </div>
   );
+
+  const previewVisible = modalToolTab === 'ai' && showModelPreviewPanel;
+  const normalizedPreviewWidthPct = Math.min(75, Math.max(25, previewWidthRatio * 100));
+  const previewWidthPct = previewVisible ? normalizedPreviewWidthPct : 0;
+  const chatWidthPct = previewVisible ? 100 - normalizedPreviewWidthPct : 100;
 
   return (
     <div className="flex-1 flex flex-col h-screen overflow-hidden">
@@ -671,57 +736,84 @@ export default function ModelBuilderPage() {
         {isModelModalOpen && (
           <div
             className="fixed top-[calc(var(--header-height,56px)+0.5rem)] right-4 z-50"
-            style={{ width: 'min(840px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
+            style={{ width: 'min(1100px,96vw)', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
           >
             <div
               className="bg-popover rounded-md shadow-lg overflow-hidden flex flex-col border-2 border-orange-400/70"
               style={{ height: '100%', maxHeight: 'calc(100vh - var(--header-height,56px) - 1rem)' }}
             >
-              <div className="flex items-center justify-between gap-2 p-2 border-b border-gray-700 flex-shrink-0">
-                <h3 className="text-sm font-semibold text-orange-400 ms-2">AI Modeller</h3>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowModelPreviewPanel((prev) => !prev)}
-                    className="flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-600 text-gray-200 hover:bg-gray-800 transition-colors"
-                  >
-                    {showModelPreviewPanel ? (
-                      <>
-                        <EyeOff className="h-3.5 w-3.5" />
-                        Hide Preview
-                      </>
-                    ) : (
-                      <>
-                        <Eye className="h-3.5 w-3.5" />
-                        Show Preview
-                      </>
+              <div className="flex flex-col border-b border-gray-700 bg-orange-900/50 flex-shrink-0">
+                <div className="flex items-center justify-between gap-2 p-2">
+                  <h3 className="text-sm font-semibold text-gray-300 ms-2">AI Modeller</h3>
+                  <div className="flex items-center gap-2">
+                    {modalToolTab === 'ai' && (
+                      <button
+                        onClick={() => setShowModelPreviewPanel((prev) => !prev)}
+                        className="flex items-center gap-1 px-2.5 py-1 text-xs rounded border border-gray-600 text-gray-200 hover:bg-gray-800 transition-colors"
+                      >
+                        {showModelPreviewPanel ? (
+                          <>
+                            <EyeOff className="h-3.5 w-3.5" />
+                            Hide Preview
+                          </>
+                        ) : (
+                          <>
+                            <Eye className="h-3.5 w-3.5" />
+                            Show Preview
+                          </>
+                        )}
+                      </button>
                     )}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowModelPreviewPanel(true);
-                      setIsModelModalOpen(false);
-                    }}
-                    className="text-gray-400 hover:text-white p-1"
-                  >
-                    Close
-                  </button>
+                    <button
+                      onClick={() => {
+                        setShowModelPreviewPanel(true);
+                        setIsModelModalOpen(false);
+                      }}
+                      className="text-gray-400 hover:text-white p-1"
+                    >
+                      X
+                    </button>
+                  </div>
                 </div>
               </div>
               <div className="p-0 flex-1 min-h-0 overflow-hidden">
-                <div className="h-full min-h-0 flex overflow-hidden bg-background">
-                  <div className="flex-1 min-w-0 h-full overflow-auto p-4">
+                <div ref={previewSplitContainerRef} className="h-full min-h-0 flex overflow-hidden bg-background">
+                  <div
+                    className="flex-1 min-w-0 h-full overflow-auto p-4"
+                    style={previewVisible ? {
+                      flexBasis: `${chatWidthPct}%`,
+                      maxWidth: `${chatWidthPct}%`
+                    } : { flex: '1 1 100%' }}
+                  >
                     <div className="flex-1 flex flex-col min-h-full">
                       {/* Render the ai-model tab content from the prepared modelModalMiddlePanelContent */}
                       {modelModalMiddlePanelContent?.tabs?.[0]?.content}
                     </div>
                   </div>
-                  {showModelPreviewPanel && (
-                    <div className="w-[30%] min-w-[220px] h-full overflow-auto bg-gray-900/70 border-l border-gray-700">
+                  {previewVisible && (
+                    <div
+                      className="relative  w-4 flex justify-stretch justify-center cursor-col-resize"
+                      onMouseDown={startPreviewResize}
+                      onTouchStart={startPreviewResize}
+                    >
+                      <span className="absolute inset-y-0 w-1 h-full rounded-full bg-gradient-to-b from-orange-600/90 via-orange-500/80 to-yellow-400/70 border border-orange-300/50 shadow-[0_0_12px_rgba(255,159,0,0.45)]" />
+                    </div>
+                  )}
+                  {previewVisible && (
+                    <div
+                      className="h-full overflow-auto bg-gray-900/70 border-l border-gray-700"
+                      style={{
+                        width: `${previewWidthPct}%`,
+                        flexBasis: `${previewWidthPct}%`,
+                        maxWidth: `${previewWidthPct}%`,
+                        minWidth: '280px'
+                      }}
+                    >
                       <OutputPanel
                         modelPreview={modelPreview}
                         setModelPreview={setModelPreview}
                         modelContent={modelContent}
-                        setModelContent={setModelContent}
+                        setmodelContent={setModelContent}
                         setIsLibraryOpen={setIsLibraryOpen}
                         isLibraryOpen={isLibraryOpen}
                         panelType="right"

@@ -153,6 +153,44 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => 
         }
     };
 
+    const duplicateRelshipCount = React.useMemo(() => {
+        const seen = new Set<string>();
+        let duplicates = 0;
+        (effectiveData || []).forEach((rel: any) => {
+            const id = rel?.id;
+            if (!id) return;
+            if (seen.has(id)) {
+                duplicates += 1;
+                return;
+            }
+            seen.add(id);
+        });
+        return duplicates;
+    }, [effectiveData]);
+
+    const removeDuplicateRelships = () => {
+        if (duplicateRelshipCount === 0) {
+            console.info('[RelshipTable] No duplicate relationship IDs detected.');
+            return;
+        }
+
+        try {
+            // eslint-disable-next-line no-restricted-globals
+            const ok = confirm(`Remove ${duplicateRelshipCount} duplicate relationship${duplicateRelshipCount === 1 ? '' : 's'}?`);
+            if (!ok) return;
+        } catch (e) {
+            // ignore
+        }
+
+        try {
+            // eslint-disable-next-line @typescript-eslint/no-var-requires
+            const { removeDuplicateRelships } = require('@/features/model-universe/modelSlice');
+            dispatch(removeDuplicateRelships({ modelId: modelId ?? undefined }));
+        } catch (e) {
+            console.warn('Failed to dispatch removeDuplicateRelships action', e);
+        }
+    };
+
     // Actions are provided by the centralized ActionsCell in relship-columns.tsx
 
     const finalColumns = React.useMemo(() => {
@@ -223,11 +261,11 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => 
                 <div className="inline-flex items-center gap-2">
                     <span className="text-xs text-gray-400">{selectedCount > 0 ? `${selectedCount} selected` : ''}</span>
                     <Button
-                        onClick={deleteSelected}
-                        disabled={selectedCount === 0}
-                        className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
+                        onClick={removeDuplicateRelships}
+                        disabled={duplicateRelshipCount === 0}
+                        className={`text-xs px-2 py-1 rounded ${duplicateRelshipCount === 0 ? 'opacity-50 cursor-not-allowed bg-yellow-500 text-white' : 'bg-yellow-700 text-white hover:bg-yellow-600'}`}
                     >
-                        Delete selected
+                        Remove duplicates{duplicateRelshipCount > 0 ? ` (${duplicateRelshipCount})` : ''}
                     </Button>
                     <Button
                         onClick={restoreSelected}
@@ -235,6 +273,13 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId }) => 
                         className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-green-800 text-white dark:bg-green-700 dark:text-white hover:bg-green-700`}
                     >
                         Restore selected
+                    </Button>
+                    <Button
+                        onClick={deleteSelected}
+                        disabled={selectedCount === 0}
+                        className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
+                    >
+                        Delete selected
                     </Button>
                     <Button
                         onClick={() => {

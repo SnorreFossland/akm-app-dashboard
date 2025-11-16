@@ -271,7 +271,7 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
                 nextAutoPrompt = `Build an IRTV model with Workspaces for the the following Processes: ${popsProcessesInfo.join(", ")}.
 Create a Container for each process with a contains relationship to all Roles, Tasks, Views and Information objects with vital Properties for each process.
 The objects and relationships must be according to the IRTV metamodel defined in #Metamodel.
-Do not repeat type-names in the name or description of objects. Consider also the #Context below.
+Do not repeat type-names in the name or description of objects.
 `;
                 break;
 
@@ -286,7 +286,7 @@ Do not repeat type-names in the name or description of objects. Consider also th
                     .filter((o: any) => o.name !== "Type")
                     .map((o: any) => o.name + ', ');
                 nextAutoPrompt = `Build a TYPE model based on IRTV Information objects: ${irtvInfoObjects.join(", ")} and relationships: ${irtvInfoRelationships.join(", ")},  
-and the Domain definition in the #Context below.
+and the Domain definition in the Context below.
 Evaluate the Information objects with Properties and Relationships for logical consistency.
 Do not repeat type-names in the name of objects. Remove any IRTV type-names in the name of objects. The Information objects should be represented as EntityType objects.
 Start with creating an object of type Metamodel with a relship "contains" to all objects of type EntityType.
@@ -309,8 +309,7 @@ ${types.length ? `Create objects and relationships using the following object ty
 
                 nextAutoPrompt =
                     `Build a POPS model based on the Domain definition in the #Context below.
-Focus on Processes, Process structures Main processes contain sub-processes and down to leaf-processes that has trigger or isFollowedBy sequence relationships.
-Make detailed leaf processes.
+Focus on processes, main processes contain sub-processes. Leaf-processes (low-level processes) that has trigger or isFollowedBy sequence relationships.
 Add Organization units that performs or manages Processes.
 Add Products that are produced or used in Processes.
 Add Services or Systems that are used by Processes. 
@@ -319,9 +318,8 @@ Add detailed descriptions to all objects.
 Create Relationships between all objects for logical consistency.
 Do not create duplicate objects or relationships.
 Do not repeat typenames in the name or description of objects.
-The objects and relationships must be created according to the POPS metamodel defined in #Metamodel.
+The objects and relationships must be created according to POPS metamodel defined in the Metamodel.
 ${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
-Consider also - if provided - the #Context below.
 `;
                 break;
 
@@ -334,7 +332,7 @@ Consider also - if provided - the #Context below.
                     .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
                 nextAutoPrompt =
-                    `Build a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the #Context below.
+                    `Build a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the Context below.
 Evaluate where BPMN pools and lanes are appropriate and ensure logical consistency. 
 Do not use type-names in the name of objects. Do not use type-names in the name of objects. 
 The Information objects should be represented as EntityType objects.
@@ -785,58 +783,53 @@ Ensure logical consistency and relationship principles.`
         return `**${mm.name}**
 ### Object Types
 ${filteredObjectTypes
-                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typeName: ${o.typeName}, typeRef: ${o.typeRef}`)
+                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typename: ${o.typeName}, typeviewRef: ${o.typeviewRef}`)
                 .join("\n")}
 
 ### Relationship Types
 ${filteredRelTypes
-                .map((r: any) => `id: ${r.id}, name: ${r.name},  fromobjectRef: ${r.fromobjtypeRef}, nameFrom: ${r.nameFrom}, toobjectRef: ${r.toobjtypeRef}, nameTo: ${r.nameTo}, typeRef: ${r.typeRef}, relshipkind: ${r.relshipkind}`)
+                .map((r: any) => `id: ${r.id}, name: ${r.name},  fromobjectRef: ${r.fromobjtypeRef}, nameFrom: ${r.nameFrom}, toobjectRef: ${r.toobjtypeRef}, nameTo: ${r.nameTo}, relshipkind: ${r.relshipkind}`)
                 .join("\n")}
 `;
     }
     // ----------  Prompts ----------
     const finalSystemPrompt = `
 You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling.
-Your task is to build a model from the provided "Existing Context" and Domain definition, conforming to the provided Metamodel.
-Do not add the objects typenames in the object names.
-Use the Metamodel object types and relationship types as defined in the Metamodel.
-Ensure logical consistency and relationship principles.
-Always use valid UUID strings for all ids.
-Always use the provided metamodel typeRef for object typeRef and relationship typeRef.
-Do not make up new object types or relationship types.
-DO NOT change the typeName; always use the metamodel typeName.
-If the Domain definition is missing or insufficient, respond with your best suggestions.
+Your task is to build a model from he Domain definition, and if provided Existing Context, conforming to the provided Metamodel.
 `;
 
     let finalDeveloperPrompt = ''
 
     finalDeveloperPrompt = `### Developer Instructions
+## When building the model, follow these principles:
+Ensure logical consistency and relationship principles.
+If the Domain definition is missing or insufficient, respond with your best suggestions.
+
 Model:
 - Required: id, name, description, objects[], relships[].
 - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
 - Description should be a brief summary of the model's purpose.
 - All ids should be unique UUID strings.
-
 Objects:
 - Required: id, name, description, typeRef, typeName, typeviewRef.
 - All ids should be unique UUID strings.
 - TypeName and typeRef must match a valid object type from the Metamodel.
-- Use the ontology Concept names to name objects, but use the metamodel typeRef for typeRef.
 - Do not include the object typeName in the object name.
 - Do not use generic objectypes like "Generic", "Element" or "EntityType".
 - Do not change the typeName; always use the metamodel typeName.
-- Ensure the object names are unique within the model.
+- Ensure the object descriptions are concise yet informative.
 
 Relships:
 - Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
 - Relationship name should not include from/to object name.
-- Relationship name should not have suffix "Rel".
-- Use the metamodel relshiptypeRef for typeRef.
 - All ids should be unique UUID strings.
-- Ensure fromobjectRef and toobjectRef reference valid object ids defined in the objects[] array.
+- Ensure fromobjectRef and toobjectRef reference valid object id.
 - Ensure typeRef aligns with the Metamodel relshiptype.
+- Relationship name should not have prefix or suffix "Rel" etc.
 - Dont repeat the fromName and toName in the relationship name.
 - Do not use generic relationship types like "generic", "relatedTo" or "associatesWith".
+- Ensure all objects have relationships.
+- Ensure no orphaned or duplicate relationships.
 `;
 
     if (curMetamodel?.name === "CORE_META") (
@@ -870,9 +863,9 @@ Relships:
     if (curMetamodel?.name === "POPS_META") (
         finalDeveloperPrompt +=
         `
-# Evaluate the domain then build a POPS model.
-## When building the model, follow these principles:
+- Evaluate the domain definition and then build a POPS model.
 `)
+// ## When building the model, follow these principles:
 // - Make key Activities and Processes into Process objects.
 // - Make key Products into Product objects.
 // - Make key Services into Service objects.
@@ -895,7 +888,7 @@ Relships:
         setActiveTab("model");
 
         // Use the provided userText if available; otherwise fall back to inputMessage
-        const finalUserPrompt = `${userText} \n ${context.presentation}`;
+        const finalUserPrompt = `${userText} \n #Context: ${context.presentation}`;
 
         if (!debug) console.log(
             `877 Prompts: selectedModel: ${selectedModel}\n\n` +

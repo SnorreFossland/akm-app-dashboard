@@ -22,6 +22,7 @@ interface AiModel {
 
 const AI_MODELS = [
     { id: 'gpt-5-mini', name: 'GPT-5 Mini', provider: 'openai', enabled: true },
+    { id: 'gpt-5.1', name: 'GPT-5.1', provider: 'openai', enabled: true },
     { id: 'mistral', name: 'Mistral (Legacy)', provider: 'mistral', enabled: true },
     { id: 'gpt-5', name: 'GPT-5', provider: 'openai', enabled: true },
     { id: 'deepseek-chat', name: 'Deepseek Chat', provider: 'deepseek', enabled: true },
