@@ -25,6 +25,7 @@ import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 import GettingStartedGuide from '@/components/model-builder/GettingStartedGuide';
 import { SystemPrompt, DeveloperPrompt, UserPrompt } from '@/app/model-builder/prompts';
+import { PROMPT_TEMPLATES } from '@/components/model-builder/promptTemplates';      
 import { mapModelId } from '@/lib/ai/modelMap';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import { streamGenmodel } from '@/lib/ai/genmodel';
@@ -113,6 +114,8 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
     const [contextOntology, setContextOntology] = useState("");
     const [context, setContext] = useState<any>(domain);
     const [contextMetamodel, setContextMetamodel] = useState("");
+    const [existingContextString, setExistingContextString] = useState("");
+    const [generatedDeveloperPrompt, setGeneratedDeveloperPrompt] = useState("");
 
     const [isStreaming, setIsStreaming] = useState(false);
     const [contextFiles, setContextFiles] = useState<File[]>([]);
@@ -225,6 +228,7 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
     ]);
 
     // ---------- Auto-prompt generation when curmod or curMetamodel changes ----------
+    let finalUserPrompt = "";
     useEffect(() => {
         if (!curmod || !curMetamodel) return;
         // Find relevant models for context (POPS and IRTV)
@@ -248,31 +252,69 @@ export default function ModelBuilderComponent(props: ModelBuilderProps) {
         //     .map((r: any) => r.name) || [];
         const irtvInfoRelationships = [""]; // Placeholder for now
         let types: string[] = [];
-        let nextAutoPrompt = "";
 
-        // Basic filtering for relevant types (not used?)
-        types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
-            .filter((o: any) => o.name !== "EntityType")
-            .filter((o: any) => o.name !== "Gateway")
-            .filter((o: any) => o.name !== "Element")
-            .filter((o: any) => o.name !== "Generic")
-            .filter((o: any) => o.name !== "Label")
-            .map((o: any) => o.name + ', ');
-        nextAutoPrompt = "Create objects and relationships based on the ontology concepts below and according to the types defined in the Metamodel"
+        // Base developer prompt (common to all metamodels)
+        let developerPromptText = `### Developer Instructions
+## When building the model, follow these principles:
+Ensure logical consistency and relationship principles.
+If the Domain definition is missing or insufficient, respond with your best suggestions.
+Do not create modelviews, use the current modelview for all objects and relationships.
+`;
+// Model:
+// - Required: id, name, description, objects[], relships[].
+// - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
+// - Description should be a brief summary of the model's purpose.
+// - All ids should be unique UUID strings.
+// Objects:
+// - Required: id, name, description, typeRef, typeName, typeviewRef.
+// - All ids should be unique UUID strings.
+// - TypeName and typeRef must match a valid object type from the Metamodel.
+// - Prefer domain-specific names that do not redundantly append the type label (e.g., use “StudentEnrollment” instead of “StudentEnrollmentProcess”).
+// - Do not use generic objectypes like "Generic", "Element" or "EntityType".
+// - Do not change the typeName; always use the metamodel typeName.
+// - Ensure the object descriptions are concise yet informative.
+// When creating new objects:
+// 	•	Maintain an in-memory list of (name, typeName) pairs for all objects already added to objects (including those from Existing Context).
+// 	•	Before adding a new object, check this list:
+// 	•	If the same (name, typeName) already exists, reuse the existing object’s id and do not add a new object.
+// 	•	Only create a new object if no existing object shares both the same name and typeName.
+//     When adding an object to objects, first scan all existing objects.
+// If there is already an object with the same name and typeName:
+// 	•	Do not create a new object.
+// 	•	Reuse the existing object's id in relationships.
+
+// Relships:
+// - Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
+// - Relationship name should not include from/to object name.
+// - All ids should be unique UUID strings.
+// - Ensure fromobjectRef and toobjectRef reference valid object id.
+// - Ensure typeRef aligns with the Metamodel relshiptype.
+// - Relationship name should not have prefix or suffix "Rel" etc.
+// - Dont repeat the fromName and toName in the relationship name.
+// - Do not use generic relationship types like "generic", "relatedTo" or "associatesWith".
+// - Ensure all objects have relationships.
+// - Ensure no orphaned relationships.
+// When creating a new relationship:
+// 	•	Check if any existing relationship in relships has the same name, fromobjectRef, and toobjectRef.
+// 	•	If such a relationship exists, do not create another one.
+//     •	Reuse the existing object's id in relationships.
+// `;
 
         switch (curMetamodel.name) {
             case "IRTV_META": // IRTV model generation
-                types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
-                    .filter((o: any) => o.name !== "Element")
-                    .filter((o: any) => o.name !== "Generic")
-                    .filter((o: any) => o.name !== "Label")
-                    .map((o: any) => o.name + ', ');
+                // types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
+                //     .filter((o: any) => o.name !== "Element")
+                //     .filter((o: any) => o.name !== "Generic")
+                //     .filter((o: any) => o.name !== "Label")
+                //     .map((o: any) => o.name + ', ');
 
-                nextAutoPrompt = `Build an IRTV model with Workspaces for the the following Processes: ${popsProcessesInfo.join(", ")}.
-Create a Container for each process with a contains relationship to all Roles, Tasks, Views and Information objects with vital Properties for each process.
-The objects and relationships must be according to the IRTV metamodel defined in #Metamodel.
-Do not repeat type-names in the name or description of objects.
-`;
+                if (irtvObjectNames.length === 0) {
+                    developerPromptText += `${PROMPT_TEMPLATES.find(t => t.id === "irtv-model-builder")?.content} Build an IRTV model based on the POPS leaf processes and the Domain definition in the \'#Context\'` || "";
+                    finalUserPrompt = `Generate IRTV from POPS and following UserAddition:`;
+                } else {
+                    developerPromptText += `${PROMPT_TEMPLATES.find(t => t.id === "irtv-model-builder")?.content} Enhance, refine or extend the existing IRTV model based on the \'#UserAddition\' and Domain definition in the  \'#Context\'` || "";
+                    finalUserPrompt = `#Enhance the model with following UserAddition:`;
+                }
                 break;
 
             case "CORE_META": // TYPE model generation
@@ -285,44 +327,50 @@ Do not repeat type-names in the name or description of objects.
                     .filter((o: any) => o.name !== "Fieldtype")
                     .filter((o: any) => o.name !== "Type")
                     .map((o: any) => o.name + ', ');
-                nextAutoPrompt = `Build a TYPE model based on IRTV Information objects: ${irtvInfoObjects.join(", ")} and relationships: ${irtvInfoRelationships.join(", ")},  
+
+                developerPromptText += `
+# Evaluate the domain then build a TYPE definition model.
+## When building the model, follow these principles:
+- Make one Metamodel object representing the Domain. The name should reflect the domain (e.g., "HealthcareMetamodel", "FinanceMetamodel").
+- From Metamodel object to EntityType objects use the "contains" relationship.
+- Make key Concepts and Terminologies into EntityType objects. Skip Tools, Software, Systems, Locations, Diagram and non-conceptual items.
+- From EntityType objects to other EntityType objects create name from the domain using the relationship type "relationshipType".
+- From EntityType objects to parent EntityTypes objects use the "Is" for inheritance.
+- From EntityType objects to Properties use the "has" relationship.
+- Use Properties to represent attributes of EntityType objects.
+- Use Details to capture additional information about EntityType objects.
+- Use Methods to represent actions or functions related to EntityType objects.
+- Use MethodTypes to categorize Methods.
+- Use ViewFormats to define how information is presented.
+- Use Fieldtypes to specify data types for Properties.
+`
+                finalUserPrompt = `Build a TYPE model based on IRTV Information objects: ${irtvInfoObjects.join(", ")} and relationships: ${irtvInfoRelationships.join(", ")},  
 and the Domain definition in the Context below.
 Evaluate the Information objects with Properties and Relationships for logical consistency.
 Do not repeat type-names in the name of objects. Remove any IRTV type-names in the name of objects. The Information objects should be represented as EntityType objects.
 Start with creating an object of type Metamodel with a relship "contains" to all objects of type EntityType.
 The objects and relationships must be created according to the TYPE metamodel defined in #Metamodel.
-${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
 `
+
                 break;
 
             case "POPS_META": // POPS model generation
-                types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
-                    .filter((o: any) => o.name !== "EntityType")
-                    .filter((o: any) => o.name !== "Device")
-                    .filter((o: any) => o.name !== "Label")
-                    .filter((o: any) => o.name !== "Generic")
-                    .filter((o: any) => o.name !== "Equipment")
-                    .filter((o: any) => o.name !== "Facility")
-                    .filter((o: any) => o.name !== "Event")
-                    .filter((o: any) => o.name !== "Element")
-                    .map((o: any) => o.name + ', ');
+                // types = (curMetamodel.objecttypes0 || []) // filter out no relevant types
+                //     .filter((o: any) => o.name !== "EntityType")
+                //     .filter((o: any) => o.name !== "Device")
+                //     .filter((o: any) => o.name !== "Label")
+                //     .filter((o: any) => o.name !== "Generic")
+                //     .filter((o: any) => o.name !== "Equipment")
+                //     .filter((o: any) => o.name !== "Facility")
+                //     .filter((o: any) => o.name !== "Event")
+                //     .filter((o: any) => o.name !== "Element")
+                //     .map((o: any) => o.name + ', ');
 
-                nextAutoPrompt =
-                    `Build a POPS model based on the Domain definition in the #Context below.
-Focus on processes, main processes contain sub-processes. Leaf-processes (low-level processes) that has trigger or isFollowedBy sequence relationships.
-Add Organization units that performs or manages Processes.
-Add Products that are produced or used in Processes.
-Add Services or Systems that are used by Processes. 
-Add Data as output and input to/form Processes.
-Add detailed descriptions to all objects.
-Create Relationships between all objects for logical consistency.
-Do not create duplicate objects or relationships.
-Do not repeat typenames in the name or description of objects.
-The objects and relationships must be created according to POPS metamodel defined in the Metamodel.
-${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
+                developerPromptText += PROMPT_TEMPLATES.find(t => t.id === "pops-model-builder")?.content || "";
+                finalUserPrompt =
+                    `Build a POPS model based on the Domain definition.
 `;
                 break;
-
             case "BPMN_META": // BPMN model generation
                 types = (curMetamodel.objecttypes0 || [])
                     .filter((o: any) => o.name !== "EntityType")
@@ -331,21 +379,27 @@ ${types.length ? `Create objects and relationships using the following object ty
                     .filter((o: any) => o.name !== "Generic")
                     .filter((o: any) => o.name !== "Label")
                     .map((o: any) => o.name + ', ');
-                nextAutoPrompt =
+                finalUserPrompt =
                     `Build a BPMN model based on IRTV objects: ${irtvObjectNames.join(", ")} and relationships: ${irtvRelNames.join(", ")},  and the Domain definition in the Context below.
 Evaluate where BPMN pools and lanes are appropriate and ensure logical consistency. 
 Do not use type-names in the name of objects. Do not use type-names in the name of objects. 
 The Information objects should be represented as EntityType objects.
 Roles should be represented as Lanes and Tasks as Activities. Views should be represented as DataObjects.
 The objects and relationships must be according to the BPMN metamodel defined in #Metamodel.
-${types.length ? `Create objects and relationships using the following object types: ${types.join(" ")}` : ""}
 `;
                 break;
         }
 
-        if (!nextAutoPrompt) return;
+        const contextmetatypesString = `#Metamodel \n\n
+    - When creating objects, always assign a valid typeRef and typeName from the Metamodel.
+    - When creating relationships, ensure from/to object types align with Metamodel definitions.
+    `;
+        developerPromptText += `${contextmetatypesString}\n`;
+        setGeneratedDeveloperPrompt(developerPromptText);
+        setContextMetamodel(contextmetatypesString);
 
-        setUserPrompt(nextAutoPrompt);
+
+        setUserPrompt(finalUserPrompt);
 
         // Decide whether to inject/overwrite the textarea input:
         // Overwrite if:
@@ -353,10 +407,10 @@ ${types.length ? `Create objects and relationships using the following object ty
         //  - OR input equals the last auto prompt (user hadn't personalized it)
         //  - OR user never edited (userEditedInput === false)
         if (!input || input === lastAutoPrompt || !userEditedInput) {
-            setInput(nextAutoPrompt);
-            setLastAutoPrompt(nextAutoPrompt);
+            setInput(finalUserPrompt);
+            setLastAutoPrompt(finalUserPrompt);
             setUserEditedInput(false); // still considered auto
-            if (debug) console.log("[auto-prompt] applied", nextAutoPrompt.slice(0, 60));
+            if (debug) console.log("[auto-prompt] applied", finalUserPrompt.slice(0, 60));
         } else {
             if (debug) console.log("[auto-prompt] NOT applied (user edited)");
         }
@@ -404,37 +458,39 @@ ${types.length ? `Create objects and relationships using the following object ty
                 : [];
 
         // BUGFIX: use existingObjects (array), not existingInfoObjects (state object)
-        const newExistingInfoObjects = {
+        const newExistingObjects = {
             objects: existingObjects,
             relships: existingRelationships
         };
 
-        setExistingInfoObjects(newExistingInfoObjects.objects.length > 0 ? newExistingInfoObjects : { objects: [], relships: [] });
+        setExistingInfoObjects(newExistingObjects.objects.length > 0 ? newExistingObjects : { objects: [], relships: [] });
 
         // Guard against non-array
-        const existingNames = (newExistingInfoObjects.objects || []).map((o: any) => o.name);
+        const existingNames = (newExistingObjects.objects || []).map((o: any) => o.name);
 
-        let conceptString = `**Existing Context**
+        let existingContextString = `#ExistingContext
+    **The following objects and relationships are already defined and only used for connecting new relationships.**
+    - Before creating a new object, check if its already.
+    `;
 
-**The following objects and relationships are already defined and only used for connecting new relationships.**
-- Before creating a new object, check if its name exists in existingObjectNames (case-insensitive).
-- existingObjectNames = ${existingNames.join(", ")}
-
+        let conceptString = `The following objects and relationships are already defined and only used for connecting new relationships.**\n\n
+- Before creating a new object, check if its already exists.\n\n
+Do not duplicate existing objects and relationships that exists in the following \'ExistingContext\'.\n\n
+#ExistingContext\n\n
 `;
-
-        if (newExistingInfoObjects.objects.length > 0) {
-            conceptString += `**Objects**\n\n${newExistingInfoObjects.objects
-                .map((o: any) => `- ${o.name} - ${o.description || ""}`)
+        if (newExistingObjects.objects.length > 0) {
+            conceptString += `**Objects**\n\n${newExistingObjects.objects
+                .map((o: any) => `{"id": "${o.id}", "name": "${o.name}", "description": "${o.description || ""}", "typeName": "${o.typeName || ""}", "typeRef": "${o.typeRef || ""}", "typeviewRef": "${o.typeviewRef || ""}"}`)
                 .join("\n")}\n\n`;
         }
-        if (newExistingInfoObjects.relships.length > 0) {
-            conceptString += `**Relationships**\n\n${newExistingInfoObjects.relships
+        if (newExistingObjects.relships.length > 0) {
+            conceptString += `**Relationships**\n\n${newExistingObjects.relships
                 .map(
-                    (r: any) =>
-                        `- ${r.name} - ${r.nameFrom || ""} -> ${r.nameTo || ""}`
-                )
+                    (r: any) => `{"id": "${r.id}", "name": "${r.name}", "typeName": "${r.typeName || ""}", "typeRef": "${r.typeRef || ""}", "fromobjectRef": "${r.fromobjectRef || ""}", "nameFrom": "${r.nameFrom || ""}", "toobjectRef": "${r.toobjectRef || ""}", "nameTo": "${r.nameTo || ""}"}`                )
                 .join("\n")}\n\n`;
         }
+
+        setExistingContextString(conceptString);
 
         const ontology = data.phData.domain?.ontology;
         const filteredConcepts = (ontology?.concepts || []).filter(
@@ -442,7 +498,7 @@ ${types.length ? `Create objects and relationships using the following object ty
         );
         const filteredRels = (ontology?.relationships || []).filter(
             (r: any) =>
-                !newExistingInfoObjects.relships.some((ir: any) => ir.name === r.name)
+                !newExistingObjects.relships.some((ir: any) => ir.name === r.name)
         );
 
         const newOntologyString =
@@ -465,9 +521,15 @@ ${types.length ? `Create objects and relationships using the following object ty
                 )
                 .join("\n")}\n\n`;
 
-        (newExistingInfoObjects.objects.length > 0) && setContextItems(`${conceptString}\n\n`);
+        (newExistingObjects.objects.length > 0) && setContextItems(`${conceptString}\n\n`);
         setContextOntology(`${newOntologyString}`);
-    }, [curmod?.id, data?.phData?.domain?.ontology?.concepts]);
+    }, [
+        curmod,
+        curmod?.objects,
+        curmod?.relships,
+        data?.phData?.domain?.ontology?.concepts,
+        data?.phData?.domain?.ontology?.relationships,
+    ]);
 
     // ---------- 6. Temperature preference ----------
     useEffect(() => {
@@ -589,49 +651,49 @@ ${types.length ? `Create objects and relationships using the following object ty
                 .join("\n");
         } else if (curMetamodel.name === "CORE_META") {
             setSystemBehaviorGuidelines(`You are an expert in Type definition analysis. 
-Your task is to create a Type definition Model based on the provided CORE_META Metamodel. 
-One object of type "Metamodel"  with relationship "contains" to all EntityType objects.
-EntityType objects representing domain concepts may have properties.
-Ensure logical consistency and relationship principles.`
+    Your task is to create a Type definition Model based on the provided CORE_META Metamodel. 
+    One object of type "Metamodel"  with relationship "contains" to all EntityType objects.
+    EntityType objects representing domain concepts may have properties.
+    Ensure logical consistency and relationship principles.`
             );
             metatypesString = serializeTypes(curMetamodel);
             // console.log('316 metatypesString', metatypesString);
             exampleString += `
-{
-    "models": [
-        {
-            "id": "UUID",
-            "name": "FoodProduction",
-            "description": "A model representing food production processes and products.",
-            "metamodelRef": "CORE_META uuid",
-            "modelviews": [
-                {
-                    "name": "Main",
-                    "description": "The main view of the model",
-                    "objects": [
-                        {
-                            "id": "UUID",
-                            "name": "FoodProcess",
-                            "description": "Captures the steps performed during food production.",
-                            "typeRef": "Process uuid",
-                            "typeName": "Process"
-                        }
-                    ],
-                    "relationships": [
-                        {
-                            "id": "UUID",
-                            "name": "produces",
-                            "typeRef": "Relationship Type uuid",
-                            "fromobjectRef": "Process uuid",
-                            "toobjectRef": "Property uuid"
-                        }
-                    ]
-                }
-            ]
-        }
-    ]
-}
-                        `;
+    {
+        "models": [
+            {
+                "id": "UUID",
+                "name": "FoodProduction",
+                "description": "A model representing food production processes and products.",
+                "metamodelRef": "CORE_META uuid",
+                "modelviews": [
+                    {
+                        "name": "Main",
+                        "description": "The main view of the model",
+                        "objects": [
+                            {
+                                "id": "UUID",
+                                "name": "FoodProcess",
+                                "description": "Captures the steps performed during food production.",
+                                "typeRef": "Process uuid",
+                                "typeName": "Process"
+                            }
+                        ],
+                        "relationships": [
+                            {
+                                "id": "UUID",
+                                "name": "produces",
+                                "typeRef": "Relationship Type uuid",
+                                "fromobjectRef": "Process uuid",
+                                "toobjectRef": "Property uuid"
+                            }
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+                            `;
         } else if (curMetamodel.name === "POPS_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating POPS models. Create a POPS model based on the provided ontology concept types and relationships. Ensure consistency with Active Knowledge Modeling principles.`
@@ -653,81 +715,80 @@ Ensure logical consistency and relationship principles.`
                 .join("\n");
 
             exampleString += `
-{
-    "models": [
-        {
-            "id": "UUID",
-            "name": "FoodProduction",
-            "description": "A model representing food production processes and products.",
-            "metamodelRef": "POPS_META uuid",
-            "objects": [
-                {
-                    "id": "UUID",
-                    "name": "HarvestProcess",
-                    "description": "Describes the harvesting of raw food materials.",
-                    "typeRef": "Process uuid",
-                    "typeName": "Process"
-                },
-                {
-                    "id": "UUID",
-                    "name": "FoodProduct",
-                    "description": "Represents the finished food product ready for delivery.",
-                    "typeRef": "Product uuid",
-                    "typeName": "Product"
-                }
-            ],
-            "relationships": [
-                {
-                    "id": "UUID",
-                    "name": "produces",
-                    "typeRef": "Relationship Type uuid",
-                    "fromobjectRef": "Process uuid",
-                    "nameFrom": "HarvestProcess",
-                    "toobjectRef": "Product uuid",
-                    "nameTo": "FoodProduct"
-                }
-            ]
-        }
-    ]
-}
-`;
+    {
+        "models": [
+            {
+                "id": "UUID",
+                "name": "FoodProduction",
+                "description": "A model representing food production processes and products.",
+                "metamodelRef": "POPS_META uuid",
+                "objects": [
+                    {
+                        "id": "UUID",
+                        "name": "HarvestProcess",
+                        "description": "Describes the harvesting of raw food materials.",
+                        "typeRef": "Process uuid",
+                        "typeName": "Process"
+                    },
+                    {
+                        "id": "UUID",
+                        "name": "FoodProduct",
+                        "description": "Represents the finished food product ready for delivery.",
+                        "typeRef": "Product uuid",
+                        "typeName": "Product"
+                    }
+                ],
+                "relationships": [
+                    {
+                        "id": "UUID",
+                        "name": "produces",
+                        "typeRef": "Relationship Type uuid",
+                        "fromobjectRef": "Process uuid",
+                        "nameFrom": "HarvestProcess",
+                        "toobjectRef": "Product uuid",
+                        "nameTo": "FoodProduct"
+                    }
+                ]
+            }
+        ]
+    }
+    `;
         } else if (curMetamodel.name === "BPMN_META") {
             setSystemBehaviorGuidelines(
                 `You are an expert in creating BPMN models. Use BPMN notation, pools, lanes, and ensure logical consistency with Active Knowledge Modeling principles.`
             );
             metatypesString = serializeTypes(curMetamodel);
             exampleString += `
-    {
-    "objects": [
         {
-            "id": "UUID",
-            "name": "Write code",
-            "description": "A two-wheeled vehicle that is powered by pedaling.",
-            "typeRef": "Task uuid",
-            "typeName": "Task"
-            },
+        "objects": [
+            {
+                "id": "UUID",
+                "name": "Write code",
+                "description": "A two-wheeled vehicle that is powered by pedaling.",
+                "typeRef": "Task uuid",
+                "typeName": "Task"
+                },
+            }
+        ],
+        "relationships": [
+            {
+                "id": "UUID",
+                "name": "approves",
+                "typeRef": "Relationship Type uuid",
+                "fromobjectRef": "Role uuid",
+                "nameFrom": "Role",
+                "toobjectRef": "Task uuid",
+                "nameTo": "Task"
+            }
+        ]
         }
-    ],
-    "relationships": [
-        {
-            "id": "UUID",
-            "name": "approves",
-            "typeRef": "Relationship Type uuid",
-            "fromobjectRef": "Role uuid",
-            "nameFrom": "Role",
-            "toobjectRef": "Task uuid",
-            "nameTo": "Task"
-        }
-    ]
-    }
-        `;
+            `;
         }
 
-        const contextmetatypesString = `## Metamodel \n\n ${metatypesString} 
-
-- When creating objects, always assign a valid typeRef and typeName from the Metamodel.
-- When creating relationships, ensure from/to object types align with Metamodel definitions.    
-`;
+        const contextmetatypesString = `#Metamodel \n\n
+    - When creating objects, always assign a valid typeRef and typeName from the Metamodel.
+    - When creating relationships, ensure from/to object types align with Metamodel definitions.    
+    `;
         // ## Example 
         //     ${exampleString}  
 
@@ -783,7 +844,7 @@ Ensure logical consistency and relationship principles.`
         return `**${mm.name}**
 ### Object Types
 ${filteredObjectTypes
-                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typename: ${o.typeName}, typeviewRef: ${o.typeviewRef}`)
+                .map((o: any) => `id: ${o.id}, name: ${o.name}, description: ${o.description}, typeName: ${o.typeName}, typeviewRef: ${o.typeviewRef}`)
                 .join("\n")}
 
 ### Relationship Types
@@ -792,95 +853,17 @@ ${filteredRelTypes
                 .join("\n")}
 `;
     }
+
+    const finalMetamodel = curMetamodel ? serializeTypes(curMetamodel) : "";
+
     // ----------  Prompts ----------
     const finalSystemPrompt = `
 You are a senior assistant specialized in Enterprise, Informations and Active Knowledge Modeling.
 Your task is to build a model from he Domain definition, and if provided Existing Context, conforming to the provided Metamodel.
 `;
 
-    let finalDeveloperPrompt = ''
+    const developerPromptForRequest = `${generatedDeveloperPrompt} ${finalMetamodel} ${existingContextString}`;
 
-    finalDeveloperPrompt = `### Developer Instructions
-## When building the model, follow these principles:
-Ensure logical consistency and relationship principles.
-If the Domain definition is missing or insufficient, respond with your best suggestions.
-
-Model:
-- Required: id, name, description, objects[], relships[].
-- Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
-- Description should be a brief summary of the model's purpose.
-- All ids should be unique UUID strings.
-Objects:
-- Required: id, name, description, typeRef, typeName, typeviewRef.
-- All ids should be unique UUID strings.
-- TypeName and typeRef must match a valid object type from the Metamodel.
-- Do not include the object typeName in the object name.
-- Do not use generic objectypes like "Generic", "Element" or "EntityType".
-- Do not change the typeName; always use the metamodel typeName.
-- Ensure the object descriptions are concise yet informative.
-
-Relships:
-- Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
-- Relationship name should not include from/to object name.
-- All ids should be unique UUID strings.
-- Ensure fromobjectRef and toobjectRef reference valid object id.
-- Ensure typeRef aligns with the Metamodel relshiptype.
-- Relationship name should not have prefix or suffix "Rel" etc.
-- Dont repeat the fromName and toName in the relationship name.
-- Do not use generic relationship types like "generic", "relatedTo" or "associatesWith".
-- Ensure all objects have relationships.
-- Ensure no orphaned or duplicate relationships.
-`;
-
-    if (curMetamodel?.name === "CORE_META") (
-        finalDeveloperPrompt +=
-        `
-# Evaluate the domain then build a TYPE definition model.
-## When building the model, follow these principles:
-- Make one Metamodel object representing the Domain. The name should reflect the domain (e.g., "HealthcareMetamodel", "FinanceMetamodel").
-- From Metamodel object to EntityType objects use the "contains" relationship.
-- Make key Concepts and Terminologies into EntityType objects. Skip Tools, Software, Systems, Locations, Diagram and non-conceptual items.
-- From EntityType objects to other EntityType objects create name from the domain using the relationship type "relationshipType".
-- From EntityType objects to parent EntityTypes objects use the "Is" for inheritance.
-- From EntityType objects to Properties use the "has" relationship.
-- Use Properties to represent attributes of EntityType objects.
-- Use Details to capture additional information about EntityType objects.
-- Use Methods to represent actions or functions related to EntityType objects.
-- Use MethodTypes to categorize Methods.
-- Use ViewFormats to define how information is presented.
-- Use Fieldtypes to specify data types for Properties.
-`)
-    if (curMetamodel?.name === "IRTV_META") (
-        finalDeveloperPrompt +=
-        `
-# Evaluate the domain then build a IRTV Workplace model.
-## When building the model, follow these principles:
-- Make key Actors and Roles into Role objects.
-- Make Activities and Processes into Tasks.
-- Make Views to represent the information needs for the tasks.
-- 
-`)
-    if (curMetamodel?.name === "POPS_META") (
-        finalDeveloperPrompt +=
-        `
-- Evaluate the domain definition and then build a POPS model.
-`)
-// ## When building the model, follow these principles:
-// - Make key Activities and Processes into Process objects.
-// - Make key Products into Product objects.
-// - Make key Services into Service objects.
-// - Use Devices to represent tools or equipment used in processes.
-// - Process triggers Process with "triggers" relationship.
-// - Process produces Product with "produces" relationship.
-// - Process uses Services and Systems.
-// - Process input and output to Data.
-// - Organizations owns Processes and Products with "owns" relationship.
-    finalDeveloperPrompt += `${contextMetamodel} \n`
-
-
-
-    // const finalUserPrompt = `${contextMetamodel} \n ${contextItems} \n ${contextOntology}`;
-    // const finalUserPrompt = `${userPrompt}  \n ${contextMetamodel} \n ${contextItems} \n ${contextOntology} \n ${contextMetamodel}`;
 
     const handleModelBuilder = async (userText?: string) => {
         setIsLoading(true);
@@ -893,7 +876,7 @@ Relships:
         if (!debug) console.log(
             `877 Prompts: selectedModel: ${selectedModel}\n\n` +
             `finalSystemPrompt: ${finalSystemPrompt}\n\n` +
-            `finalDeveloperPrompt: ${finalDeveloperPrompt}\n\n` +
+            `finalDeveloperPrompt: ${developerPromptForRequest}\n\n` +
             `finalUserPrompt: ${finalUserPrompt}`
         );
 
@@ -902,7 +885,7 @@ Relships:
                 aiModelName: mapModelId(selectedModel || "gpt-5-mini"),
                 schemaName: "ObjectSchema",
                 systemPrompt: finalSystemPrompt || "",
-                developerPrompt: finalDeveloperPrompt || "",
+                developerPrompt: developerPromptForRequest || "",
                 userPrompt: finalUserPrompt || ""
             } as const;
 
@@ -1236,6 +1219,20 @@ Relships:
                             <TemperatureSelector temperature={temperature} onChange={(t) => setTemperature(t)} />
                         </div>
 
+                        {!isLoading && lastAutoPrompt && userEditedInput && (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setInput(lastAutoPrompt);
+                                    setUserEditedInput(false);
+                                }}
+                                className="flex items-center bg-gray-700 rounded-full px-2 py-1 mb-1 text-xs text-gray-300 hover:bg-gray-600"
+                                title="Revert to generated prompt"
+                            >
+                                Reset Prompt
+                            </button>
+                        )}
+
                         {/* now include the send‐button here */}
                         <div className="flex justify-between px-2 ">
                             <button
@@ -1257,19 +1254,7 @@ Relships:
                                 </svg>
                             </button>
                         </div>
-                        {!isLoading && lastAutoPrompt && userEditedInput && (
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setInput(lastAutoPrompt);
-                                    setUserEditedInput(false);
-                                }}
-                                className="flex items-center bg-gray-700 rounded-full px-2 py-1 mb-1 text-xs text-gray-300 hover:bg-gray-600"
-                                title="Revert to generated prompt"
-                            >
-                                Reset Prompt
-                            </button>
-                        )}
+
                     </div>
                 </form>
             </div>

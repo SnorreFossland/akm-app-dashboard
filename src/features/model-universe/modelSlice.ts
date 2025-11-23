@@ -550,13 +550,15 @@ const modelSlice = createSlice({
       if (!currentModel) currentModel = state.phData.metis.models[0];
       if (!currentModel || !currentModel.relships) return;
 
+      // Remove duplicates based on nameFrom, name, and nameTo
       const seen = new Set<string>();
       currentModel.relships = currentModel.relships.filter((rel: any) => {
-        if (!rel?.id) return true;
-        if (seen.has(rel.id)) {
+        const key = `${rel?.nameFrom ?? ''}|||${rel?.name ?? ''}|||${rel?.nameTo ?? ''}`;
+        if (!rel?.nameFrom || !rel?.name || !rel?.nameTo) return true;
+        if (seen.has(key)) {
           return false;
         }
-        seen.add(rel.id);
+        seen.add(key);
         return true;
       });
     },

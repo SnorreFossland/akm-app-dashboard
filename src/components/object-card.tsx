@@ -239,7 +239,10 @@ export const ObjectCard = ({
                 e.preventDefault();
                 const scrollAmount = e.deltaY * 2;
                 container.scrollLeft += scrollAmount;
-            } else if (isZoomMode) {
+                return;
+            }
+
+            if (isZoomMode && (e.ctrlKey || e.metaKey)) {
                 e.preventDefault();
                 const zoomSensitivity = 0.1;
                 if (e.deltaY < 0) {
@@ -436,7 +439,7 @@ export const ObjectCard = ({
                         }}
                     >
                         <div className="text-xs text-gray-400 ml-2 diagram-hint">
-                            {isZoomMode ? 'Use wheel to zoom' : 'Hold Shift+wheel for horizontal scrolling'}
+                            {isZoomMode ? 'Hold Ctrl+wheel to zoom (wheel scrolls otherwise)' : 'Hold Shift+wheel for horizontal scrolling'}
                         </div>
 
                         {/* inner wrapper should NOT force min-width; keep it flexible so the parent flex can shrink.

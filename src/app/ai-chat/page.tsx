@@ -153,8 +153,13 @@ const AIChatPage = () => {
         localStorage.setItem('aiChat_additionalContext', additionalContext);
     }, [additionalContext]);
 
-    const handleSetCurrentDocument = useCallback((content: string) => {
+    // Accepts content, id, name, type, and category (all optional except content)
+    const handleSetCurrentDocument = useCallback((content: string, id?: string, name?: string, type?: string, category?: string) => {
         setCurrentDocument(content);
+        if (id !== undefined) setDocumentId(id);
+        if (name !== undefined) setDocumentName(name);
+        if (type !== undefined) setDocumentType(type);
+        if (category !== undefined) setDocumentCategory(category as DomainCategory);
     }, []);
 
     const openLibraryFor = useCallback((target: 'context' | 'document') => {
@@ -258,7 +263,9 @@ const AIChatPage = () => {
 
         // Find the document we're editing by matching the original content
         const existingDoc = documents?.find(doc =>
-            doc.content === originalContent || doc.name === documentName
+            (doc.id && focusDoc?.id && doc.id === focusDoc.id) ||
+            (doc.name === documentName) ||
+            (doc.content === originalContent)
         );
 
         let newDoc: MarkdownDocument;

@@ -33,118 +33,46 @@ import { DomainBuilderHeader } from '@/components/domain-builder/DomainBuilderHe
 import DiffModal from '@/components/ai-chat/DiffModal';
 import { useAIChatMode } from '@/hooks/useAIChatMode';
 
-type Model = any;
-
-export interface ChatComponentProps {
-  onResponseChange: (response: string) => void;
-  onViewInMarkdown: (response: string) => void;
-  setShowLeftPanel: (show: boolean) => void;
-  error?: string; // Optional error prop
-  chatInput?: string;
-  input: string;
-  setInput: (input: string) => void;
-  setMdContent: (message: string) => void;
-  mdContent: string;
-  onAddMD?: () => void;
-  gettingStartedGuide?: React.ReactNode;
-  guide?: React.ReactNode;
-  mdPreview?: string;
-}
-
-export default function DomainBuilderPage() {
-  const dispatch = useDispatch();
-  const { mode, chatSubMode, switchMode, switchChatSubMode } = useAIChatMode();
-  const data = useSelector((state: { modelUniverse: any }) => state.modelUniverse);
-  const metis = useSelector((state: { modelUniverse: any }) => data.phData.metis);
-  const documents = useSelector((state: RootState) => data.phData.documents);
-  const domainData = useSelector((state: { modelUniverse: any }) => data.phData.domain);
-  const focusProj = useSelector((state: RootState) => state.modelUniverse.phFocus.focusProj);
-
-  // Edit mode state
-  const [documentName, setDocumentName] = useState('');
-  const [documentType, setDocumentType] = useState('markdown');
-  const [previewContent, setPreviewContent] = useState('');
-  const [originalContent, setOriginalContent] = useState(''); // Add this to track original content
-
-  const [currentModel, setCurrentModel] = useState<Model | null>(null);
-  const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
-  // const [docName, setDocName] = useState('');
-  const [docType, setDocType] = useState('Markdown');
-  const [input, setInput] = useState<string>("");
-  const [chatInput, setChatInput] = useState('');
-  const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!'); // Markdown preview state
-  const [mdContent, setMdContent] = useState<string>('')
-  const [isEditing, setIsEditing] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<
-    | 'dummy'
-    | 'deepseek-chat'
-    | 'mistral'
-    | 'gpt-5'
-    | 'gpt-5-mini'
-  >('gpt-5-mini'); // Default model
-
-  const handleCancelSave = useCallback(() => {
-    setShowDiffModal(false);
-    setPendingSave(null);
-  }, []);
-
-  // Add clear chat function
-  const handleClearChat = () => {
-    // Clear Redux chat store
-    dispatch(setMessages([]));
-    // Clear local messages state as well (backup)
-    setCurrentMessages([]);
-    // Optionally clear input as well
-    setInput('');
+  const middlePanelContent = showDomainEditor ? {
+    // ...existing code...
+    // (no change for edit mode or ai-assistant mode)
+    ...existing code...
+  } : showAIAssistant ? {
+    // ...existing code...
+    ...existing code...
+  } : {
+    tabs: [
+      {
+        key: 'domain',
+        label: 'Current Domain',
+        content: (
+          <div className="bg-background rounded-lg p-4 h-full overflow-auto">
+            <div className="flex flex-col space-y-4 mb-4">
+              {/* Action buttons header */}
+              <div className="flex flex-wrap gap-2 mb-4">
+                <button className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded" onClick={() => {/* TODO: implement Set as Additional Context */}}>Set as Additional Context</button>
+                <button className="flex items-center gap-1 text-xs bg-blue-700 hover:bg-blue-600 text-white px-2 py-1 rounded" onClick={() => {/* TODO: implement Set as Current */}}>Set as Current</button>
+                <button className="flex items-center gap-1 text-xs bg-green-700 hover:bg-green-600 text-white px-2 py-1 rounded" onClick={() => {/* TODO: implement Set as Project Plan */}}>Set as Project Plan</button>
+                <button className="flex items-center gap-1 text-xs bg-purple-700 hover:bg-purple-600 text-white px-2 py-1 rounded" onClick={() => {/* TODO: implement Set as Domain */}}>Set as Domain</button>
+              </div>
+              {/* ...existing content... */}
+              {/* Lines 647-653 omitted */}
+            </div>
+          </div>
+        )
+      },
+      {
+        key: 'suite',
+        label: 'Current Model Suite',
+        content: (
+          <div className="flex-1 overflow-auto bg-gray-800/20 rounded border border-gray-600 p-4 h-full">
+            <UniverseComponent />
+          </div>
+        )
+      }
+    ],
+    defaultTab: 'domain'
   };
-
-
-  // Create a function that saves to library AND clears chat AND preview
-  const handleSaveToLibraryAndClearChat = (content: string) => {
-    // Clear the chat messages in Redux store
-    dispatch(setMessages([]));
-    // Clear local messages state as well (backup)
-    setCurrentMessages([]);
-    // Clear input field
-    setInput('');
-
-    // Clear the markdown preview
-    setMdPreview('Nothing to preview yet!');
-
-    console.log('Chat and preview cleared after saving to library:', content.substring(0, 50) + '...');
-  };
-
-  const [activeLeftTab, setActiveLeftTab] = useState<'document' | 'library'>('document');
-
-  const [showLeftPanel, setShowLeftPanel] = useState(true);
-  const [showRightPanel, setShowRightPanel] = useState(true);
-  const [showGuideModal, setShowGuideModal] = useState(false);
-  const [showEditorModal, setShowEditorModal] = useState(false);
-  const [showAIAssistant, setShowAIAssistant] = useState(false); // Add new state for AI Assistant mode
-  const [showDomainEditor, setShowDomainEditor] = useState(false);
-  const [showDiffModal, setShowDiffModal] = useState(false);
-  const [pendingSave, setPendingSave] = useState<{
-    doc: MarkdownDocument;
-    oldContent: string;
-  } | null>(null);
-
-  const [lastResponse, setLastResponse] = useState<string>('');
-  const [activeTab, setActiveTab] = useState("chat");
-
-  const [isLibraryOpen, setIsLibraryOpen] = useState(false);
-  const [docName, setDocName] = useState<string>('New Document');
-
-  const [currentDocument, setCurrentDocument] = useState<string>(domainData?.presentation || '');
-
-  const [currentMessages, setCurrentMessages] = useState<any[]>([]);
-
-  const mdFileInputRef = useRef<HTMLInputElement>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const [domainName, setDomainName] = useState(domainData?.name || '');
-  const [domainDescription, setDomainDescription] = useState(domainData?.description || '');
-  const [domainPresentation, setDomainPresentation] = useState(domainData?.presentation || '');
-
 
   // Update local state when Redux state changes
   useEffect(() => {
@@ -245,13 +173,13 @@ export default function DomainBuilderPage() {
 
     // Update local state
     setCurrentDocument(pendingSave.doc.content);
-    setDomainPresentation(pendingSave.doc.content);
+    // setDomainPresentation(pendingSave.doc.content);
 
     // Clear modal state
     setShowDiffModal(false);
     setPendingSave(null);
 
-    console.log('✅ Domain saved to library');
+    console.log('✅ Document saved to library');
     console.groupEnd();
   }, [pendingSave, dispatch]);
 

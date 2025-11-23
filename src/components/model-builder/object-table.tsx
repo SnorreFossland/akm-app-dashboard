@@ -243,17 +243,18 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
         }
     };
 
+    // Consider objects as duplicates if name and description are equal
     const duplicateIdCount = React.useMemo(() => {
         const seen = new Set<string>();
         let duplicates = 0;
         (effectiveData || []).forEach((obj: any) => {
-            const id = obj?.id;
-            if (!id) return;
-            if (seen.has(id)) {
+            const key = `${obj?.name ?? ''}|||${obj?.description ?? ''}`;
+            if (!obj?.name || !obj?.description) return;
+            if (seen.has(key)) {
                 duplicates += 1;
                 return;
             }
-            seen.add(id);
+            seen.add(key);
         });
         return duplicates;
     }, [effectiveData]);
@@ -359,18 +360,19 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
 
     return (
         <div className="m-1 w-full min-w-0">
-            <div className="flex items-center p-2 gap-2">
+            <div className="flex items-center text-xs p-2 gap-2">
                 <Input
                     placeholder="Filter..."
                     value={(table.getColumn('name')?.getFilterValue() as string) ?? ''}
                     onChange={(event) =>
                         table.getColumn('name')?.setFilterValue(event.target.value)
                     }
-                    className="max-w-sm"
+                    className="text-[10px] h-6 max-w-sm px-2"
+                    size="xs"
                 />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline">
+                        <Button variant="outline" className="text-[10px] px-1.5 py-0.5 rounded" size="xs">
                             Columns
                         </Button>
                     </DropdownMenuTrigger>
@@ -382,6 +384,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                                 <DropdownMenuCheckboxItem
                                     key={column.id}
                                     className="capitalize"
+                                    size="xs"
                                     checked={column.getIsVisible()}
                                     onCheckedChange={(value) =>
                                         column.toggleVisibility(!!value)
@@ -394,57 +397,72 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                 </DropdownMenu>
                 <div className="ml-auto flex items-center gap-2">
                     <div className="inline-flex items-center gap-2">
-                        <span className="text-xs text-gray-400">{selectedCount > 0 ? `${selectedCount} selected` : ''}</span>
-                        <Button
-                            onClick={removeDuplicateEntries}
-                            disabled={duplicateIdCount === 0}
-                            className={`text-xs px-2 py-1 rounded ${duplicateIdCount === 0 ? 'opacity-50 cursor-not-allowed bg-yellow-500 text-white' : 'bg-yellow-700 hover:bg-yellow-600 text-white'}`}
-                        >
-                            Remove duplicates{duplicateIdCount > 0 ? ` (${duplicateIdCount})` : ''}
-                        </Button>
-                        <Button
-                            onClick={restoreSelected}
-                            disabled={selectedCount === 0}
-                            className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-green-800 text-white dark:bg-green-700 dark:text-white hover:bg-green-700`}
-                        >
-                            Restore selected
-                        </Button>
-                        <Button
-                            onClick={deleteSelected}
-                            disabled={selectedCount === 0}
-                            className={`text-xs px-2 py-1 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
-                        >
-                            Delete selected
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                try {
-                                    // eslint-disable-next-line no-restricted-globals
-                                    const ok = confirm(`Purge ${deletedCount} deleted object(s) and corresponding deleted relationships for this model? This is permanent.`);
-                                    if (!ok) return;
-                                } catch (e) { }
-                                try {
-                                    // eslint-disable-next-line @typescript-eslint/no-var-requires
-                                    const { purgeModel } = require('@/features/model-universe/modelSlice');
-                                    dispatch(purgeModel({ modelId: modelId ?? undefined } as any));
-                                } catch (e) {
-                                    console.warn('Failed to dispatch purgeModel', e);
-                                }
-                            }}
-                            disabled={deletedCount === 0}
-                            className={`text-xs px-2 py-1 rounded ${deletedCount === 0 ? 'opacity-50 cursor-not-allowed bg-red-400' : 'bg-red-700 hover:bg-red-600'} text-white`}
-                        >
-                            Purge{deletedCount > 0 ? ` (${deletedCount})` : ''}
-                        </Button>
+                        <span className="text-xs text-gray-400 space-x-1">
+                            <span className=" whitespace-nowrap">{`${selectedCount} selected`}</span>
+                            {' \n '}
+                            <span className=" whitespace-nowrap">{displayedData.length} total</span>
+                        </span>
                         <label className="inline-flex items-center gap-1 text-xs text-gray-400">
                             <Checkbox checked={showDeleted} onCheckedChange={(v) => setShowDeleted(!!v)} />
                             <span>Show deleted</span>
                         </label>
+                        {duplicateIdCount > 0 && (
+                            <Button
+                                onClick={removeDuplicateEntries}
+                                size="xs"
+                                className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-700 hover:bg-yellow-600 text-white"
+                            >
+                                Remove duplicates ({duplicateIdCount})
+                            </Button>
+                        )}
+                        {selectedCount > 0 && (
+                            <>
+                                <Button
+                                    onClick={restoreSelected}
+                                    disabled={selectedCount === 0}
+                                    size="xs"
+                                    className={`text-[10px] px-1.5 py-0.5 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-green-800 text-white dark:bg-green-700 dark:text-white hover:bg-green-700`}
+                                >
+                                    Restore selected
+                                </Button>
+                                <Button
+                                    onClick={deleteSelected}
+                                    disabled={selectedCount === 0}
+                                    size="xs"
+                                    className={`text-[10px] px-1.5 py-0.5 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
+                                >
+                                    Delete selected
+                                </Button>
+                            </>
+                        )}
+                        {deletedCount > 0 && (
+                            <Button
+                                onClick={() => {
+                                    try {
+                                        // eslint-disable-next-line no-restricted-globals
+                                        const ok = confirm(`Purge ${deletedCount} deleted object(s) and corresponding deleted relationships for this model? This is permanent.`);
+                                        if (!ok) return;
+                                    } catch (e) { }
+                                    try {
+                                        // eslint-disable-next-line @typescript-eslint/no-var-requires
+                                        const { purgeModel } = require('@/features/model-universe/modelSlice');
+                                        dispatch(purgeModel({ modelId: modelId ?? undefined } as any));
+                                    } catch (e) {
+                                        console.warn('Failed to dispatch purgeModel', e);
+                                    }
+                                }}
+                                disabled={deletedCount === 0}
+                                size="xs"
+                                className={`text-[10px] px-1.5 py-0.5 rounded ${deletedCount === 0 ? 'opacity-50 cursor-not-allowed bg-red-400' : 'bg-red-700 hover:bg-red-600'} text-white`}
+                            >
+                                Purge{deletedCount > 0 ? ` (${deletedCount})` : ''}
+                            </Button>
+                        )}
                     </div>
                 </div>
             </div>
             {/* Render the table */}
-            <div className="max-h-[calc(100vh-22rem)] overflow-y-auto w-full min-w-0">
+            <div className="max-h-[calc(100vh-22rem)] text-sm overflow-y-auto w-full min-w-0">
                 <table className="w-full table-fixed min-w-0 divide-y bg-background divide-gray-500">
                     <thead className="sticky top-0 bg-background">
                         {table.getHeaderGroups().map((headerGroup) => (

@@ -242,6 +242,12 @@ export default function ModelBuilderPage() {
     }
   }, [isModelModalOpen]);
 
+  useEffect(() => {
+    if (isModelModalOpen) {
+      setModelPreview('');
+    }
+  }, [isModelModalOpen, setModelPreview]);
+
   const getModelModalTabButtonClass = (active: boolean) =>
     `px-3 py-0.5 text-[11px] rounded transition ${active
       ? 'bg-orange-500 text-white shadow-sm'
@@ -405,7 +411,7 @@ export default function ModelBuilderPage() {
     const normalize = (value?: string | null) => (value ?? '').trim().toLowerCase();
     const categorize = (object: any) => {
       const typeString = normalize(object?.typeName || object?.proposedType);
-      if (!debug) console.log('339 :', object.name, typeString);
+      if (debug) console.log('414 :', object.name, typeString);
 
       if (!typeString) return '';
       if (typeString.includes('container')) return 'container';
@@ -456,7 +462,7 @@ export default function ModelBuilderPage() {
     const report: ContainerReportEntry[] = [];
 
     (sourceModel as any).objects
-      .filter((obj: any) => categorize(obj) === 'container')
+      .filter((obj: any) => categorize(obj) === 'container' || categorize(obj) === 'process')
       .forEach((container: any) => {
         const containedIds = membershipMap.get(String(container.id));
         const informationSet = new Set<string>();

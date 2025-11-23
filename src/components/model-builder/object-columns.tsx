@@ -99,7 +99,7 @@ const DescriptionCell: React.FC<{ row: any }> = ({ row }) => {
     }
 
     // Truncate to 25 chars when not expanded
-    const maxLen = 35;
+    const maxLen = 75;
     const needsTruncate = description && description.length > maxLen;
     const previewText = needsTruncate ? description.slice(0, maxLen) : (description || '');
 

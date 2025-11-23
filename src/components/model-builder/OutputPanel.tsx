@@ -4,6 +4,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '@/store/store';
 import { Card, CardTitle } from '@/components/ui/card';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
+import DiffModal from '@/components/ai-chat/DiffModal';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { LoadingCircularProgress } from "@/components/loading";
@@ -11,8 +12,7 @@ import { LoadingCircularProgress } from "@/components/loading";
 import { saveMarkdownDocument } from '@/features/model-universe/modelSlice';
 import { ObjectCard } from '@/components/object-card';
 import { ModelviewCard } from '@/components/modelview-card'; // Adjust path as needed
-import { setNewModel, setObjects, setRelationships, setNewModelview, setFocusModel, setPhFocus, Metis, Model } from '@/features/model-universe/modelSlice';
-import { object } from 'zod';
+import { setNewModel, setNewModelview, setFocusModel, setPhFocus, Model } from '@/features/model-universe/modelSlice';
 import { ObjectSchema } from '@/objectSchema';
 
 interface DocumentPanelProps {
@@ -30,6 +30,11 @@ interface DocumentPanelProps {
     documentId?: string; // Optional document ID for updates
     panelType?: string; // 'left' or 'right'
 }
+
+type PendingSavePayload = {
+    focusModel: Model;
+    mergedModel: Model;
+};
 
 export default function DocumentPanel({
     modelPreview,
@@ -68,6 +73,11 @@ export default function DocumentPanel({
     const [model, setModel] = useState<Model>(currentModel ?? { id: '', name: '', description: '', objects: [], relships: [], metamodelRef: '', modelviews: [] });
     const [curmod, setCurmod] = useState<Model | null>(null);
     const [modelview, setModelview] = useState<{ id?: string; name?: string; description?: string; objectviews?: any[]; relshipviews?: any[] } | null>(currentModelview ?? { id: '', name: '', description: '', objectviews: [], relshipviews: [] });
+    const [showDiffModal, setShowDiffModal] = useState(false);
+    const [pendingSavePayload, setPendingSavePayload] = useState<PendingSavePayload | null>(null);
+    const [diffOldContent, setDiffOldContent] = useState('');
+    const [diffNewContent, setDiffNewContent] = useState('');
+    const [diffTitle, setDiffTitle] = useState('Model changes');
 
 
     useEffect(() => {
@@ -141,17 +151,6 @@ export default function DocumentPanel({
     const handleEdit = () => {
         setIsEditing(true);
         onEdit();
-    };
-
-    const handleSaveToLibrary = () => {
-        // Save to library in Redux store if modelContent is not null and is not a string
-        if (modelContent && typeof modelContent !== 'string') {
-            dispatch(setObjects(modelContent.objects));
-            dispatch(setRelationships(modelContent.relships));
-        }
-
-        // Also call the prop callback for parent components
-        // onSaveToLibrary(contentToSave);
     };
 
     const handleSave = () => {
@@ -258,56 +257,175 @@ export default function DocumentPanel({
         return result;
     }
 
-    const handleDispatchModelData = () => {
-        console.log('69 HandleDispatch:', dispatchDone); //, modelview, model);
-        if (!model && !modelview) {
-            alert('No Model to dispatch');
-            return;
+    const normalizeObjectsForDiff = (objects: any[] = []) =>
+        [...objects]
+            .map((obj) => ({
+                id: obj?.id || '',
+                name: obj?.name || '',
+                description: obj?.description || '',
+                typeName: obj?.typeName || obj?.proposedType || '',
+                typeRef: obj?.typeRef || '',
+                typeviewRef: obj?.typeviewRef || ''
+            }))
+            .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+
+    const normalizeRelshipsForDiff = (relships: any[] = []) =>
+        [...relships]
+            .map((rel) => ({
+                id: rel?.id || '',
+                name: rel?.name || '',
+                typeRef: rel?.typeRef || '',
+                fromobjectRef: rel?.fromobjectRef || '',
+                nameFrom: rel?.nameFrom || '',
+                toobjectRef: rel?.toobjectRef || '',
+                nameTo: rel?.nameTo || ''
+            }))
+            .sort((a, b) => (a.name || a.id).localeCompare(b.name || b.id));
+
+    const formatModelForDiff = (model?: Model | null) => {
+        if (!model) return '';
+        const objects = normalizeObjectsForDiff(model.objects || []);
+        const relships = normalizeRelshipsForDiff(model.relships || []);
+        const lines = [];
+        lines.push('Objects:');
+        if (objects.length === 0) {
+            lines.push('  (none)');
+        } else {
+            objects.forEach((obj) => {
+                lines.push(JSON.stringify(obj, null, 2));
+            });
         }
-
-        const focusModel =
-            data?.phData?.metis?.models?.find((m: Model) => m.id === data?.phFocus?.focusModel?.id) ||
-            data?.phData?.metis?.models?.[0];
-
-        console.log('270 Focus Model:', focusModel);
-
-        if (!focusModel) {
-            alert('No base model available');
-            return;
+        lines.push('');
+        lines.push('Relationships:');
+        if (relships.length === 0) {
+            lines.push('  (none)');
+        } else {
+            relships.forEach((rel) => {
+                lines.push(JSON.stringify(rel, null, 2));
+            });
         }
+        return lines.join('\n');
+    };
 
-        // Narrow modelContent to a Model before accessing its properties
+    const normalizeNameForKey = (value?: string) =>
+        (value || '')
+            .toString()
+            .toLowerCase()
+            .trim()
+            .replace(/[\-_]+/g, ' ')
+            .replace(/\s+/g, ' ');
+
+    const getObjectKey = (obj: Partial<Model['objects'][number]>) =>
+        `${normalizeNameForKey(obj?.name)}::${(obj?.typeName || '').toLowerCase().trim()}`;
+
+    const getRelKey = (name?: string, from?: string, to?: string) =>
+        `${(name || '').toLowerCase().trim()}::${(from || '').trim()}::${(to || '').trim()}`;
+
+    const dedupeObjects = (baseObjects: Model['objects'], newObjects: Model['objects']) => {
+        const normalizedIndex = baseObjects.reduce<Record<string, string>>((map, obj) => {
+            const key = getObjectKey(obj);
+            if (key && !(key in map)) {
+                map[key] = obj.id;
+            }
+            map[obj.id] = obj.id;
+            return map;
+        }, {} as Record<string, string>);
+
+        const mergedObjects: Model['objects'] = [...baseObjects];
+        const objectIdMap: Record<string, string> = {};
+
+        baseObjects.forEach((obj) => {
+            objectIdMap[obj.id] = obj.id;
+        });
+
+        newObjects.forEach((obj) => {
+            if (!obj) return;
+            const candidateId = obj.id || crypto.randomUUID();
+            const normalizedKey = getObjectKey({ ...obj, id: candidateId });
+            if (normalizedKey && normalizedKey in normalizedIndex) {
+                objectIdMap[candidateId] = normalizedIndex[normalizedKey];
+                return;
+            }
+
+            const newId = candidateId;
+            normalizedIndex[normalizedKey] = newId;
+            objectIdMap[candidateId] = newId;
+            mergedObjects.push({ ...obj, id: newId });
+        });
+
+        return { mergedObjects, objectIdMap };
+    };
+
+    const dedupeRelships = (
+        baseRelships: Model['relships'],
+        newRelships: Model['relships'],
+        objectIdMap: Record<string, string>
+    ) => {
+        const normalizedIndex = new Set<string>();
+        const mergedRelships: Model['relships'] = [...baseRelships];
+
+        baseRelships.forEach((rel) => {
+            normalizedIndex.add(getRelKey(rel.name, rel.fromobjectRef, rel.toobjectRef));
+        });
+
+        newRelships.forEach((rel) => {
+            if (!rel) return;
+            const actualFrom = objectIdMap[rel.fromobjectRef] || rel.fromobjectRef;
+            const actualTo = objectIdMap[rel.toobjectRef] || rel.toobjectRef;
+            if (!actualFrom || !actualTo) return;
+            const key = getRelKey(rel.name, actualFrom, actualTo);
+            if (normalizedIndex.has(key)) {
+                return;
+            }
+            normalizedIndex.add(key);
+            mergedRelships.push({
+                ...rel,
+                id: rel.id || crypto.randomUUID(),
+                fromobjectRef: actualFrom,
+                toobjectRef: actualTo
+            });
+        });
+
+        return mergedRelships;
+    };
+
+    const createMergedModel = (focusModel: Model) => {
         const isModel = modelContent !== null && typeof modelContent === 'object';
+        const generatedModel = isModel ? (modelContent as Model) : null;
 
-        // Merge: model (generated) into focusModel
-        const mergedModel: Model = {
-            ...focusModel,
-            // Use narrowed access with fallback values
-            name: isModel ? (modelContent as Model).name : 'Generated Model',
-            description: isModel ? (modelContent as Model).description || '' : '',
-            objects: [
-                // existing focus model objects
-                ...focusModel.objects,
-                // append generated objects if modelContent is a Model, else nothing
-                ...(isModel && (modelContent as Model).objects ? (modelContent as Model).objects : []),
-            ],
-            relships: [
-                // existing focus model relationships
-                ...focusModel.relships,
-                // append generated relationships if modelContent is a Model, else nothing
-                ...(isModel && (modelContent as Model).relships ? (modelContent as Model).relships : []),
-            ]
+        if (!generatedModel) {
+            return focusModel;
         }
 
+        const { mergedObjects, objectIdMap } = dedupeObjects(
+            focusModel.objects || [],
+            generatedModel.objects || []
+        );
+
+        const mergedRelships = dedupeRelships(
+            focusModel.relships || [],
+            generatedModel.relships || [],
+            objectIdMap
+        );
+
+        return {
+            ...focusModel,
+            name: generatedModel.name || focusModel.name,
+            description: generatedModel.description || focusModel.description,
+            objects: mergedObjects,
+            relships: mergedRelships
+        } as Model;
+    };
+
+    const applyMergedModel = (focusModel: Model, mergedModel: Model) => {
         const phFocus = {
-            focusModel: focusModel,
+            focusModel,
             focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
             focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
             focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
             focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
         };
 
-        console.log('82 Merged Model:', focusModel, mergedModel);
         setCurmod(mergedModel);
         dispatch(setNewModel(mergedModel));
         dispatch(setFocusModel({ id: mergedModel.id, name: mergedModel.name }));
@@ -329,18 +447,67 @@ export default function DocumentPanel({
         }
 
         setDispatchDone(true);
+        setStatusMsg('Saved to library');
+        setTimeout(() => setStatusMsg(''), 3000);
+    };
+
+    const handleDiffConfirm = () => {
+        if (pendingSavePayload) {
+            applyMergedModel(pendingSavePayload.focusModel, pendingSavePayload.mergedModel);
+        }
+        setPendingSavePayload(null);
+        setShowDiffModal(false);
+    };
+
+    const handleDiffCancel = () => {
+        setPendingSavePayload(null);
+        setShowDiffModal(false);
+    };
+
+    const handleSaveToLibraryWithApproval = () => {
+        if (!modelContent || typeof modelContent === 'string') {
+            setStatusMsg('No generated model to save');
+            setTimeout(() => setStatusMsg(''), 3000);
+            return;
+        }
+
+        const focusModel =
+            data?.phData?.metis?.models?.find((m: Model) => m.id === data?.phFocus?.focusModel?.id) ||
+            data?.phData?.metis?.models?.[0];
+
+        if (!focusModel) {
+            setStatusMsg('No base model available');
+            setTimeout(() => setStatusMsg(''), 3000);
+            return;
+        }
+
+        const mergedModel = createMergedModel(focusModel);
+        const oldContent = formatModelForDiff(focusModel);
+        const newContent = formatModelForDiff(mergedModel);
+
+        if (oldContent === newContent) {
+            applyMergedModel(focusModel, mergedModel);
+            return;
+        }
+
+        setDiffTitle(`${focusModel.name || 'Model'} changes`);
+        setDiffOldContent(oldContent);
+        setDiffNewContent(newContent);
+        setPendingSavePayload({ focusModel, mergedModel });
+        setShowDiffModal(true);
     };
 
     return (
-        <div className="p-0 max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col h-full w-full">
-            {/* <div className="flex items-center justify-between mb-2 px-1">
+        <>
+            <div className="p-0 max-h-[calc(100vh-2rem)] overflow-hidden flex flex-col h-full w-full">
+                {/* <div className="flex items-center justify-between mb-2 px-1">
                 <div className="text-sm text-gray-400">Objects and Relships Preview</div>
             </div> */}
-            <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto  max-w-full whitespace-pre-wrap break-words">
-                {/* <div className="h-full w-full"> */}
-                {data
-                    ? <Card className="bg-transparent w-full h-full overflow-hidden">
-                        {/* <Tabs value={activeTab} onValueChange={setActiveTab}>
+                <div className="prose prose-invert custom-markdown markdown-preview bg-secondary p-1 rounded-md overflow-auto  max-w-full whitespace-pre-wrap break-words">
+                    {/* <div className="h-full w-full"> */}
+                    {data
+                        ? <Card className="bg-transparent w-full h-full overflow-hidden">
+                            {/* <Tabs value={activeTab} onValueChange={setActiveTab}>
                             <TabsList className="bg-transparent">
                                 <TabsTrigger value="current-knowledge" className='pb-2 mt-3'>Preview</TabsTrigger>
                                 <TabsTrigger value="model" className='pb-2 mt-3'>Objects/Relationships</TabsTrigger>
@@ -355,52 +522,52 @@ export default function DocumentPanel({
                                 </div>
                             </TabsContent> */}
 
-                        {/* <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] "> */}
-                        <div className="flex flex-col h-full w-full">
-                            {(modelContent && typeof modelContent === 'object') ? (
-                                <>
-                            <button
-                                title="Save to Library"
-                                onClick={handleDispatchModelData}
-                                className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex flex-row-reverse items-center gap-1`}
-                            >
-                                <BookmarkPlus className="h-4 w-4" />
-                            </button>
-                            <div className="text-xs w-full">
-                                    <ObjectCard model={{
-                                        id: typeof modelContent === 'object' && modelContent ? modelContent.id : crypto.randomUUID(),
-                                        name: typeof modelContent === 'object' && modelContent ? modelContent.name : 'Generated Model',
-                                        description: typeof modelContent === 'object' && modelContent ? modelContent.description : '',
-                                        objects: typeof modelContent === 'object' && modelContent && modelContent.objects ? modelContent.objects.map(obj => ({
-                                            id: obj.id || crypto.randomUUID(),
-                                            name: obj.name,
-                                            description: obj.description,
-                                            proposedType: obj.proposedType || '',
-                                            typeRef: obj.typeRef,
-                                            typeName: obj.typeName,
-                                            category: obj.category,
-                                        })) : [],
-                                        relships: (modelContent && typeof modelContent === 'object' && 'relships' in modelContent ? modelContent.relships.map(rel => ({
-                                            id: rel.id || crypto.randomUUID(),
-                                            name: rel.name || '',
-                                            typeRef: rel.typeRef || '',
-                                            fromobjectRef: rel.fromobjectRef || '',
-                                            nameFrom: rel.nameFrom || '',
-                                            toobjectRef: rel.toobjectRef || '',
-                                            nameTo: rel.nameTo || '',
-                                        })) : []),
-                                        metamodelRef: modelContent && typeof modelContent === 'object' ? modelContent.metamodelRef || '' : '',
-                                        modelviews: modelContent && typeof modelContent === 'object' ? modelContent.modelviews || [] : []
-                                    }}
-                                    />
+                            {/* <TabsContent value="model" className="m-0 px-1 rounded bg-background h-[calc(100vh-2rem)] "> */}
+                            <div className="flex flex-col h-full w-full">
+                                {(modelContent && typeof modelContent === 'object') ? (
+                                    <>
+                                        <button
+                                            title="Save to Library"
+                                            onClick={handleSaveToLibraryWithApproval}
+                                            className={`text-xs ms-2 ${statusMsg === '' ? 'text-green-400 hover:text-green-200' : 'text-gray-400'} flex flex-row-reverse items-center gap-1`}
+                                        >
+                                            <BookmarkPlus className="h-4 w-4" />
+                                        </button>
+                                        <div className="text-xs w-full">
+                                            <ObjectCard model={{
+                                                id: typeof modelContent === 'object' && modelContent ? modelContent.id : crypto.randomUUID(),
+                                                name: typeof modelContent === 'object' && modelContent ? modelContent.name : 'Generated Model',
+                                                description: typeof modelContent === 'object' && modelContent ? modelContent.description : '',
+                                                objects: typeof modelContent === 'object' && modelContent && modelContent.objects ? modelContent.objects.map(obj => ({
+                                                    id: obj.id || crypto.randomUUID(),
+                                                    name: obj.name,
+                                                    description: obj.description,
+                                                    proposedType: obj.proposedType || '',
+                                                    typeRef: obj.typeRef,
+                                                    typeName: obj.typeName,
+                                                    category: obj.category,
+                                                })) : [],
+                                                relships: (modelContent && typeof modelContent === 'object' && 'relships' in modelContent ? modelContent.relships.map(rel => ({
+                                                    id: rel.id || crypto.randomUUID(),
+                                                    name: rel.name || '',
+                                                    typeRef: rel.typeRef || '',
+                                                    fromobjectRef: rel.fromobjectRef || '',
+                                                    nameFrom: rel.nameFrom || '',
+                                                    toobjectRef: rel.toobjectRef || '',
+                                                    nameTo: rel.nameTo || '',
+                                                })) : []),
+                                                metamodelRef: modelContent && typeof modelContent === 'object' ? modelContent.metamodelRef || '' : '',
+                                                modelviews: modelContent && typeof modelContent === 'object' ? modelContent.modelviews || [] : []
+                                            }}
+                                            />
+                                        </div>
+                                    </>)
+                                    : (<div className='flex justify-center text-gray-400'>No preview yet</div>)
+                                }
                             </div>
-                            </>)
-                                : (<div className='flex justify-center text-gray-400'>No preview yet</div>)
-                            }
-                        </div>
-                        {/* </TabsContent> */}
+                            {/* </TabsContent> */}
 
-                        {/* <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
+                            {/* <TabsContent value="modelview" className="m-0 px-1 py-2 rounded bg-background h-[calc(100vh-5rem)]">
                                 <div className="mx-1 ">
                                     {modelview && <ModelviewCard modelviews={[{
                                         // Use type assertion to match what ModelviewCard expects
@@ -412,13 +579,22 @@ export default function DocumentPanel({
                                 </div>
                             </TabsContent>
                         </Tabs> */}
-                    </Card>
-                    : <div className="flex justify-center items-center h-screen">
-                        <LoadingCircularProgress />
-                    </div>
-                }
-                {/* </div> */}
-            </div>
-        </div >
+                        </Card>
+                        : <div className="flex justify-center items-center h-screen">
+                            <LoadingCircularProgress />
+                        </div>
+                    }
+                    {/* </div> */}
+                </div>
+            </div >
+            <DiffModal
+                isOpen={showDiffModal}
+                oldContent={diffOldContent}
+                newContent={diffNewContent}
+                title={diffTitle}
+                onClose={handleDiffCancel}
+                onConfirm={handleDiffConfirm}
+            />
+        </>
     );
 }
