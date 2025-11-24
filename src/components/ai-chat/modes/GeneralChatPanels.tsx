@@ -342,7 +342,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                 </>
                             ) : (
                                 <>
-                                    {/* <button
+                                    <button
                                         onClick={() => {
                                             setPreviewEditContent(chatMdPreview);
                                             setIsEditingPreview(true);
@@ -360,8 +360,8 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                     >
                                         <X className="h-3 w-3" />
                                         Clear
-                                    </button> */}
-                                    {/* <button
+                                    </button>
+                                    <button
                                         onClick={() => {
                                             console.group('🔵 Preview Save Button Clicked');
                                             console.log('Current name/type:', {
@@ -387,12 +387,12 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                         title="Save preview to library"
                                     >
                                         <BookmarkPlus className="h-3 w-3" />
-                                        Save to Library
-                                    </button> */}
+                                        Save as Current
+                                    </button>
                                     <button
                                         onClick={() => {
                                             console.group('🆕 Preview Save-As-New Clicked');
-                                            console.log('Current name/type:', {
+                                            console.log('395 Current name/type:', {
                                                 previewName,
                                                 previewType,
                                                 parentDocumentName,
@@ -411,7 +411,7 @@ export function GeneralChatPanels(props: GeneralChatPanelsProps) {
                                         title="Save preview as new library document"
                                     >
                                         <FilePlus className="h-3 w-3" />
-                                        Save to Library
+                                        Save as New Doc.
                                     </button>
                                 </>
                             )}

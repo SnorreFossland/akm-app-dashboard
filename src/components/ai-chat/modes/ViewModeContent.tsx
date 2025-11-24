@@ -91,23 +91,23 @@ export function ViewModeContent({
                     />
                 ),
             },
-            {
-                key: 'library',
-                label: 'Library',
-                content: (
-                    <div className="h-full overflow-auto px-2 py-2">
-                        <MarkdownLibrary
-                            onSelect={(_content, _name, doc) => {
-                                if (doc) onSelectDocument(doc);
-                            }}
-                            hideExportLibraryButton={false}
-                            onSetAdditionalContext={setAdditionalContext}
-                            currentDocument={currentDocument}
-                            onCreateFromTemplate={onCreateDocumentFromTemplate}
-                        />
-                    </div>
-                ),
-            },
+            // {
+            //     key: 'library',
+            //     label: 'Library tab',
+            //     content: (
+            //         <div className="h-full overflow-auto px-2 py-2">
+            //             <MarkdownLibrary
+            //                 onSelect={(_content, _name, doc) => {
+            //                     if (doc) onSelectDocument(doc);
+            //                 }}
+            //                 hideExportLibraryButton={false}
+            //                 onSetAdditionalContext={setAdditionalContext}
+            //                 currentDocument={currentDocument}
+            //                 onCreateFromTemplate={onCreateDocumentFromTemplate}
+            //             />
+            //         </div>
+            //     ),
+            // },
         ],
         defaultTab: 'current',
     };

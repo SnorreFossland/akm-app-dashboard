@@ -153,13 +153,17 @@ const AIChatPage = () => {
         localStorage.setItem('aiChat_additionalContext', additionalContext);
     }, [additionalContext]);
 
-    // Accepts content, id, name, type, and category (all optional except content)
-    const handleSetCurrentDocument = useCallback((content: string, id?: string, name?: string, type?: string, category?: string) => {
+    // Accepts content, name, and doc (to match OnSetCurrentDocumentFn signature)
+    const handleSetCurrentDocument = useCallback((content: string, name?: string, doc?: MarkdownDocument) => {
         setCurrentDocument(content);
-        if (id !== undefined) setDocumentId(id);
-        if (name !== undefined) setDocumentName(name);
-        if (type !== undefined) setDocumentType(type);
-        if (category !== undefined) setDocumentCategory(category as DomainCategory);
+        if (doc) {
+            setDocumentId(doc.id);
+            setDocumentName(doc.name);
+            setDocumentType(doc.type || 'markdown');
+            setDocumentCategory((doc as any).domainCategory ?? 'Organizational');
+        } else {
+            if (name !== undefined) setDocumentName(name);
+        }
     }, []);
 
     const openLibraryFor = useCallback((target: 'context' | 'document') => {

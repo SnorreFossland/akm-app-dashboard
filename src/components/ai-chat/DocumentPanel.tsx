@@ -6,6 +6,7 @@ import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import extractDomainNameAndDescription from './docExtraction';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye, Plus } from 'lucide-react';
+import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { setDomainData, saveMarkdownDocument, updateProjectInfo, MarkdownDocument, setFocusDoc } from '@/features/model-universe/modelSlice'; // Updated import
 import DiffModal from './DiffModal';
 
@@ -70,6 +71,7 @@ export default function DocumentPanel({
     const pathname = usePathname();
     const router = useRouter();
     const [isEditing, setIsEditing] = useState(startInEditMode);
+    // const [isLibraryOpen, setIsLibraryOpen] = useState(false);
     const [editContent, setEditContent] = useState(mdContent || '');
     // Determine if the document list should be shown (fallback to true if prop is undefined)
     const effectiveShowDocumentList = typeof showDocumentList === 'boolean' ? showDocumentList : true;
@@ -132,11 +134,13 @@ export default function DocumentPanel({
         console.log('116 Document selected:', doc);
         if (!doc.content) doc.content = 'No content in this document.';
         setMdContent(doc.content);
-        console.log('118 After setMdContent - current mdContent:', doc.content?.substring(0, 100) || 'empty');
         setEditContent(doc.content);
         if (showDocumentList) {
             setIsDocumentListVisible(false);
         }
+
+        // Always set as current document when clicked in the list
+        dispatch(setFocusDoc({ id: doc.id, name: doc.name }));
 
         if (panelType === 'left') {
             const { description } = extractDomainNameAndDescription(doc.content || '');
@@ -518,9 +522,12 @@ export default function DocumentPanel({
 
         return undefined;
     }, [panelType, documentName, documentType, allowDocumentList, isDocumentListVisible]);
+
+
+
     return (
-        <div className="p-2 flex h-full">
-            {/* Document List Sidebar */}
+        <div className="p-2 flex h-full relative">
+            {/* Document list Sidebar */}
             {allowDocumentList && isDocumentListVisible ? (
                 <div className="w-[20%] bg-gray-800 border-r border-gray-600 flex flex-col mr-2 rounded-lg">
                     <div className="flex items-center justify-between p-3 border-b border-gray-600">
@@ -590,6 +597,37 @@ export default function DocumentPanel({
             <div className="flex-1 flex flex-col">
                 <div className="flex items-center justify-between mb-2 px-1">
                     <div className="flex items-center gap-2">
+                        {/* ...existing code for document name/type, edit, etc... */}
+                        {/* <button
+                            className="flex items-center gap-1 text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded"
+                            onClick={() => setIsLibraryOpen(true)}
+                            title="Open Library"
+                        >
+                            <Library className="h-4 w-4" />Library
+                        </button>
+                        {isLibraryOpen && (
+                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+                                <div className="bg-gray-900 rounded-lg shadow-lg p-6 max-w-2xl w-full relative">
+                                    <button
+                                        onClick={() => setIsLibraryOpen(false)}
+                                        className="absolute top-2 right-2 text-gray-400 hover:text-white"
+                                    >
+                                        <X className="h-5 w-5" />
+                                    </button>
+                                    <MarkdownLibrary
+                                        onSelect={(content, name, doc) => {
+                                            setMdContent(content);
+                                            setIsLibraryOpen(false);
+                                            // Optionally set as current document
+                                            if (doc?.id && doc?.name) {
+                                                dispatch(setFocusDoc({ id: doc.id, name: doc.name }));
+                                            }
+                                        }}
+                                        hideExportLibraryButton={false}
+                                    />
+                                </div>
+                            </div>
+                        )} */}
                         {/* {allowDocumentList && !isDocumentListVisible && (
                             <button
                                 onClick={() => setIsDocumentListVisible(true)}

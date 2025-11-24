@@ -673,7 +673,7 @@ Now, refine the following user input into an exceptional prompt:
                                                     <rect x="6" y="4" width="12" height="16" rx="2" fill="currentColor" className="text-green-200" />
                                                     <path d="M9 8h6M9 12h6M9 16h2" stroke="white" strokeWidth="2" strokeLinecap="round" />
                                                 </svg>
-                                                Library
+                                                Library2
                                             </button>
                                         </div>
                                     )}
