@@ -878,10 +878,10 @@ const AIChatPage = () => {
     })();
 
     const rightPanelProp = (() => {
-        const rp = panelConfigs.rightPanelContent as PanelGroup | React.ReactNode | null | undefined;
-        if (rp && typeof rp === 'object' && 'tabs' in rp) return rp as PanelGroup;
-        const content: React.ReactNode = rp ?? null;
-        return { tabs: [{ key: 'preview', label: 'Preview', content }], defaultTab: 'preview' };
+        const rp = panelConfigs.rightPanelContent;
+        if (!rp) return null;
+        if (rp && typeof rp === 'object' && 'tabs' in rp) return rp as any;
+        return { tabs: [{ key: 'preview', label: 'Preview', content: rp as React.ReactElement }], defaultTab: 'preview' };
     })();
 
     const modeConfig = MODE_CONFIGS[mode];
@@ -1028,7 +1028,7 @@ const AIChatPage = () => {
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        </div>git 
                     )}
                     {mode === 'edit' && (
                         <div

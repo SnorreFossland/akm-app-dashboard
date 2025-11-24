@@ -96,7 +96,7 @@ export default function ChatComponent({
     showLeftPanel,
     setShowLeftPanel,
     showRightPanel,
-    setShowRightPanel = () => {true}, // Default to a no-op function if not provided
+    setShowRightPanel = () => { true }, // Default to a no-op function if not provided
     chatInput,
     onAddMD,
     mdContent,
@@ -1527,9 +1527,11 @@ Don't include explanations, next steps or examples at this stage.
                                 <ModelSelector
                                     selectedModel={selectedModel}
                                     onModelChange={(newModel) => {
-                                        setSelectedModel(newModel);
-                                        // Persist selected model to localStorage
-                                        localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                        // Only allow valid model names
+                                        if (["gpt-5-mini", "mistral", "gpt-5", "deepseek-chat", "dummy"].includes(newModel)) {
+                                            setSelectedModel(newModel as "gpt-5-mini" | "mistral" | "gpt-5" | "deepseek-chat" | "dummy");
+                                            localStorage.setItem('aiDashboard_selectedModel', newModel);
+                                        }
                                     }}
                                 />
                                 <TemperatureSelector />

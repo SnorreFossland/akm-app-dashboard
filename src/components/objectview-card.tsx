@@ -127,7 +127,8 @@ export const ObjectviewCard = ({ modelview }: { modelview: Modelview }) => {
       setIsLoading(true);
       try {
         const id = 'objectview-diagram-' + Math.random().toString(36).slice(2);
-        const { svg } = await mermaid.render(id, mermaidDiagram);
+        if (!mermaidRef.current) throw new Error('Mermaid not loaded');
+        const { svg } = await mermaidRef.current.render(id, mermaidDiagram);
         setRenderedSvg(svg);
       } catch (err: any) {
         setRenderedSvg(`<div class=\"p-4 text-center text-red-400\">Error rendering diagram: ${err?.message || String(err)}<\/div>`);

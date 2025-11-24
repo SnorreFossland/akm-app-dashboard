@@ -6,7 +6,7 @@ import { RootState } from '@/store';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 import extractDomainNameAndDescription from '@/components/ai-chat/docExtraction';
 import { Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, ChevronLeft, ChevronRight, Eye } from 'lucide-react';
-import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice'; // Updated import
+import { setDomainData, saveMarkdownDocument, MarkdownDocument } from '@/features/model-universe/modelSlice';
 import DiffModal from '@/components/ai-chat/DiffModal';
 
 interface DocumentPanelProps {
@@ -191,7 +191,7 @@ export default function DocumentPanel({
             console.log('158 oldContent (mdContent):', oldContent?.substring(0, 100) || 'empty');
             console.log('159 newContent (contentToSave):', newContent?.substring(0, 100) || 'empty');
         }
-        
+
         const contentsDiffer = oldContent !== newContent;
 
         if (oldContent && oldContent.trim()) { //&& contentsDiffer) {
@@ -290,6 +290,9 @@ export default function DocumentPanel({
         } catch (error) {
             console.warn('Unable to sync currentDocument to localStorage', error);
         }
+
+        // Sync the document into Redux so other views can access it
+        // dispatch(setCurrentDocument(contentToSave)); // Removed: not exported from modelSlice
 
         // Show confirmation
         setStatusMsg('Saved to library');

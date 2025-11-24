@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
 import { SizeProp } from "@fortawesome/fontawesome-svg-core";
 import { saveMarkdownDocument, setDomainData, MarkdownDocument } from '@/features/model-universe/modelSlice';
-import { setCurrentDocument, updateProjectInfo } from '@/features/model-universe/modelSlice';
+import { updateProjectInfo } from '@/features/model-universe/modelSlice';
 import { setMessages } from '@/features/domainChat/domainChatSlice';
 import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 // import DomainBuilder from "@/components/domain-builder/DomainBuilder";
@@ -160,7 +160,7 @@ export default function DomainBuilderPage() {
     if (!focusProj) return;
 
     if (focusProj.id) {
-      const matchingDoc = documents?.find((doc) => doc.id === focusProj.id);
+      const matchingDoc = documents?.find((doc: any) => doc.id === focusProj.id);
       if (matchingDoc) {
         setMdContent(matchingDoc.content || '');
         setDocName(matchingDoc.name || 'Project Document');
@@ -216,7 +216,7 @@ export default function DomainBuilderPage() {
 
   useEffect(() => {
     if (focusProj?.id || focusProj?.description) {
-      const matchingDoc = documents?.find((doc) => doc.id === focusProj.id);
+      const matchingDoc = documents?.find((doc: any) => doc.id === focusProj.id);
       if (matchingDoc) {
         setMdContent(matchingDoc.content);
         setDocName(matchingDoc.name);
@@ -395,7 +395,7 @@ export default function DomainBuilderPage() {
     const contentToSave = currentDocument; // Use currentDocument which has the live edits
 
     // Find the document we're editing by matching the original content
-    const existingDoc = documents?.find(doc =>
+    const existingDoc = documents?.find((doc: any) =>
       doc.content === originalContent || doc.name === documentName
     );
 

@@ -155,7 +155,12 @@ export default function OutputPanel({
             focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
             focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
             focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
-            focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
+            focusRelship: data?.phFocus?.focusRelship || { id: '', name: '' },
+            focusRelshipview: data?.phFocus?.focusRelshipview || { id: '', name: '' },
+            focusObjectIds: data?.phFocus?.focusObjectIds || [],
+            focusRelshipIds: data?.phFocus?.focusRelshipIds || [],
+            focusProj: data?.phFocus?.focusProj || { id: '', name: '', description: '' },
+            focusDoc: data?.phFocus?.focusDoc || { id: null },
         };
 
         console.log('82 Merged Model:', focusModel, mergedModel);

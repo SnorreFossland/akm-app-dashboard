@@ -7,6 +7,7 @@ import {
   Atom,
   Frame,
   Home,
+  BookOpen,
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -142,7 +143,14 @@ export function AppSidebar({ ...props }) {
             {shouldShowText && <SidebarGroupLabel className="text-gray-300">Resources</SidebarGroupLabel>}
             <div className="text-white">
               <NavMain
-                items={navigationData.navSecondary}
+                items={[
+                  {
+                    title: "Resources",
+                    url: "#",
+                    icon: navigationData.navSecondary[0]?.icon || BookOpen,
+                    items: navigationData.navSecondary,
+                  },
+                ]}
                 searchResults={navigationData.searchResults}
               />
             </div>

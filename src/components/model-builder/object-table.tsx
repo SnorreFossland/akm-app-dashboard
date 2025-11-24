@@ -348,7 +348,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
             onRestore,
         } as ObjectTableMeta,
         onSortingChange: setSorting,
-        onPaginationChange: useCallback((updater) => {
+        onPaginationChange: useCallback((updater: any) => {
             setPageIndex((prevPageIndex) => {
                 const currentState = { pageIndex: prevPageIndex, pageSize };
                 const nextState = typeof updater === 'function' ? updater(currentState) : updater;
@@ -368,11 +368,10 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                         table.getColumn('name')?.setFilterValue(event.target.value)
                     }
                     className="text-[10px] h-6 max-w-sm px-2"
-                    size="xs"
                 />
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                        <Button variant="outline" className="text-[10px] px-1.5 py-0.5 rounded" size="xs">
+                        <Button variant="outline" className="text-[10px] px-1.5 py-0.5 rounded" size="sm">
                             Columns
                         </Button>
                     </DropdownMenuTrigger>
@@ -384,7 +383,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                                 <DropdownMenuCheckboxItem
                                     key={column.id}
                                     className="capitalize"
-                                    size="xs"
+                                    // size prop removed, not valid for DropdownMenuCheckboxItem
                                     checked={column.getIsVisible()}
                                     onCheckedChange={(value) =>
                                         column.toggleVisibility(!!value)
@@ -409,7 +408,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                         {duplicateIdCount > 0 && (
                             <Button
                                 onClick={removeDuplicateEntries}
-                                size="xs"
+                                size="sm"
                                 className="text-[10px] px-1.5 py-0.5 rounded bg-yellow-700 hover:bg-yellow-600 text-white"
                             >
                                 Remove duplicates ({duplicateIdCount})
@@ -420,7 +419,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                                 <Button
                                     onClick={restoreSelected}
                                     disabled={selectedCount === 0}
-                                    size="xs"
+                                    size="sm"
                                     className={`text-[10px] px-1.5 py-0.5 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-green-800 text-white dark:bg-green-700 dark:text-white hover:bg-green-700`}
                                 >
                                     Restore selected
@@ -428,7 +427,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                                 <Button
                                     onClick={deleteSelected}
                                     disabled={selectedCount === 0}
-                                    size="xs"
+                                    size="sm"
                                     className={`text-[10px] px-1.5 py-0.5 rounded ${selectedCount === 0 ? 'opacity-50 cursor-not-allowed' : ''} bg-red-800 text-white dark:bg-red-700 dark:text-white hover:bg-red-700`}
                                 >
                                     Delete selected
@@ -452,7 +451,7 @@ export const ObjectTable: React.FC<ObjectTableProps> = ({ data, modelId, onSelec
                                     }
                                 }}
                                 disabled={deletedCount === 0}
-                                size="xs"
+                                size="sm"
                                 className={`text-[10px] px-1.5 py-0.5 rounded ${deletedCount === 0 ? 'opacity-50 cursor-not-allowed bg-red-400' : 'bg-red-700 hover:bg-red-600'} text-white`}
                             >
                                 Purge{deletedCount > 0 ? ` (${deletedCount})` : ''}

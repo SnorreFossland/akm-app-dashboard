@@ -10,7 +10,7 @@ import { faRobot, faCheckCircle, faPaperPlane, faEdit, faTrash, faLink, faBrain,
 import { Plus, Paperclip, Edit, Clipboard, Library, Save, X, BookmarkPlus, Check, FileText, Info, HelpCircle, MessageSquareDashed } from 'lucide-react';
 
 import { usePathname } from 'next/navigation';
-import { setDomainData, setOntologyData, Model } from '@/features/model-universe/modelSlice';
+import { setDomainData, setOntologyData, Model, OntologyData } from '@/features/model-universe/modelSlice';
 import { Card, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from "@/components/ui/button";
@@ -106,7 +106,7 @@ export default function OntologyBuilderPage() {
     const [input, setInput] = useState<string>("");
     const [chatInput, setChatInput] = useState('');
     const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!');
-    const [selectedModel, setSelectedModel] = useState<string>('gpt-5-mini');
+    const [selectedModel, setSelectedModel] = useState<string>('');
 
     const [showLeftPanel, setShowLeftPanel] = useState(true);
     const [showRightPanel, setShowRightPanel] = useState(true);
@@ -115,7 +115,7 @@ export default function OntologyBuilderPage() {
     const [conceptName, setConceptName] = useState(data?.phData?.concept?.name || "");
     const [conceptDescription, setConceptDescription] = useState(data?.phData?.concept?.description || "");
     const [conceptPresentation, setConceptPresentationState] = useState(data?.phData?.concept?.presentation || "");
-    const [suggestedOntologyData, setSuggestedOntologyData] = useState<Ontology | null>(null);
+    const [suggestedOntologyData, setSuggestedOntologyData] = useState<OntologyData | null>(null);
     const [suggestedDomainData, setSuggestedDomainData] = useState<Domain | null>(null);
 
     const [activeTab, setActiveTab] = useState("ontology-builder");
@@ -501,15 +501,15 @@ export default function OntologyBuilderPage() {
                 content: (
                     <div className="flex-1 overflow-hidden bg-gray-800/20 rounded h-full">
                         <div className="flex overflow-hidden h-full">
-                            <ChatComponent
+                            {/* <ChatComponent
                                 mdContent={mdContent}
                                 setMdContent={setMdContent}
-                                suggestedOntologyData={suggestedOntologyData}
+                                // suggestedOntologyData={suggestedOntologyData}
                                 setSuggestedOntologyData={setSuggestedOntologyData}
                                 onImplementSuggestedOntology={handleSaveToLibrary}
                                 startupGuide={<GettingStartedGuide />}
                                 guide={<Guide />}
-                            />
+                            /> */}
                         </div>
                     </div>
                 )
@@ -517,27 +517,11 @@ export default function OntologyBuilderPage() {
             {
                 key: 'chatold',
                 label: 'AI Old Chat',
-                content: showEditorModal ? (
+                content: (
                     <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
-                        <OntologyBuilder
-                            // isOpen={true}
-                            // onClose={() => setShowEditorModal(false)}
-                            moduleOperations={modelSelector}
-                            leftPanelContent={leftPanelContent}
-                            middlePanelContent={middlePanelContent} // Only chat tab
-                            rightPanelContent={rightPanelContent}
-                            showLeftPanel={showLeftPanel}
-                            setShowLeftPanel={setShowLeftPanel}
-                            showRightPanel={showRightPanel}
-                            setShowRightPanel={setShowRightPanel}
-                            className="h-full min-w-0 bg-background text-gray-100"
-                        />
+      
                     </div>
-                ) : (
-                    <div className="p-4 text-sm text-gray-400">
-                        Open the editor to use the AI Ontology Chat
-                    </div>
-                )
+                ) 
             },
         ],
         defaultTab: 'chat'
@@ -569,7 +553,13 @@ export default function OntologyBuilderPage() {
                             <div className="mx-1 bg-gray-700">
                                 <OntologyCard
                                     domainData={domainData}
-                                    ontologyData={suggestedOntologyData}
+                                    ontologyData={suggestedOntologyData ? {
+                                        concepts: suggestedOntologyData.concepts,
+                                        relationships: suggestedOntologyData.relationships,
+                                        // presentation: suggestedOntologyData.presentation ?? '',
+                                        name: suggestedOntologyData.name ?? '',
+                                        description: suggestedOntologyData.description ?? ''
+                                    } : null}
                                     highlightConceptName={rightSelectedConcept}
                                     highlightRelationship={rightSelectedRel as any}
                                     selectedConceptNames={rightSelectedConcepts}
@@ -758,8 +748,11 @@ export default function OntologyBuilderPage() {
                                                 </div>
                                             </div>
                                             <div className="p-2 overflow-auto max-h-[calc(100vh-16rem)]">
-                                                <OntologyGraph
-                                                    ontology={suggestedOntologyData as any}
+                                                {/* <OntologyGraph
+                                                    ontology={suggestedOntologyData ? { 
+                                                        ...suggestedOntologyData, 
+                                                        presentation: suggestedOntologyData.presentation ?? '' 
+                                                    } : null}
                                                     baseline={ontology as any}
                                                     selectedConcept={rightSelectedConcept}
                                                     selectedRelationship={rightSelectedRel as any}
@@ -819,7 +812,7 @@ export default function OntologyBuilderPage() {
                                                             });
                                                         }
                                                     }}
-                                                />
+                                                /> */}
                                                 {(rightSelectedConcept || rightSelectedRel) && (
                                                     <div className="mt-2 text-xs text-gray-200 bg-gray-900/60 rounded p-2">
                                                         {rightSelectedConcept && (
@@ -858,8 +851,11 @@ export default function OntologyBuilderPage() {
                                                 <div className="flex flex-col h-[72vh]">
                                                     {/* Controls are shown under the card; modal includes only graph + details */}
                                                     <div className="flex-1 min-h-0 overflow-auto p-2">
-                                                        <OntologyGraph
-                                                            ontology={suggestedOntologyData as any}
+                                                        {/* <OntologyGraph
+                                                            ontology={suggestedOntologyData ? { 
+                                                                ...suggestedOntologyData, 
+                                                                presentation: suggestedOntologyData.presentation ?? '' 
+                                                            } : null}
                                                             baseline={ontology as any}
                                                             selectedConcept={rightSelectedConcept}
                                                             selectedRelationship={rightSelectedRel as any}
@@ -920,7 +916,7 @@ export default function OntologyBuilderPage() {
                                                                     });
                                                                 }
                                                             }}
-                                                        />
+                                                        /> */}
                                                         {(rightSelectedConcept || rightSelectedRel) && (
                                                             <div className="mt-2 text-xs text-gray-200 bg-gray-900/60 rounded p-2">
                                                                 {rightSelectedConcept && (
@@ -974,7 +970,7 @@ export default function OntologyBuilderPage() {
                 content: (
                     <div className="flex-1 overflow-hidden bg-gray-800/20 rounded h-full">
                         <div className="flex overflow-hidden h-full">
-                            <ChatComponent
+                            {/* <ChatComponent
                                 mdContent={mdContent}
                                 setMdContent={setMdContent}
                                 suggestedOntologyData={suggestedOntologyData}
@@ -982,7 +978,7 @@ export default function OntologyBuilderPage() {
                                 onImplementSuggestedOntology={handleSaveToLibrary}
                                 startupGuide={<GettingStartedGuide />}
                                 guide={<Guide />}
-                            />
+                            /> */}
                         </div>
                     </div>
                 )
@@ -992,10 +988,7 @@ export default function OntologyBuilderPage() {
                 label: 'AI Old Chat',
                 content: showEditorModal ? (
                     <div className="flex-1 overflow-auto bg-gray-800/20 rounded h-full">
-                        <OntologyBuilder
-                            // isOpen={true}
-                            // onClose={() => setShowEditorModal(false)}
-                            moduleOperations={modelSelector}
+                        {/* <OntologyBuilder
                             leftPanelContent={leftPanelContent}
                             middlePanelContent={middlePanelContent} // Only chat tab
                             rightPanelContent={rightPanelContent}
@@ -1004,7 +997,7 @@ export default function OntologyBuilderPage() {
                             showRightPanel={showRightPanel}
                             setShowRightPanel={setShowRightPanel}
                             className="h-full min-w-0 bg-background text-gray-100"
-                        />
+                        /> */}
                     </div>
                 ) : (
                     <div className="p-4 text-sm text-gray-400">

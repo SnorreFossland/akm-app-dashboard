@@ -8,7 +8,7 @@ import DocumentPanel from '@/components/ai-chat/DocumentPanel';
 import { Onest } from 'next/font/google';
 import { OntologyCard } from '@/components/ontology-card';
 import ModelComponent from './ModelComponent';
-import { Model, ModelView, setFocusModel } from '@/features/model-universe/modelSlice';
+import { Model, Modelview, setFocusModel } from '@/features/model-universe/modelSlice';
 import MarkdownPreview from '@/components/ai-chat/MarkdownPreview';
 
 const UniverseComponent: React.FC = () => {
@@ -22,7 +22,7 @@ const UniverseComponent: React.FC = () => {
 
     const [metis, setMetis] = useState<any>(null);
     const [currentModel, setCurrentModel] = useState<Model | null>(null);
-    const [currentModelview, setCurrentModelview] = useState<ModelView | null>(null);
+    const [currentModelview, setCurrentModelview] = useState<Modelview | null>(null);
     const [curMetamodel, setCurMetamodel] = useState<{ id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] } | null>(null);
     const [focusModelLocal, setFocusModelLocal] = useState<{ id: string; name: string } | null>(null);
     const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
@@ -37,7 +37,7 @@ const UniverseComponent: React.FC = () => {
             setFocusModelview(data.phFocus.focusModelview);
             setMetis(data.phData.metis);
             setCurrentModel(data.phData.metis?.models?.find(model => model.id === focusModelLocal?.id) || null);
-            setCurrentModelview((currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id) as ModelView) || null);
+            setCurrentModelview((currentModel?.modelviews.find((mv: { id: string }) => mv.id === focusModelview?.id) as Modelview) || null);
         }
     }, [data.phFocus, data.phData.metis, focusModelLocal?.id, focusModelview?.id, currentModel?.modelviews]);
 

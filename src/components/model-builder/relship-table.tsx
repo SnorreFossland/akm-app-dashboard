@@ -274,8 +274,7 @@ export const RelshipTable: React.FC<RelshipTableProps> = ({ data, modelId, onSel
                             .map((column) => (
                                 <DropdownMenuCheckboxItem
                                     key={column.id}
-                                    className="capitalize"
-                                    size="xs"
+                                    className="capitalize text-xs px-2 py-1"
                                     checked={column.getIsVisible()}
                                     onCheckedChange={(value) =>
                                         column.toggleVisibility(!!value)

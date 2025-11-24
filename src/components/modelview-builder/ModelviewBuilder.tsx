@@ -70,18 +70,18 @@ export default function ModelviewBuilder({
 }: ModelviewBuilderProps) {
     const dispatch = useDispatch();
     const data = useSelector((state: RootState) => state.modelUniverse);
-    const metis = useSelector((state: RootState) => state.modelUniverse.data?.metis);
+    const metis = useSelector((state: RootState) => state.modelUniverse.phData?.metis);
     const [curmod, setCurmod] = useState<Model | null>(null);
     const [curMetamodel, setCurMetamodel] = useState<any>(null);
     const [curModelview, setCurModelview] = useState<Modelview | null>(null);
     const [focusModelview, setFocusModelview] = useState<{ id: string; name: string } | null>(null);
-    
+
     const [model, setModel] = useState<Model | null>(null);
     const [modelview, setModelview] = useState<Modelview | null>(null);
 
     const [existingObjectsInModelview, setExistingObjectsInModelview] = useState<{
-        objects: ModelviewObjects[];
-        relships: ModelviewRelships[];
+        objects: Modelview["objectviews"];
+        relships: NonNullable<Modelview["relshipviews"]>;
     }>({ objects: [], relships: [] });
     const [isLoading, setIsLoading] = useState(false);
     const [step, setStep] = useState(1);
@@ -163,22 +163,55 @@ export default function ModelviewBuilder({
                 (newCurmod?.objects || []).some((obj: any) => obj.id === rel.nameFrom || obj.id === rel.nameTo)
             ) || []
         };
-    
+
 
         setExistingObjectsInModelview((prev) => {
+            // Map model objects to Modelview objectviews shape (fill missing fields with defaults)
+            const mapObjectToObjectview = (obj: any): Modelview["objectviews"][number] => ({
+                id: obj.id,
+                name: obj.name,
+                type: obj.typeName || obj.proposedType || '',
+                loc: '',
+                size: '',
+                objectRef: obj.id,
+                memberscale: 1,
+                modified: !!obj.modified,
+                markedAsDeleted: !!obj.markedAsDeleted,
+                isSelect: false,
+                isGroup: false,
+                isExpanded: false,
+                image: '',
+                icon: '',
+                fillColor: '',
+                strokeColor: '',
+                strokeWidth: '',
+                strokeColor2: '',
+                textColor: '',
+                textColor2: '',
+                viewkind: '',
+            });
+            const mapRelToRelshipview = (rel: any): NonNullable<Modelview["relshipviews"]>[number] => ({
+                id: rel.id,
+                name: rel.name,
+                relshipRef: rel.id,
+                fromobjviewRef: rel.nameFrom || '',
+                fromName: rel.nameFrom || '',
+                toobjviewRef: rel.nameTo || '',
+                toName: rel.nameTo || '',
+                points: [],
+            });
+            const mappedObjects = (newExisting.objects || []).map(mapObjectToObjectview);
+            const mappedRelships = (newExisting.relships || []).map(mapRelToRelshipview);
             const prevObjects = prev?.objects || [];
             const prevRelships = prev?.relships || [];
-
             const sameObjects =
-                prevObjects.length === newExisting.objects.length &&
-                prevObjects.every((o: any, i: number) => o?.id === newExisting.objects[i]?.id);
-
+                prevObjects.length === mappedObjects.length &&
+                prevObjects.every((o: any, i: number) => o?.id === mappedObjects[i]?.id);
             const sameRelships =
-                prevRelships.length === newExisting.relships.length &&
-                prevRelships.every((r: any, i: number) => r?.id === newExisting.relships[i]?.id);
-
+                prevRelships.length === mappedRelships.length &&
+                prevRelships.every((r: any, i: number) => r?.id === mappedRelships[i]?.id);
             if (sameObjects && sameRelships) return prev;
-            return newExisting;
+            return { objects: mappedObjects, relships: mappedRelships };
         });
         const metamodels = (data?.phData?.metis?.metamodels as { id: string; name: string; objecttypes: any[]; relshiptypes: any[]; objecttypeviews: any[] }[]) || [];
         const curMeta = metamodels.find((mm) => mm.id === curmod.metamodelRef) || null;
@@ -455,7 +488,7 @@ export default function ModelviewBuilder({
 
         // Deduplicate relshipviews by key (name/from/to/relshipRef/typeviewRef)
         const seenRelKeys = new Set<string>();
-        const relshipviews = relshipviewsRaw.filter((rv) => {
+        const relshipviews = relshipviewsRaw.filter((rv: any) => {
             const key = [rv.name, rv.fromobjviewRef, rv.toobjviewRef, rv.relshipRef, rv.typeviewRef].join('::');
             if (seenRelKeys.has(key)) {
                 return false;

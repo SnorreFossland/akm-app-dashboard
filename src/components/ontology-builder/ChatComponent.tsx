@@ -9,23 +9,18 @@ import { HelpCircle, X } from 'lucide-react';
 import { SystemPrompt, SystemBehaviorGuidelines, UserPrompt } from '@/app/ontology-builder/prompts';
 import { streamGenmodel } from '@/lib/ai/genmodel';
 import { mapModelId } from '@/lib/ai/modelMap';
+import type { OntologyData } from '@/features/model-universe/modelSlice';
 
-type GenerateResponse = { [key: string]: any };
-
-interface OntologyConcept { name: string; description: string }
-interface OntologyRelship { name: string; nameFrom: string; nameTo: string; description?: string }
-interface OntologyData { name: string; description: string; presentation?: string; concepts: OntologyConcept[]; relationships: OntologyRelship[] }
-type Ontology = OntologyData;
 
 // Add a prop to accept external context (e.g., projectContent from parent)
-interface ChatComponentProps {
-    mdContent?: string; // External context to inject (e.g., project plan or domain description)
+type ChatComponentProps = {
+    mdContent?: string;
     setMdContent: (content: string) => void;
-    setSuggestedOntologyData: React.Dispatch<React.SetStateAction<Ontology | null>>;
+    setSuggestedOntologyData: React.Dispatch<React.SetStateAction<OntologyData | null>>;
     onImplementSuggestedOntology: () => void;
     startupGuide: React.ReactNode;
     guide: React.ReactNode;
-}
+};
 
 export default function ChatComponent({ mdContent, setMdContent, startupGuide, guide, setSuggestedOntologyData, onImplementSuggestedOntology }: ChatComponentProps) {
     const [prompt, setPrompt] = useState<string>('Create an ontology for based on the Current Domain described in the "Existing Context".'); // Initial prompt
@@ -227,8 +222,8 @@ export default function ChatComponent({ mdContent, setMdContent, startupGuide, g
             console.log('221 DEBUG: mdContent length:', mdContent?.length, 'Content preview:', mdContent?.substring(0, 200));
             // Temporary fallback for testing
             const additionalContent = (() => {
-                const match1 = mdContent.match(/1\.(.*?)3\./s);
-                const match2 = mdContent.match(/5\.(.*?)6\./s);
+                const match1 = mdContent?.match(/1\.(.*?)3\./s);
+                const match2 = mdContent?.match(/5\.(.*?)6\./s);
                 const part1 = match1 ? match1[1].trim() : "";
                 const part2 = match2 ? match2[1].trim() : "";
                 return [part1, part2].filter(Boolean).join("\n\n");
