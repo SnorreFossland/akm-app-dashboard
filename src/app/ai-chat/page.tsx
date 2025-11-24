@@ -7,6 +7,7 @@ import { Eye, EyeOff, X } from 'lucide-react';
 import { RootState } from '@/store';
 import { FileOperations } from '@/components/FileOperations';
 import { ThreePanelLayout } from '@/components/ThreePanelLayout';
+import type { PanelGroup } from '@/components/ThreePanelLayout';
 import MarkdownLibrary from '@/components/ai-chat/MarkdownLibrary';
 import { ModeHeader } from '@/components/ai-chat/ModeHeader';
 import { ViewModeContent } from '@/components/ai-chat/modes/ViewModeContent';
@@ -877,9 +878,10 @@ const AIChatPage = () => {
     })();
 
     const rightPanelProp = (() => {
-        const rp = panelConfigs.rightPanelContent;
-        if (rp && typeof rp === 'object' && 'tabs' in rp) return rp as any;
-        return { tabs: [{ key: 'preview', label: 'Preview', content: rp as React.ReactElement }], defaultTab: 'preview' };
+        const rp = panelConfigs.rightPanelContent as PanelGroup | React.ReactNode | null | undefined;
+        if (rp && typeof rp === 'object' && 'tabs' in rp) return rp as PanelGroup;
+        const content: React.ReactNode = rp ?? null;
+        return { tabs: [{ key: 'preview', label: 'Preview', content }], defaultTab: 'preview' };
     })();
 
     const modeConfig = MODE_CONFIGS[mode];
