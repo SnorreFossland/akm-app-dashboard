@@ -878,6 +878,7 @@ const AIChatPage = () => {
 
     const rightPanelProp = (() => {
         const rp = panelConfigs.rightPanelContent;
+        if (!rp) return null;
         if (rp && typeof rp === 'object' && 'tabs' in rp) return rp as any;
         return { tabs: [{ key: 'preview', label: 'Preview', content: rp as React.ReactElement }], defaultTab: 'preview' };
     })();

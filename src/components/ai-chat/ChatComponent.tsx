@@ -32,6 +32,7 @@ import { Messages } from 'openai/resources/beta/threads/messages.mjs';
 import { callGateway } from '@/lib/ai/generate';
 import { mapModelId } from '@/lib/ai/modelMap';
 import { Domain } from 'domain';
+// import { DeveloperPrompt } from '@/app/model-builder/prompts';
 
 // pdfjsLib.GlobalWorkerOptions.workerSrc = pdfjsWorker;
 
@@ -164,6 +165,7 @@ export default function ChatComponent({
     const [templatePlaceholders, setTemplatePlaceholders] = useState<{ text: string, start: number, end: number }[]>([]);
     const buttonAccent = "px-2 py-1 bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-xs rounded-md whitespace-nowrap";
     const [showGuide, setShowGuide] = useState(false);
+    const [finalPrompt, setFinalPrompt] = useState<string>('');
 
     const containerRef = useRef<HTMLDivElement>(null);
     const pathname = usePathname();
@@ -705,6 +707,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 finalPromptText += 'Please use the domain and context information provided above to improve your response.\n\n';
             }
 
+
             // Log the final prompt structure (truncated for readability)
             console.log('Final prompt structure:', {
                 totalLength: finalPromptText.length,
@@ -724,6 +727,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 hasContext: !!(mdContent?.trim() || currentDocument?.trim()),
                 contextType: currentDocument?.trim() ? 'domain' : (mdContent?.trim() ? 'general' : 'none'),
             };
+            setFinalPrompt(basePayload.prompt);
 
             // Check API availability before making the full request
             let healthCheckError: unknown = null;
@@ -870,7 +874,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 .join(' \n ');
         } else {
             const contextPart = mdContent ? `#Context: ${mdContent}` : '';
-            userMessageContent = [userMessageContent, contextPart, additionalCtxPart]
+            userMessageContent =  [systemPrompt, userMessageContent, contextPart, additionalCtxPart]
                 .filter(Boolean)
                 .join(' \n ');
         }
@@ -1564,10 +1568,10 @@ Do not use its contents as contextual input for other questions--I want it impro
                                 <button
                                     type="button"
                                     onClick={() => setShowPromptModal(true)}
-                                    className="flex items-center bg-gray-700 rounded-full px-2 text-gray-200 hover:bg-gray-600"
+                                    className="flex items-center bg-gray-700 rounded-full p-1 mr-2 text-gray-500 hover:bg-gray-600"
                                     title="Show assembled prompt"
                                 >
-                                    Show total Prompt
+                                    Show Prompt
                                 </button>
                             </div>
                             <button
@@ -1594,7 +1598,7 @@ Do not use its contents as contextual input for other questions--I want it impro
                 {showPromptModal && (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-black/60" onClick={() => setShowPromptModal(false)} />
-                        <div className="relative bg-popover rounded-lg w-full max-w-3xl max-h-[80vh] overflow-auto p-4 z-10">
+                        <div className="relative bg-popover rounded-lg w-full max-w-3xl p-4 z-10">
                             <div className="flex items-center justify-between mb-2">
                                 <h3 className="text-lg font-semibold">Assembled Prompt</h3>
                                 <div className="flex items-center gap-2">
@@ -1615,7 +1619,9 @@ Do not use its contents as contextual input for other questions--I want it impro
                                     </button>
                                 </div>
                             </div>
-                            <pre className="whitespace-pre-wrap text-sm bg-gray-900 text-gray-200 p-3 rounded">{buildAssembledPrompt()}</pre>
+                            <pre className="whitespace-pre-wrap text-sm bg-gray-900 text-gray-200 p-3 rounded max-h-[80vh] overflow-auto ">
+                                {buildAssembledPrompt()}
+                            </pre>
                         </div>
                     </div>
                 )}

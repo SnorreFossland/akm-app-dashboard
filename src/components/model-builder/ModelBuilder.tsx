@@ -25,7 +25,7 @@ import TemperatureSelector from '@/components/ai-chat/TemperatureSelector';
 import DigitalRainIntro from '@/components/ai-chat/DigitalRainIntro';
 import GettingStartedGuide from '@/components/model-builder/GettingStartedGuide';
 import { SystemPrompt, DeveloperPrompt, UserPrompt } from '@/app/model-builder/prompts';
-import { PROMPT_TEMPLATES } from '@/components/model-builder/promptTemplates';      
+import { PROMPT_TEMPLATES } from '@/components/model-builder/promptTemplates';
 import { mapModelId } from '@/lib/ai/modelMap';
 import { convertDocxToMarkdown } from '@/utils/DOCX-to-Markdown';
 import { streamGenmodel } from '@/lib/ai/genmodel';
@@ -49,6 +49,12 @@ interface ModelBuilderProps {
     gettingStartedGuide: React.ReactNode;
     guide: React.ReactNode;
 }
+
+type Message = {
+    role: 'user' | 'assistant';
+    content: string;
+    // Add any other properties used in your message objects
+};
 
 export default function ModelBuilderComponent(props: ModelBuilderProps) {
     const {
@@ -260,45 +266,45 @@ Ensure logical consistency and relationship principles.
 If the Domain definition is missing or insufficient, respond with your best suggestions.
 Do not create modelviews, use the current modelview for all objects and relationships.
 `;
-// Model:
-// - Required: id, name, description, objects[], relships[].
-// - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
-// - Description should be a brief summary of the model's purpose.
-// - All ids should be unique UUID strings.
-// Objects:
-// - Required: id, name, description, typeRef, typeName, typeviewRef.
-// - All ids should be unique UUID strings.
-// - TypeName and typeRef must match a valid object type from the Metamodel.
-// - Prefer domain-specific names that do not redundantly append the type label (e.g., use “StudentEnrollment” instead of “StudentEnrollmentProcess”).
-// - Do not use generic objectypes like "Generic", "Element" or "EntityType".
-// - Do not change the typeName; always use the metamodel typeName.
-// - Ensure the object descriptions are concise yet informative.
-// When creating new objects:
-// 	•	Maintain an in-memory list of (name, typeName) pairs for all objects already added to objects (including those from Existing Context).
-// 	•	Before adding a new object, check this list:
-// 	•	If the same (name, typeName) already exists, reuse the existing object’s id and do not add a new object.
-// 	•	Only create a new object if no existing object shares both the same name and typeName.
-//     When adding an object to objects, first scan all existing objects.
-// If there is already an object with the same name and typeName:
-// 	•	Do not create a new object.
-// 	•	Reuse the existing object's id in relationships.
+        // Model:
+        // - Required: id, name, description, objects[], relships[].
+        // - Name should be a shortnmame representing the domain (e.g., "BikeRental", "ECommerce"), with the metamodel name as _suffix without "_META" if not obvious.
+        // - Description should be a brief summary of the model's purpose.
+        // - All ids should be unique UUID strings.
+        // Objects:
+        // - Required: id, name, description, typeRef, typeName, typeviewRef.
+        // - All ids should be unique UUID strings.
+        // - TypeName and typeRef must match a valid object type from the Metamodel.
+        // - Prefer domain-specific names that do not redundantly append the type label (e.g., use “StudentEnrollment” instead of “StudentEnrollmentProcess”).
+        // - Do not use generic objectypes like "Generic", "Element" or "EntityType".
+        // - Do not change the typeName; always use the metamodel typeName.
+        // - Ensure the object descriptions are concise yet informative.
+        // When creating new objects:
+        // 	•	Maintain an in-memory list of (name, typeName) pairs for all objects already added to objects (including those from Existing Context).
+        // 	•	Before adding a new object, check this list:
+        // 	•	If the same (name, typeName) already exists, reuse the existing object’s id and do not add a new object.
+        // 	•	Only create a new object if no existing object shares both the same name and typeName.
+        //     When adding an object to objects, first scan all existing objects.
+        // If there is already an object with the same name and typeName:
+        // 	•	Do not create a new object.
+        // 	•	Reuse the existing object's id in relationships.
 
-// Relships:
-// - Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
-// - Relationship name should not include from/to object name.
-// - All ids should be unique UUID strings.
-// - Ensure fromobjectRef and toobjectRef reference valid object id.
-// - Ensure typeRef aligns with the Metamodel relshiptype.
-// - Relationship name should not have prefix or suffix "Rel" etc.
-// - Dont repeat the fromName and toName in the relationship name.
-// - Do not use generic relationship types like "generic", "relatedTo" or "associatesWith".
-// - Ensure all objects have relationships.
-// - Ensure no orphaned relationships.
-// When creating a new relationship:
-// 	•	Check if any existing relationship in relships has the same name, fromobjectRef, and toobjectRef.
-// 	•	If such a relationship exists, do not create another one.
-//     •	Reuse the existing object's id in relationships.
-// `;
+        // Relships:
+        // - Required: id, name, typeRef, fromobjectRef, fromName, toobjectRef, toName, relshiptypeRef.
+        // - Relationship name should not include from/to object name.
+        // - All ids should be unique UUID strings.
+        // - Ensure fromobjectRef and toobjectRef reference valid object id.
+        // - Ensure typeRef aligns with the Metamodel relshiptype.
+        // - Relationship name should not have prefix or suffix "Rel" etc.
+        // - Dont repeat the fromName and toName in the relationship name.
+        // - Do not use generic relationship types like "generic", "relatedTo" or "associatesWith".
+        // - Ensure all objects have relationships.
+        // - Ensure no orphaned relationships.
+        // When creating a new relationship:
+        // 	•	Check if any existing relationship in relships has the same name, fromobjectRef, and toobjectRef.
+        // 	•	If such a relationship exists, do not create another one.
+        //     •	Reuse the existing object's id in relationships.
+        // `;
 
         switch (curMetamodel.name) {
             case "IRTV_META": // IRTV model generation
@@ -486,7 +492,7 @@ Do not duplicate existing objects and relationships that exists in the following
         if (newExistingObjects.relships.length > 0) {
             conceptString += `**Relationships**\n\n${newExistingObjects.relships
                 .map(
-                    (r: any) => `{"id": "${r.id}", "name": "${r.name}", "typeName": "${r.typeName || ""}", "typeRef": "${r.typeRef || ""}", "fromobjectRef": "${r.fromobjectRef || ""}", "nameFrom": "${r.nameFrom || ""}", "toobjectRef": "${r.toobjectRef || ""}", "nameTo": "${r.nameTo || ""}"}`                )
+                    (r: any) => `{"id": "${r.id}", "name": "${r.name}", "typeName": "${r.typeName || ""}", "typeRef": "${r.typeRef || ""}", "fromobjectRef": "${r.fromobjectRef || ""}", "nameFrom": "${r.nameFrom || ""}", "toobjectRef": "${r.toobjectRef || ""}", "nameTo": "${r.nameTo || ""}"}`)
                 .join("\n")}\n\n`;
         }
 
@@ -1212,7 +1218,10 @@ Your task is to build a model from he Domain definition, and if provided Existin
                             <ModelSelector
                                 selectedModel={selectedModel}
                                 onModelChange={(newModel) => {
-                                    setSelectedModel(newModel);
+                                    // Only allow valid model names
+                                    if (["gpt-5-mini", "mistral", "gpt-5", "deepseek-chat", "dummy"].includes(newModel)) {
+                                        setSelectedModel(newModel as "gpt-5-mini" | "mistral" | "gpt-5" | "deepseek-chat" | "dummy");
+                                    }
                                     try { localStorage.setItem('aiDashboard_selectedModel', newModel); } catch { }
                                 }}
                             />

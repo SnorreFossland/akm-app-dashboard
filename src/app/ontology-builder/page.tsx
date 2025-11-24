@@ -106,7 +106,7 @@ export default function OntologyBuilderPage() {
   useEffect(() => {
     if (focusProject) {
       if (focusProject.id) {
-        const matchingDoc = documents?.find((doc) => doc.id === focusProject.id);
+        const matchingDoc = documents?.find((doc: any) => doc.id === focusProject.id);
         if (matchingDoc) {
           setProjectDocId(matchingDoc.id);
           setProjectContent(matchingDoc.content || '');
@@ -121,7 +121,7 @@ export default function OntologyBuilderPage() {
       }
     }
 
-    let doc = documents?.find(d => d.type === 'project-plan');
+    let doc = documents?.find((d: any) => d.type === 'project-plan');
     if (!doc) {
       const newDoc = {
         id: Date.now().toString(),
@@ -150,7 +150,7 @@ export default function OntologyBuilderPage() {
   const [input, setInput] = useState<string>("");
   const [chatInput, setChatInput] = useState('');
   const [mdPreview, setMdPreview] = useState<string>('Nothing to preview yet!');
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-5-mini');
+  // const [selectedModel, setSelectedModel] = useState<string>('gpt-5-mini');
 
   const [showLeftPanel, setShowLeftPanel] = useState(true);
   const [showRightPanel, setShowRightPanel] = useState(true);
@@ -554,7 +554,16 @@ export default function OntologyBuilderPage() {
           <div className="flex flex-col h-full">
             <div className="px-2 py-1 text-blue-400 font-semibold">Ontology Preview</div>
             <div className="flex-1 overflow-auto">
-              <OntologyCard domainData={domainData} ontologyData={ontology} />
+              <OntologyCard 
+                domainData={domainData} 
+                ontologyData={ontology ? {
+                  ...ontology,
+                  relationships: (ontology.relationships || []).map(r => ({
+                    ...r,
+                    description: r.description ?? ''
+                  }))
+                } : null}
+              />
             </div>
           </div>
         )
@@ -563,15 +572,25 @@ export default function OntologyBuilderPage() {
     defaultTab: 'ontology'
   };
 
-  // Right panel: ontology preview
-  const rightPanelContent = (
-    <div className="flex flex-col h-full">
-      <div className="px-2 py-1 text-blue-400 font-semibold">Ontology Preview</div>
-      <div className="flex-1 overflow-auto">
-        <OntologyCard domainData={domainData} ontologyData={ontology} />
-      </div>
-    </div>
-  );
+
+  // Right panel: ontology preview (wrapped in tabs array for PanelGroup)
+  const rightPanelContent = {
+    tabs: [
+      {
+        key: 'ontology',
+        label: 'Ontology',
+        content: (
+          <div className="flex flex-col h-full">
+            <div className="px-2 py-1 text-blue-400 font-semibold">Ontology Preview</div>
+            <div className="flex-1 overflow-auto">
+              {/* <OntologyCard domainData={domainData} ontologyData={ontology} /> */}
+            </div>
+          </div>
+        )
+      },
+    ],
+    defaultTab: 'ontology',
+  };
 
   // ensure layout uses actual state/setters
   return (

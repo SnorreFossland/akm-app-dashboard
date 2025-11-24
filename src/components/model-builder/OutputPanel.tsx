@@ -32,7 +32,7 @@ interface DocumentPanelProps {
 }
 
 type PendingSavePayload = {
-    focusModel: Model;
+    focusModel: { id: string; name: string };
     mergedModel: Model;
 };
 
@@ -418,18 +418,25 @@ export default function DocumentPanel({
     };
 
     const applyMergedModel = (focusModel: Model, mergedModel: Model) => {
+
         const phFocus = {
-            focusModel,
+            focusModel: { id: focusModel.id, name: focusModel.name },
             focusModelview: { id: modelview?.id || '', name: modelview?.name || '' },
             focusObject: data?.phFocus?.focusObject || { id: '', name: '' },
             focusObjectview: data?.phFocus?.focusObjectview || { id: '', name: '' },
-            focusProj: data?.phFocus?.focusProj || { id: '', name: '' }
+            focusProj: data?.phFocus?.focusProj || { id: '', name: '', description: '' },
+            focusObjectIds: data?.phFocus?.focusObjectIds ?? [],
+            focusRelshipIds: data?.phFocus?.focusRelshipIds ?? [],
         };
 
         setCurmod(mergedModel);
         dispatch(setNewModel(mergedModel));
         dispatch(setFocusModel({ id: mergedModel.id, name: mergedModel.name }));
-        dispatch(setPhFocus(phFocus));
+        dispatch(setPhFocus({
+            ...phFocus,
+            focusObjectIds: phFocus.focusObjectIds ?? [],
+            focusRelshipIds: phFocus.focusRelshipIds ?? [],
+        }));
 
         if (modelview) {
             const completeModelview = {
@@ -453,7 +460,10 @@ export default function DocumentPanel({
 
     const handleDiffConfirm = () => {
         if (pendingSavePayload) {
-            applyMergedModel(pendingSavePayload.focusModel, pendingSavePayload.mergedModel);
+            applyMergedModel(
+                pendingSavePayload.mergedModel,
+                pendingSavePayload.mergedModel
+            );
         }
         setPendingSavePayload(null);
         setShowDiffModal(false);
@@ -493,7 +503,7 @@ export default function DocumentPanel({
         setDiffTitle(`${focusModel.name || 'Model'} changes`);
         setDiffOldContent(oldContent);
         setDiffNewContent(newContent);
-        setPendingSavePayload({ focusModel, mergedModel });
+        setPendingSavePayload({ focusModel: { id: focusModel.id, name: focusModel.name }, mergedModel });
         setShowDiffModal(true);
     };
 

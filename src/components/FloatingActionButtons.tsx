@@ -56,7 +56,7 @@ export function FloatingActionButtons({ actions, className }: FloatingActionButt
           </>
         );
 
-        if ("href" in action) {
+        if ("href" in action && action.href) {
           return (
             <Link
               key={`floating-action-link-${idx}`}

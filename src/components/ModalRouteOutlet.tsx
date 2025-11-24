@@ -4,10 +4,9 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useState } from 'react';
 
-// Dynamically import the modal page — client-side only to avoid SSR issues.
-// This imports the default export from your modal route: src/app/ai-chat/modal/page.tsx
+// Dynamically import the AI Chat page as a modal (fallback to main page if modal route missing)
 const AiChatModalPage = dynamic(
-    () => import('@/app/ai-chat/aiAssistant/page').then((mod) => mod.default),
+    () => import('@/app/ai-chat/page').then((mod) => mod.default),
     { ssr: false }
 );
 
